@@ -53,10 +53,10 @@ int main(void)
 
     // Define vertices and indices for a square
     float positions[] = {
-         100.0f, 100.0f, 0.0f, 0.0f, // 0
-         200.0f, 100.0f, 1.0f, 0.0f, // 1
-         200.0f, 200.0f, 1.0f, 1.0f, // 2
-         100.0f, 200.0f, 0.0f, 1.0f  // 3
+         -50.0f, -50.0f, 0.0f, 0.0f, // 0
+         50.0f, -50.0f, 1.0f, 0.0f, // 1
+         50.0f, 50.0f, 1.0f, 1.0f, // 2
+         -50.0f, 50.0f, 0.0f, 1.0f  // 3
     };
 
     unsigned int indices[] = {
@@ -111,7 +111,8 @@ int main(void)
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    glm::vec3 translation(200, 200.0, 0.0);
+    glm::vec3 translationA(200, 200.0, 0.0);
+    glm::vec3 translationB(400, 200.0, 0.0);
     float r = 0.0;
     float increment = 0.5;
 
@@ -124,13 +125,21 @@ int main(void)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), translation);
-        glm::mat4 mvp = proj * view * model;
+        {
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), translationA);
+            glm::mat4 mvp = proj * view * model;
+            shader.Bind();
+            shader.SetUniformMat4f("u_MVP", mvp);
+            renderer.Draw(va, ib, shader);
+        }
 
-        shader.Bind();
-        shader.SetUniform4f("u_Color", r, 0.3f, 0.8f, 1.0f);
-        shader.SetUniformMat4f("u_MVP", mvp);
-        renderer.Draw(va, ib, shader);
+        {
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), translationB);
+            glm::mat4 mvp = proj * view * model;
+            shader.Bind();
+            shader.SetUniformMat4f("u_MVP", mvp);
+            renderer.Draw(va, ib, shader);
+        }
 
         if (r > 1.0f)
             increment = -0.05f;
@@ -144,7 +153,8 @@ int main(void)
             static int counter = 0;
 
             ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-            ImGui::SliderFloat3("Translation", &translation.x, 0.0f, 960.0f);
+            ImGui::SliderFloat3("TranslationA", &translationA.x, 0.0f, 960.0f);
+            ImGui::SliderFloat3("TranslationB", &translationB.x, 0.0f, 960.0f);
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::End();
         }
