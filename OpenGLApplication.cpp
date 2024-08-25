@@ -4,19 +4,20 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include "OpenGLApplication/Renderer.h"
-#include "OpenGLApplication/IndexBuffer.h"
-#include "OpenGLApplication/VertexBuffer.h"
-#include "OpenGLApplication/VertexBufferLayout.h"
-#include "OpenGLApplication/VertexArray.h"
-#include "OpenGLApplication/Shader.h"
-#include "OpenGLApplication/Texture.h"
+#include "Renderer.h"
+#include "IndexBuffer.h"
+#include "VertexBuffer.h"
+#include "VertexBufferLayout.h"
+#include "VertexArray.h"
+#include "Shader.h"
+#include "Texture.h"
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include "OpenGLApplication/TestClearColor.h"
+#include "TestClearColor.h"
+#include "TestTexture2D.h"
 
 int main(void)
 {
@@ -71,6 +72,7 @@ int main(void)
     test::TestMenu* testMenu = new test::TestMenu(currentTest);
     currentTest = testMenu;
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
+    testMenu->RegisterTest<test::TestTexture2D>("Texture2D");
 
     /* Main render loop */
     while (!glfwWindowShouldClose(window))
@@ -102,6 +104,10 @@ int main(void)
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    if (currentTest != testMenu)
+        delete testMenu;
+    delete currentTest;
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
