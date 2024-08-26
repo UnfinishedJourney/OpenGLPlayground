@@ -1,20 +1,27 @@
 #pragma once
 #include <GL/glew.h>
 
-// Macro for error checking
-#define ASSERT(x) if (!(x)) __debugbreak();
-#define GLCall(x) GLClearError();\
-    x;\
-    ASSERT(GlLogCall(#x, __FILE__, __LINE__))
-
-// Functions for clearing and logging OpenGL errors
-void GLClearError();
-
-bool GlLogCall(const char* function, const char* file, int line);
-
+#include <Utility.h>
 #include "VertexArray.h"
 #include "IndexBuffer.h"
 #include "Shader.h"
+
+class Screen {
+public:
+    static int s_Width;
+    static int s_Height;
+
+    static void setResolution(int w, int h) {
+        s_Width = w;
+        s_Height = h;
+    }
+};
+
+struct FrameData
+{
+    static glm::mat4 s_View;
+    static glm::mat4 s_Projection;
+};
 
 class Renderer
 {

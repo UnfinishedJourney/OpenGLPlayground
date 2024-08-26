@@ -32,7 +32,7 @@ namespace test {
         m_VAO->AddBuffer(*m_VB, layout);
         m_IB = std::make_unique<IndexBuffer>(indices, 6);
 
-        m_Proj = glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f);
+        m_Proj = glm::ortho(0.0f, (float)Screen::s_Width, 0.0f, (float)Screen::s_Height, -1.0f, 1.0f);
         m_View = glm::translate(glm::mat4(1.0f), glm::vec3(-100, 0.0, 0.0));
         glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(200, 200.0, 0.0));
 
