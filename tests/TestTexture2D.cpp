@@ -18,8 +18,8 @@ namespace test {
             2, 3, 0
         };
 
-        m_Shader = std::make_unique<Shader>("../Basic.shader");
-        m_Texture = std::make_unique<Texture>("../cute_dog.png");
+        m_Shader = std::make_unique<Shader>("shaders/Basic.shader");
+        m_Texture = std::make_unique<Texture>("assets/cute_dog.png");
 
         GLCall(glEnable(GL_BLEND));
         GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));

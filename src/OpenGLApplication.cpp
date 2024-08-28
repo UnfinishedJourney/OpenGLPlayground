@@ -26,12 +26,15 @@ int Screen::s_Height = 540;
 glm::mat4 FrameData::s_Projection = glm::mat4(1.0f);
 glm::mat4 FrameData::s_View = glm::mat4(1.0f);
 
+MyCamera myCamera;
+
 void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode);
+void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY);
 void showFPS(GLFWwindow* window);
 void update(double elapsedTime, GLFWwindow* gWindow);
 
-const double ZOOM_SENSITIVITY = -3.0;
-const float MOVE_SPEED = 0.001; // units per second
+const double ZOOM_SENSITIVITY = -1.0;
+const float MOVE_SPEED = 0.001f; // units per second
 const float MOUSE_SENSITIVITY = 0.1f;
 
 GLFWwindow* GLInit()
@@ -55,6 +58,7 @@ GLFWwindow* GLInit()
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
     glfwSetKeyCallback(window, glfw_onKey);
+    glfwSetScrollCallback(window, glfw_onMouseScroll);
 
     glfwSwapInterval(1);
 
@@ -69,7 +73,7 @@ GLFWwindow* GLInit()
 
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    const char* glsl_version = "#version 130";
+    const char* glsl_version = "#version 330";
 #ifdef __EMSCRIPTEN__
     ImGui_ImplGlfw_InstallEmscriptenCallbacks(window, "#canvas");
 #endif
@@ -103,9 +107,8 @@ int main(void)
     testMenu->RegisterTest<test::TestTexture2D>("Texture2D");
     testMenu->RegisterTest<test::Test3D>("3D");
     double lastTime = glfwGetTime();
-    MyCamera mc;
-    FrameData::s_View = mc.GetViewMatrix();
-    FrameData::s_Projection = glm::perspective(glm::radians(mc.GetFOV()), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);
+    FrameData::s_View = myCamera.GetViewMatrix();
+    FrameData::s_Projection = glm::perspective(glm::radians(myCamera.GetFOV()), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);
 
     /* Main render loop */
     while (!glfwWindowShouldClose(window))
@@ -124,6 +127,8 @@ int main(void)
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+        FrameData::s_View = myCamera.GetViewMatrix();
 
         if (currentTest)
         {
@@ -162,6 +167,16 @@ void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode)
     {
         glfwSetWindowShouldClose(window, GL_TRUE);
     }
+}
+
+void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY)
+{
+    double fov = myCamera.GetFOV() + deltaY * ZOOM_SENSITIVITY;
+
+    fov = glm::clamp(fov, 1.0, 120.0);
+
+    myCamera.SetFOV((float)fov);
+    FrameData::s_Projection = glm::perspective(glm::radians(myCamera.GetFOV()), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);
 }
 
 void update(double elapsedTime, GLFWwindow* gWindow)
