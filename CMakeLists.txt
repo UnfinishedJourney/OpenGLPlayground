@@ -5,24 +5,26 @@ project(OpenGLApplication VERSION 1.0)
 
 # Set the C++ standard
 set(CMAKE_CXX_STANDARD 20)
-#set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Specify the executable
-add_executable(OpenGLApplication
-    src/Camera.cpp
-    src/IndexBuffer.cpp
-    src/OpenGLApplication.cpp
-    src/Renderer.cpp
-    src/Shader.cpp
-    src/Texture.cpp
-    src/Utility.cpp
-    src/VertexArray.cpp
-    src/VertexBuffer.cpp
+# Set directories
+set(DEPS_DIR ${CMAKE_SOURCE_DIR}/Dependencies)
+set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
+set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/assets)
+set(BUILD_DIR ${CMAKE_SOURCE_DIR}/build) 
+
+# Glob all .cpp and .h files in src and tests directories
+file(GLOB_RECURSE SRC_FILES 
+    ${CMAKE_SOURCE_DIR}/src/*.cpp 
+    ${CMAKE_SOURCE_DIR}/src/*.h
+)
+file(GLOB_RECURSE TEST_FILES 
+    ${CMAKE_SOURCE_DIR}/tests/*.cpp 
+    ${CMAKE_SOURCE_DIR}/tests/*.h
+)
+
+# Vendor files (you may also glob these if desired)
+set(VENDOR_FILES
     vendor/stb_image/stb_image.cpp
-    tests/Test.cpp
-    tests/TestClearColor.cpp
-    tests/TestTexture2D.cpp
-    tests/Test3D.cpp
     vendor/imgui/imgui.cpp
     vendor/imgui/imgui_draw.cpp
     vendor/imgui/imgui_demo.cpp
@@ -32,17 +34,19 @@ add_executable(OpenGLApplication
     vendor/imgui/imgui_impl_opengl3.cpp
 )
 
-# Set directories
-set(DEPS_DIR ${CMAKE_SOURCE_DIR}/Dependencies)
-set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
-set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/assets)
-set(BUILD_DIR ${CMAKE_SOURCE_DIR}/build) 
+# Specify the executable
+add_executable(OpenGLApplication
+    ${SRC_FILES}
+    ${TEST_FILES}
+    ${VENDOR_FILES}
+)
 
 # Include directories
 target_include_directories(OpenGLApplication PRIVATE 
     ${DEPS_DIR}/GLFW/include
     ${DEPS_DIR}/GLEW/include
     ${DEPS_DIR}/glm
+    ${DEPS_DIR}/assimp_related/include
     ${CMAKE_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/vendor/stb_image
     ${CMAKE_SOURCE_DIR}/src
@@ -61,6 +65,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)  # 64-bit
         Gdi32
         Shell32
         ${DEPS_DIR}/GLEW/lib/Release/x64/glew32s.lib
+        ${DEPS_DIR}/assimp_related/lib/assimp-vc143-mt.lib
     )
 else()  # 32-bit
     target_link_libraries(OpenGLApplication PRIVATE 

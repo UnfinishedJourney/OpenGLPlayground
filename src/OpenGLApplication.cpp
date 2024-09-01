@@ -11,15 +11,19 @@
 #include "VertexArray.h"
 #include "Shader.h"
 #include "Texture.h"
+#include "Camera.h"
+
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+
 #include "TestClearColor.h"
 #include "TestTexture2D.h"
 #include "Test3D.h"
-#include "Camera.h"
+#include "TestAssimp.h"
+#include "TestDuck.h"
 
 int Screen::s_Width = 960;
 int Screen::s_Height = 540;
@@ -106,6 +110,9 @@ int main(void)
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
     testMenu->RegisterTest<test::TestTexture2D>("Texture2D");
     testMenu->RegisterTest<test::Test3D>("3D");
+    testMenu->RegisterTest<test::TestAssimp>("Assimp");
+    testMenu->RegisterTest<test::TestDuck>("Duck");
+
     double lastTime = glfwGetTime();
     FrameData::s_View = myCamera.GetViewMatrix();
     FrameData::s_Projection = glm::perspective(glm::radians(myCamera.GetFOV()), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);
