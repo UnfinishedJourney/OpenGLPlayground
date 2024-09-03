@@ -80,14 +80,3 @@ endif()
 
 # Ensure the proper startup project in Visual Studio
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT OpenGLApplication)
-
-# Ensure shaders and assets directories are copied correctly after build
-add_custom_command(TARGET OpenGLApplication POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${SHADERS_DIR}" "${BUILD_DIR}/shaders"
-)
-
-add_custom_command(TARGET OpenGLApplication POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${ASSETS_DIR}" "${BUILD_DIR}/assets"
-)

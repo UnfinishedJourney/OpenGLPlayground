@@ -19,7 +19,9 @@
 namespace test {
     TestAssimp::TestAssimp()
     {
-        m_Model = std::make_unique<Model>("assets/rubber_duck/scene.gltf");
+        m_Model = std::make_unique<Model>("../assets/rubber_duck/scene.gltf");
+        //m_Model = std::make_unique<Model>("../assets/backpack/backpack.obj");
+        m_Model->ProcessModel();
     }
 
     TestAssimp::~TestAssimp()

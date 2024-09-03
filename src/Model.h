@@ -12,6 +12,10 @@
 #include "IndexBuffer.h"
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <assimp/cimport.h>
+#include <assimp/version.h>
 
 struct Vertex {
 	glm::vec3 Position;
@@ -40,8 +44,12 @@ private:
 	std::string m_FilePath;
 	std::unique_ptr<Shader> m_Shader;
 	std::unique_ptr<Mesh> m_Mesh;
+	std::vector<Mesh> m_Meshes;
 public:
 	void Draw();
 	Model(const std::string& path);
+	void ProcessModel();
+	void ProcessNode(const aiScene* scene, const aiNode* node);
+	void ProcessMesh(const aiScene* scene, const aiMesh* mesh);
 	~Model();
 };

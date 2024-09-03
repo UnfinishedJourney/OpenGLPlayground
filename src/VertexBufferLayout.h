@@ -73,15 +73,20 @@ public:
 	}
 
 	template<typename T>
-	void Push(unsigned int count, size_t size)
+	void Push(unsigned int count, size_t size, bool b_normalized = false)
 	{
-		m_Elements.push_back({ GL_FLOAT, count, 0, size });
+		m_Elements.push_back({ GL_FLOAT, count, b_normalized, size });
 		m_Stride += count * VertexBufferElement::GetSizeOfType(GL_FLOAT);
 	}
 
 	inline std::vector<VertexBufferElement> GetElements() const
 	{
 		return m_Elements;
+	}
+
+	inline void SetStride(size_t stride)
+	{
+		m_Stride = stride;
 	}
 
 	inline unsigned int GetStride() const
