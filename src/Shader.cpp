@@ -84,13 +84,37 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
 unsigned int Shader::CreateShader(const std::string& vertexShader, const std::string& fragmentShader)
 {
     unsigned int program = glCreateProgram();
+    if (program == 0)
+    {
+        std::cerr << "Error creating program object." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
     unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
 
     glAttachShader(program, vs);
     glAttachShader(program, fs);
     glLinkProgram(program);
+
+    /*GLint status;
+    glGetProgramiv(program, GL_LINK_STATUS, &status);
+    if (GL_FALSE == status) {
+        std::cerr << "Failed to link shader program!" << std::endl;
+        GLint logLen;
+        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLen);
+        if (logLen > 0) {
+            std::string(logLen, ' ');
+            GLsizei written;
+            glGetProgramInfoLog(program, logLen, &written, &log[0]);
+            std::cerr << "Program log: " << std::endl << log;
+        }
+    }*/
+
+
     glValidateProgram(program);
+    glDetachShader(program, vs);
+    glDetachShader(program, fs);
 
     glDeleteShader(vs);
     glDeleteShader(fs);
@@ -105,6 +129,11 @@ void Shader::Bind() const
 void Shader::Unbind() const
 {
     GLCall(glUseProgram(0));
+}
+
+void Shader::SetUniformf(const std::string& name, float v) const
+{
+    GLCall(glUniform1f(GetUniformLocation(name), v));
 }
 
 //Set uniforms

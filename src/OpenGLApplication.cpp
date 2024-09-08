@@ -23,6 +23,7 @@
 #include "TestTexture2D.h"
 #include "Test3D.h"
 #include "TestAssimp.h"
+#include "TestScene.h"
 
 int Screen::s_Width = 960;
 int Screen::s_Height = 540;
@@ -110,6 +111,7 @@ int main(void)
     testMenu->RegisterTest<test::TestTexture2D>("Texture2D");
     testMenu->RegisterTest<test::Test3D>("3D");
     testMenu->RegisterTest<test::TestAssimp>("Assimp");
+    testMenu->RegisterTest<test::TestScene>("Lights");
 
     double lastTime = glfwGetTime();
     FrameData::s_View = myCamera.GetViewMatrix();

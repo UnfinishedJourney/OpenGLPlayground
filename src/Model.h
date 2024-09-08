@@ -47,9 +47,14 @@ private:
 	std::vector<Mesh> m_Meshes;
 public:
 	void Draw();
-	Model(const std::string& path);
+	Model(const std::string& path_to_model, const std::string& path_to_shader);
 	void ProcessModel();
+	void AddShader(std::unique_ptr<Shader> shader)
+	{
+		m_Shader = std::move(shader);
+	}
 	void ProcessNode(const aiScene* scene, const aiNode* node);
 	void ProcessMesh(const aiScene* scene, const aiMesh* mesh);
+
 	~Model();
 };

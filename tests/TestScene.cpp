@@ -1,4 +1,4 @@
-#include "TestAssimp.h"
+#include "TestScene.h"
 #include "Renderer.h"
 #include "imgui.h"
 #include <GLFW/glfw3.h>
@@ -17,30 +17,29 @@
 #include <numeric>
 
 namespace test {
-    TestAssimp::TestAssimp()
+    TestScene::TestScene()
     {
-        m_Model = std::make_unique<Model>("../assets/rubber_duck/scene.gltf", "../shaders/Duck.shader");
-        //m_Model = std::make_unique<Model>("../assets/backpack/backpack.obj");
+        m_Scene = std::make_unique<Scene>();
     }
 
-    TestAssimp::~TestAssimp()
-    {
-
-    }
-
-    void TestAssimp::OnUpdate(float deltaTime)
+    TestScene::~TestScene()
     {
 
     }
 
-    void TestAssimp::OnRender()
+    void TestScene::OnUpdate(float deltaTime)
+    {
+
+    }
+
+    void TestScene::OnRender()
     {
         GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
         GLCall(glClear(GL_COLOR_BUFFER_BIT));
-        m_Model->Draw();
+        m_Scene->Draw();
     }
 
-    void TestAssimp::OnImGuiRender()
+    void TestScene::OnImGuiRender()
     {
     }
 }

@@ -7,9 +7,11 @@
 #include <ext.hpp>
 #include <numeric>
 
-Model::Model(const std::string& path)
-	: m_FilePath(path)
+Model::Model(const std::string& path_to_model, const std::string& path_to_shader)
+	: m_FilePath(path_to_model)
 {
+    ProcessModel();
+    m_Shader = std::make_unique<Shader>("../shaders/Duck.shader");
 }
 
 void Model::ProcessModel()
@@ -135,8 +137,6 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* mesh)
             indices.push_back(face.mIndices[j]);
     }
 
-    m_Shader = std::make_unique<Shader>("../shaders/Duck.shader");
-
     GLCall(glEnable(GL_BLEND));
     GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     std::unique_ptr<VertexBuffer> vb = std::make_unique<VertexBuffer>(&vertices[0], sizeof(Vertex) * vertices.size());
@@ -145,7 +145,7 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* mesh)
     layout.Push<float>(3);
     layout.Push<float>(3);
     layout.Push<float>(2);
-    layout.SetStride(sizeof(Vertex));
+    //layout.SetStride(sizeof(Vertex));
     std::unique_ptr<VertexArray> vao = std::make_unique<VertexArray>();
     vao->AddBuffer(*vb, layout);
     std::unique_ptr<IndexBuffer> ib = std::make_unique<IndexBuffer>(indices.data(), indices.size());
@@ -183,7 +183,7 @@ void Mesh::Draw(const std::unique_ptr<Shader>& shader)
 {
 	//we should bind shader from the model i guess
 	Renderer renderer;
-    m_Model = glm::rotate(m_Model, (float)glfwGetTime() * 0.001f, glm::vec3(0.0f, 0.0f, 1.0f));
+    m_Model = glm::rotate(m_Model, (float)glfwGetTime() * 0.001f, glm::vec3(0.0f, 0.0f, 1.0f)); 
 	glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_Model;
 	m_VAO->Bind();
 	m_IB->Bind();
