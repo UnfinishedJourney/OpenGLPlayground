@@ -30,7 +30,8 @@ int Screen::s_Height = 540;
 glm::mat4 FrameData::s_Projection = glm::mat4(1.0f);
 glm::mat4 FrameData::s_View = glm::mat4(1.0f);
 
-MyCamera myCamera;
+Camera camera;
+bool keys[4];
 
 void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode);
 void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY);
@@ -107,15 +108,15 @@ int main(void)
     test::Test* currentTest = nullptr;
     test::TestMenu* testMenu = new test::TestMenu(currentTest);
     currentTest = testMenu;
-    testMenu->RegisterTest<test::TestClearColor>("Clear Color");
-    testMenu->RegisterTest<test::TestTexture2D>("Texture2D");
-    testMenu->RegisterTest<test::Test3D>("3D");
+    //testMenu->RegisterTest<test::TestClearColor>("Clear Color");
+    //testMenu->RegisterTest<test::TestTexture2D>("Texture2D");
+    //testMenu->RegisterTest<test::Test3D>("3D");
     testMenu->RegisterTest<test::TestAssimp>("Assimp");
     testMenu->RegisterTest<test::TestScene>("Lights");
 
     double lastTime = glfwGetTime();
-    FrameData::s_View = myCamera.GetViewMatrix();
-    FrameData::s_Projection = glm::perspective(glm::radians(myCamera.GetFOV()), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);
+    FrameData::s_View = camera.GetViewMatrix();
+    FrameData::s_Projection = glm::perspective(glm::radians(camera.GetFOV()), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);
 
     /* Main render loop */
     while (!glfwWindowShouldClose(window))
@@ -135,11 +136,11 @@ int main(void)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        FrameData::s_View = myCamera.GetViewMatrix();
+        FrameData::s_View = camera.GetViewMatrix();
 
         if (currentTest)
         {
-            currentTest->OnUpdate(0.0f);
+            currentTest->OnUpdate(deltaTime);
             currentTest->OnRender();
             ImGui::Begin("Test");
             if (currentTest != testMenu && ImGui::Button("-<"))
@@ -174,21 +175,62 @@ void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode)
     {
         glfwSetWindowShouldClose(window, GL_TRUE);
     }
+
+    if (key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    {
+        keys[CameraMovement::FORWARD] = true;
+    }
+    if (key == GLFW_KEY_S && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    {
+        keys[CameraMovement::BACKWARD] = true;
+    }
+    if (key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    {
+        keys[CameraMovement::LEFT] = true;
+    }
+    if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    {
+        keys[CameraMovement::RIGHT] = true;
+    }
+
 }
 
 void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY)
 {
-    double fov = myCamera.GetFOV() + deltaY * ZOOM_SENSITIVITY;
+    double fov = camera.GetFOV() + deltaY * ZOOM_SENSITIVITY;
 
     fov = glm::clamp(fov, 1.0, 120.0);
 
-    myCamera.SetFOV((float)fov);
-    FrameData::s_Projection = glm::perspective(glm::radians(myCamera.GetFOV()), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);
+    camera.SetFOV((float)fov);
+    FrameData::s_Projection = glm::perspective(glm::radians(camera.GetFOV()), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);
 }
 
 void update(double elapsedTime, GLFWwindow* gWindow)
 {
-    return;
+    if (keys[CameraMovement::FORWARD])
+    {
+        camera.ProcessKeyboard(CameraMovement::FORWARD, elapsedTime);
+        keys[CameraMovement::FORWARD] = false;
+        FrameData::s_View = camera.GetViewMatrix();
+    }
+    if (keys[CameraMovement::BACKWARD])
+    {
+        camera.ProcessKeyboard(CameraMovement::BACKWARD, elapsedTime);
+        keys[CameraMovement::BACKWARD] = false;
+        FrameData::s_View = camera.GetViewMatrix();
+    }
+    if (keys[CameraMovement::LEFT])
+    {
+        camera.ProcessKeyboard(CameraMovement::LEFT, elapsedTime);
+        keys[CameraMovement::LEFT] = false;
+        FrameData::s_View = camera.GetViewMatrix();
+    }
+    if (keys[CameraMovement::RIGHT])
+    {
+        camera.ProcessKeyboard(CameraMovement::RIGHT, elapsedTime);
+        keys[CameraMovement::RIGHT] = false;
+        FrameData::s_View = camera.GetViewMatrix();
+    }
 }
 
 

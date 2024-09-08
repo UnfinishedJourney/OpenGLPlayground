@@ -29,14 +29,14 @@ namespace test {
 
     void TestScene::OnUpdate(float deltaTime)
     {
-
+        m_Scene->Update(deltaTime);
     }
 
     void TestScene::OnRender()
     {
         GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
         GLCall(glClear(GL_COLOR_BUFFER_BIT));
-        m_Scene->Draw();
+        m_Scene->Render();
     }
 
     void TestScene::OnImGuiRender()

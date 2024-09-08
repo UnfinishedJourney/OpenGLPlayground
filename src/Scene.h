@@ -13,7 +13,12 @@ private:
 
 public:
 	Scene();
-	void Draw();
+	virtual ~Scene()
+	{}
+
+	virtual void Render();
+	virtual void InitScene();
+	virtual void Update(float dt);
 
 	inline void AddModel(std::unique_ptr<Model> model)
 	{

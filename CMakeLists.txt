@@ -10,17 +10,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(DEPS_DIR ${CMAKE_SOURCE_DIR}/Dependencies)
 set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/assets)
-set(BUILD_DIR ${CMAKE_SOURCE_DIR}/build) 
 
-# Glob all .cpp and .h files in src and tests directories
-file(GLOB_RECURSE SRC_FILES 
-    ${CMAKE_SOURCE_DIR}/src/*.cpp 
-    ${CMAKE_SOURCE_DIR}/src/*.h
-)
-file(GLOB_RECURSE TEST_FILES 
-    ${CMAKE_SOURCE_DIR}/tests/*.cpp 
-    ${CMAKE_SOURCE_DIR}/tests/*.h
-)
+# Glob all .cpp and .h files directly in src and tests directories
+file(GLOB_RECURSE SRC_FILES ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/src/*.h)
+file(GLOB_RECURSE TEST_FILES ${CMAKE_SOURCE_DIR}/tests/*.cpp ${CMAKE_SOURCE_DIR}/tests/*.h)
 
 # Vendor files (you may also glob these if desired)
 set(VENDOR_FILES
@@ -34,12 +27,13 @@ set(VENDOR_FILES
     vendor/imgui/imgui_impl_opengl3.cpp
 )
 
+# Create source groups for better organization in Visual Studio
+source_group("src" FILES ${SRC_FILES})
+source_group("tests" FILES ${TEST_FILES})
+source_group("vendor" FILES ${VENDOR_FILES})
+
 # Specify the executable
-add_executable(OpenGLApplication
-    ${SRC_FILES}
-    ${TEST_FILES}
-    ${VENDOR_FILES}
-)
+add_executable(OpenGLApplication ${SRC_FILES} ${TEST_FILES} ${VENDOR_FILES})
 
 # Include directories
 target_include_directories(OpenGLApplication PRIVATE 

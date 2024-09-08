@@ -169,6 +169,13 @@ void Model::Draw()
     }
 }
 
+void Model::Update(float dt)
+{
+    for (auto& m : m_Meshes) {
+        m.Update(dt);
+    }
+}
+
 Mesh::Mesh(std::unique_ptr<VertexArray> vao, std::unique_ptr<VertexBuffer> vb, std::unique_ptr<IndexBuffer> ib, std::unique_ptr<Texture> tex)
 {
 	m_VAO = std::move(vao);
@@ -183,7 +190,6 @@ void Mesh::Draw(const std::unique_ptr<Shader>& shader)
 {
 	//we should bind shader from the model i guess
 	Renderer renderer;
-    m_Model = glm::rotate(m_Model, (float)glfwGetTime() * 0.001f, glm::vec3(0.0f, 0.0f, 1.0f)); 
 	glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_Model;
 	m_VAO->Bind();
 	m_IB->Bind();
@@ -194,5 +200,11 @@ void Mesh::Draw(const std::unique_ptr<Shader>& shader)
 	m_VAO->Unbind();
 	m_IB->Unbind();
 	m_Texture->Unbind();
+}
+
+void Mesh::Update(float dt)
+{
+    m_Model = glm::rotate(m_Model, dt * 0.5f, glm::vec3(0.0f, 0.0f, 1.0f));
+    //m_LastTime = (float)glfwGetTime();
 }
 

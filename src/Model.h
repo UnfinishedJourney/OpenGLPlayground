@@ -28,6 +28,7 @@ public:
 
     Mesh(std::unique_ptr<VertexArray> vao, std::unique_ptr<VertexBuffer> vb, std::unique_ptr<IndexBuffer> ib, std::unique_ptr<Texture> tex);
     void Draw(const std::unique_ptr<Shader>& shader);
+	void Update(float dt);
 private:
 	// mesh data
 	std::unique_ptr<VertexArray> m_VAO;
@@ -47,6 +48,7 @@ private:
 	std::vector<Mesh> m_Meshes;
 public:
 	void Draw();
+	void Update(float dt);
 	Model(const std::string& path_to_model, const std::string& path_to_shader);
 	void ProcessModel();
 	void AddShader(std::unique_ptr<Shader> shader)
