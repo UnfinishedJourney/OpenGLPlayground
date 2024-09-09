@@ -25,11 +25,43 @@ struct Vertex {
 
 class Mesh {
 public:
-
+	Mesh()
+	{}
     Mesh(std::unique_ptr<VertexArray> vao, std::unique_ptr<VertexBuffer> vb, std::unique_ptr<IndexBuffer> ib, std::unique_ptr<Texture> tex);
-    void Draw(const std::unique_ptr<Shader>& shader);
-	void Update(float dt);
-private:
+	virtual ~Mesh()
+	{}
+    virtual void Draw(const std::unique_ptr<Shader>& shader);
+	virtual void Update(float dt);
+	Mesh(const Mesh&) = delete;
+	Mesh& operator=(const Mesh&) = delete;
+	Mesh(Mesh&& other) noexcept {
+		m_VAO = std::move(other.m_VAO);
+		m_VB = std::move(other.m_VB);
+		m_IB = std::move(other.m_IB);
+		m_Texture = std::move(other.m_Texture);
+		m_Model = other.m_Model;
+	}
+
+	Mesh& operator=(Mesh&& other) noexcept {
+		if (this != &other) {
+			m_VAO = std::move(other.m_VAO);
+			m_VB = std::move(other.m_VB);
+			m_IB = std::move(other.m_IB);
+			m_Texture = std::move(other.m_Texture);
+			m_Model = other.m_Model;
+		}
+		return *this;
+	}
+
+	void LeftMatrixMultiplier(glm::mat4 multiplier) {
+		m_Model = multiplier * m_Model;
+	}
+
+	void RightMatrixMultiplier(glm::mat4 multiplier) {
+		m_Model = m_Model * multiplier;
+	}
+
+protected:
 	// mesh data
 	std::unique_ptr<VertexArray> m_VAO;
 	std::unique_ptr<VertexBuffer> m_VB;

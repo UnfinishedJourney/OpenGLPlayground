@@ -11,7 +11,7 @@ Model::Model(const std::string& path_to_model, const std::string& path_to_shader
 	: m_FilePath(path_to_model)
 {
     ProcessModel();
-    m_Shader = std::make_unique<Shader>("../shaders/Duck.shader");
+    m_Shader = std::make_unique<Shader>(path_to_shader);
 }
 
 void Model::ProcessModel()
@@ -192,14 +192,14 @@ void Mesh::Draw(const std::unique_ptr<Shader>& shader)
 	Renderer renderer;
 	glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_Model;
 	m_VAO->Bind();
+    shader->Bind();
 	m_IB->Bind();
 	m_Texture->Bind();
-	shader->Bind();
 	shader->SetUniformMat4f("u_MVP", mvp);
 	renderer.Draw(*m_VAO, *m_IB, *shader);
 	m_VAO->Unbind();
 	m_IB->Unbind();
-	m_Texture->Unbind();
+	//m_Texture->Unbind();
 }
 
 void Mesh::Update(float dt)
