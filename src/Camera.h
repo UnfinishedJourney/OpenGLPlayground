@@ -15,14 +15,10 @@ class Camera
 {
 public:
     Camera()
-    {
-
-    }
+    {}
 
     ~Camera()
-    {
-
-    }
+    {}
 
     void ProcessKeyboard(CameraMovement direction, float deltaTime)
     {
@@ -37,23 +33,19 @@ public:
             m_CameraPos += glm::normalize(glm::cross(m_CameraFront, m_CameraUp)) * velocity;
     }
 
-	void MovePos(glm::vec3 deltaCameraPos)
-	{
+	void MovePos(glm::vec3 deltaCameraPos) {
 		m_CameraPos += deltaCameraPos;
 	}
 
-	glm::mat4 GetViewMatrix() const
-	{
+	glm::mat4 GetViewMatrix() const {
 		return glm::lookAt(m_CameraPos, m_CameraPos + m_CameraFront, m_CameraUp);
 	}
 
-	float GetFOV() const
-	{
+	float GetFOV() const {
 		return m_FOV;
 	}
 
-    void SetFOV(float fov)
-    {
+    void SetFOV(float fov) {
         m_FOV = fov;
     }
 

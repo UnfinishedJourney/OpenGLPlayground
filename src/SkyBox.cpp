@@ -3,7 +3,8 @@
 #include <GL/glew.h>
 #include <vector>
 
-SkyBox::SkyBox(float size)
+SkyBox::SkyBox(GLuint texID, float size)
+    : m_TexID(texID), m_Size(size)
 {
     float side2 = size * 0.5f;
     std::vector<GLfloat> v = {
@@ -57,15 +58,12 @@ SkyBox::SkyBox(float size)
 
     VertexBufferLayout layout;
     layout.Push<float>(3);
-    //layout.Push<float>(3);
-    //layout.Push<float>(2);
-    //layout.SetStride(sizeof(Vertex));
     m_VAO = std::make_unique<VertexArray>();
     m_VAO->AddBuffer(*m_VB, layout);
     m_IB = std::make_unique<IndexBuffer>(el.data(), el.size());
 }
 
-void SkyBox::Draw(const std::unique_ptr<Shader>& shader, GLuint m_TexID) const
+void SkyBox::Draw(const std::unique_ptr<Shader>& shader) const
 {
     Renderer renderer;
     glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * glm::mat4(1.0);

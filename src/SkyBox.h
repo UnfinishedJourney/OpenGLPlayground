@@ -7,9 +7,12 @@
 class SkyBox
 {
 public:
-    SkyBox(float size = 50.0f);
+    SkyBox(GLuint texID, float size = 50.0f);
+	void Draw(const std::unique_ptr<Shader>& shader) const;
+private:
 	std::unique_ptr<VertexArray> m_VAO;
 	std::unique_ptr<VertexBuffer> m_VB;
 	std::unique_ptr<IndexBuffer> m_IB;
-	void Draw(const std::unique_ptr<Shader>& shader, GLuint m_TexID) const;
+	float m_Size = 50.0;
+	GLuint m_TexID;
 };

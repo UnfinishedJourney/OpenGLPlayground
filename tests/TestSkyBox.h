@@ -26,7 +26,6 @@ namespace test {
 	private:
 		std::unique_ptr<SkyBox> m_SkyBox;
 		std::unique_ptr<Shader> m_Shader;
-		GLuint m_TexID;
 
 		glm::mat4 m_Model;
 	};
