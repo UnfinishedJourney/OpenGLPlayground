@@ -3,7 +3,8 @@
 
 test::TestSimpleCube::TestSimpleCube()
 {
-    std::shared_ptr<Mesh> cubeMesh = std::make_shared<Cube>();
+    m_ResourceManager = std::make_unique<ResourceManager>();
+    //std::shared_ptr<Mesh> cubeMesh = m_ResourceManager->GetMesh("cube");
     MeshLayout cubeMeshLayout = {
         true,
         false,
@@ -12,21 +13,20 @@ test::TestSimpleCube::TestSimpleCube()
         true
     };
 
-    MeshHelper meshHelper;
-
-    std::shared_ptr<MeshComponent> meshComponent = meshHelper.CreateMeshComponent(cubeMesh, cubeMeshLayout);
-    std::shared_ptr<Shader> shader = std::make_shared<Shader>("../shaders/Basic.shader");
-    std::shared_ptr<Texture> texture = std::make_shared<Texture>("../assets/cute_dog.png");
+    std::shared_ptr<MeshComponent> meshComponent = m_ResourceManager->GetMeshComponent("cube", cubeMeshLayout);
+    std::shared_ptr<Shader> shader = m_ResourceManager->GetShader("basic");
+    std::shared_ptr<Texture> texture = m_ResourceManager->GetTexture("cute_dog");
 
     std::shared_ptr<Material> material = std::make_shared<Material>();
+    std::unique_ptr<Transform> transform = std::make_unique<Transform>();
+    transform->SetRotation(glm::vec4(0.5, 1.0, 0.0, 0.5));
+
     material->AddTexture(texture);
     material->SetShader(shader);
 
-    glm::mat4 modelMatrix = glm::mat4(1.0);
-    m_Cube = std::make_unique<RenderObject>(meshComponent, material, modelMatrix);
+    m_Cube = std::make_unique<MovingCube>(meshComponent, material, std::move(transform));
     GLCall(glEnable(GL_BLEND));
     GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-
 }
 
 test::TestSimpleCube::~TestSimpleCube()
@@ -35,13 +35,13 @@ test::TestSimpleCube::~TestSimpleCube()
 
 void test::TestSimpleCube::OnUpdate(float deltaTime)
 {
+    m_Cube->Update(deltaTime);
 }
 
 void test::TestSimpleCube::OnRender()
 {
     GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
     GLCall(glClear(GL_COLOR_BUFFER_BIT));
-
     {
         m_Cube->Draw();
     }

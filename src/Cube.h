@@ -1,7 +1,7 @@
 #pragma once
 #include "Mesh.h"
 
-class Cube : public Mesh {
+struct Cube: Mesh {
 public:
 	Cube();
 

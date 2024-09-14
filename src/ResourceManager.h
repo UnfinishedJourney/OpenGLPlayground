@@ -4,40 +4,49 @@
 #include "Material.h"
 #include "Shader.h"
 
-/*class ResourceManager {
+struct MeshKey {
+    std::string name;
+    MeshLayout layout;
+
+    // Define equality operator for comparison
+    bool operator==(const MeshKey& other) const {
+        return name == other.name && layout == other.layout;
+    }
+};
+
+namespace std {
+    template <>
+    struct hash<MeshKey> {
+        std::size_t operator()(const MeshKey& key) const {
+            std::size_t h1 = std::hash<std::string>()(key.name);
+            std::size_t h2 = std::hash<MeshLayout>()(key.layout);
+            return h1 ^ (h2 << 1); // Combine the hashes
+        }
+    };
+}
+
+class ResourceManager {
 public:
-    std::shared_ptr<Mesh> GetMesh(const std::string& meshName) {
-        // Check if the mesh already exists
-        if (m_Meshes.find(meshName) != m_Meshes.end()) {
-            return m_Meshes[meshName]; // Return the existing mesh
-        }
-        // Otherwise, load it (placeholder loading logic)
-        std::shared_ptr<Mesh> newMesh = std::make_shared<Mesh>();
-        m_Meshes[meshName] = newMesh;
-        return newMesh;
-    }
 
-    // Load or retrieve an existing material
-    std::shared_ptr<Material> GetMaterial(const std::string& materialName) {
-        if (m_Materials.find(materialName) != m_Materials.end()) {
-            return m_Materials[materialName]; // Return the existing material
-        }
-        // Otherwise, create/load a new material (placeholder)
-        std::shared_ptr<Material> newMaterial = std::make_shared<Material>();
-        m_Materials[materialName] = newMaterial;
-        return newMaterial;
-    }
+    std::shared_ptr<Texture> GetTexture(const std::string& textureName);
+    bool DeleteTexture(const std::string& textureName);
 
-    // Unload all resources
-    void UnloadAll() {
-        m_Meshes.clear();
-        m_MeshComponents.clear();
-        m_Materials.clear();
-    }
+    std::shared_ptr<Mesh> GetMesh(const std::string& meshName);
+    bool DeleteMesh(const std::string& meshName);
+
+    std::shared_ptr<Model> GetModel(const std::string& modelName);
+    bool DeleteModel(const std::string& modelName);
+
+    std::shared_ptr<Shader> GetShader(const std::string& shaderName);
+    bool DeleteShader(const std::string& shaderName);
+
+    std::shared_ptr<MeshComponent> GetMeshComponent(const std::string& meshName, const MeshLayout& layout);
+    bool DeleteMeshComponent(const std::string& meshName, MeshLayout layout);
 
 private:
     std::unordered_map<std::string, std::shared_ptr<Mesh>> m_Meshes;
-    std::unordered_map<std::string, std::shared_ptr<MeshComponent>> m_MeshComponents;
+    std::unordered_map<MeshKey, std::shared_ptr<MeshComponent>> m_MeshComponents;
     std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
-    std::unordered_map<std::string, std::shared_ptr<Material>> m_Materials;
-};*/
+    std::unordered_map<std::string, std::shared_ptr<Texture>> m_Textures;
+    std::unordered_map<std::string, std::shared_ptr<Model>> m_Models;
+};

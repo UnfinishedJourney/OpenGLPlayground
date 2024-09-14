@@ -11,69 +11,14 @@
 
 class MeshHelper;
 
-class Mesh {
-public:
-    Mesh() = default;
-    virtual ~Mesh() = default;
-
-    
-    const std::vector<glm::vec3>& GetPositions() const {
-        return m_Positions;
-    }
-
-    const std::vector<glm::vec3>& GetNormals() const {
-        return m_Normals;
-    }
-
-    const std::vector<glm::vec3>& GetBinormals() const {
-        return m_Binormals;
-    }
-
-    const std::vector<glm::vec3>& GetTangents() const {
-        return m_Tangents;
-    }
-
-    const std::vector<glm::vec2>& GetUVs() const {
-        return m_UVs;
-    }
-
-    const std::vector<unsigned int>& GetIndices() const {
-        return m_Indices;
-    }
-
-    void SetPositions(const std::vector<glm::vec3>& positions) {
-        m_Positions = positions;
-    }
-
-    void SetNormals(const std::vector<glm::vec3>& normals) {
-        m_Normals = normals;
-    }
-
-    void SetBinormals(const std::vector<glm::vec3>& binormals) {
-        m_Binormals = binormals;
-    }
-
-    void SetTangents(const std::vector<glm::vec3>& tangents) {
-        m_Tangents = tangents;
-    }
-
-    void SetUVs(const std::vector<glm::vec2>& uvs) {
-        m_UVs = uvs;
-    }
-
-    void SetIndices(const std::vector<unsigned int>& indices) {
-        m_Indices = indices;
-    }
-
-    friend MeshHelper;
-
-protected:
-    std::vector<glm::vec3> m_Positions;
-    std::vector<glm::vec3> m_Normals;
-    std::vector<glm::vec3> m_Binormals;
-    std::vector<glm::vec3> m_Tangents;
-    std::vector<glm::vec2> m_UVs;
-    std::vector<unsigned int> m_Indices;
+struct Mesh
+{
+    std::vector<glm::vec3> positions;
+    std::vector<glm::vec3> normals;
+    std::vector<glm::vec3> binormals;
+    std::vector<glm::vec3> tangents;
+    std::vector<glm::vec2> uvs;
+    std::vector<unsigned int> indices;
 };
 
 class MeshComponent {
@@ -105,7 +50,28 @@ struct MeshLayout
     bool hasBinormals;
     bool hasTangents;
     bool hasUVs;
+
+    bool operator==(const MeshLayout& other) const {
+        return hasPositions == other.hasPositions &&
+            hasNormals == other.hasNormals &&
+            hasTangents == other.hasTangents &&
+            hasBinormals == other.hasBinormals &&
+            hasUVs == other.hasUVs;
+    }
 };
+
+namespace std {
+    template <>
+    struct hash<MeshLayout> {
+        std::size_t operator()(const MeshLayout& layout) const {
+            return (std::hash<bool>()(layout.hasPositions) ^
+                (std::hash<bool>()(layout.hasNormals) << 1) ^
+                (std::hash<bool>()(layout.hasTangents) << 2) ^
+                (std::hash<bool>()(layout.hasBinormals) << 3) ^
+                (std::hash<bool>()(layout.hasUVs) << 4));
+        }
+    };
+}
 
 class MeshHelper {
 public:

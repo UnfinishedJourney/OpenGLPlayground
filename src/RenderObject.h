@@ -2,25 +2,42 @@
 
 #include "Mesh.h"
 #include "Material.h"
+#include "Transform.h"
 
 class RenderObject {
 public:
-    RenderObject(std::shared_ptr<MeshComponent> meshComp, std::shared_ptr<Material> mat, glm::mat4 modelMatrix)
-        : m_MeshComponent(meshComp), m_Material(mat), m_ModelMatrix(modelMatrix)
+    RenderObject(std::shared_ptr<MeshComponent> meshComp, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
+        : m_MeshComponent(meshComp), m_Material(mat), m_Transform(std::move(transform))
     {}
 
     void Draw() {
         m_MeshComponent->Bind();
         m_Material->Bind();
-        glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_ModelMatrix;
+        glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_Transform->GetModelMatrix();
         m_Material->GetShader()->SetUniformMat4f("u_MVP", mvp);
         GLCall(glDrawElements(GL_TRIANGLES, m_MeshComponent->GetNVerts(), GL_UNSIGNED_INT, nullptr));
     }
 
+    std::unique_ptr<Transform>& GetTransform()
+    {
+        return m_Transform;
+    }
 
+    virtual void Update(float deltaTime) = 0; 
 
-private:
+protected:
     std::shared_ptr<MeshComponent> m_MeshComponent;
     std::shared_ptr<Material> m_Material;
-    glm::mat4 m_ModelMatrix;
+    std::unique_ptr<Transform> m_Transform;
+};
+
+class StaticObject : public RenderObject {
+public:
+    StaticObject(std::shared_ptr<MeshComponent> meshComp, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
+        : RenderObject(meshComp, mat, std::move(transform))
+    {}
+
+    void Update(float deltaTime) override {
+        
+    }
 };

@@ -16,14 +16,15 @@ void MeshComponent::Unbind() const
 
 std::shared_ptr<MeshComponent> MeshHelper::CreateMeshComponent(std::shared_ptr<Mesh> mesh, const MeshLayout& layout) const
 {
+
     std::vector<float> vertices;
 
-    std::vector<glm::vec3> positions = mesh->GetPositions();
+    const std::vector<glm::vec3>& positions = mesh->positions;
+    const std::vector<glm::vec3>& normals = mesh->normals;
+    const std::vector<glm::vec3>& tangents = mesh->tangents;
+    const std::vector<glm::vec2>& texCoords = mesh->uvs;
 
-    std::vector<glm::vec3> normals = layout.hasNormals ? mesh->GetNormals() : std::vector<glm::vec3>();
-    std::vector<glm::vec3> tangents = layout.hasTangents ? mesh->GetTangents() : std::vector<glm::vec3>();
-    std::vector<glm::vec2> texCoords = layout.hasUVs ? mesh->GetUVs() : std::vector<glm::vec2>();
-    std::vector<unsigned int> indices = mesh->GetIndices();
+    const std::vector<unsigned int>& indices = mesh->indices;
 
     assert(!layout.hasTangents || !tangents.empty());
     assert(!layout.hasNormals  || !normals.empty());
@@ -70,3 +71,4 @@ std::shared_ptr<MeshComponent> MeshHelper::CreateMeshComponent(std::shared_ptr<M
 
     return std::make_shared<MeshComponent>(MeshComponent( vao, vb, ib, indices.size()));
 }
+

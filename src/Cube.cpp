@@ -2,7 +2,7 @@
 
 Cube::Cube()
 {
-    m_Positions = {
+    positions = {
         { -0.5f, -0.5f, -0.5f},
         {0.5f, -0.5f, -0.5f},
         {0.5f,  0.5f, -0.5f},
@@ -13,7 +13,7 @@ Cube::Cube()
         {-0.5f,  0.5f,  0.5f}
     };
 
-    m_UVs = {
+    uvs = {
         {0.0f, 0.0f},
         {1.0f, 0.0f},
         {1.0f, 1.0f},
@@ -24,7 +24,7 @@ Cube::Cube()
         {0.0f, 1.0f}
     };
 
-    m_Indices = {
+    indices = {
         // Front face
         0, 1, 2,
         2, 3, 0,

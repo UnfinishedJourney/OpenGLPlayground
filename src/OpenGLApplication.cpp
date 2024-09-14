@@ -19,9 +19,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-//#include "AllTests.h"
-#include "TestClearColor.h"
-#include "TestSimpleCube.h"
+#include "AllTests.h"
 
 int Screen::s_Width = 960;
 int Screen::s_Height = 540;
@@ -108,9 +106,9 @@ int main(void)
     currentTest = testMenu;
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
     testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
+    testMenu->RegisterTest<test::TestAssimp>("Assimp");
     //testMenu->RegisterTest<test::TestTexture2D>("Texture2D");
     //testMenu->RegisterTest<test::Test3D>("3D");
-    //testMenu->RegisterTest<test::TestAssimp>("Assimp");
     //testMenu->RegisterTest<test::TestScene>("Lights");
     //testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
 
