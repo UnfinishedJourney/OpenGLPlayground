@@ -12,7 +12,7 @@ namespace test {
 
 	class MovingDuck : public RenderObject {
 	public:
-		MovingDuck(std::shared_ptr<MeshComponent> meshComp, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
+		MovingDuck(std::shared_ptr<MeshBuffer> meshComp, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
 			: RenderObject(meshComp, mat, std::move(transform))
 		{}
 
@@ -32,7 +32,6 @@ namespace test {
 		void OnImGuiRender() override;
 	private:
 		std::unique_ptr<MovingDuck> m_DuckRenderObject;
-		std::shared_ptr<Model> m_DuckModel;
 		std::unique_ptr<ResourceManager> m_ResourceManager;
 	};
 }

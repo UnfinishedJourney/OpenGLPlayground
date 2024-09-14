@@ -2,21 +2,8 @@
 
 #include <iostream>
 
-void MeshComponent::Bind() const
+MeshBuffer::MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& layout)
 {
-    m_VAO->Bind();
-    m_IB->Bind();
-}
-
-void MeshComponent::Unbind() const
-{
-    m_VAO->Unbind();
-    m_IB->Unbind();
-}
-
-std::shared_ptr<MeshComponent> MeshHelper::CreateMeshComponent(std::shared_ptr<Mesh> mesh, const MeshLayout& layout) const
-{
-
     std::vector<float> vertices;
 
     const std::vector<glm::vec3>& positions = mesh->positions;
@@ -27,8 +14,8 @@ std::shared_ptr<MeshComponent> MeshHelper::CreateMeshComponent(std::shared_ptr<M
     const std::vector<unsigned int>& indices = mesh->indices;
 
     assert(!layout.hasTangents || !tangents.empty());
-    assert(!layout.hasNormals  || !normals.empty());
-    assert(!layout.hasUVs      || !texCoords.empty());
+    assert(!layout.hasNormals || !normals.empty());
+    assert(!layout.hasUVs || !texCoords.empty());
 
     for (size_t i = 0; i < positions.size(); i++) {
         vertices.push_back(positions[i].x);
@@ -53,7 +40,7 @@ std::shared_ptr<MeshComponent> MeshHelper::CreateMeshComponent(std::shared_ptr<M
         }
     }
 
-    std::shared_ptr<VertexBuffer> vb = std::make_shared<VertexBuffer>(&vertices[0], sizeof(float) * vertices.size());
+    m_VB = std::make_unique<VertexBuffer>(&vertices[0], sizeof(float) * vertices.size());
 
     VertexBufferLayout vb_layout;
 
@@ -65,10 +52,20 @@ std::shared_ptr<MeshComponent> MeshHelper::CreateMeshComponent(std::shared_ptr<M
     if (layout.hasUVs)
         vb_layout.Push<float>(2);
 
-    std::shared_ptr<VertexArray> vao = std::make_shared<VertexArray>();
-    vao->AddBuffer(*vb, vb_layout);
-    std::shared_ptr<IndexBuffer> ib = std::make_shared<IndexBuffer>(indices.data(), indices.size());
-
-    return std::make_shared<MeshComponent>(MeshComponent( vao, vb, ib, indices.size()));
+    m_VAO = std::make_unique<VertexArray>();
+    m_VAO->AddBuffer(*m_VB, vb_layout);
+    m_IB = std::make_unique<IndexBuffer>(indices.data(), indices.size());
+    m_NVerts = indices.size();
 }
 
+void MeshBuffer::Bind() const
+{
+    m_VAO->Bind();
+    m_IB->Bind();
+}
+
+void MeshBuffer::Unbind() const
+{
+    m_VAO->Unbind();
+    m_IB->Unbind();
+}

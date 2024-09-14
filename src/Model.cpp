@@ -12,6 +12,7 @@ Model::Model(const std::string& path_to_model)
     : m_FilePath(path_to_model)
 {
     ProcessModel();
+    m_MeshBuffersCache.resize(m_Meshes.size());
 }
 
 void Model::ProcessModel()
@@ -19,7 +20,7 @@ void Model::ProcessModel()
     const aiScene* scene = aiImportFile(m_FilePath.c_str(), aiProcess_Triangulate);
 
     if (!scene || !scene->HasMeshes()) {
-        printf("Unable to load file\n");
+        std::cerr << "Unable to load file\n";
         exit(255);
     }
 
@@ -91,9 +92,24 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh)
     m_Meshes.push_back(myMesh);
 }
 
-
-Model::~Model()
+std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLayout& layout)
 {
+    if (meshIndex >= m_Meshes.size())
+    {
+        std::cerr << "Invalid mesh index: " << meshIndex << "\n";
+        return nullptr;
+    }
+
+    auto& cache = m_MeshBuffersCache[meshIndex];
+    auto it = cache.find(layout);
+    if (it != cache.end())
+    {
+        return it->second;
+    }
+    else
+    {
+        auto meshBuffer = std::make_shared<MeshBuffer>(m_Meshes[meshIndex], layout);
+        cache[layout] = meshBuffer;
+        return meshBuffer;
+    }
 }
-
-

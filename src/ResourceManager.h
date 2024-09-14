@@ -40,12 +40,12 @@ public:
     std::shared_ptr<Shader> GetShader(const std::string& shaderName);
     bool DeleteShader(const std::string& shaderName);
 
-    std::shared_ptr<MeshComponent> GetMeshComponent(const std::string& meshName, const MeshLayout& layout);
-    bool DeleteMeshComponent(const std::string& meshName, MeshLayout layout);
+    std::shared_ptr<MeshBuffer> GetMeshBuffer(const std::string& meshName, const MeshLayout& layout);
+    bool DeleteMeshBuffer(const std::string& meshName, MeshLayout layout);
 
 private:
     std::unordered_map<std::string, std::shared_ptr<Mesh>> m_Meshes;
-    std::unordered_map<MeshKey, std::shared_ptr<MeshComponent>> m_MeshComponents;
+    std::unordered_map<MeshKey, std::shared_ptr<MeshBuffer>> m_MeshBuffers;
     std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
     std::unordered_map<std::string, std::shared_ptr<Texture>> m_Textures;
     std::unordered_map<std::string, std::shared_ptr<Model>> m_Models;

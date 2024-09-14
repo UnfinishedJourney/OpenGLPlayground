@@ -19,24 +19,16 @@ class Model
 {
 public:
 	Model(const std::string& path_to_model);
-	~Model();
-	void ProcessModel();
-	void ProcessNode(const aiScene* scene, const aiNode* node);
-	void ProcessMesh(const aiScene* scene, const aiMesh* mesh);
 
-	std::shared_ptr<Mesh> getMesh(int i)
-	{
-		if (i < m_Meshes.size())
-			return m_Meshes[i];
-		else
-		{
-			std::cout << "Wrong index!\n";
-			return std::shared_ptr<Mesh>();
-		}
-	}
+	size_t GetMeshCount() const { return m_Meshes.size(); }
+	std::shared_ptr<MeshBuffer> GetMeshBuffer(size_t meshIndex, const MeshLayout& layout);
 
 private:
 	std::string m_FilePath;
 	std::vector<std::shared_ptr<Mesh>> m_Meshes;
 	std::vector<std::shared_ptr<Texture>> m_Textures;
+	std::vector<std::unordered_map<MeshLayout, std::shared_ptr<MeshBuffer>>> m_MeshBuffersCache;
+	void ProcessModel();
+	void ProcessNode(const aiScene* scene, const aiNode* node);
+	void ProcessMesh(const aiScene* scene, const aiMesh* mesh);
 };

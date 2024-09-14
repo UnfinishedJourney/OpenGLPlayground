@@ -6,7 +6,8 @@
 
 std::unordered_map<std::string, std::string> G_Texture_Path
 {
-	{"cute_dog", "../assets/cute_dog.png"}
+	{"cuteDog", "../assets/cute_dog.png"},
+	{"duckDiffuse", "../assets/rubber_duck/textures/Duck_baseColor.png"}
 };
 
 std::shared_ptr<Texture> ResourceManager::GetTexture(const std::string& textureName)
@@ -54,7 +55,7 @@ bool ResourceManager::DeleteMesh(const std::string& meshName)
 
 std::unordered_map<std::string, std::string> G_Model_Path
 {
-	{"duck", "../assets/rubber_duck/scene.gltf"}
+	{"duck", "../assets/rubber_duck/scene.gltf"},
 };
 
 std::shared_ptr<Model> ResourceManager::GetModel(const std::string& modelName)
@@ -80,7 +81,8 @@ bool ResourceManager::DeleteModel(const std::string& modelName)
 
 std::unordered_map<std::string, std::string> G_Shader_Path
 {
-	{"basic", "../shaders/Basic.shader"}
+	{"basic", "../shaders/Basic.shader"},
+	{"duckShader", "../shaders/Duck.shader"}
 };
 
 std::shared_ptr<Shader> ResourceManager::GetShader(const std::string& shaderName)
@@ -104,24 +106,23 @@ bool ResourceManager::DeleteShader(const std::string& shaderName)
 	return m_Shaders.erase(shaderName);
 }
 
-std::shared_ptr<MeshComponent> ResourceManager::GetMeshComponent(const std::string& meshName, const MeshLayout& layout)
+std::shared_ptr<MeshBuffer> ResourceManager::GetMeshBuffer(const std::string& meshName, const MeshLayout& layout)
 {
 	MeshKey key = { meshName, layout };
 
-	if (m_MeshComponents.find(key) != m_MeshComponents.end())
-		return m_MeshComponents[key];
+	if (m_MeshBuffers.find(key) != m_MeshBuffers.end())
+		return m_MeshBuffers[key];
 
-	MeshHelper meshHelper;
 
 	auto mesh = GetMesh(meshName);
 
-	m_MeshComponents[key] = meshHelper.CreateMeshComponent(mesh, layout);
-	return m_MeshComponents[key];
+	m_MeshBuffers[key] = std::make_shared<MeshBuffer>(mesh, layout);
+	return m_MeshBuffers[key];
 
 }
 
-bool ResourceManager::DeleteMeshComponent(const std::string& meshName, MeshLayout layout)
+bool ResourceManager::DeleteMeshBuffer(const std::string& meshName, MeshLayout layout)
 {
 	MeshKey key = { meshName, layout };
-	return m_MeshComponents.erase(key);
+	return m_MeshBuffers.erase(key);
 }

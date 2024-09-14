@@ -6,16 +6,16 @@
 
 class RenderObject {
 public:
-    RenderObject(std::shared_ptr<MeshComponent> meshComp, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
-        : m_MeshComponent(meshComp), m_Material(mat), m_Transform(std::move(transform))
+    RenderObject(std::shared_ptr<MeshBuffer> meshComp, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
+        : m_MeshBuffer(meshComp), m_Material(mat), m_Transform(std::move(transform))
     {}
 
     void Draw() {
-        m_MeshComponent->Bind();
+        m_MeshBuffer->Bind();
         m_Material->Bind();
         glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_Transform->GetModelMatrix();
         m_Material->GetShader()->SetUniformMat4f("u_MVP", mvp);
-        GLCall(glDrawElements(GL_TRIANGLES, m_MeshComponent->GetNVerts(), GL_UNSIGNED_INT, nullptr));
+        GLCall(glDrawElements(GL_TRIANGLES, m_MeshBuffer->GetNVerts(), GL_UNSIGNED_INT, nullptr));
     }
 
     std::unique_ptr<Transform>& GetTransform()
@@ -26,14 +26,14 @@ public:
     virtual void Update(float deltaTime) = 0; 
 
 protected:
-    std::shared_ptr<MeshComponent> m_MeshComponent;
+    std::shared_ptr<MeshBuffer> m_MeshBuffer;
     std::shared_ptr<Material> m_Material;
     std::unique_ptr<Transform> m_Transform;
 };
 
 class StaticObject : public RenderObject {
 public:
-    StaticObject(std::shared_ptr<MeshComponent> meshComp, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
+    StaticObject(std::shared_ptr<MeshBuffer> meshComp, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
         : RenderObject(meshComp, mat, std::move(transform))
     {}
 

@@ -21,28 +21,6 @@ struct Mesh
     std::vector<unsigned int> indices;
 };
 
-class MeshComponent {
-public:
-    MeshComponent(std::shared_ptr<VertexArray> vao, std::shared_ptr<VertexBuffer> vb, std::shared_ptr<IndexBuffer> ib, size_t nVerts)
-        : m_VAO(vao), m_VB(std::move(vb)), m_IB(std::move(ib)), m_NVerts(nVerts)
-    {}
-
-    void Bind() const;
-    void Unbind() const;
-    size_t GetNVerts() const
-    {
-        return m_NVerts;
-    }
-
-    friend MeshHelper;
-
-private:
-    std::shared_ptr<VertexArray> m_VAO;
-    std::shared_ptr<VertexBuffer> m_VB;
-    std::shared_ptr<IndexBuffer> m_IB;
-    size_t m_NVerts;
-};
-
 struct MeshLayout
 {
     bool hasPositions;
@@ -60,6 +38,30 @@ struct MeshLayout
     }
 };
 
+class MeshBuffer {
+public:
+    MeshBuffer(std::unique_ptr<VertexArray> vao, std::unique_ptr<VertexBuffer> vb, std::unique_ptr<IndexBuffer> ib, size_t nVerts)
+        : m_VAO(std::move(vao)), m_VB(std::move(vb)), m_IB(std::move(ib)), m_NVerts(nVerts)
+    {}
+
+    MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& layout);
+
+    void Bind() const;
+    void Unbind() const;
+    size_t GetNVerts() const
+    {
+        return m_NVerts;
+    }
+
+    friend MeshHelper;
+
+private:
+    std::unique_ptr<VertexArray> m_VAO;
+    std::unique_ptr<VertexBuffer> m_VB;
+    std::unique_ptr<IndexBuffer> m_IB;
+    size_t m_NVerts;
+};
+
 namespace std {
     template <>
     struct hash<MeshLayout> {
@@ -72,8 +74,3 @@ namespace std {
         }
     };
 }
-
-class MeshHelper {
-public:
-    std::shared_ptr<MeshComponent> CreateMeshComponent(std::shared_ptr<Mesh> mesh, const MeshLayout& layout) const;
-};
