@@ -25,6 +25,7 @@ set(VENDOR_FILES
     vendor/imgui/imgui_widgets.cpp
     vendor/imgui/imgui_impl_glfw.cpp
     vendor/imgui/imgui_impl_opengl3.cpp
+	${DEPS_DIR}/GLAD/src/glad.c
 )
 
 # Create source groups for better organization in Visual Studio
@@ -38,7 +39,7 @@ add_executable(OpenGLApplication ${SRC_FILES} ${TEST_FILES} ${VENDOR_FILES})
 # Include directories
 target_include_directories(OpenGLApplication PRIVATE 
     ${DEPS_DIR}/GLFW/include
-    ${DEPS_DIR}/GLEW/include
+	${DEPS_DIR}/GLAD/include
     ${DEPS_DIR}/glm
     ${DEPS_DIR}/assimp_related/include
     ${CMAKE_SOURCE_DIR}/vendor/imgui
@@ -46,9 +47,6 @@ target_include_directories(OpenGLApplication PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/tests
 )
-
-# Add definitions for static GLEW
-add_definitions(-DGLEW_STATIC)
 
 # Link directories and libraries for 32-bit and 64-bit configurations
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)  # 64-bit
@@ -58,7 +56,6 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)  # 64-bit
         User32
         Gdi32
         Shell32
-        ${DEPS_DIR}/GLEW/lib/Release/x64/glew32s.lib
         ${DEPS_DIR}/assimp_related/lib/assimp-vc143-mt.lib
     )
 else()  # 32-bit
@@ -68,7 +65,6 @@ else()  # 32-bit
         User32
         Gdi32
         Shell32
-        ${DEPS_DIR}/GLEW/lib/Release/Win32/glew32s.lib
     )
 endif()
 

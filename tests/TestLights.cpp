@@ -19,16 +19,16 @@
 
 namespace test {
 
-    void LightObject::Draw()
+    void LightObject::Render()
     {
         m_MeshBuffer->Bind();
         m_Material->Bind();
         glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_Transform->GetModelMatrix();
-        m_Material->GetShader()->SetUniformMat4f("u_MVP", mvp);
+        m_Material->GetShader()->SetUniform("u_MVP", mvp);
         glm::mat4 mv = FrameData::s_View * m_Transform->GetModelMatrix();
-        m_Material->GetShader()->SetUniformMat4f("u_ModelView", mv);
+        m_Material->GetShader()->SetUniform("u_ModelView", mv);
         glm::mat3 normalMatrix = glm::mat3(mv);
-        m_Material->GetShader()->SetUniformMat3f("u_NormalMatrix", normalMatrix);
+        m_Material->GetShader()->SetUniform("u_NormalMatrix", normalMatrix);
         GLCall(glDrawElements(GL_TRIANGLES, m_MeshBuffer->GetNVerts(), GL_UNSIGNED_INT, nullptr));
     }
 

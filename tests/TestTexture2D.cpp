@@ -60,7 +60,7 @@ namespace test {
             glm::mat4 model = glm::translate(glm::mat4(1.0f), m_TranslationA);
             glm::mat4 mvp = m_Proj * m_View * model;
             m_Shader->Bind();
-            m_Shader->SetUniformMat4f("u_MVP", mvp);
+            m_Shader->SetUniform("u_MVP", mvp);
             renderer.Draw(*m_VAO, *m_IB, *m_Shader);
         }
 
@@ -68,7 +68,7 @@ namespace test {
             glm::mat4 model = glm::translate(glm::mat4(1.0f), m_TranslationB);
             glm::mat4 mvp = m_Proj * m_View * model;
             m_Shader->Bind();
-            m_Shader->SetUniformMat4f("u_MVP", mvp);
+            m_Shader->SetUniform("u_MVP", mvp);
             renderer.Draw(*m_VAO, *m_IB, *m_Shader);
         }
 	}

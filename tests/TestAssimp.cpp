@@ -62,7 +62,7 @@ namespace test {
     {
         GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
         GLCall(glClear(GL_COLOR_BUFFER_BIT));
-        m_DuckRenderObject->Draw();
+        m_DuckRenderObject->Render();
     }
 
     void TestAssimp::OnImGuiRender()

@@ -3,12 +3,13 @@
 #include "VertexBufferLayout.h"
 
 VertexArray::VertexArray() 
+    : m_IsBound(false)
 {
     GLCall(glGenVertexArrays(1, &m_RendererID));
 }
 
 VertexArray::VertexArray(unsigned int rendererID)
-    : m_RendererID(rendererID)
+    : m_RendererID(rendererID), m_IsBound(false)
 {
 }
 
@@ -44,15 +45,21 @@ void VertexArray::AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& la
             offset += element.count * VertexBufferElement::GetSizeOfType(element.type);
         }
     }
+
+    Unbind();
 }
 
 void VertexArray::Bind() const
 {
+    if (m_IsBound)
+        return;
     GLCall(glBindVertexArray(m_RendererID));
+    m_IsBound = true;
 }
 
 
 void VertexArray::Unbind() const
 {
     GLCall(glBindVertexArray(0));
+    m_IsBound = false;
 }

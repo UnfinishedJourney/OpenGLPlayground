@@ -43,7 +43,7 @@ void test::TestSimpleCube::OnRender()
     GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
     GLCall(glClear(GL_COLOR_BUFFER_BIT));
     {
-        m_Cube->Draw();
+        m_Cube->Render();
     }
 }
 

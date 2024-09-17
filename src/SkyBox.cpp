@@ -1,6 +1,6 @@
 #include "SkyBox.h"
 
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <vector>
 
 SkyBox::SkyBox(GLuint texID, float size)
@@ -72,7 +72,7 @@ void SkyBox::Draw(const std::unique_ptr<Shader>& shader) const
     m_IB->Bind();
     GLCall(glActiveTexture(GL_TEXTURE0));
     GLCall(glBindTexture(GL_TEXTURE_CUBE_MAP, m_TexID));
-    shader->SetUniformMat4f("u_MVP", mvp);
+    shader->SetUniform("u_MVP", mvp);
     renderer.Draw(*m_VAO, *m_IB, *shader);
     m_VAO->Unbind();
     m_IB->Unbind();

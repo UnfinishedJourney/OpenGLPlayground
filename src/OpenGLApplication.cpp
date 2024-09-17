@@ -1,4 +1,4 @@
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <fstream>
@@ -63,9 +63,8 @@ GLFWwindow* GLInit()
 
     glfwSwapInterval(1);
 
-    if (glewInit() != GLEW_OK)
-    {
-        std::cout << "Error initializing GLEW!" << std::endl;
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        std::cerr << "Failed to initialize GLAD" << std::endl;
         exit(EXIT_FAILURE);
     }
 

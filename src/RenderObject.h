@@ -10,11 +10,11 @@ public:
         : m_MeshBuffer(meshComp), m_Material(mat), m_Transform(std::move(transform))
     {}
 
-    virtual void Draw() {
+    virtual void Render() {
         m_MeshBuffer->Bind();
         m_Material->Bind();
         glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_Transform->GetModelMatrix();
-        m_Material->GetShader()->SetUniformMat4f("u_MVP", mvp);
+        m_Material->GetShader()->SetUniform("u_MVP", mvp);
         GLCall(glDrawElements(GL_TRIANGLES, m_MeshBuffer->GetNVerts(), GL_UNSIGNED_INT, nullptr));
     }
 

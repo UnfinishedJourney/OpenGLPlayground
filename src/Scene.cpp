@@ -17,14 +17,14 @@ void Scene::BindLights()
 	{
 		std::stringstream name;
 		name << "lights[" << i << "].Position";
-		m_LightShader->SetUniformVec4f(name.str(), FrameData::s_View * m_Lights[i].position);
+		m_LightShader->SetUniform(name.str(), FrameData::s_View * m_Lights[i].position);
 	}
 
 	for (size_t i = 0; i < nLights; i++)
 	{
 		std::stringstream name;
 		name << "lights[" << i << "].Color";
-		m_LightShader->SetUniformVec3f(name.str(), m_Lights[i].color);
+		m_LightShader->SetUniform(name.str(), m_Lights[i].color);
 	}
 }
 
@@ -33,7 +33,7 @@ void Scene::Render()
 	BindLights();
 	for (auto& m : m_Objs)
 	{
-		m->Draw();
+		m->Render();
 	}
 }
 

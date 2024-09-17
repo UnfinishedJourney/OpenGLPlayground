@@ -15,7 +15,7 @@ namespace test {
 		LightObject(std::shared_ptr<MeshBuffer> meshComp, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
 			: RenderObject(meshComp, mat, std::move(transform))
 		{}
-		void Draw();
+		virtual void Render() override;
 	};
 
 	class TestLights : public Test

@@ -9,8 +9,6 @@
 #include <vector>
 #include <memory>
 
-class MeshHelper;
-
 struct Mesh
 {
     std::vector<glm::vec3> positions;
@@ -52,14 +50,17 @@ public:
     {
         return m_NVerts;
     }
-
-    friend MeshHelper;
+    bool GetStatus() const
+    {
+        return m_IsBound;
+    }
 
 private:
     std::unique_ptr<VertexArray> m_VAO;
     std::unique_ptr<VertexBuffer> m_VB;
     std::unique_ptr<IndexBuffer> m_IB;
     size_t m_NVerts;
+    mutable bool m_IsBound = false;
 };
 
 namespace std {
