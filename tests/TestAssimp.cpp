@@ -33,7 +33,7 @@ namespace test {
 
         std::shared_ptr<MeshBuffer> duckMeshBuffer = duckModel->GetMeshBuffer(0, duckMeshLayout);
 
-        std::shared_ptr<Shader> shader = m_ResourceManager->GetShader("duckShader");
+        std::shared_ptr<Shader> shader = m_ResourceManager->GetShader("duck");
         std::shared_ptr<Texture> texture = m_ResourceManager->GetTexture("duckDiffuse");
 
         std::shared_ptr<Material> material = std::make_shared<Material>();

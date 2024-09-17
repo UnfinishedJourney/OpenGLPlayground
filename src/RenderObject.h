@@ -10,7 +10,7 @@ public:
         : m_MeshBuffer(meshComp), m_Material(mat), m_Transform(std::move(transform))
     {}
 
-    void Draw() {
+    virtual void Draw() {
         m_MeshBuffer->Bind();
         m_Material->Bind();
         glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_Transform->GetModelMatrix();
@@ -23,7 +23,10 @@ public:
         return m_Transform;
     }
 
-    virtual void Update(float deltaTime) = 0; 
+    virtual void Update(float deltaTime) 
+    {
+        return;
+    }
 
 protected:
     std::shared_ptr<MeshBuffer> m_MeshBuffer;
@@ -38,6 +41,6 @@ public:
     {}
 
     void Update(float deltaTime) override {
-        
+        return;
     }
 };

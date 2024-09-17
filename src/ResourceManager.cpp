@@ -12,6 +12,9 @@ std::unordered_map<std::string, std::string> G_Texture_Path
 
 std::shared_ptr<Texture> ResourceManager::GetTexture(const std::string& textureName)
 {
+	if (textureName.empty())
+		return nullptr;
+
 	if (m_Textures.find(textureName) != m_Textures.end()) {
 		return m_Textures[textureName];
 	}
@@ -56,6 +59,7 @@ bool ResourceManager::DeleteMesh(const std::string& meshName)
 std::unordered_map<std::string, std::string> G_Model_Path
 {
 	{"duck", "../assets/rubber_duck/scene.gltf"},
+	{"pig", "../assets/pig_triangulated.obj"}
 };
 
 std::shared_ptr<Model> ResourceManager::GetModel(const std::string& modelName)
@@ -82,7 +86,8 @@ bool ResourceManager::DeleteModel(const std::string& modelName)
 std::unordered_map<std::string, std::string> G_Shader_Path
 {
 	{"basic", "../shaders/Basic.shader"},
-	{"duckShader", "../shaders/Duck.shader"}
+	{"duck", "../shaders/Duck.shader"},
+	{"lights", "../shaders/Lights.shader" }
 };
 
 std::shared_ptr<Shader> ResourceManager::GetShader(const std::string& shaderName)

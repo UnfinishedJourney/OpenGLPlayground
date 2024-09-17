@@ -107,6 +107,7 @@ int main(void)
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
     testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
     testMenu->RegisterTest<test::TestAssimp>("Assimp");
+    testMenu->RegisterTest<test::TestLights>("Lights");
     //testMenu->RegisterTest<test::TestTexture2D>("Texture2D");
     //testMenu->RegisterTest<test::Test3D>("3D");
     //testMenu->RegisterTest<test::TestScene>("Lights");

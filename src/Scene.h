@@ -1,32 +1,41 @@
 #pragma once
+#include "Lights.h"
+#include "RenderObject.h"
+#include "Shader.h"
+
 #include <vector>
 #include <memory>
-#include "Lights.h"
-#include "Model.h"
-#include "Shader.h"
+#include <algorithm>
 
 class Scene
 {
-private:
-	std::vector<Light> m_Lights;
-	std::vector<std::unique_ptr<Model>> m_Objs;
-
 public:
-	Scene();
-	virtual ~Scene()
+	Scene() = default;
+	~Scene()
 	{}
 
-	virtual void Render();
-	virtual void InitScene();
-	virtual void Update(float dt);
-
-	inline void AddModel(std::unique_ptr<Model> model)
+	void BindLights();
+	void Render();
+	void Update(float dt);
+	void AddLights(std::vector<Light> lights)
 	{
-		m_Objs.push_back(std::move(model));
+		std::copy(lights.begin(), lights.end(), std::back_inserter(m_Lights));
 	}
-
-	inline void AddLight(Light light)
+	void AddLight(Light light)
 	{
 		m_Lights.push_back(light);
 	}
+	void AddObj(std::unique_ptr<RenderObject> obj)
+	{
+		m_Objs.push_back(std::move(obj));
+	}
+	void AddLightShader(std::shared_ptr<Shader> lightShader)
+	{
+		m_LightShader = lightShader;
+	}
+
+protected:
+	std::vector<Light> m_Lights;
+	std::vector<std::unique_ptr<RenderObject>> m_Objs;
+	std::shared_ptr<Shader> m_LightShader;
 };

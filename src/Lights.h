@@ -5,6 +5,6 @@
 struct Light
 {
 public:
-	glm::vec4 m_Position;
-	float m_Intensity;
+	glm::vec4 position;
+	glm::vec3 color;
 };

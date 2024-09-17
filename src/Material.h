@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <sstream>
 
 class Material {
 public:
@@ -17,8 +18,19 @@ public:
         m_Textures.push_back(texture);
     }
 
+    void AddParam(std::string name, float value) {
+        m_Params[name] = value;
+    }
+
     void Bind() {
         m_Shader->Bind();
+
+        for (auto& [key, value] : m_Params)
+        {
+            std::stringstream name;
+            name << "Material" << "." << key;
+            m_Shader->SetUniformf(name.str(), value);
+        }
 
         for (size_t i = 0; i < m_Textures.size(); ++i) {
             m_Textures[i]->Bind(i);

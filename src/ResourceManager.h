@@ -2,7 +2,9 @@
 
 #include "Model.h"
 #include "Material.h"
+#include "RenderObject.h"
 #include "Shader.h"
+#include "Transform.h"
 
 struct MeshKey {
     std::string name;
