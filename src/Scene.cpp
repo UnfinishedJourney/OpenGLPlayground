@@ -18,11 +18,7 @@ void Scene::BindLights()
 		std::stringstream name;
 		name << "lights[" << i << "].Position";
 		m_LightShader->SetUniform(name.str(), FrameData::s_View * m_Lights[i].position);
-	}
-
-	for (size_t i = 0; i < nLights; i++)
-	{
-		std::stringstream name;
+		name.str("");
 		name << "lights[" << i << "].Color";
 		m_LightShader->SetUniform(name.str(), m_Lights[i].color);
 	}

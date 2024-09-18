@@ -51,8 +51,4 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
     std::unordered_map<std::string, std::shared_ptr<Texture>> m_Textures;
     std::unordered_map<std::string, std::shared_ptr<Model>> m_Models;
-
-    template<typename T>
-    std::shared_ptr<T> GetResource(const std::string& resourceName, std::unordered_map<std::string, std::shared_ptr<T>>& resourceMap, const std::function<std::shared_ptr<T>(const std::string&)>& loader);
-    template<typename T>
 };

@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <sstream>
+#include <functional>
 
 class Material {
 public:
@@ -14,12 +15,16 @@ public:
         m_Shader = shader;
     }
 
-    void AddTexture(std::shared_ptr<Texture> texture) {
-        m_Textures.push_back(texture);
+    void AddTexture(std::shared_ptr<Texture> texture, unsigned int textureUnit = 0) {
+        m_Textures[textureUnit] = texture;
     }
 
-    void AddParam(std::string name, float value) {
-        m_Params[name] = value;
+    template<typename T>
+    void AddParam(const std::string& name, T value) {
+        m_Params[name] = [value](Shader& shader, const std::string& name) {
+            std::string new_name = "Material." + name;
+            shader.SetUniform(new_name, value);
+        };
     }
 
     void Bind() {
@@ -28,15 +33,12 @@ public:
 
         m_Shader->Bind();
 
-        for (auto& [key, value] : m_Params)
-        {
-            std::stringstream name;
-            name << "Material" << "." << key;
-            m_Shader->SetUniform(name.str(), value);
+        for (const auto& [name, applyUniform] : m_Params) {
+            applyUniform(*m_Shader, name);
         }
 
-        for (size_t i = 0; i < m_Textures.size(); ++i) {
-            m_Textures[i]->Bind(i);
+        for (auto& [key, value] : m_Textures) {
+            value->Bind(key);
         }
     }
 
@@ -46,7 +48,7 @@ public:
 
 private:
     std::shared_ptr<Shader> m_Shader;
-    std::vector<std::shared_ptr<Texture>> m_Textures;
-    std::unordered_map<std::string, float> m_Params;
+    std::unordered_map<unsigned int, std::shared_ptr<Texture>> m_Textures;
+    std::unordered_map<std::string, std::function<void(Shader&, const std::string&)>> m_Params;
     mutable bool m_IsBound = false;
 };

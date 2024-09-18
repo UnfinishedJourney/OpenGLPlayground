@@ -27,12 +27,14 @@ glm::mat4 FrameData::s_Projection = glm::mat4(1.0f);
 glm::mat4 FrameData::s_View = glm::mat4(1.0f);
 
 Camera camera;
+CameraController cameraController(camera);
 bool keys[4];
 
 void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode);
 void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY);
+void glfw_onMouseMove(GLFWwindow* window, double xpos, double ypos);
 void showFPS(GLFWwindow* window);
-void update(double elapsedTime, GLFWwindow* gWindow);
+void update(double elapsedTime, GLFWwindow* gWindow, CameraController& cameraController);
 
 const double ZOOM_SENSITIVITY = -1.0;
 const float MOVE_SPEED = 0.001f; // units per second
@@ -60,6 +62,7 @@ GLFWwindow* GLInit()
     glfwMakeContextCurrent(window);
     glfwSetKeyCallback(window, glfw_onKey);
     glfwSetScrollCallback(window, glfw_onMouseScroll);
+    glfwSetCursorPosCallback(window, glfw_onMouseMove);
 
     glfwSwapInterval(1);
 
@@ -107,11 +110,6 @@ int main(void)
     testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
     testMenu->RegisterTest<test::TestAssimp>("Assimp");
     testMenu->RegisterTest<test::TestLights>("Lights");
-    //testMenu->RegisterTest<test::TestTexture2D>("Texture2D");
-    //testMenu->RegisterTest<test::Test3D>("3D");
-    //testMenu->RegisterTest<test::TestScene>("Lights");
-    //testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
-
 
     double lastTime = glfwGetTime();
     FrameData::s_View = camera.GetViewMatrix();
@@ -129,7 +127,7 @@ int main(void)
 
         // Poll for and process events
         glfwPollEvents();
-        update(deltaTime, window);
+        update(deltaTime, window, cameraController);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -168,68 +166,71 @@ int main(void)
     return 0;
 }
 
-void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode)
-{
+void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-    {
         glfwSetWindowShouldClose(window, GL_TRUE);
+
+    if (key == GLFW_KEY_W) {
+        if (action == GLFW_PRESS)
+            keys[CameraMovement::UP] = true;
+        else if (action == GLFW_RELEASE)
+            keys[CameraMovement::UP] = false;
     }
 
-    if (key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    {
-        keys[CameraMovement::FORWARD] = true;
-    }
-    if (key == GLFW_KEY_S && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    {
-        keys[CameraMovement::BACKWARD] = true;
-    }
-    if (key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    {
-        keys[CameraMovement::LEFT] = true;
-    }
-    if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    {
-        keys[CameraMovement::RIGHT] = true;
+    if (key == GLFW_KEY_S) {
+        if (action == GLFW_PRESS)
+            keys[CameraMovement::DOWN] = true;
+        else if (action == GLFW_RELEASE)
+            keys[CameraMovement::DOWN] = false;
     }
 
+    if (key == GLFW_KEY_A) {
+        if (action == GLFW_PRESS)
+            keys[CameraMovement::LEFT] = true;
+        else if (action == GLFW_RELEASE)
+            keys[CameraMovement::LEFT] = false;
+    }
+
+    if (key == GLFW_KEY_D) {
+        if (action == GLFW_PRESS)
+            keys[CameraMovement::RIGHT] = true;
+        else if (action == GLFW_RELEASE)
+            keys[CameraMovement::RIGHT] = false;
+    }
 }
 
-void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY)
-{
-    double fov = camera.GetFOV() + deltaY * ZOOM_SENSITIVITY;
-
-    fov = glm::clamp(fov, 1.0, 120.0);
-
-    camera.SetFOV((float)fov);
-    FrameData::s_Projection = glm::perspective(glm::radians(camera.GetFOV()), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);
+void glfw_onMouseMove(GLFWwindow* window, double xpos, double ypos) {
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+        cameraController.ProcessMouseMovement(static_cast<float>(xpos), static_cast<float>(ypos));
+    }
 }
 
-void update(double elapsedTime, GLFWwindow* gWindow)
-{
-    if (keys[CameraMovement::FORWARD])
-    {
-        camera.ProcessKeyboard(CameraMovement::FORWARD, elapsedTime);
-        keys[CameraMovement::FORWARD] = false;
-        FrameData::s_View = camera.GetViewMatrix();
+void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY) {
+    cameraController.ProcessMouseScroll(deltaY);
+}
+
+void update(double elapsedTime, GLFWwindow* gWindow, CameraController& cameraController) {
+
+    if (keys[CameraMovement::UP]) {
+        cameraController.ProcessKeyboard(UP, elapsedTime);
     }
-    if (keys[CameraMovement::BACKWARD])
-    {
-        camera.ProcessKeyboard(CameraMovement::BACKWARD, elapsedTime);
-        keys[CameraMovement::BACKWARD] = false;
-        FrameData::s_View = camera.GetViewMatrix();
+    if (keys[CameraMovement::DOWN]) {
+        cameraController.ProcessKeyboard(DOWN, elapsedTime);
     }
-    if (keys[CameraMovement::LEFT])
-    {
-        camera.ProcessKeyboard(CameraMovement::LEFT, elapsedTime);
-        keys[CameraMovement::LEFT] = false;
-        FrameData::s_View = camera.GetViewMatrix();
+    if (keys[CameraMovement::LEFT]) {
+        cameraController.ProcessKeyboard(LEFT, elapsedTime);
     }
-    if (keys[CameraMovement::RIGHT])
-    {
-        camera.ProcessKeyboard(CameraMovement::RIGHT, elapsedTime);
-        keys[CameraMovement::RIGHT] = false;
-        FrameData::s_View = camera.GetViewMatrix();
+    if (keys[CameraMovement::RIGHT]) {
+        cameraController.ProcessKeyboard(RIGHT, elapsedTime);
     }
+
+    FrameData::s_View = camera.GetViewMatrix();
+    FrameData::s_Projection = glm::perspective(
+        glm::radians(camera.GetFOV()),
+        static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height),  
+        0.1f,  
+        100.0f 
+    );
 }
 
 
