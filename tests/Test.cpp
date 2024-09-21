@@ -3,8 +3,8 @@
 
 namespace test {
 
-	TestMenu::TestMenu(Test*& currentTestPointer)
-		: m_CurrentTest(currentTestPointer)
+	TestMenu::TestMenu(std::shared_ptr<Test>& currentTest)
+		: m_CurrentTest(currentTest)
 	{
 	}
 

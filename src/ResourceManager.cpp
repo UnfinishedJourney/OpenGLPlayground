@@ -88,7 +88,8 @@ std::unordered_map<std::string, std::string> G_Shader_Path
 {
 	{"basic", "../shaders/Basic.shader"},
 	{"duck", "../shaders/Duck.shader"},
-	{"lights", "../shaders/Lights.shader" }
+	{"lights", "../shaders/Lights.shader" },
+	{"instance", "../shaders/Instance.shader" }
 };
 
 std::shared_ptr<Shader> ResourceManager::GetShader(const std::string& shaderName)

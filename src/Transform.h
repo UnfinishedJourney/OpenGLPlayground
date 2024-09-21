@@ -1,65 +1,58 @@
 #pragma once
 
 #include "glm.hpp"
+#include "gtc/quaternion.hpp"
 
 class Transform {
 public:
     Transform()
-        : m_Position(0.0f), m_Rotation(0.0f), m_Scale(1.0f), m_ModelMatrix(1.0)
+        : m_Position(0.0f), m_Rotation(glm::quat(glm::vec3(0.0, 0.0, 0.0))), m_Scale(1.0f), m_ModelMatrix(1.0f), m_NeedsUpdating(true)
     {}
 
-    void SetPosition(glm::vec3 position)
-    {
+    void SetPosition(const glm::vec3& position) {
         m_Position = position;
-
-        b_NeedsUpdating = true;
+        m_NeedsUpdating = true;
     }
 
-    void SetRotation(glm::vec4 rotation)
-    {
-        m_Rotation = rotation;
-
-        b_NeedsUpdating = true;
+    void SetRotation(const glm::vec3& eulerAngles) {
+        m_Rotation = glm::quat(eulerAngles);
+        m_NeedsUpdating = true;
     }
 
-    void SetScale(glm::vec3 scale)
-    {
+    void SetScale(const glm::vec3& scale) {
         m_Scale = scale;
-
-        b_NeedsUpdating = true;
+        m_NeedsUpdating = true;
     }
 
-    void AddPosition(glm::vec3 deltaPos)
-    {
+    void AddPosition(const glm::vec3& deltaPos) {
         m_Position += deltaPos;
-
-        b_NeedsUpdating = true;
+        m_NeedsUpdating = true;
     }
 
-    void AddRotation(float deltaAngle)
-    {
-        m_Rotation.w += deltaAngle;
-        
-        b_NeedsUpdating = true;
-    }
-    
-    void MultiplyScale(glm::vec3 scaleMult)
-    {
-        m_Scale.x *= scaleMult.x;
-        m_Scale.y *= scaleMult.y;
-        m_Scale.z *= scaleMult.z;
-
-        b_NeedsUpdating = true;
+    void AddRotation(const glm::vec3& deltaEulerAngles) {
+        glm::quat deltaRot = glm::quat(deltaEulerAngles);
+        m_Rotation = glm::normalize(deltaRot * m_Rotation);
+        m_NeedsUpdating = true;
     }
 
-    glm::mat4 GetModelMatrix();
+    glm::mat4 GetModelMatrix() {
+        if (m_NeedsUpdating) {
+            UpdateModelMatrix();
+        }
+        return m_ModelMatrix;
+    }
 
 private:
     glm::vec3 m_Position;
-    glm::vec4 m_Rotation; //axis, angle
+    glm::quat m_Rotation;
     glm::vec3 m_Scale;
     glm::mat4 m_ModelMatrix;
+    bool m_NeedsUpdating;
 
-    bool b_NeedsUpdating = false;
-    void UpdateModelMatrix();
+    void UpdateModelMatrix() {
+        m_ModelMatrix = glm::translate(glm::mat4(1.0f), m_Position) *
+            glm::mat4_cast(m_Rotation) *
+            glm::scale(glm::mat4(1.0f), m_Scale);
+        m_NeedsUpdating = false;
+    }
 };

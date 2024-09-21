@@ -8,18 +8,24 @@
 #include <numeric>
 
 
-Model::Model(const std::string& path_to_model)
+Model::Model(const std::string& path_to_model, bool bCenterModel)
     : m_FilePath(path_to_model)
 {
     ProcessModel();
     m_MeshBuffersCache.resize(m_Meshes.size());
+    
+    if (bCenterModel)
+    {
+        CenterModel();
+    }
 }
 
 void Model::ProcessModel()
 {
-    const aiScene* scene = aiImportFile(m_FilePath.c_str(), aiProcess_Triangulate);
+    const aiScene* scene = aiImportFile(m_FilePath.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals);
 
-    if (!scene || !scene->HasMeshes()) {
+    if (!scene || !scene->HasMeshes()) 
+    {
         std::cerr << "Unable to load file\n";
         exit(255);
     }
@@ -50,13 +56,23 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh)
 {
     std::shared_ptr<Mesh> myMesh = std::make_shared<Mesh>();
 
+    myMesh->positions.reserve(aiMesh->mNumVertices);
+    if (aiMesh->HasNormals())
+    {
+        myMesh->normals.reserve(aiMesh->mNumVertices);
+    }
+    if (aiMesh->HasTextureCoords(0))
+    {
+        myMesh->uvs.reserve(aiMesh->mNumVertices);
+    }
+
     for (unsigned int i = 0; i < aiMesh->mNumVertices; i++)
     {
         glm::vec3 temp =
         {
             aiMesh->mVertices[i].x,
-            aiMesh->mVertices[i].y,
-            aiMesh->mVertices[i].z
+            -aiMesh->mVertices[i].z,
+            aiMesh->mVertices[i].y
         };
 
         myMesh->positions.push_back(temp);
@@ -73,13 +89,11 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh)
             myMesh->normals.push_back(temp);
         }
 
-        if (aiMesh->mTextureCoords[0])
+        if (aiMesh->HasTextureCoords(0))
         {
             myMesh->uvs.push_back(glm::vec2(aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y));
         }
     }
-
-    std::vector<unsigned int> indices;
 
     for (unsigned int i = 0; i < aiMesh->mNumFaces; i++)
     {
@@ -90,6 +104,41 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh)
     }
 
     m_Meshes.push_back(myMesh);
+}
+
+glm::vec3 Model::CalculateModelCenter() const
+{
+    glm::vec3 center(0.0f);
+    size_t totalVertices = 0;
+
+    for (const auto& mesh : m_Meshes)
+    {
+        totalVertices += mesh->positions.size();
+        for (const auto& position : mesh->positions)
+        {
+            center += position;
+        }
+    }
+
+    if (totalVertices > 0)
+    {
+        center /= static_cast<float>(totalVertices);
+    }
+
+    return center;
+}
+
+void Model::CenterModel()
+{
+    glm::vec3 center = CalculateModelCenter();
+
+    for (auto& mesh : m_Meshes)
+    {
+        for (auto& position : mesh->positions)
+        {
+            position -= center;
+        }
+    }
 }
 
 std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLayout& layout)
@@ -112,4 +161,27 @@ std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLay
         cache[layout] = meshBuffer;
         return meshBuffer;
     }
+}
+
+std::vector<std::shared_ptr<MeshBuffer>> Model::GetMeshBuffers(const MeshLayout& layout)
+{
+    std::vector<std::shared_ptr<MeshBuffer>> result(m_Meshes.size());
+
+    for (size_t i = 0; i < m_Meshes.size(); i++)
+    {
+        auto& cache = m_MeshBuffersCache[i];
+        auto it = cache.find(layout);
+        if (it != cache.end())
+        {
+            result[i] = it->second;
+        }
+        else
+        {
+            auto meshBuffer = std::make_shared<MeshBuffer>(m_Meshes[i], layout);
+            cache[layout] = meshBuffer;
+            result[i] = meshBuffer;
+        }
+    }
+
+    return result;
 }

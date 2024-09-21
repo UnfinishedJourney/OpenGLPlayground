@@ -18,10 +18,11 @@
 class Model
 {
 public:
-	Model(const std::string& path_to_model);
+	Model(const std::string& path_to_model, bool bCenterModel = true);
 
 	size_t GetMeshCount() const { return m_Meshes.size(); }
 	std::shared_ptr<MeshBuffer> GetMeshBuffer(size_t meshIndex, const MeshLayout& layout);
+	std::vector<std::shared_ptr<MeshBuffer>> GetMeshBuffers(const MeshLayout& layout);
 
 private:
 	std::string m_FilePath;
@@ -31,4 +32,6 @@ private:
 	void ProcessModel();
 	void ProcessNode(const aiScene* scene, const aiNode* node);
 	void ProcessMesh(const aiScene* scene, const aiMesh* mesh);
+	glm::vec3 CalculateModelCenter() const;
+	void CenterModel();
 };

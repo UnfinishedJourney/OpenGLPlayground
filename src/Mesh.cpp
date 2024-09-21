@@ -60,8 +60,8 @@ MeshBuffer::MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& layout)
 
 void MeshBuffer::Bind() const
 {
-    if (m_IsBound)
-        return;
+    //if (m_IsBound)
+        //return;
     m_VAO->Bind();
     m_IB->Bind();
     m_IsBound = true;

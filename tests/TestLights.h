@@ -12,8 +12,8 @@ namespace test {
 
 	class LightObject : public RenderObject {
 	public:
-		LightObject(std::shared_ptr<MeshBuffer> meshComp, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
-			: RenderObject(meshComp, mat, std::move(transform))
+		LightObject(std::vector<std::shared_ptr<MeshBuffer>> meshBuffers, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
+			: RenderObject(meshBuffers, mat, std::move(transform))
 		{}
 		virtual void Render() override;
 	};

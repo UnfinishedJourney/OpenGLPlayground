@@ -38,7 +38,8 @@ struct MeshLayout
 
 class MeshBuffer {
 public:
-    MeshBuffer(std::unique_ptr<VertexArray> vao, std::unique_ptr<VertexBuffer> vb, std::unique_ptr<IndexBuffer> ib, size_t nVerts)
+
+    MeshBuffer(std::shared_ptr<VertexArray> vao, std::shared_ptr<VertexBuffer> vb, std::shared_ptr<IndexBuffer> ib, size_t nVerts)
         : m_VAO(std::move(vao)), m_VB(std::move(vb)), m_IB(std::move(ib)), m_NVerts(nVerts)
     {}
 
@@ -54,11 +55,15 @@ public:
     {
         return m_IsBound;
     }
+    std::shared_ptr<VertexArray> GetVAO() const 
+    { 
+        return m_VAO; 
+    }
 
 private:
-    std::unique_ptr<VertexArray> m_VAO;
-    std::unique_ptr<VertexBuffer> m_VB;
-    std::unique_ptr<IndexBuffer> m_IB;
+    std::shared_ptr<VertexArray> m_VAO;
+    std::shared_ptr<VertexBuffer> m_VB;
+    std::shared_ptr<IndexBuffer> m_IB;
     size_t m_NVerts;
     mutable bool m_IsBound = false;
 };

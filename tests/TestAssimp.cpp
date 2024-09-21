@@ -38,6 +38,7 @@ namespace test {
 
         std::shared_ptr<Material> material = std::make_shared<Material>();
         std::unique_ptr<Transform> transform = std::make_unique<Transform>();
+        transform->SetRotation(glm::vec3(-1.57, 0.0, 0.0));
 
         material->AddTexture(texture);
         material->SetShader(shader);

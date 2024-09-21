@@ -4,7 +4,7 @@
 #include "Utility.h"
 
 IndexBuffer::IndexBuffer(const unsigned int* data, unsigned int count)
-	: m_Count(count), m_IsBound(false)
+	: m_Count(count)
 {
 	ASSERT(sizeof(unsigned int) == sizeof(GLuint));
 
@@ -14,24 +14,23 @@ IndexBuffer::IndexBuffer(const unsigned int* data, unsigned int count)
 }
 
 IndexBuffer::IndexBuffer(unsigned int rendererID, unsigned int count)
-	: m_RendererID(rendererID), m_Count(count), m_IsBound(false)
+	: m_RendererID(rendererID), m_Count(count)
 {
 }
 
-IndexBuffer::~IndexBuffer() {
+IndexBuffer::~IndexBuffer()
+{
 	GLCall(glDeleteBuffers(1, &m_RendererID));
 }
 
-void IndexBuffer::Bind() const {
-	if (m_IsBound)
-		return;
+void IndexBuffer::Bind() const
+{
 	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_RendererID));
-	m_IsBound = true;
 }
 
-void IndexBuffer::Unbind() const {
+void IndexBuffer::Unbind() const
+{
 	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
-	m_IsBound = false;
 }
 
 unsigned int IndexBuffer::GetCount() const

@@ -21,15 +21,18 @@ namespace test {
 
     void LightObject::Render()
     {
-        m_MeshBuffer->Bind();
-        m_Material->Bind();
-        glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_Transform->GetModelMatrix();
-        m_Material->GetShader()->SetUniform("u_MVP", mvp);
-        glm::mat4 mv = FrameData::s_View * m_Transform->GetModelMatrix();
-        m_Material->GetShader()->SetUniform("u_ModelView", mv);
-        glm::mat3 normalMatrix = glm::mat3(mv);
-        m_Material->GetShader()->SetUniform("u_NormalMatrix", normalMatrix);
-        GLCall(glDrawElements(GL_TRIANGLES, m_MeshBuffer->GetNVerts(), GL_UNSIGNED_INT, nullptr));
+        for (auto& meshBuffer : m_MeshBuffers)
+        {
+            meshBuffer->Bind();
+            m_Material->Bind();
+            glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_Transform->GetModelMatrix();
+            m_Material->GetShader()->SetUniform("u_MVP", mvp);
+            glm::mat4 mv = FrameData::s_View * m_Transform->GetModelMatrix();
+            m_Material->GetShader()->SetUniform("u_ModelView", mv);
+            glm::mat3 normalMatrix = glm::mat3(mv);
+            m_Material->GetShader()->SetUniform("u_NormalMatrix", normalMatrix);
+            GLCall(glDrawElements(GL_TRIANGLES, meshBuffer->GetNVerts(), GL_UNSIGNED_INT, nullptr));
+        }
     }
 
     TestLights::TestLights()
@@ -44,19 +47,19 @@ namespace test {
         }
 
         m_ResourceManager = std::make_unique<ResourceManager>();
-        auto model = m_ResourceManager->GetModel("duck");
+        auto model = m_ResourceManager->GetModel("pig");
         MeshLayout meshLayout = { true, true, false, false, false };
-        std::shared_ptr<MeshBuffer> meshBuffer = model->GetMeshBuffer(0, meshLayout);
         std::shared_ptr<Shader> shader = m_ResourceManager->GetShader("lights");
         std::shared_ptr<Material> material = std::make_shared<Material>();
         std::unique_ptr<Transform> transform = std::make_unique<Transform>();
+        transform->SetRotation(glm::vec3(-1.57, 0.0, 0.0));
 
         material->SetShader(shader);
         material->AddParam("Ks", 1.0);
         material->AddParam("Kd", 1.0);
         material->AddParam("Shininess", 1.0);
 
-        auto renderObject = std::make_unique<LightObject>(meshBuffer, material, std::move(transform));
+        auto renderObject = std::make_unique<LightObject>(model->GetMeshBuffers(meshLayout), material, std::move(transform));
 
         m_Scene->AddObj(std::move(renderObject));
 

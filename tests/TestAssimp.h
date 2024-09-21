@@ -17,7 +17,7 @@ namespace test {
 		{}
 
 		void Update(float deltaTime) override {
-			m_Transform->SetRotation(glm::vec4(0.5, 1.0, 0.0, (float)glfwGetTime() * 0.1f));
+			m_Transform->AddRotation(glm::vec3(0.0, deltaTime * 0.1, 0.0));
 		}
 	};
 
