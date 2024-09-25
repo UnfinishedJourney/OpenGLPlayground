@@ -11,7 +11,7 @@ set(DEPS_DIR ${CMAKE_SOURCE_DIR}/Dependencies)
 set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/assets)
 
-# Glob all .cpp and .h files directly in src and tests directories
+# Glob all .cpp and .h files in the new structure
 file(GLOB_RECURSE SRC_FILES ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/src/*.h)
 file(GLOB_RECURSE TEST_FILES ${CMAKE_SOURCE_DIR}/tests/*.cpp ${CMAKE_SOURCE_DIR}/tests/*.h)
 
@@ -25,7 +25,7 @@ set(VENDOR_FILES
     vendor/imgui/imgui_widgets.cpp
     vendor/imgui/imgui_impl_glfw.cpp
     vendor/imgui/imgui_impl_opengl3.cpp
-	${DEPS_DIR}/GLAD/src/glad.c
+    ${DEPS_DIR}/GLAD/src/glad.c
 )
 
 # Create source groups for better organization in Visual Studio
@@ -36,15 +36,22 @@ source_group("vendor" FILES ${VENDOR_FILES})
 # Specify the executable
 add_executable(OpenGLApplication ${SRC_FILES} ${TEST_FILES} ${VENDOR_FILES})
 
-# Include directories
+# Include directories (adding root source directory to include all subdirectories)
 target_include_directories(OpenGLApplication PRIVATE 
     ${DEPS_DIR}/GLFW/include
-	${DEPS_DIR}/GLAD/include
+    ${DEPS_DIR}/GLAD/include
     ${DEPS_DIR}/glm
     ${DEPS_DIR}/assimp_related/include
     ${CMAKE_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/vendor/stb_image
-    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Core
+    ${CMAKE_SOURCE_DIR}/src/Core/Buffers
+    ${CMAKE_SOURCE_DIR}/src/Core/Materials
+    ${CMAKE_SOURCE_DIR}/src/Core/Shaders
+    ${CMAKE_SOURCE_DIR}/src/Application
+    ${CMAKE_SOURCE_DIR}/src/Objects
+    ${CMAKE_SOURCE_DIR}/src/Resources
+    ${CMAKE_SOURCE_DIR}/src/Scene
     ${CMAKE_SOURCE_DIR}/tests
 )
 
