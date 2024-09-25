@@ -89,7 +89,10 @@ std::unordered_map<std::string, std::string> G_Shader_Path
 	{"basic", "../shaders/Basic.shader"},
 	{"duck", "../shaders/Duck.shader"},
 	{"lights", "../shaders/Lights.shader" },
-	{"instance", "../shaders/Instance.shader" }
+	{"instance", "../shaders/Instance.shader" },
+	{"pbr", "../shaders/PBR.shader" },
+	{"brdf_compute", "../shaders/BRDFCompute.shader"},
+	{"quad", "../shaders/Quad.shader"},
 };
 
 std::shared_ptr<Shader> ResourceManager::GetShader(const std::string& shaderName)
@@ -111,6 +114,27 @@ std::shared_ptr<Shader> ResourceManager::GetShader(const std::string& shaderName
 bool ResourceManager::DeleteShader(const std::string& shaderName)
 {
 	return m_Shaders.erase(shaderName);
+}
+
+std::shared_ptr<ComputeShader> ResourceManager::GetComputeShader(const std::string& shaderName)
+{
+	if (m_ComputeShaders.find(shaderName) != m_ComputeShaders.end()) {
+		return m_ComputeShaders[shaderName];
+	}
+
+	std::shared_ptr<ComputeShader> shader;
+	if (G_Shader_Path.find(shaderName) != G_Shader_Path.end())
+		shader = std::make_shared<ComputeShader>(G_Shader_Path[shaderName]);
+	else
+		shader = std::make_shared<ComputeShader>(shaderName);
+
+	m_ComputeShaders[shaderName] = shader;
+	return shader;
+}
+
+bool ResourceManager::DeleteComputeShader(const std::string& shaderName)
+{
+	return m_ComputeShaders.erase(shaderName);
 }
 
 std::shared_ptr<MeshBuffer> ResourceManager::GetMeshBuffer(const std::string& meshName, const MeshLayout& layout)

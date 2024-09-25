@@ -4,6 +4,7 @@
 #include "Material.h"
 #include "RenderObject.h"
 #include "Shader.h"
+#include "ComputeShader.h"
 #include "Transform.h"
 
 struct MeshKey {
@@ -42,6 +43,9 @@ public:
     std::shared_ptr<Shader> GetShader(const std::string& shaderName);
     bool DeleteShader(const std::string& shaderName);
 
+    std::shared_ptr<ComputeShader> GetComputeShader(const std::string& shaderName);
+    bool DeleteComputeShader(const std::string& shaderName);
+
     std::shared_ptr<MeshBuffer> GetMeshBuffer(const std::string& meshName, const MeshLayout& layout);
     bool DeleteMeshBuffer(const std::string& meshName, MeshLayout layout);
 
@@ -49,6 +53,7 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Mesh>> m_Meshes;
     std::unordered_map<MeshKey, std::shared_ptr<MeshBuffer>> m_MeshBuffers;
     std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
+    std::unordered_map<std::string, std::shared_ptr<ComputeShader>> m_ComputeShaders;
     std::unordered_map<std::string, std::shared_ptr<Texture>> m_Textures;
     std::unordered_map<std::string, std::shared_ptr<Model>> m_Models;
 };

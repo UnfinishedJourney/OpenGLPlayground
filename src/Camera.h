@@ -1,5 +1,5 @@
 #pragma once
-
+#include "Renderer.h"
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
 #include "gtc/constants.hpp"
@@ -119,12 +119,14 @@ public:
         yOffset *= m_Sensitivity;
 
         m_Camera.Rotate(xOffset, yOffset);
+        FrameData::s_View = m_Camera.GetViewMatrix();
     }
 
     void ProcessMouseScroll(float yOffset) {
         float fov = m_Camera.GetFOV() - yOffset;
         fov = glm::clamp(fov, 1.0f, 120.0f);
         m_Camera.SetFOV(fov);
+        FrameData::s_Projection = glm::perspective(glm::radians(fov), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);
     }
 
     void SetSpeed(float speed) {

@@ -1,4 +1,4 @@
-#include "TestLights.h"
+#include "TestPBR.h"
 #include "Renderer.h"
 #include "imgui.h"
 
@@ -19,7 +19,7 @@
 
 namespace test {
 
-    void LightObject::Render()
+    void PBRObject::Render()
     {
         for (auto& meshBuffer : m_MeshBuffers)
         {
@@ -35,7 +35,7 @@ namespace test {
         }
     }
 
-    TestLights::TestLights()
+    TestPBR::TestPBR()
     {
         m_Scene = std::make_unique<Scene>();
         float x(0.0), y(0.0), z(0.0);
@@ -49,7 +49,7 @@ namespace test {
         m_ResourceManager = std::make_unique<ResourceManager>();
         auto model = m_ResourceManager->GetModel("pig");
         MeshLayout meshLayout = { true, true, false, false, false };
-        std::shared_ptr<Shader> shader = m_ResourceManager->GetShader("lights");
+        std::shared_ptr<Shader> shader = m_ResourceManager->GetShader("pbr");
         std::shared_ptr<Material> material = std::make_shared<Material>();
         std::unique_ptr<Transform> transform = std::make_unique<Transform>();
         transform->SetRotation(glm::vec3(-1.57, 0.0, 0.0));
@@ -59,7 +59,7 @@ namespace test {
         material->AddParam<float>("Kd", 1.0);
         material->AddParam<float>("Shininess", 1.0);
 
-        auto renderObject = std::make_unique<LightObject>(model->GetMeshBuffers(meshLayout), material, std::move(transform));
+        auto renderObject = std::make_unique<PBRObject>(model->GetMeshBuffers(meshLayout), material, std::move(transform));
 
         m_Scene->AddObj(std::move(renderObject));
 
@@ -70,18 +70,18 @@ namespace test {
 
     }
 
-    void TestLights::OnUpdate(float deltaTime)
+    void TestPBR::OnUpdate(float deltaTime)
     {
     }
 
-    void TestLights::OnRender()
+    void TestPBR::OnRender()
     {
         GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
         GLCall(glClear(GL_COLOR_BUFFER_BIT));
         m_Scene->Render();
     }
 
-    void TestLights::OnImGuiRender()
+    void TestPBR::OnImGuiRender()
     {
     }
 

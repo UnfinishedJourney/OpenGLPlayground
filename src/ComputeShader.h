@@ -8,13 +8,16 @@
 
 
 
-class Shader : public BaseShader
+class ComputeShader : public BaseShader
 {
 public:
-    // Constructor takes path to shader file containing vertex and fragment shaders
-    Shader(const std::string& filepath);
+    // Constructor takes path to compute shader file
+    ComputeShader(const std::string& computeFilePath);
 
-    virtual ~Shader() override = default;
+    virtual ~ComputeShader() override = default;
+
+    // Dispatch the compute shader
+    void Dispatch(unsigned int numGroupsX, unsigned int numGroupsY, unsigned int numGroupsZ) const;
 
 protected:
     // Implement ParseShader, CompileShader, CreateShader

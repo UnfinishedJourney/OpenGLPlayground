@@ -1,6 +1,4 @@
-#include "Shader.h"
-#include "Renderer.h"
-
+#include "ComputeShader.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -9,24 +7,25 @@
 #include <sstream>
 
 // Constructor
-Shader::Shader(const std::string& filepath)
-    : BaseShader(filepath)
+ComputeShader::ComputeShader(const std::string& computeFilePath)
+    : BaseShader(computeFilePath)
 {
-    ShaderProgramSource source = ParseShader(filepath);
+    ShaderProgramSource source = ParseShader(computeFilePath);
     m_RendererID = CreateShader(source);
 }
 
-// ParseShader implementation: parses a file with vertex and fragment shaders
-ShaderProgramSource Shader::ParseShader(const std::string& filepath)
+
+// ParseShader implementation: parses a file with compute shader
+ShaderProgramSource ComputeShader::ParseShader(const std::string& filepath)
 {
     std::ifstream stream(filepath);
 
     enum class ShaderType
     {
-        NONE = -1, VERTEX = 0, FRAGMENT = 1
+        NONE = -1, COMPUTE = 2
     };
 
-    std::stringstream ss[2];
+    std::stringstream ss[3];
     ShaderType type = ShaderType::NONE;
     std::string line;
 
@@ -34,13 +33,9 @@ ShaderProgramSource Shader::ParseShader(const std::string& filepath)
     {
         if (line.find("#shader") != std::string::npos)
         {
-            if (line.find("vertex") != std::string::npos)
+            if (line.find("compute") != std::string::npos)
             {
-                type = ShaderType::VERTEX;
-            }
-            else if (line.find("fragment") != std::string::npos)
-            {
-                type = ShaderType::FRAGMENT;
+                type = ShaderType::COMPUTE;
             }
             else
             {
@@ -70,11 +65,11 @@ ShaderProgramSource Shader::ParseShader(const std::string& filepath)
         }
     }
 
-    return { ss[0].str(), ss[1].str(), "" }; // ComputeSource empty
+    return { "", "", ss[2].str() }; // Only ComputeSource populated
 }
 
-// CompileShader implementation: compiles vertex or fragment shader
-unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
+// CompileShader implementation: compiles compute shader
+unsigned int ComputeShader::CompileShader(unsigned int type, const std::string& source)
 {
     unsigned int id = glCreateShader(type);
     const char* src = source.c_str();
@@ -90,9 +85,7 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
         glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
         char* message = (char*)alloca(length * sizeof(char));
         glGetShaderInfoLog(id, length, &length, message);
-        std::cout << "Failed to compile " <<
-            (type == GL_VERTEX_SHADER ? "vertex" : "fragment") <<
-            " shader!" << std::endl;
+        std::cout << "Failed to compile compute shader!" << std::endl;
         std::cout << message << std::endl;
         glDeleteShader(id);
         return 0;
@@ -101,21 +94,24 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
     return id;
 }
 
-// CreateShader implementation: links vertex and fragment shaders into a program
-unsigned int Shader::CreateShader(const ShaderProgramSource& source)
+// CreateShader implementation: links compute shader into a program
+unsigned int ComputeShader::CreateShader(const ShaderProgramSource& source)
 {
     unsigned int program = glCreateProgram();
     if (program == 0)
     {
-        std::cerr << "Error creating program object." << std::endl;
+        std::cerr << "Error creating compute shader program." << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    unsigned int vs = CompileShader(GL_VERTEX_SHADER, source.VertexSource);
-    unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, source.FragmentSource);
+    unsigned int cs = CompileShader(GL_COMPUTE_SHADER, source.ComputeSource);
+    if (cs == 0)
+    {
+        glDeleteProgram(program);
+        return 0;
+    }
 
-    glAttachShader(program, vs);
-    glAttachShader(program, fs);
+    glAttachShader(program, cs);
     glLinkProgram(program);
 
     // Check linking status
@@ -127,18 +123,27 @@ unsigned int Shader::CreateShader(const ShaderProgramSource& source)
         glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLen);
         std::string log(logLen, ' ');
         glGetProgramInfoLog(program, logLen, &logLen, &log[0]);
-        std::cerr << "Failed to link shader program!" << std::endl;
+        std::cerr << "Failed to link compute shader program!" << std::endl;
         std::cerr << log << std::endl;
         glDeleteProgram(program);
+        glDeleteShader(cs);
         return 0;
     }
 
     glValidateProgram(program);
-    glDetachShader(program, vs);
-    glDetachShader(program, fs);
+    glDetachShader(program, cs);
 
-    glDeleteShader(vs);
-    glDeleteShader(fs);
+    glDeleteShader(cs);
 
     return program;
+}
+
+// Dispatch the compute shader
+void ComputeShader::Dispatch(unsigned int numGroupsX, unsigned int numGroupsY, unsigned int numGroupsZ) const
+{
+    Bind();
+    glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+    // Ensure all writes to buffers and images have been completed
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT);
+    Unbind();
 }

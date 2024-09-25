@@ -23,7 +23,7 @@ public:
     void AddParam(const std::string& name, T value) {
         m_Params[name] = [value](Shader& shader, const std::string& name) {
             std::string new_name = "Material." + name;
-            shader.SetUniform(new_name, value);
+            shader.SetUniform(new_name, static_cast<T>(value));
         };
     }
 

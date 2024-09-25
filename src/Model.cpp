@@ -82,8 +82,8 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh)
             temp =
             {
                 aiMesh->mNormals[i].x,
-                aiMesh->mNormals[i].y,
-                aiMesh->mNormals[i].z
+                -aiMesh->mVertices[i].z,
+                aiMesh->mNormals[i].y
             };
 
             myMesh->normals.push_back(temp);

@@ -63,6 +63,8 @@ void Application::Init() {
     testMenu->RegisterTest<test::TestAssimp>("Assimp");
     testMenu->RegisterTest<test::TestLights>("Lights");
     testMenu->RegisterTest<test::TestInstance>("Instances");
+    testMenu->RegisterTest<test::TestPBR>("PBR");
+    testMenu->RegisterTest<test::TestComputeShader>("Compute");
 
     FrameData::s_View = camera.GetViewMatrix();
     FrameData::s_Projection = glm::perspective(glm::radians(camera.GetFOV()), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);
