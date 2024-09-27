@@ -1,4 +1,6 @@
 #pragma once
+#include "ResourceManager.h"
+
 #include <vector>
 #include <utility>
 #include <string>
@@ -16,6 +18,14 @@ namespace test {
 		virtual void OnUpdate(float deltaTime) {}
 		virtual void OnRender() {}
 		virtual void OnImGuiRender() {}
+		static void InitializeResourceManager(const std::string& shaderMetadataPath) {
+			if (!s_ResourceManager) {
+				//s_ResourceManager = std::make_unique<ResourceManager>(shaderMetadataPath);
+				s_ResourceManager = std::make_unique<ResourceManager>();
+			}
+		}
+	protected:
+		static std::unique_ptr<ResourceManager> s_ResourceManager;
 	};
 
 	class TestMenu : public Test
@@ -30,6 +40,7 @@ namespace test {
 			std::cout << "Register test " << name << std::endl;
 			m_Tests.push_back(std::make_pair(name, []() {return std::make_shared<T>(); }));
 		}
+
 	private:
 		std::shared_ptr<Test>& m_CurrentTest;
 		std::vector<std::pair<std::string, std::function<std::shared_ptr<Test>()>>> m_Tests;

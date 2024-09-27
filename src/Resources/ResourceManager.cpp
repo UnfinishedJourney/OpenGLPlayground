@@ -1,6 +1,7 @@
 #include "ResourceManager.h"
 
 #include "Cube.h"
+#include "Torus.h"
 
 #include <unordered_map>
 
@@ -39,6 +40,8 @@ bool ResourceManager::DeleteTexture(const std::string& textureName)
 std::shared_ptr<Mesh> CreateMesh(std::string meshName) {
 	if (meshName == "cube")
 		return std::make_shared<Cube>();
+	else if (meshName == "torus")
+		return std::make_shared<Torus>();
 	else
 		return nullptr;
 }

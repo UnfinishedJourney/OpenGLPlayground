@@ -21,6 +21,6 @@ namespace test {
 		void OnImGuiRender() override;
 	private:
 		std::unique_ptr<InstancedRenderObject> m_Instances;
-		std::unique_ptr<ResourceManager> m_ResourceManager;
+		//std::unique_ptr<ResourceManager> m_ResourceManager;
 	};
 }

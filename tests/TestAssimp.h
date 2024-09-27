@@ -32,6 +32,6 @@ namespace test {
 		void OnImGuiRender() override;
 	private:
 		std::unique_ptr<MovingDuck> m_DuckRenderObject;
-		std::unique_ptr<ResourceManager> m_ResourceManager;
+		//std::unique_ptr<ResourceManager> m_ResourceManager;
 	};
 }

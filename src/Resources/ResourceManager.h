@@ -30,7 +30,7 @@ namespace std {
 
 class ResourceManager {
 public:
-
+    ResourceManager() = default;
     std::shared_ptr<Texture> GetTexture(const std::string& textureName);
     bool DeleteTexture(const std::string& textureName);
 

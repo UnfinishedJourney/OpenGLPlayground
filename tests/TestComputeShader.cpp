@@ -14,9 +14,7 @@ namespace test {
 
     TestComputeShader::TestComputeShader()
     {
-        m_ResourceManager = std::make_unique<ResourceManager>();
-
-        m_ComputeShader = m_ResourceManager->GetComputeShader("brdf_compute");
+        m_ComputeShader = s_ResourceManager->GetComputeShader("brdf_compute");
 
         glGenBuffers(1, &m_DSTBuffer);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_DSTBuffer);
@@ -33,7 +31,7 @@ namespace test {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        m_QuadShader = m_ResourceManager->GetShader("quad");
+        m_QuadShader = s_ResourceManager->GetShader("quad");
 
         float quadVertices[] = {
             -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,

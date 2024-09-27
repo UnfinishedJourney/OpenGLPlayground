@@ -3,8 +3,7 @@
 
 test::TestSimpleCube::TestSimpleCube()
 {
-    m_ResourceManager = std::make_unique<ResourceManager>();
-    //std::shared_ptr<Mesh> cubeMesh = m_ResourceManager->GetMesh("cube");
+    //std::shared_ptr<Mesh> cubeMesh = s_ResourceManager->GetMesh("cube");
     MeshLayout cubeMeshLayout = {
         true,
         false,
@@ -13,13 +12,13 @@ test::TestSimpleCube::TestSimpleCube()
         true
     };
 
-    std::shared_ptr<MeshBuffer> meshComponent = m_ResourceManager->GetMeshBuffer("cube", cubeMeshLayout);
-    std::shared_ptr<Shader> shader = m_ResourceManager->GetShader("basic");
-    std::shared_ptr<Texture> texture = m_ResourceManager->GetTexture("cuteDog");
+    std::shared_ptr<MeshBuffer> meshComponent = s_ResourceManager->GetMeshBuffer("cube", cubeMeshLayout);
+    std::shared_ptr<Shader> shader = s_ResourceManager->GetShader("basic");
+    std::shared_ptr<Texture> texture = s_ResourceManager->GetTexture("cuteDog");
 
     std::shared_ptr<Material> material = std::make_shared<Material>();
     std::unique_ptr<Transform> transform = std::make_unique<Transform>();
-    transform->SetRotation(glm::vec4(0.5, 1.0, 0.0, 0.5));
+    //transform->SetRotation(glm::vec4(0.5, 1.0, 0.0, 0.5));
 
     material->AddTexture(texture);
     material->SetShader(shader);

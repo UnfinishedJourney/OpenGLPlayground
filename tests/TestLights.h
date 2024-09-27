@@ -28,6 +28,6 @@ namespace test {
 		void OnImGuiRender() override;
 	private:
 		std::unique_ptr<Scene> m_Scene;
-		std::unique_ptr<ResourceManager> m_ResourceManager;
+		//std::unique_ptr<ResourceManager> m_ResourceManager;
 	};
 }

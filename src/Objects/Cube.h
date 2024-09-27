@@ -4,8 +4,5 @@
 struct Cube: Mesh {
 public:
 	Cube();
-
-	virtual ~Cube()
-	{}
 protected:
 };

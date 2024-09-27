@@ -4,7 +4,6 @@
 
 test::TestInstance::TestInstance()
 {
-    m_ResourceManager = std::make_unique<ResourceManager>();
     MeshLayout cubeMeshLayout = {
         true,
         false,
@@ -13,9 +12,9 @@ test::TestInstance::TestInstance()
         true
     };
 
-    std::shared_ptr<MeshBuffer> meshComponent = m_ResourceManager->GetMeshBuffer("cube", cubeMeshLayout);
-    std::shared_ptr<Shader> shader = m_ResourceManager->GetShader("instance");
-    std::shared_ptr<Texture> texture = m_ResourceManager->GetTexture("cuteDog");
+    std::shared_ptr<MeshBuffer> meshComponent = s_ResourceManager->GetMeshBuffer("cube", cubeMeshLayout);
+    std::shared_ptr<Shader> shader = s_ResourceManager->GetShader("instance");
+    std::shared_ptr<Texture> texture = s_ResourceManager->GetTexture("cuteDog");
 
     std::shared_ptr<Material> material = std::make_shared<Material>();
     std::unique_ptr<Transform> transform = std::make_unique<Transform>();

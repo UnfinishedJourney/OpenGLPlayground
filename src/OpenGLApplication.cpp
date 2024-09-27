@@ -54,6 +54,7 @@ void Application::Init() {
     window = GLContext::InitOpenGL(Screen::s_Width, Screen::s_Height, "My Application", glfw_onKey, glfw_onMouseScroll, glfw_onMouseMove);
 
     glfwSetWindowUserPointer(window, this);
+    test::Test::InitializeResourceManager("shaders/metadata.json");
 
     currentTest = nullptr;
     testMenu = std::make_shared<test::TestMenu>(currentTest);

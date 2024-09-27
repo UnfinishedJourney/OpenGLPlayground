@@ -26,24 +26,11 @@ struct VertexBufferElement
 
 class VertexBufferLayout
 {
-private:
-	std::vector<VertexBufferElement> m_Elements;
-	unsigned int m_Stride;
-	bool b_SubBuffered;
 public:
 	VertexBufferLayout()
-		: m_Stride(0), b_SubBuffered(false)
+		: m_Stride(0)
 	{}
 
-	void MakeSubBuffered()
-	{
-		b_SubBuffered = true;
-	}
-
-	bool IsSubBuffered() const
-	{
-		return b_SubBuffered;
-	}
 
 	template<typename T>
 	void Push(unsigned int count)
@@ -93,4 +80,7 @@ public:
 	{
 		return m_Stride;
 	}
+private:
+	std::vector<VertexBufferElement> m_Elements;
+	unsigned int m_Stride;
 };

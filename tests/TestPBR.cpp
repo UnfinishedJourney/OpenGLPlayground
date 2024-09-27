@@ -46,10 +46,9 @@ namespace test {
             m_Scene->AddLight({ glm::vec4(x, 1.2f, z + 1.0f, 1.0f) , glm::vec3(0.8f, 0.8f, 0.8f) });
         }
 
-        m_ResourceManager = std::make_unique<ResourceManager>();
-        auto model = m_ResourceManager->GetModel("pig");
+        auto model = s_ResourceManager->GetModel("pig");
         MeshLayout meshLayout = { true, true, false, false, false };
-        std::shared_ptr<Shader> shader = m_ResourceManager->GetShader("pbr");
+        std::shared_ptr<Shader> shader = s_ResourceManager->GetShader("pbr");
         std::shared_ptr<Material> material = std::make_shared<Material>();
         std::unique_ptr<Transform> transform = std::make_unique<Transform>();
         transform->SetRotation(glm::vec3(-1.57, 0.0, 0.0));
