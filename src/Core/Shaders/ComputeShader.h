@@ -10,6 +10,8 @@ public:
         LoadShader(filepath);
     }
 
+    void ReloadShader() override;
+
     void Dispatch(unsigned int numGroupsX, unsigned int numGroupsY, unsigned int numGroupsZ) const;
 
 protected:

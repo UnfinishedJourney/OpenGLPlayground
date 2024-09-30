@@ -14,7 +14,7 @@ public:
 
     void Bind() const;
     void Unbind() const;
-
+    virtual void ReloadShader() = 0;
     // Uniform setters
     void SetUniform(const std::string& name, float value) const;
     void SetUniform(const std::string& name, int value) const;
@@ -27,6 +27,7 @@ public:
     void SetUniform(const std::string& name, float v0, float v1, float v2, float v3) const;
 
 protected:
+    std::filesystem::path m_Filepath;
     unsigned int m_RendererID = 0;
     mutable std::unordered_map<std::string, int> m_UniformLocationCache;
 

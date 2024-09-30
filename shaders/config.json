@@ -1,0 +1,35 @@
+{
+    "shaders": {
+        "basic": {
+            "binary_path": "../shaders/Basic.bin",
+            "source_path": "../shaders/Basic.shader"
+        },
+		"duck": {
+            "binary_path": "../shaders/Duck.bin",
+            "source_path": "../shaders/Duck.shader"
+        },
+		"lights": {
+            "binary_path": "../shaders/Lights.bin",
+            "source_path": "../shaders/Lights.shader"
+        },
+		"instance": {
+            "binary_path": "../shaders/Instance.bin",
+            "source_path": "../shaders/Instance.shader"
+        },
+		"pbr": {
+            "binary_path": "../shaders/PBR.bin",
+            "source_path": "../shaders/PBR.shader"
+        },
+		"quad": {
+            "binary_path": "../shaders/Quad.bin",
+            "source_path": "../shaders/Quad.shader"
+        }
+    },
+
+    "compute_shaders": {
+        "brdf_compute": {
+            "binary_path": "../shaders/BRDFCompute.bin",
+            "source_path": "../shaders/BRDFCompute.shader"
+        }
+    }
+}

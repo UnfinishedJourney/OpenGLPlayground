@@ -1,6 +1,8 @@
 #include "Shader.h"
 #include <glad/glad.h>
 
+#include <iostream>
+
 void Shader::LoadShader(const std::filesystem::path& filepath) {
 
     if (m_RendererID) {
@@ -12,11 +14,20 @@ void Shader::LoadShader(const std::filesystem::path& filepath) {
     binaryPath.replace_extension(".bin");
 
     if (!LoadBinary(binaryPath)) {
-        //std::cout << "Failed to load shader binary. Compiling from source..." << std::endl;
+        ReloadShader();
+    }
 
-        // Read and compile shaders from source
-        std::string source = ReadFile(filepath);
-        source = ResolveIncludes(source, filepath.parent_path());
+}
+
+void Shader::ReloadShader() {
+    if (m_RendererID) {
+        glDeleteProgram(m_RendererID);
+        m_RendererID = 0;
+    }
+
+    try {
+        std::string source = ReadFile(m_Filepath);
+        source = ResolveIncludes(source, m_Filepath.parent_path());
 
         // Parse the shader source to separate different shader stages
         enum class ShaderType { NONE, VERTEX, FRAGMENT };
@@ -53,21 +64,26 @@ void Shader::LoadShader(const std::filesystem::path& filepath) {
             shaders.push_back(CompileShader(GL_VERTEX_SHADER, shaderSources[ShaderType::VERTEX].str()));
         }
         else {
-            throw std::runtime_error("Vertex shader not found in file: " + filepath.string());
+            throw std::runtime_error("Vertex shader not found in file: " + m_Filepath.string());
         }
 
         if (shaderSources.find(ShaderType::FRAGMENT) != shaderSources.end()) {
             shaders.push_back(CompileShader(GL_FRAGMENT_SHADER, shaderSources[ShaderType::FRAGMENT].str()));
         }
         else {
-            throw std::runtime_error("Fragment shader not found in file: " + filepath.string());
+            throw std::runtime_error("Fragment shader not found in file: " + m_Filepath.string());
         }
 
         // Link program
         m_RendererID = LinkProgram(shaders);
 
+        std::filesystem::path binaryPath = m_Filepath;
+        binaryPath.replace_extension(".bin");
+
         // Save the binary for future use
         SaveBinary(binaryPath);
     }
-
+    catch (const std::exception& e) {
+        std::cerr << "Error reloading shader: " << e.what() << std::endl;
+    }
 }

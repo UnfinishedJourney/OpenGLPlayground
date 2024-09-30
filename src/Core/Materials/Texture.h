@@ -16,17 +16,12 @@ public:
 
 	inline int GetWidth() const { return m_Width; }
 	inline int GetHeight() const { return m_Height; }
-	bool GetStatus() const
-	{
-		return m_IsBound;
-	}
 
 protected:
 	unsigned int m_RendererID;
 	std::string m_FilePath;
 	unsigned char* m_LocalBuffer;
 	int m_Width, m_Height, m_BPP;
-	mutable bool m_IsBound = false;
 };
 
 class SkyBoxTexture : public Texture

@@ -10,6 +10,8 @@ public:
         LoadShader(filepath);
     }
 
+    void ReloadShader() override;
+
 protected:
     void LoadShader(const std::filesystem::path& filepath) override;
 };

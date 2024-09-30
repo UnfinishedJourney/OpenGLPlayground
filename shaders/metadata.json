@@ -1,0 +1,39 @@
+{
+    "global": {
+        "driver_version": "4.3.0 NVIDIA 561.09",
+        "glsl_version": "4.30 NVIDIA via Cg compiler",
+        "openGL_profile": "core"
+    },
+    "shaders": {
+        "basic": {
+            "binary_last_modified": 13371925553,
+            "source_last_modified": 13371242132
+        },
+        "duck": {
+            "binary_last_modified": 13371925553,
+            "source_last_modified": 13371242132
+        },
+        "instance": {
+            "binary_last_modified": 13371925549,
+            "source_last_modified": 13371399916
+        },
+        "lights": {
+            "binary_last_modified": 13371925553,
+            "source_last_modified": 13371242132
+        },
+        "pbr": {
+            "binary_last_modified": 13371910576,
+            "source_last_modified": 13371425904
+        },
+        "quad": {
+            "binary_last_modified": 13371925553,
+            "source_last_modified": 13371242132
+        }
+    },
+    "compute_shaders": {
+        "brdf_compute": {
+            "binary_last_modified": 0,
+            "source_last_modified": 0
+        }
+    }
+}

@@ -32,18 +32,13 @@ Texture::~Texture()
 
 void Texture::Bind(unsigned int slot) const
 {
-    if (m_IsBound)
-        return;
-
 	GLCall(glActiveTexture(GL_TEXTURE0 + slot));
 	GLCall(glBindTexture(GL_TEXTURE_2D, m_RendererID));
-    m_IsBound = true;
 }
 
 void Texture::Unbind() const
 {
 	GLCall(glBindTexture(GL_TEXTURE_2D, 0));
-    m_IsBound = false;
 }
 
 SkyBoxTexture::SkyBoxTexture(const std::string& path, const std::string& extension)

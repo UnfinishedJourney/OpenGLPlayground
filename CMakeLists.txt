@@ -15,31 +15,48 @@ set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/assets)
 file(GLOB_RECURSE SRC_FILES ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/src/*.h)
 file(GLOB_RECURSE TEST_FILES ${CMAKE_SOURCE_DIR}/tests/*.cpp ${CMAKE_SOURCE_DIR}/tests/*.h)
 
-# Vendor files (you may also glob these if desired)
+# Vendor files
 set(VENDOR_FILES
-    vendor/stb_image/stb_image.cpp
-    vendor/imgui/imgui.cpp
-    vendor/imgui/imgui_draw.cpp
-    vendor/imgui/imgui_demo.cpp
-    vendor/imgui/imgui_tables.cpp
-    vendor/imgui/imgui_widgets.cpp
-    vendor/imgui/imgui_impl_glfw.cpp
-    vendor/imgui/imgui_impl_opengl3.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/stb_image/stb_image.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_draw.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_demo.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_tables.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_widgets.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_impl_glfw.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_impl_opengl3.cpp
     ${DEPS_DIR}/GLAD/src/glad.c
 )
 
-# Create source groups for better organization in Visual Studio
-source_group("src" FILES ${SRC_FILES})
-source_group("tests" FILES ${TEST_FILES})
-source_group("vendor" FILES ${VENDOR_FILES})
+# Function to group sources based on their directory structure
+function(group_sources base_dir)
+    foreach(file IN ITEMS ${ARGN})
+        get_filename_component(abs_file ${file} ABSOLUTE)
+        file(RELATIVE_PATH relative_file ${base_dir} ${abs_file})
+        string(REPLACE "/" "\\" group_name ${relative_file})
+        get_filename_component(group_name "${group_name}" PATH)
+
+        # If group_name is empty, set it to the base directory name
+        if(group_name STREQUAL "")
+            get_filename_component(dir_name ${base_dir} NAME)
+            set(group_name ${dir_name})
+        endif()
+
+        source_group("${group_name}" FILES "${abs_file}")
+    endforeach()
+endfunction()
+
+group_sources(${CMAKE_SOURCE_DIR}/src ${SRC_FILES})
+group_sources(${CMAKE_SOURCE_DIR}/tests ${TEST_FILES})
+group_sources(${CMAKE_SOURCE_DIR}/vendor ${VENDOR_FILES})
 
 # Specify the executable
 add_executable(OpenGLApplication ${SRC_FILES} ${TEST_FILES} ${VENDOR_FILES})
 
-# Include directories (adding root source directory to include all subdirectories)
 target_include_directories(OpenGLApplication PRIVATE 
     ${DEPS_DIR}/GLFW/include
     ${DEPS_DIR}/GLAD/include
+	${DEPS_DIR}/json/include
     ${DEPS_DIR}/glm
     ${DEPS_DIR}/assimp_related/include
     ${CMAKE_SOURCE_DIR}/vendor/imgui
@@ -48,10 +65,10 @@ target_include_directories(OpenGLApplication PRIVATE
     ${CMAKE_SOURCE_DIR}/src/Core/Buffers
     ${CMAKE_SOURCE_DIR}/src/Core/Materials
     ${CMAKE_SOURCE_DIR}/src/Core/Shaders
-    ${CMAKE_SOURCE_DIR}/src/Application
     ${CMAKE_SOURCE_DIR}/src/Objects
     ${CMAKE_SOURCE_DIR}/src/Resources
     ${CMAKE_SOURCE_DIR}/src/Scene
+    ${CMAKE_SOURCE_DIR}/src/Application
     ${CMAKE_SOURCE_DIR}/tests
 )
 

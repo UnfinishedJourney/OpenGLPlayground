@@ -6,7 +6,9 @@
 #include <sstream>
 #include <iostream>
 
-BaseShader::BaseShader(const std::filesystem::path& filepath) {
+BaseShader::BaseShader(const std::filesystem::path& filepath)
+    : m_Filepath(filepath)
+{
 }
 
 BaseShader::~BaseShader() {
