@@ -14,7 +14,7 @@ test::TestSimpleCube::TestSimpleCube()
 
     std::shared_ptr<MeshBuffer> meshComponent = s_ResourceManager->GetMeshBuffer("cube", cubeMeshLayout);
     std::shared_ptr<Shader> shader = s_ResourceManager->GetShader("basic");
-    std::shared_ptr<Texture> texture = s_ResourceManager->GetTexture("cuteDog");
+    std::shared_ptr<Texture2D> texture = s_ResourceManager->GetTexture("cuteDog");
 
     std::shared_ptr<Material> material = std::make_shared<Material>();
     std::unique_ptr<Transform> transform = std::make_unique<Transform>();

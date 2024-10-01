@@ -2,6 +2,7 @@
 
 #include "Model.h"
 #include "Material.h"
+#include "Texture2D.h"
 #include "RenderObject.h"
 #include "ShaderManager.h"
 #include "Transform.h"
@@ -30,7 +31,7 @@ namespace std {
 class ResourceManager {
 public:
     ResourceManager();
-    std::shared_ptr<Texture> GetTexture(const std::string& textureName);
+    std::shared_ptr<Texture2D> GetTexture(const std::string& textureName);
     bool DeleteTexture(const std::string& textureName);
 
     std::shared_ptr<Mesh> GetMesh(const std::string& meshName);
@@ -50,6 +51,6 @@ private:
     std::unique_ptr<ShaderManager> m_ShaderManager;
     std::unordered_map<std::string, std::shared_ptr<Mesh>> m_Meshes;
     std::unordered_map<MeshKey, std::shared_ptr<MeshBuffer>> m_MeshBuffers;
-    std::unordered_map<std::string, std::shared_ptr<Texture>> m_Textures;
+    std::unordered_map<std::string, std::shared_ptr<Texture2D>> m_Textures;
     std::unordered_map<std::string, std::shared_ptr<Model>> m_Models;
 };

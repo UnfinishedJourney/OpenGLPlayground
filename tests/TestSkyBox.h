@@ -2,7 +2,7 @@
 
 #include "Test.h"
 #include "Shader.h"
-#include "Texture.h"
+#include "TextureSkyBox.h"
 #include "VertexBuffer.h"
 #include "VertexBufferLayout.h"
 #include "IndexBuffer.h"

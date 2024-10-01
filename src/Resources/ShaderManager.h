@@ -15,16 +15,19 @@
 struct GlobalMetadata {
     std::string driverVersion;
     std::string openGLProfile;
-    std::string glslVersion;
 };
 
 struct ShaderMetadata {
     std::string sourcePath;
     std::string binaryPath;
     std::filesystem::file_time_type sourceLastModified;
-    std::filesystem::file_time_type binaryLastModified;
+    std::filesystem::file_time_type binaryLastModified; //add more advanced checkup to recompile code
     bool isComputeShader;
 };
+
+//add include checkup
+//add hot reloading
+//use asynch loading
 
 class ShaderManager {
 public:

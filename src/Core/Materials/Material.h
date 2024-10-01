@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Shader.h"
-#include "Texture.h"
+#include "Texture2D.h"
 
 #include <memory>
 #include <string>
@@ -15,7 +15,7 @@ public:
         m_Shader = shader;
     }
 
-    void AddTexture(std::shared_ptr<Texture> texture, unsigned int textureUnit = 0) {
+    void AddTexture(std::shared_ptr<Texture2D> texture, unsigned int textureUnit = 0) {
         m_Textures[textureUnit] = texture;
     }
 
@@ -48,7 +48,7 @@ public:
 
 private:
     std::shared_ptr<Shader> m_Shader;
-    std::unordered_map<unsigned int, std::shared_ptr<Texture>> m_Textures;
+    std::unordered_map<unsigned int, std::shared_ptr<Texture2D>> m_Textures;
     std::unordered_map<std::string, std::function<void(Shader&, const std::string&)>> m_Params;
     mutable bool m_IsBound = false;
 };

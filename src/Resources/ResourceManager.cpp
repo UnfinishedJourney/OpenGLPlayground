@@ -16,7 +16,7 @@ std::unordered_map<std::string, std::string> G_Texture_Path
 	{"duckDiffuse", "../assets/rubber_duck/textures/Duck_baseColor.png"}
 };
 
-std::shared_ptr<Texture> ResourceManager::GetTexture(const std::string& textureName)
+std::shared_ptr<Texture2D> ResourceManager::GetTexture(const std::string& textureName)
 {
 	if (textureName.empty())
 		return nullptr;
@@ -25,11 +25,11 @@ std::shared_ptr<Texture> ResourceManager::GetTexture(const std::string& textureN
 		return m_Textures[textureName];
 	}
 
-	std::shared_ptr<Texture> texture;
+	std::shared_ptr<Texture2D> texture;
 	if (G_Texture_Path.find(textureName) != G_Texture_Path.end())
-		texture = std::make_shared<Texture>(G_Texture_Path[textureName]);
+		texture = std::make_shared<Texture2D>(G_Texture_Path[textureName]);
 	else
-		texture = std::make_shared<Texture>(textureName);
+		texture = std::make_shared<Texture2D>(textureName);
 
 	m_Textures[textureName] = texture;
 	return texture;

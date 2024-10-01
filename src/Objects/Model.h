@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Utility.h"
-#include "Texture.h"
+#include "Texture2D.h"
 #include "Mesh.h"
 
 #include "gtc/matrix_transform.hpp"
@@ -27,7 +27,7 @@ public:
 private:
 	std::string m_FilePath;
 	std::vector<std::shared_ptr<Mesh>> m_Meshes;
-	std::vector<std::shared_ptr<Texture>> m_Textures;
+	std::vector<std::shared_ptr<Texture2D>> m_Textures;
 	std::vector<std::unordered_map<MeshLayout, std::shared_ptr<MeshBuffer>>> m_MeshBuffersCache;
 	void ProcessModel();
 	void ProcessNode(const aiScene* scene, const aiNode* node);

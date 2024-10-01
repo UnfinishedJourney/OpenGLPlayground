@@ -8,20 +8,6 @@ ShaderManager::ShaderManager(const std::string& metadataPath, const std::string&
     Initialize();
 }
 
-void ShaderManager::LoadShaders()
-{
-    for (const auto& [name, metadata] : m_ShadersMetadata) {
-        if (metadata.isComputeShader)
-            m_Shaders[name] = std::make_shared<ComputeShader>(metadata.sourcePath);
-        else
-            m_Shaders[name] = std::make_shared<Shader>(metadata.sourcePath);
-        if (IsShaderOutdated(name)) {
-            m_Shaders[name]->ReloadShader();
-            m_MetaHasChanged = true;
-        }
-    }
-}
-
 void ShaderManager::Initialize()
 {
     // Load configuration and metadata
@@ -42,19 +28,33 @@ void ShaderManager::Initialize()
         // Recompile and reload all shaders
         for (const auto& [name, _] : m_ShadersMetadata) {
             m_Shaders[name]->ReloadShader();
+            m_ShadersMetadata[name].binaryLastModified = std::filesystem::last_write_time(m_ShadersMetadata[name].binaryPath);
         }
 
         // Update global metadata
         m_GlobalMetadata.driverVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
         m_GlobalMetadata.openGLProfile = "core"; // Replace with actual profile if necessary
-        m_GlobalMetadata.glslVersion = reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
-    } else {
-        // Reload shaders if needed
-        //ReloadShadersIfNeeded();
     }
 
     if (m_MetaHasChanged) {
         SaveMetadata();
+    }
+}
+
+void ShaderManager::LoadShaders()
+{
+    for (const auto& [name, metadata] : m_ShadersMetadata) {
+        if (metadata.isComputeShader) {
+            m_Shaders[name] = std::make_shared<ComputeShader>(metadata.sourcePath);
+        }
+        else {
+            m_Shaders[name] = std::make_shared<Shader>(metadata.sourcePath);
+        }
+        if (IsShaderOutdated(name)) {
+            m_Shaders[name]->ReloadShader();
+            m_ShadersMetadata[name].binaryLastModified = std::filesystem::last_write_time(m_ShadersMetadata[name].binaryPath);
+            m_MetaHasChanged = true;
+        }
     }
 }
 
@@ -65,7 +65,6 @@ bool ShaderManager::LoadMetadata()
         // Initialize default metadata
         m_GlobalMetadata.driverVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
         m_GlobalMetadata.openGLProfile = "core"; // Replace with actual profile if necessary
-        m_GlobalMetadata.glslVersion = reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
         m_ShadersMetadata.clear();
         return false;
     }
@@ -77,7 +76,6 @@ bool ShaderManager::LoadMetadata()
     if (jsonData.contains("global")) {
         m_GlobalMetadata.driverVersion = jsonData["global"].value("driver_version", "");
         m_GlobalMetadata.openGLProfile = jsonData["global"].value("openGL_profile", "");
-        m_GlobalMetadata.glslVersion = jsonData["global"].value("glsl_version", "");
     }
 
     // Load shaders metadata
@@ -111,17 +109,14 @@ bool ShaderManager::SaveMetadata()
     // Save global metadata
     jsonData["global"]["driver_version"] = m_GlobalMetadata.driverVersion;
     jsonData["global"]["openGL_profile"] = m_GlobalMetadata.openGLProfile;
-    jsonData["global"]["glsl_version"] = m_GlobalMetadata.glslVersion;
 
     // Save shaders metadata
     for (const auto& [name, metadata] : m_ShadersMetadata) {
-        if (metadata.isComputeShader)
-        {
+        if (metadata.isComputeShader) {
             jsonData["compute_shaders"][name]["binary_last_modified"] = std::chrono::duration_cast<std::chrono::seconds>(metadata.binaryLastModified.time_since_epoch()).count();
             jsonData["compute_shaders"][name]["source_last_modified"] = std::chrono::duration_cast<std::chrono::seconds>(metadata.sourceLastModified.time_since_epoch()).count();
         }
-        else
-        {
+        else {
             jsonData["shaders"][name]["binary_last_modified"] = std::chrono::duration_cast<std::chrono::seconds>(metadata.binaryLastModified.time_since_epoch()).count();
             jsonData["shaders"][name]["source_last_modified"] = std::chrono::duration_cast<std::chrono::seconds>(metadata.sourceLastModified.time_since_epoch()).count();
         }
@@ -160,19 +155,22 @@ bool ShaderManager::LoadConfig()
             // Initialize last modified times
             if (std::filesystem::exists(metadata.sourcePath)) {
                 metadata.sourceLastModified = std::filesystem::last_write_time(metadata.sourcePath);
-            } else {
+            }
+            else {
                 metadata.sourceLastModified = std::filesystem::file_time_type::min();
             }
 
             if (std::filesystem::exists(metadata.binaryPath)) {
                 metadata.binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
-            } else {
+            }
+            else {
                 metadata.binaryLastModified = std::filesystem::file_time_type::min();
             }
 
             m_ShadersMetadata[name] = metadata;
         }
     }
+
     if (jsonData.contains("compute_shaders")) {
         for (auto& [name, shaderData] : jsonData["compute_shaders"].items()) {
             ShaderMetadata metadata;
@@ -207,12 +205,10 @@ bool ShaderManager::IsGlobalMetadataChanged()
     // Get current values
     std::string currentDriverVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
     std::string currentOpenGLProfile = "core"; // Replace with actual profile if necessary
-    std::string currentGLSLVersion = reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     // Compare with saved metadata
     return m_GlobalMetadata.driverVersion != currentDriverVersion ||
-           m_GlobalMetadata.openGLProfile != currentOpenGLProfile ||
-           m_GlobalMetadata.glslVersion != currentGLSLVersion;
+        m_GlobalMetadata.openGLProfile != currentOpenGLProfile;
 }
 
 bool ShaderManager::IsShaderOutdated(const std::string& shaderName)
@@ -228,11 +224,14 @@ bool ShaderManager::IsShaderOutdated(const std::string& shaderName)
     // Get the last write times
     std::filesystem::file_time_type sourceLastModified = std::filesystem::last_write_time(metadata.sourcePath);
     std::filesystem::file_time_type binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
-    
-    if (sourceLastModified != metadata.sourceLastModified || binaryLastModified != metadata.binaryLastModified)
-        m_MetaHasChanged = true;
 
-    return sourceLastModified > binaryLastModified;
+    bool isOutdated = sourceLastModified >= binaryLastModified;
+    if (isOutdated) {
+        m_ShadersMetadata[shaderName].sourceLastModified = sourceLastModified;
+        m_ShadersMetadata[shaderName].binaryLastModified = binaryLastModified;
+    }
+
+    return isOutdated;
 }
 
 std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& name)

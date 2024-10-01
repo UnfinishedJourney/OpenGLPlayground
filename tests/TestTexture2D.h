@@ -2,7 +2,7 @@
 
 #include "Test.h"
 #include "Shader.h"
-#include "Texture.h"
+#include "Texture2D.h"
 #include "VertexBuffer.h"
 #include "VertexBufferLayout.h"
 #include "IndexBuffer.h"
@@ -27,7 +27,7 @@ namespace test {
 		std::unique_ptr<VertexBuffer> m_VB;
 		std::unique_ptr<IndexBuffer> m_IB;
 		std::unique_ptr<Shader> m_Shader;
-		std::unique_ptr<Texture> m_Texture;
+		std::unique_ptr<Texture2D> m_Texture;
 
 		glm::mat4 m_Proj;
 		glm::mat4 m_View;
