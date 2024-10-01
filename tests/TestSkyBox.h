@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Test.h"
-#include "Shader.h"
-#include "TextureSkyBox.h"
-#include "VertexBuffer.h"
-#include "VertexBufferLayout.h"
-#include "IndexBuffer.h"
-#include "SkyBox.h"
+#include "Graphics/Shaders/Shader.h"
+#include "Graphics/Textures/TextureSkyBox.h"
+#include "Graphics/Buffers/VertexBuffer.h"
+#include "Graphics/Buffers/VertexBufferLayout.h"
+#include "Graphics/Buffers/IndexBuffer.h"
+#include "Graphics/Meshes/SkyBox.h"
 
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"

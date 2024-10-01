@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Model.h"
-#include "Material.h"
-#include "Texture2D.h"
-#include "RenderObject.h"
-#include "ShaderManager.h"
-#include "Transform.h"
+#include "Graphics/Meshes/Model.h"
+#include "Graphics/Materials/Material.h"
+#include "Graphics/Textures/Texture2D.h"
+#include "Renderer/RenderObject.h"
+#include "Resources/ShaderManager.h"
+#include "Scene/Transform.h"
 
 struct MeshKey {
     std::string name;

@@ -1,7 +1,7 @@
 #pragma once
-#include "Lights.h"
-#include "RenderObject.h"
-#include "Shader.h"
+#include "Scene/Lights.h"
+#include "Renderer/RenderObject.h"
+#include "Graphics/Shaders/Shader.h"
 
 #include <vector>
 #include <memory>

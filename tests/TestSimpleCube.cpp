@@ -1,5 +1,5 @@
 #include "TestSimpleCube.h"
-#include "Cube.h"
+#include "Graphics/Meshes/Cube.h"
 
 test::TestSimpleCube::TestSimpleCube()
 {

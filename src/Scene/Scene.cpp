@@ -1,4 +1,4 @@
-#include "Scene.h"
+#include "Scene/Scene.h"
 #include <GLFW/glfw3.h>
 #include "gtc/constants.hpp"
 

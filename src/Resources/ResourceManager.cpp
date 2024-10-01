@@ -1,7 +1,6 @@
-#include "ResourceManager.h"
+#include "Resources/ResourceManager.h"
 
-#include "Cube.h"
-#include "Torus.h"
+#include "Graphics/Meshes/Cube.h"
 
 #include <unordered_map>
 
@@ -45,7 +44,7 @@ std::shared_ptr<Mesh> CreateMesh(std::string meshName) {
 	if (meshName == "cube")
 		return std::make_shared<Cube>();
 	else if (meshName == "torus")
-		return std::make_shared<Torus>();
+		return nullptr;
 	else
 		return nullptr;
 }

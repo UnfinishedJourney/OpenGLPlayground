@@ -1,9 +1,7 @@
 #pragma once
 
 #include "Test.h"
-#include "ResourceManager.h"
-#include "Shader.h"
-#include "ComputeShader.h"
+#include "Resources/ResourceManager.h"
 
 #include <memory>
 

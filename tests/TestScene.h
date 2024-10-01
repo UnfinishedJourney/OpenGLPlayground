@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Test.h"
-#include "Scene.h"
+#include "Scene/Scene.h"
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
 

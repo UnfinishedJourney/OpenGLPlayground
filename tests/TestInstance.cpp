@@ -1,6 +1,6 @@
 #include "TestInstance.h"
-#include "Cube.h"
-#include "InstanceBuffer.h"
+#include "Graphics/Meshes/Cube.h"
+#include "Graphics/Buffers/InstanceBuffer.h"
 
 test::TestInstance::TestInstance()
 {

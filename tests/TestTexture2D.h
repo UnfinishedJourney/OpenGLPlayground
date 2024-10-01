@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Test.h"
-#include "Shader.h"
-#include "Texture2D.h"
-#include "VertexBuffer.h"
-#include "VertexBufferLayout.h"
-#include "IndexBuffer.h"
+#include "Graphics/Shaders/Shader.h"
+#include "Graphics/Textures/Texture2D.h"
+#include "Graphics/Buffers/VertexBuffer.h"
+#include "Graphics/Buffers/VertexBufferLayout.h"
+#include "Graphics/Buffers/IndexBuffer.h"
 
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"

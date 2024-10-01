@@ -1,4 +1,4 @@
-#include "InputManager.h"
+#include "Application/InputManager.h"
 
 void InputManager::SetKey(int key, bool isPressed) {
     m_Keys[key] = isPressed;

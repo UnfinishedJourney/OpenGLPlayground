@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Test.h"
-#include "RenderObject.h"
-#include "ResourceManager.h"
+#include "Renderer/RenderObject.h"
+#include "Resources/ResourceManager.h"
 
 #include <GLFW/glfw3.h>
 #include <memory>

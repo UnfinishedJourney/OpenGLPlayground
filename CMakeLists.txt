@@ -56,19 +56,12 @@ add_executable(OpenGLApplication ${SRC_FILES} ${TEST_FILES} ${VENDOR_FILES})
 target_include_directories(OpenGLApplication PRIVATE 
     ${DEPS_DIR}/GLFW/include
     ${DEPS_DIR}/GLAD/include
-	${DEPS_DIR}/json/include
+    ${DEPS_DIR}/json/include
     ${DEPS_DIR}/glm
     ${DEPS_DIR}/assimp_related/include
     ${CMAKE_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/vendor/stb_image
-    ${CMAKE_SOURCE_DIR}/src/Core
-    ${CMAKE_SOURCE_DIR}/src/Core/Buffers
-    ${CMAKE_SOURCE_DIR}/src/Core/Materials
-    ${CMAKE_SOURCE_DIR}/src/Core/Shaders
-    ${CMAKE_SOURCE_DIR}/src/Objects
-    ${CMAKE_SOURCE_DIR}/src/Resources
-    ${CMAKE_SOURCE_DIR}/src/Scene
-    ${CMAKE_SOURCE_DIR}/src/Application
+    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/tests
 )
 

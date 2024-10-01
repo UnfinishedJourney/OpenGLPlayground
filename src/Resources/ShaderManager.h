@@ -1,8 +1,8 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
-#include "Shader.h"
-#include "ComputeShader.h"
+#include "Graphics/Shaders/Shader.h"
+#include "Graphics/Shaders/ComputeShader.h"
 
 #include <string>
 #include <unordered_map>

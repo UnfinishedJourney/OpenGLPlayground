@@ -1,6 +1,6 @@
 #include "TestSkyBox.h"
 #include <GLFW/glfw3.h>
-#include "Renderer.h"
+#include "Renderer/Renderer.h"
 #include "imgui.h"
 
 namespace test {

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Test.h"
-#include "ResourceManager.h"
-#include "RenderObject.h"
-#include "Scene.h"
+#include "Resources/ResourceManager.h"
+#include "Renderer/RenderObject.h"
+#include "Scene/Scene.h"
 
 #include <GLFW/glfw3.h>
 #include <memory>

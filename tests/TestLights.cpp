@@ -1,5 +1,5 @@
 #include "TestLights.h"
-#include "Renderer.h"
+#include "Renderer/Renderer.h"
 #include "imgui.h"
 
 #include <GLFW/glfw3.h>
