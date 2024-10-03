@@ -6,3 +6,4 @@
 #include "TestInstance.h"
 #include "TestPBR.h"
 #include "TestComputeShader.h"
+#include "TestDamagedHelmet.h"

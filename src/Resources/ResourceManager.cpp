@@ -12,7 +12,12 @@ ResourceManager::ResourceManager()
 std::unordered_map<std::string, std::string> G_Texture_Path
 {
 	{"cuteDog", "../assets/cute_dog.png"},
-	{"duckDiffuse", "../assets/rubber_duck/textures/Duck_baseColor.png"}
+	{"duckDiffuse", "../assets/rubber_duck/textures/Duck_baseColor.png"},
+
+	{"damagedHelmet1", "../assets/DamagedHelmet/glTF/Default_albedo.jpg"},
+	{"damagedHelmet2", "../assets/DamagedHelmet/glTF/Default_AO.jpg"},
+	{"damagedHelmet3", "../assets/DamagedHelmet/glTF/Default_emissive.jpg"}
+
 };
 
 std::shared_ptr<Texture2D> ResourceManager::GetTexture(const std::string& textureName)
@@ -66,6 +71,7 @@ bool ResourceManager::DeleteMesh(const std::string& meshName)
 std::unordered_map<std::string, std::string> G_Model_Path
 {
 	{"duck", "../assets/rubber_duck/scene.gltf"},
+	{"damagedHelmet", "../assets/DamagedHelmet/glTF/DamagedHelmet.gltf"},
 	{"pig", "../assets/pig_triangulated.obj"}
 };
 

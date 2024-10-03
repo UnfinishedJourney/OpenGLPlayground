@@ -15,23 +15,39 @@
 #include <memory>
 #include <iostream>
 
+struct MeshTextures
+{
+	std::unordered_map<TextureType, std::shared_ptr<Texture2D>> textures;
+};
+
+struct MeshInfo
+{
+	MeshTextures meshTextures;
+	std::shared_ptr<Mesh> mesh;
+};
+
 class Model
 {
 public:
 	Model(const std::string& path_to_model, bool bCenterModel = true);
 
-	size_t GetMeshCount() const { return m_Meshes.size(); }
+	size_t GetMeshCount() const { return m_MeshesInfo.size(); }
 	std::shared_ptr<MeshBuffer> GetMeshBuffer(size_t meshIndex, const MeshLayout& layout);
+	std::shared_ptr<Texture2D> GetTexture(size_t meshIndex, TextureType type)
+	{
+		return m_MeshesInfo[meshIndex]->meshTextures.textures[type];
+	}
 	std::vector<std::shared_ptr<MeshBuffer>> GetMeshBuffers(const MeshLayout& layout);
 
 private:
 	std::string m_FilePath;
-	std::vector<std::shared_ptr<Mesh>> m_Meshes;
-	std::vector<std::shared_ptr<Texture2D>> m_Textures;
+	std::vector<std::unique_ptr<MeshInfo>> m_MeshesInfo;
 	std::vector<std::unordered_map<MeshLayout, std::shared_ptr<MeshBuffer>>> m_MeshBuffersCache;
 	void ProcessModel();
 	void ProcessNode(const aiScene* scene, const aiNode* node);
 	void ProcessMesh(const aiScene* scene, const aiMesh* mesh);
-	glm::vec3 CalculateModelCenter() const;
+	//void LoadTextures();
 	void CenterModel();
+	glm::vec3 CalculateModelCenter() const;
+	MeshTextures LoadTextures(const aiScene* scene, aiMaterial* aiMat, const std::string& directory);
 };

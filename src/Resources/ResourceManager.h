@@ -46,6 +46,10 @@ public:
 
     std::shared_ptr<MeshBuffer> GetMeshBuffer(const std::string& meshName, const MeshLayout& layout);
     bool DeleteMeshBuffer(const std::string& meshName, MeshLayout layout);
+    void ReloadAllShaders()
+    {
+        m_ShaderManager->ReloadAllShaders();
+    }
 
 private:
     std::unique_ptr<ShaderManager> m_ShaderManager;

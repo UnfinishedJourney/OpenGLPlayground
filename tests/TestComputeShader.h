@@ -17,7 +17,6 @@ namespace test {
         void OnRender() override;
         void OnImGuiRender() override;
     private:
-        //std::unique_ptr<ResourceManager> m_ResourceManager;
         std::shared_ptr<ComputeShader> m_ComputeShader;
 
         GLuint m_DSTBuffer;

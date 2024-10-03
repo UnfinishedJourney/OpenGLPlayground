@@ -38,6 +38,7 @@ public:
 
     std::shared_ptr<Shader> GetShader(const std::string& name);
     std::shared_ptr<ComputeShader> GetComputeShader(const std::string& name);
+    void ReloadAllShaders();
 
 private:
     std::string m_MetadataPath;

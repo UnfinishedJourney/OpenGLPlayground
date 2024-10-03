@@ -6,6 +6,24 @@
 #include <glad/glad.h>
 #include <string>
 #include <iostream>
+#include <functional>
+
+enum class TextureType {
+	Albedo,
+	Normal,
+	Occlusion,
+	RoughnessMetallic,
+	Emissive,
+};
+
+namespace std {
+	template <>
+	struct hash<TextureType> {
+		std::size_t operator()(const TextureType& type) const {
+			return std::hash<int>()(static_cast<int>(type));
+		}
+	};
+}
 
 class Texture2D : public TextureBase
 {

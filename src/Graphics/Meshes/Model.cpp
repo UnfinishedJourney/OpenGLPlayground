@@ -12,7 +12,7 @@ Model::Model(const std::string& path_to_model, bool bCenterModel)
     : m_FilePath(path_to_model)
 {
     ProcessModel();
-    m_MeshBuffersCache.resize(m_Meshes.size());
+    m_MeshBuffersCache.resize(m_MeshesInfo.size());
     
     if (bCenterModel)
     {
@@ -31,6 +31,8 @@ void Model::ProcessModel()
     }
 
     ProcessNode(scene, scene->mRootNode);
+
+    //LoadTextures();
     aiReleaseImport(scene);
 }
 
@@ -103,7 +105,119 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh)
             myMesh->indices.push_back(face.mIndices[j]);
     }
 
-    m_Meshes.push_back(myMesh);
+    MeshTextures meshTextures;
+
+    std::string directory = m_FilePath.substr(0, m_FilePath.find_last_of('/'));
+    if (aiMesh->mMaterialIndex >= 0) {
+        aiMaterial* aiMat = scene->mMaterials[aiMesh->mMaterialIndex];
+        meshTextures = LoadTextures(scene, aiMat, directory);
+    }
+
+
+    m_MeshesInfo.push_back(std::make_unique<MeshInfo>(MeshInfo(meshTextures, myMesh)));
+}
+
+inline std::string AiTextureTypeToString(aiTextureType type)
+{
+    switch (type)
+    {
+    case aiTextureType_NONE:
+        return "NONE";
+    case aiTextureType_DIFFUSE:
+        return "DIFFUSE";
+    case aiTextureType_SPECULAR:
+        return "SPECULAR";
+    case aiTextureType_AMBIENT:
+        return "AMBIENT";
+    case aiTextureType_EMISSIVE:
+        return "EMISSIVE";
+    case aiTextureType_HEIGHT:
+        return "HEIGHT";
+    case aiTextureType_NORMALS:
+        return "NORMALS";
+    case aiTextureType_SHININESS:
+        return "SHININESS";
+    case aiTextureType_OPACITY:
+        return "OPACITY";
+    case aiTextureType_DISPLACEMENT:
+        return "DISPLACEMENT";
+    case aiTextureType_LIGHTMAP:
+        return "LIGHTMAP";
+    case aiTextureType_REFLECTION:
+        return "REFLECTION";
+    case aiTextureType_UNKNOWN:
+        return "UNKNOWN";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+MeshTextures Model::LoadTextures(const aiScene* scene, aiMaterial* aiMat, const std::string& directory)
+{
+    MeshTextures result;
+
+    std::unordered_map<aiTextureType, TextureType> aiToMyTextureType = {
+        {aiTextureType_DIFFUSE, TextureType::Albedo},
+        {aiTextureType_NORMALS, TextureType::Normal},
+        {aiTextureType_LIGHTMAP, TextureType::Occlusion},
+        {aiTextureType_EMISSIVE, TextureType::Emissive},
+    };
+
+    for (int i = aiTextureType_NONE; i < 13; ++i)
+    {
+        aiTextureType type = static_cast<aiTextureType>(i);
+        std::cout << AiTextureTypeToString(type) << " " <<  aiMat->GetTextureCount(type) << std::endl;
+    }
+
+    for (const auto& pair : aiToMyTextureType)
+    {
+        aiTextureType aiType = pair.first;
+        TextureType myType = pair.second;
+
+        unsigned int textureCount = aiMat->GetTextureCount(aiType);
+        for (unsigned int i = 0; i < textureCount; ++i)
+        {
+            aiString str;
+            if (aiMat->GetTexture(aiType, i, &str) == AI_SUCCESS)
+            {
+                std::string texturePath = std::string(str.C_Str());
+                std::string fullPath = directory + "/" + texturePath;
+
+                std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(fullPath);
+                if (texture)
+                {
+                    result.textures[myType] = texture;
+                }
+                else
+                {
+                    std::cerr << "Couldn't load texture: " << fullPath << std::endl;
+                }
+            }
+        }
+    }
+
+    unsigned int specularCount = aiMat->GetTextureCount(aiTextureType_UNKNOWN);
+    for (unsigned int i = 0; i < specularCount; ++i)
+    {
+        aiString str;
+        if (aiMat->GetTexture(aiTextureType_UNKNOWN, i, &str) == AI_SUCCESS)
+        {
+            std::string texturePath = std::string(str.C_Str());
+            std::string fullPath = directory + "/" + texturePath;
+
+            std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(fullPath);
+            if (texture)
+            {
+                result.textures[TextureType::RoughnessMetallic] = texture;
+            }
+            else
+            {
+                std::cerr << "Couldn't load RoughnessMetallic: " << fullPath << std::endl;
+            }
+        }
+    }
+
+    return result;
 }
 
 glm::vec3 Model::CalculateModelCenter() const
@@ -111,8 +225,9 @@ glm::vec3 Model::CalculateModelCenter() const
     glm::vec3 center(0.0f);
     size_t totalVertices = 0;
 
-    for (const auto& mesh : m_Meshes)
+    for (const auto& meshInfo : m_MeshesInfo)
     {
+        auto& mesh = meshInfo->mesh;
         totalVertices += mesh->positions.size();
         for (const auto& position : mesh->positions)
         {
@@ -132,8 +247,9 @@ void Model::CenterModel()
 {
     glm::vec3 center = CalculateModelCenter();
 
-    for (auto& mesh : m_Meshes)
+    for (auto& meshInfo : m_MeshesInfo)
     {
+        auto& mesh = meshInfo->mesh;
         for (auto& position : mesh->positions)
         {
             position -= center;
@@ -143,7 +259,7 @@ void Model::CenterModel()
 
 std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLayout& layout)
 {
-    if (meshIndex >= m_Meshes.size())
+    if (meshIndex >= m_MeshesInfo.size())
     {
         std::cerr << "Invalid mesh index: " << meshIndex << "\n";
         return nullptr;
@@ -157,7 +273,7 @@ std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLay
     }
     else
     {
-        auto meshBuffer = std::make_shared<MeshBuffer>(m_Meshes[meshIndex], layout);
+        auto meshBuffer = std::make_shared<MeshBuffer>(m_MeshesInfo[meshIndex]->mesh, layout);
         cache[layout] = meshBuffer;
         return meshBuffer;
     }
@@ -165,9 +281,9 @@ std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLay
 
 std::vector<std::shared_ptr<MeshBuffer>> Model::GetMeshBuffers(const MeshLayout& layout)
 {
-    std::vector<std::shared_ptr<MeshBuffer>> result(m_Meshes.size());
+    std::vector<std::shared_ptr<MeshBuffer>> result(m_MeshesInfo.size());
 
-    for (size_t i = 0; i < m_Meshes.size(); i++)
+    for (size_t i = 0; i < m_MeshesInfo.size(); i++)
     {
         auto& cache = m_MeshBuffersCache[i];
         auto it = cache.find(layout);
@@ -177,7 +293,7 @@ std::vector<std::shared_ptr<MeshBuffer>> Model::GetMeshBuffers(const MeshLayout&
         }
         else
         {
-            auto meshBuffer = std::make_shared<MeshBuffer>(m_Meshes[i], layout);
+            auto meshBuffer = std::make_shared<MeshBuffer>(m_MeshesInfo[i]->mesh, layout);
             cache[layout] = meshBuffer;
             result[i] = meshBuffer;
         }
@@ -185,3 +301,4 @@ std::vector<std::shared_ptr<MeshBuffer>> Model::GetMeshBuffers(const MeshLayout&
 
     return result;
 }
+

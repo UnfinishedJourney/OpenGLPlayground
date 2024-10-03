@@ -41,6 +41,21 @@ void ShaderManager::Initialize()
     }
 }
 
+void ShaderManager::ReloadAllShaders()
+{
+    for (const auto& [name, metadata] : m_ShadersMetadata)
+    {
+        std::filesystem::file_time_type binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
+        std::filesystem::file_time_type sourceLastModified = std::filesystem::last_write_time(metadata.sourcePath);
+        if (sourceLastModified >= binaryLastModified)
+        {
+            m_Shaders[name]->ReloadShader();
+            m_ShadersMetadata[name].binaryLastModified = std::filesystem::last_write_time(m_ShadersMetadata[name].binaryPath);
+        }
+
+    }
+}
+
 void ShaderManager::LoadShaders()
 {
     for (const auto& [name, metadata] : m_ShadersMetadata) {
@@ -223,6 +238,8 @@ bool ShaderManager::IsShaderOutdated(const std::string& shaderName)
 
     // Get the last write times
     std::filesystem::file_time_type sourceLastModified = std::filesystem::last_write_time(metadata.sourcePath);
+    if (!std::filesystem::exists(metadata.binaryPath))
+        return true;
     std::filesystem::file_time_type binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
 
     bool isOutdated = sourceLastModified >= binaryLastModified;
