@@ -13,7 +13,7 @@ struct Mesh
 {
     std::vector<glm::vec3> positions;
     std::vector<glm::vec3> normals;
-    std::vector<glm::vec3> binormals;
+    std::vector<glm::vec3> bitangents;
     std::vector<glm::vec3> tangents;
     std::vector<glm::vec2> uvs;
     std::vector<unsigned int> indices;
@@ -23,7 +23,7 @@ struct MeshLayout
 {
     bool hasPositions;
     bool hasNormals;
-    bool hasBinormals;
+    bool hasBitangents;
     bool hasTangents;
     bool hasUVs;
 
@@ -31,7 +31,7 @@ struct MeshLayout
         return hasPositions == other.hasPositions &&
             hasNormals == other.hasNormals &&
             hasTangents == other.hasTangents &&
-            hasBinormals == other.hasBinormals &&
+            hasBitangents == other.hasBitangents &&
             hasUVs == other.hasUVs;
     }
 };
@@ -75,7 +75,7 @@ namespace std {
             return (std::hash<bool>()(layout.hasPositions) ^
                 (std::hash<bool>()(layout.hasNormals) << 1) ^
                 (std::hash<bool>()(layout.hasTangents) << 2) ^
-                (std::hash<bool>()(layout.hasBinormals) << 3) ^
+                (std::hash<bool>()(layout.hasBitangents) << 3) ^
                 (std::hash<bool>()(layout.hasUVs) << 4));
         }
     };

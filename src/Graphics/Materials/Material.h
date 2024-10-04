@@ -28,8 +28,6 @@ public:
     }
 
     void Bind() {
-        if (m_IsBound)
-            return;
 
         m_Shader->Bind();
 
@@ -50,5 +48,4 @@ private:
     std::shared_ptr<Shader> m_Shader;
     std::unordered_map<unsigned int, std::shared_ptr<Texture2D>> m_Textures;
     std::unordered_map<std::string, std::function<void(Shader&, const std::string&)>> m_Params;
-    mutable bool m_IsBound = false;
 };

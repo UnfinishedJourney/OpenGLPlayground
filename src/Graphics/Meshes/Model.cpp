@@ -22,8 +22,7 @@ Model::Model(const std::string& path_to_model, bool bCenterModel)
 
 void Model::ProcessModel()
 {
-    const aiScene* scene = aiImportFile(m_FilePath.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals);
-
+    const aiScene* scene = aiImportFile(m_FilePath.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_MakeLeftHanded);
     if (!scene || !scene->HasMeshes()) 
     {
         std::cerr << "Unable to load file\n";
@@ -67,14 +66,19 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh)
     {
         myMesh->uvs.reserve(aiMesh->mNumVertices);
     }
+    if (aiMesh->HasTangentsAndBitangents())
+    {
+        myMesh->tangents.reserve(aiMesh->mNumVertices);
+        myMesh->bitangents.reserve(aiMesh->mNumVertices);
+    }
 
     for (unsigned int i = 0; i < aiMesh->mNumVertices; i++)
     {
         glm::vec3 temp =
         {
             aiMesh->mVertices[i].x,
-            -aiMesh->mVertices[i].z,
-            aiMesh->mVertices[i].y
+            aiMesh->mVertices[i].y,
+            aiMesh->mVertices[i].z
         };
 
         myMesh->positions.push_back(temp);
@@ -84,11 +88,29 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh)
             temp =
             {
                 aiMesh->mNormals[i].x,
-                -aiMesh->mVertices[i].z,
-                aiMesh->mNormals[i].y
+                aiMesh->mNormals[i].y,
+                aiMesh->mNormals[i].z
             };
 
             myMesh->normals.push_back(temp);
+        }
+
+        if (aiMesh->HasTangentsAndBitangents()) {
+            glm::vec3 tangent =
+            {
+                aiMesh->mTangents[i].x,
+                aiMesh->mTangents[i].y, 
+                aiMesh->mTangents[i].z
+            };
+            myMesh->tangents.push_back(tangent);
+
+            glm::vec3 bitangent =
+            {
+                aiMesh->mBitangents[i].x,
+                aiMesh->mBitangents[i].y, 
+                aiMesh->mBitangents[i].z
+            };
+            myMesh->bitangents.push_back(bitangent);
         }
 
         if (aiMesh->HasTextureCoords(0))

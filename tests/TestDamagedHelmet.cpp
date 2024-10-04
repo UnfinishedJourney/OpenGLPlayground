@@ -36,6 +36,14 @@ namespace test {
         }
     }
 
+    void MovingDamagedHelmet::Unbind()
+    {
+        for (auto& meshBuffer : m_MeshBuffers)
+        {
+            meshBuffer->Unbind();
+        }
+    }
+
     TestDamagedHelmet::TestDamagedHelmet()
     {
         m_ComputeShader = s_ResourceManager->GetComputeShader("brdf_compute");
@@ -98,7 +106,7 @@ namespace test {
             true,  // hasPositions
             true,  // hasNormals
             false, // hasBinormals
-            false, // hasTangents
+            true, // hasTangents
             true   // hasUVs
         };
 
@@ -151,7 +159,7 @@ namespace test {
 
     void TestDamagedHelmet::OnRender()
     {
-        GLCall(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
+        GLCall(glClearColor(0.8f, 0.8f, 0.8f, 1.0f));
         GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         if (m_HeHelmetRenderObject) {
@@ -163,6 +171,7 @@ namespace test {
     {
         ImGui::Begin("Damaged Helmet Controls");
         if (ImGui::Button("Reload All Shaders")) {
+            m_HeHelmetRenderObject->Unbind();
             s_ResourceManager->ReloadAllShaders();
         }
         ImGui::End();

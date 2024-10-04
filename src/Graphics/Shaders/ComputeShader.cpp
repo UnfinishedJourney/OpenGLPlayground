@@ -27,6 +27,8 @@ void ComputeShader::ReloadShader() {
         m_RendererID = 0;
     }
 
+    m_UniformLocationCache.clear();
+
     try {
         std::string source = ReadFile(m_Filepath);
         source = ResolveIncludes(source, m_Filepath.parent_path());

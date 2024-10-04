@@ -9,6 +9,7 @@ MeshBuffer::MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& layout)
     const std::vector<glm::vec3>& positions = mesh->positions;
     const std::vector<glm::vec3>& normals = mesh->normals;
     const std::vector<glm::vec3>& tangents = mesh->tangents;
+    const std::vector<glm::vec3>& bitangents = mesh->bitangents;
     const std::vector<glm::vec2>& texCoords = mesh->uvs;
 
     const std::vector<unsigned int>& indices = mesh->indices;
@@ -34,6 +35,13 @@ MeshBuffer::MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& layout)
             vertices.push_back(tangents[i].z);
         }
 
+        if (layout.hasBitangents) {
+            vertices.push_back(bitangents[i].x);
+            vertices.push_back(bitangents[i].y);
+            vertices.push_back(bitangents[i].z);
+        }
+
+
         if (layout.hasUVs) {
             vertices.push_back(texCoords[i].x);
             vertices.push_back(texCoords[i].y);
@@ -48,6 +56,8 @@ MeshBuffer::MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& layout)
     if (layout.hasNormals)
         vb_layout.Push<float>(3);
     if (layout.hasTangents)
+        vb_layout.Push<float>(3);
+    if (layout.hasBitangents)
         vb_layout.Push<float>(3);
     if (layout.hasUVs)
         vb_layout.Push<float>(2);

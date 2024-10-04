@@ -20,6 +20,7 @@ namespace test {
         }
 
         virtual void Render() override;
+        void Unbind();
     };
 
     class TestDamagedHelmet : public Test

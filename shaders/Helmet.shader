@@ -3,8 +3,8 @@
 
 layout (location = 0) in vec3 positions; 
 layout (location = 1) in vec3 normals; 
-layout (location = 2) in vec2 uvs;
-layout (location = 3) in vec3 tangents;
+layout (location = 2) in vec3 tangents;
+layout (location = 3) in vec2 uvs;
 
 out vec2 tc;           //uvs
 out vec3 fragPos;      //world pos
@@ -63,8 +63,8 @@ void main()
 {
     // **Step 1: Sampling Textures**
   
-  out_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-  return;
+  //out_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+  //return;
     // Albedo color
     vec3 albedo = texture(texAlbedo, tc).rgb;
     // Normal from normal map
@@ -129,13 +129,15 @@ void main()
     kd *= 1.0 - metallic;            // Metals do not have a diffuse component
 
     vec3 diffuse = kd * albedo / PI; // Lambertian diffuse model
-
+    //out_FragColor = vec4(diffuse *  lightColor * abs(dot(N, L)) * 10, 1.0); 
+    //return;
     // **Step 7: Combining Components and Applying Lighting**
 
     vec3 color = (diffuse + specular) * NdotL * lightColor;
-
-    out_FragColor = vec4(color, 1.0);
-    return;
+    //out_FragColor = vec4(color + vec3(0.5, 0.5, 0.5), 1.0); 
+    //return;
+    //out_FragColor = vec4(color, 1.0);
+    //return;
     // **Step 8: Applying Ambient Occlusion and Emissive Color**
 
     color *= ao;        // Apply Ambient Occlusion
