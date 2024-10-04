@@ -9,7 +9,7 @@ test::TestSimpleCube::TestSimpleCube()
         false,
         false,
         false,
-        true
+        {TextureType::Albedo}
     };
 
     std::shared_ptr<MeshBuffer> meshComponent = s_ResourceManager->GetMeshBuffer("cube", cubeMeshLayout);

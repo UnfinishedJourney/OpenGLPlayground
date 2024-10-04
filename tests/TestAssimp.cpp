@@ -27,7 +27,7 @@ namespace test {
             true,
             false,
             false,
-            true
+            {TextureType::Albedo}
         };
 
         std::shared_ptr<MeshBuffer> duckMeshBuffer = duckModel->GetMeshBuffer(0, duckMeshLayout);

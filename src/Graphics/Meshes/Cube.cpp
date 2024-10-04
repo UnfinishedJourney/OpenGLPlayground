@@ -13,7 +13,7 @@ Cube::Cube()
         {-0.5f,  0.5f,  0.5f}
     };
 
-    uvs = {
+    uvs[TextureType::Albedo] = {
         {0.0f, 0.0f},
         {1.0f, 0.0f},
         {1.0f, 1.0f},

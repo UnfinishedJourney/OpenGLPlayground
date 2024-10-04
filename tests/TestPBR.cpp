@@ -47,7 +47,7 @@ namespace test {
         }
 
         auto model = s_ResourceManager->GetModel("pig");
-        MeshLayout meshLayout = { true, true, false, false, false };
+        MeshLayout meshLayout = { true, true, false, false, {} };
         std::shared_ptr<Shader> shader = s_ResourceManager->GetShader("pbr");
         std::shared_ptr<Material> material = std::make_shared<Material>();
         std::unique_ptr<Transform> transform = std::make_unique<Transform>();

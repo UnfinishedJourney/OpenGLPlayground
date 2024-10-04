@@ -115,8 +115,9 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh)
 
         if (aiMesh->HasTextureCoords(0))
         {
-            myMesh->uvs.push_back(glm::vec2(aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y));
+            myMesh->uvs[TextureType::Albedo].push_back(glm::vec2(aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y));
         }
+        
     }
 
     for (unsigned int i = 0; i < aiMesh->mNumFaces; i++)
@@ -137,6 +138,7 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh)
 
 
     m_MeshesInfo.push_back(std::make_unique<MeshInfo>(MeshInfo(meshTextures, myMesh)));
+    std::cout << aiMesh->GetNumUVChannels() << std::endl;
 }
 
 inline std::string AiTextureTypeToString(aiTextureType type)

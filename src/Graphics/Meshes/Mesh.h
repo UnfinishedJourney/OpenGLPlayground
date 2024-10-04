@@ -1,12 +1,14 @@
 #pragma once
 
 #include "Utilities/Utility.h"
-#include "glm.hpp"
 #include "Graphics/Buffers/VertexBuffer.h"
 #include "Graphics/Buffers/VertexBufferLayout.h"
 #include "Graphics/Buffers/IndexBuffer.h"
+#include "glm.hpp"
 
 #include <vector>
+#include <unordered_map>
+#include <unordered_set>
 #include <memory>
 
 struct Mesh
@@ -15,7 +17,7 @@ struct Mesh
     std::vector<glm::vec3> normals;
     std::vector<glm::vec3> bitangents;
     std::vector<glm::vec3> tangents;
-    std::vector<glm::vec2> uvs;
+    std::unordered_map<TextureType, std::vector<glm::vec2>> uvs;
     std::vector<unsigned int> indices;
 };
 
@@ -25,15 +27,16 @@ struct MeshLayout
     bool hasNormals;
     bool hasBitangents;
     bool hasTangents;
-    bool hasUVs;
+    std::unordered_set<TextureType> textureTypes;
 
     bool operator==(const MeshLayout& other) const {
         return hasPositions == other.hasPositions &&
             hasNormals == other.hasNormals &&
             hasTangents == other.hasTangents &&
             hasBitangents == other.hasBitangents &&
-            hasUVs == other.hasUVs;
+            textureTypes == other.textureTypes;
     }
+
 };
 
 class MeshBuffer {
@@ -51,10 +54,6 @@ public:
     {
         return m_NVerts;
     }
-    bool GetStatus() const
-    {
-        return m_IsBound;
-    }
     std::shared_ptr<VertexArray> GetVAO() const 
     { 
         return m_VAO; 
@@ -65,18 +64,23 @@ private:
     std::shared_ptr<VertexBuffer> m_VB;
     std::shared_ptr<IndexBuffer> m_IB;
     size_t m_NVerts;
-    mutable bool m_IsBound = false;
 };
 
 namespace std {
     template <>
     struct hash<MeshLayout> {
         std::size_t operator()(const MeshLayout& layout) const {
-            return (std::hash<bool>()(layout.hasPositions) ^
-                (std::hash<bool>()(layout.hasNormals) << 1) ^
-                (std::hash<bool>()(layout.hasTangents) << 2) ^
-                (std::hash<bool>()(layout.hasBitangents) << 3) ^
-                (std::hash<bool>()(layout.hasUVs) << 4));
+            std::size_t seed = 0;
+            seed ^= std::hash<bool>()(layout.hasPositions) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= std::hash<bool>()(layout.hasNormals) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= std::hash<bool>()(layout.hasTangents) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= std::hash<bool>()(layout.hasBitangents) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+            for (const auto& texType : layout.textureTypes) {
+                seed ^= std::hash<TextureType>()(texType) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            }
+
+            return seed;
         }
     };
 }

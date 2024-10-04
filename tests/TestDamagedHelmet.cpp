@@ -107,7 +107,7 @@ namespace test {
             true,  // hasNormals
             false, // hasBinormals
             true, // hasTangents
-            true   // hasUVs
+            {TextureType::Albedo}   // hasUVs
         };
 
         std::shared_ptr<MeshBuffer> helmetMeshBuffer = helmetModel->GetMeshBuffer(0, helmetMeshLayout);

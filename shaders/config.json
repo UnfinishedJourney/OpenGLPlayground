@@ -23,6 +23,10 @@
 		"quad": {
             "binary_path": "../shaders/Quad.bin",
             "source_path": "../shaders/Quad.shader"
+        },
+		"helmet": {
+            "binary_path": "../shaders/Helmet.bin",
+            "source_path": "../shaders/Helmet.shader"
         }
     },
 
