@@ -11,9 +11,7 @@ out vec3 fragPos;      //world pos
 out vec3 normal;       //normal world
 out mat3 TBN;          //from tangent to world
 
-uniform mat4 u_Model;
-uniform mat4 u_View;
-uniform mat4 u_Proj;
+#include "Common.shader"
 
 void main()
 {

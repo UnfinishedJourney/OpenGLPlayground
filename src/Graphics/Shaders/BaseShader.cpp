@@ -9,6 +9,8 @@
 BaseShader::BaseShader(const std::filesystem::path& filepath)
     : m_Filepath(filepath)
 {
+    std::string common = ReadFile("../shaders/Common.shader");
+    common;
 }
 
 BaseShader::~BaseShader() {
@@ -83,10 +85,19 @@ unsigned int BaseShader::LinkProgram(const std::vector<unsigned int>& shaders) c
 }
 
 std::string BaseShader::ReadFile(const std::filesystem::path& filepath) const {
-    std::ifstream file(filepath, std::ios::in | std::ios::binary);
+    std::cout << "Current working directory: " << std::filesystem::current_path().generic_string() << std::endl;
+
+    std::cout << "Attempting to open shader file: " << filepath.generic_string() << std::endl;
+
+    if (!std::filesystem::exists(filepath)) {
+        throw std::runtime_error("Shader file does not exist: " + filepath.string());
+    }
+
+    std::ifstream file(filepath.generic_string(), std::ios::in);
     if (!file) {
         throw std::runtime_error("Failed to open shader file: " + filepath.string());
     }
+
     std::ostringstream contents;
     contents << file.rdbuf();
     return contents.str();
@@ -96,20 +107,32 @@ std::string BaseShader::ResolveIncludes(const std::string& source, const std::fi
     std::istringstream stream(source);
     std::ostringstream processedSource;
     std::string line;
+
     while (std::getline(stream, line)) {
         if (line.find("#include") != std::string::npos) {
-            size_t start = line.find("\"") + 1;
-            size_t end = line.find("\"", start);
-            std::string includePath = line.substr(start, end - start);
-            auto fullPath = directory / includePath;
-            std::string includedSource = ReadFile(fullPath);
-            includedSource = ResolveIncludes(includedSource, fullPath.parent_path());
+            size_t start = line.find("\"");
+            size_t end = line.find("\"", start + 1);
+
+            if (start == std::string::npos || end == std::string::npos) {
+                throw std::runtime_error("Wrong #include: " + line);
+            }
+
+            std::string includePathStr = line.substr(start + 1, end - start - 1);
+            std::filesystem::path includePath = directory / includePathStr;
+
+            std::cout << "Including file: " << includePath << std::endl;
+
+            std::string includedSource = ReadFile(includePath);
+
+            includedSource = ResolveIncludes(includedSource, includePath.parent_path());
+
             processedSource << includedSource << '\n';
         }
         else {
             processedSource << line << '\n';
         }
     }
+
     return processedSource.str();
 }
 

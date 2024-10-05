@@ -41,6 +41,7 @@ void ShaderManager::Initialize()
     }
 }
 
+//need to also check includes
 void ShaderManager::ReloadAllShaders()
 {
     for (const auto& [name, metadata] : m_ShadersMetadata)
