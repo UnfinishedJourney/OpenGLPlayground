@@ -3,7 +3,7 @@
 #include <iostream>
 
 
-MeshBuffer::MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& layout)
+MeshBuffer::MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& mLayout)
 {
     std::vector<float> vertices;
 
@@ -15,14 +15,14 @@ MeshBuffer::MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& layout)
 
     const std::vector<unsigned int>& indices = mesh->indices;
 
-    assert(layout.hasPositions && "MeshLayout must have positions");
-    if (layout.hasNormals)
+    assert(mLayout.hasPositions && "MeshLayout must have positions");
+    if (mLayout.hasNormals)
         assert(!normals.empty() && "MeshLayout indicates presence of normals, but mesh has none");
-    if (layout.hasTangents)
+    if (mLayout.hasTangents)
         assert(!tangents.empty() && "MeshLayout indicates presence of tangents, but mesh has none");
-    if (layout.hasBitangents)
+    if (mLayout.hasBitangents)
         assert(!bitangents.empty() && "MeshLayout indicates presence of bitangents, but mesh has none");
-    for (const auto& texType : layout.textureTypes)
+    for (const auto& texType : mLayout.textureTypes)
     {
         assert(uvs.find(texType) != uvs.end() && "MeshLayout indicates presence of TextureType UVs, but mesh uvs map does not contain it");
         assert(uvs.at(texType).size() == positions.size() && "UVs size mismatch with positions");
@@ -33,25 +33,25 @@ MeshBuffer::MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& layout)
         vertices.push_back(positions[i].y);
         vertices.push_back(positions[i].z);
 
-        if (layout.hasNormals) {
+        if (mLayout.hasNormals) {
             vertices.push_back(normals[i].x);
             vertices.push_back(normals[i].y);
             vertices.push_back(normals[i].z);
         }
 
-        if (layout.hasTangents) {
+        if (mLayout.hasTangents) {
             vertices.push_back(tangents[i].x);
             vertices.push_back(tangents[i].y);
             vertices.push_back(tangents[i].z);
         }
 
-        if (layout.hasBitangents) {
+        if (mLayout.hasBitangents) {
             vertices.push_back(bitangents[i].x);
             vertices.push_back(bitangents[i].y);
             vertices.push_back(bitangents[i].z);
         }
 
-        for (const auto& texType : layout.textureTypes)
+        for (const auto& texType : mLayout.textureTypes)
         {
             const glm::vec2& uv = uvs.at(texType)[i];
             vertices.push_back(uv.x);
@@ -61,26 +61,26 @@ MeshBuffer::MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& layout)
 
     m_VB = std::make_unique<VertexBuffer>(&vertices[0], sizeof(float) * vertices.size());
 
-    VertexBufferLayout vb_layout;
+    VertexBufferLayout vbLayout;
 
-    vb_layout.Push<float>(3);
+    vbLayout.Push<float>(3);
 
-    if (layout.hasNormals)
-        vb_layout.Push<float>(3);
+    if (mLayout.hasNormals)
+        vbLayout.Push<float>(3);
 
-    if (layout.hasTangents)
-        vb_layout.Push<float>(3);
+    if (mLayout.hasTangents)
+        vbLayout.Push<float>(3);
 
-    if (layout.hasBitangents)
-        vb_layout.Push<float>(3);
+    if (mLayout.hasBitangents)
+        vbLayout.Push<float>(3);
 
-    for (const auto& texType : layout.textureTypes)
+    for (const auto& texType : mLayout.textureTypes)
     {
-        vb_layout.Push<float>(2);
+        vbLayout.Push<float>(2);
     }
 
     m_VAO = std::make_unique<VertexArray>();
-    m_VAO->AddBuffer(*m_VB, vb_layout);
+    m_VAO->AddBuffer(*m_VB, vbLayout);
 
     m_IB = std::make_unique<IndexBuffer>(indices.data(), indices.size());
 

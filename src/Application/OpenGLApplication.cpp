@@ -4,14 +4,17 @@
 #include <sstream>
 #include <memory>
 
+#define WIN32_LEAN_AND_MEAN
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "Application/OpenGLContext.h"
-#include "Renderer/Renderer.h"
+#include "Scene/FrameData.h"
 #include "Scene/Camera.h"
 #include "AllTests.h"
 #include "Application/InputManager.h"
+#include "Utilities/Logger.h"
 
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
@@ -50,10 +53,14 @@ struct Application {
 
 
 void Application::Init() {
+    Logger::Init();
+    auto logger = Logger::GetLogger();
+    logger->info("Application started.");
+
     window = GLContext::InitOpenGL(Screen::s_Width, Screen::s_Height, "My Application", glfw_onKey, glfw_onMouseScroll, glfw_onMouseMove, glfw_onWindowSize);
 
     glfwSetWindowUserPointer(window, this);
-    test::Test::InitializeResourceManager("shaders/metadata.json");
+    test::Test::InitializeRenderer();
     glfwSetWindowSizeCallback(window, glfw_onWindowSize);
 
 
@@ -61,13 +68,13 @@ void Application::Init() {
     testMenu = std::make_shared<test::TestMenu>(currentTest);
     currentTest = testMenu;
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
-    testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
-    testMenu->RegisterTest<test::TestAssimp>("Assimp");
-    testMenu->RegisterTest<test::TestLights>("Lights");
-    testMenu->RegisterTest<test::TestInstance>("Instances");
-    testMenu->RegisterTest<test::TestPBR>("PBR");
-    testMenu->RegisterTest<test::TestComputeShader>("Compute");
-    testMenu->RegisterTest<test::TestDamagedHelmet>("Helmet");
+    //testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
+    //testMenu->RegisterTest<test::TestAssimp>("Assimp");
+    //testMenu->RegisterTest<test::TestLights>("Lights");
+    //testMenu->RegisterTest<test::TestInstance>("Instances");
+    //testMenu->RegisterTest<test::TestPBR>("PBR");
+    //testMenu->RegisterTest<test::TestComputeShader>("Compute");
+    //testMenu->RegisterTest<test::TestDamagedHelmet>("Helmet");
 
     FrameData::s_View = camera.GetViewMatrix();
     FrameData::s_Projection = glm::perspective(glm::radians(camera.GetFOV()), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);

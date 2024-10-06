@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <glad/glad.h>
-#include "Renderer/Renderer.h"
 
 struct VertexBufferElement
 {

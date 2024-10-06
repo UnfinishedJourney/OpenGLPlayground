@@ -1,8 +1,6 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
-#include "Graphics/Shaders/Shader.h"
-#include "Graphics/Shaders/ComputeShader.h"
 
 #include <string>
 #include <unordered_map>
@@ -29,6 +27,10 @@ struct ShaderMetadata {
 //add hot reloading
 //use asynch loading
 
+class BaseShader;
+class ComputeShader;
+class Shader;
+
 class ShaderManager {
 public:
     ShaderManager(const std::string& metadataPath, const std::string& configPath);
@@ -37,12 +39,18 @@ public:
     void Initialize();
 
     std::shared_ptr<Shader> GetShader(const std::string& name);
+    std::shared_ptr<BaseShader> GetCurrentlyBoundShader()
+    {
+        return m_Shaders[m_CurrentlyBoundShader];
+    }
     std::shared_ptr<ComputeShader> GetComputeShader(const std::string& name);
     void ReloadAllShaders();
+    void BindShader(const std::string& shaderName);
 
 private:
     std::string m_MetadataPath;
     std::string m_ConfigPath;
+    std::string m_CurrentlyBoundShader;
 
     bool m_MetaHasChanged;
     GlobalMetadata m_GlobalMetadata;

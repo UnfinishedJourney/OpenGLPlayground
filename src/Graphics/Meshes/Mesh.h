@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Utilities/Utility.h"
+#include "Graphics/Buffers/VertexArray.h"
 #include "Graphics/Buffers/VertexBuffer.h"
 #include "Graphics/Buffers/VertexBufferLayout.h"
 #include "Graphics/Buffers/IndexBuffer.h"
@@ -29,7 +30,7 @@ struct MeshLayout
     bool hasTangents;
     std::unordered_set<TextureType> textureTypes;
 
-    bool operator==(const MeshLayout& other) const {
+    inline bool operator==(const MeshLayout& other) const {
         return hasPositions == other.hasPositions &&
             hasNormals == other.hasNormals &&
             hasTangents == other.hasTangents &&
@@ -46,7 +47,7 @@ public:
         : m_VAO(std::move(vao)), m_VB(std::move(vb)), m_IB(std::move(ib)), m_NVerts(nVerts)
     {}
 
-    MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& layout);
+    MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& mLayout);
 
     void Bind() const;
     void Unbind() const;
@@ -66,18 +67,19 @@ private:
     size_t m_NVerts;
 };
 
+
 namespace std {
     template <>
     struct hash<MeshLayout> {
-        std::size_t operator()(const MeshLayout& layout) const {
+        std::size_t operator()(const MeshLayout& mLayout) const {
             std::size_t seed = 0;
-            seed ^= std::hash<bool>()(layout.hasPositions) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            seed ^= std::hash<bool>()(layout.hasNormals) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            seed ^= std::hash<bool>()(layout.hasTangents) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            seed ^= std::hash<bool>()(layout.hasBitangents) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= std::hash<bool>()(mLayout.hasPositions) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= std::hash<bool>()(mLayout.hasNormals) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= std::hash<bool>()(mLayout.hasTangents) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= std::hash<bool>()(mLayout.hasBitangents) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 
-            for (const auto& texType : layout.textureTypes) {
-                seed ^= std::hash<TextureType>()(texType) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            for (const auto& texType : mLayout.textureTypes) {
+                seed ^= std::hash<int>()(static_cast<int>(texType)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
             }
 
             return seed;

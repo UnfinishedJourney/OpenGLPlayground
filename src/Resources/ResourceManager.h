@@ -1,19 +1,21 @@
 #pragma once
 
-#include "Graphics/Meshes/Model.h"
+#include "Graphics/Meshes/Mesh.h"
+//#include "Graphics/Meshes/Model.h"
 #include "Graphics/Materials/Material.h"
 #include "Graphics/Textures/Texture2D.h"
-#include "Renderer/RenderObject.h"
 #include "Resources/ShaderManager.h"
+#include "Resources/MaterialManager.h"
 #include "Scene/Transform.h"
+
 
 struct MeshKey {
     std::string name;
-    MeshLayout layout;
+    MeshLayout meshLayout;
 
     // Define equality operator for comparison
     bool operator==(const MeshKey& other) const {
-        return name == other.name && layout == other.layout;
+        return name == other.name && meshLayout == other.meshLayout;
     }
 };
 
@@ -22,7 +24,7 @@ namespace std {
     struct hash<MeshKey> {
         std::size_t operator()(const MeshKey& key) const {
             std::size_t h1 = std::hash<std::string>()(key.name);
-            std::size_t h2 = std::hash<MeshLayout>()(key.layout);
+            std::size_t h2 = std::hash<MeshLayout>()(key.meshLayout);
             return h1 ^ (h2 << 1); // Combine the hashes
         }
     };
@@ -32,13 +34,14 @@ class ResourceManager {
 public:
     ResourceManager();
     std::shared_ptr<Texture2D> GetTexture(const std::string& textureName);
-    bool DeleteTexture(const std::string& textureName);
 
     std::shared_ptr<Mesh> GetMesh(const std::string& meshName);
     bool DeleteMesh(const std::string& meshName);
 
-    std::shared_ptr<Model> GetModel(const std::string& modelName);
-    bool DeleteModel(const std::string& modelName);
+    std::shared_ptr<Material> GetMaterial(const std::string& materialName);
+
+    //std::shared_ptr<Model> GetModel(const std::string& modelName);
+    //bool DeleteModel(const std::string& modelName);
 
     std::shared_ptr<Shader> GetShader(const std::string& shaderName);
 
@@ -51,10 +54,22 @@ public:
         m_ShaderManager->ReloadAllShaders();
     }
 
+    void BindShader(const std::string& shaderName)
+    {
+        m_ShaderManager->BindShader(shaderName);
+    }
+
+    void BindMaterial(const std::string& materialName)
+    {
+        //check shader for compute, etc type
+        m_MaterialManager->BindMaterial(materialName, m_ShaderManager->GetCurrentlyBoundShader());
+    }
+
 private:
     std::unique_ptr<ShaderManager> m_ShaderManager;
+    std::unique_ptr<MaterialManager> m_MaterialManager;
     std::unordered_map<std::string, std::shared_ptr<Mesh>> m_Meshes;
     std::unordered_map<MeshKey, std::shared_ptr<MeshBuffer>> m_MeshBuffers;
     std::unordered_map<std::string, std::shared_ptr<Texture2D>> m_Textures;
-    std::unordered_map<std::string, std::shared_ptr<Model>> m_Models;
+    //std::unordered_map<std::string, std::shared_ptr<Model>> m_Models;
 };

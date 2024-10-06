@@ -1,5 +1,5 @@
 #pragma once
-#include "Renderer/Renderer.h"
+#include "Scene/FrameData.h"
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
 #include "gtc/constants.hpp"

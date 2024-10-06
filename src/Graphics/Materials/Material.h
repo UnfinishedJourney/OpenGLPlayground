@@ -1,51 +1,37 @@
 #pragma once
 
-#include "Graphics/Shaders/Shader.h"
 #include "Graphics/Textures/Texture2D.h"
+#include "Graphics/Shaders/BaseShader.h"
 
+#include <glm.hpp> 
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <sstream>
-#include <functional>
+#include <variant>
+
+using UniformValue = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, glm::mat4>;
+
+class MaterialManager;
 
 class Material {
-public:
-    void SetShader(std::shared_ptr<Shader> shader) {
-        m_Shader = shader;
-    }
+    friend class MaterialManager;
 
-    void AddTexture(std::shared_ptr<Texture2D> texture, unsigned int textureUnit = 0) {
-        m_Textures[textureUnit] = texture;
-    }
+public:
+    Material() = default;
+    ~Material() = default;
+
+    void AddTexture(std::weak_ptr<Texture2D> texture, unsigned int textureUnit = 0);
 
     template<typename T>
-    void AddParam(const std::string& name, T value) {
-        m_Params[name] = [value](Shader& shader, const std::string& name) {
-            std::string new_name = "Material." + name;
-            shader.SetUniform(new_name, static_cast<T>(value));
-        };
-    }
+    void AddParam(const std::string& name, T value);
 
-    void Bind() {
-
-        m_Shader->Bind();
-
-        for (const auto& [name, applyUniform] : m_Params) {
-            applyUniform(*m_Shader, name);
-        }
-
-        for (auto& [key, value] : m_Textures) {
-            value->Bind(key);
-        }
-    }
-
-    std::shared_ptr<Shader> GetShader() const {
-        return m_Shader;
-    }
+    const std::unordered_map<std::string, UniformValue>& GetParams() const;
+    const std::unordered_map<unsigned int, std::weak_ptr<Texture2D>>& GetTextures() const;
 
 private:
-    std::shared_ptr<Shader> m_Shader;
-    std::unordered_map<unsigned int, std::shared_ptr<Texture2D>> m_Textures;
-    std::unordered_map<std::string, std::function<void(Shader&, const std::string&)>> m_Params;
+    void Bind(std::shared_ptr<BaseShader> shader);
+    void Unbind();
+
+    std::unordered_map<unsigned int, std::weak_ptr<Texture2D>> m_Textures;
+    std::unordered_map<std::string, UniformValue> m_Params;
 };

@@ -1,12 +1,17 @@
 #include "Renderer/Renderer.h"
 #include <iostream>
 
-void Renderer::Draw(const VertexArray& va, const IndexBuffer& ib, const Shader& shader) const
+Renderer::Renderer()
 {
-    shader.Bind();
-    va.Bind();
-    ib.Bind();
-    GLCall(glDrawElements(GL_TRIANGLES, ib.GetCount(), GL_UNSIGNED_INT, nullptr));
+    m_ResourceManager = std::make_unique<ResourceManager>();
+}
+
+void Renderer::Render(const RenderObject& renderObject) const
+{
+    m_ResourceManager->BindShader(renderObject.m_ShaderName);
+    m_ResourceManager->BindMaterial(renderObject.m_MaterialName);
+    renderObject.m_MeshBuffer->Bind();
+    GLCall(glDrawElements(GL_TRIANGLES, renderObject.m_MeshBuffer->GetNVerts(), GL_UNSIGNED_INT, nullptr));
 }
 
 void Renderer::Clear() const

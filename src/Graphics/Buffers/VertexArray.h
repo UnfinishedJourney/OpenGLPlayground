@@ -11,8 +11,8 @@ public:
 	VertexArray(unsigned int rendererID);
 	~VertexArray();
 	
-	void AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout) const;
-	void AddInstancedBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout, unsigned int divisor) const;
+	void AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& vbLayout) const;
+	void AddInstancedBuffer(const VertexBuffer& vb, const VertexBufferLayout& vbLayout, unsigned int divisor) const;
 	void Bind() const;
 	void Unbind() const;
 

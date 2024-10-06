@@ -1,5 +1,5 @@
 #pragma once
-#include "Resources/ResourceManager.h"
+#include "Renderer/Renderer.h"
 
 #include <vector>
 #include <utility>
@@ -18,14 +18,18 @@ namespace test {
 		virtual void OnUpdate(float deltaTime) {}
 		virtual void OnRender() {}
 		virtual void OnImGuiRender() {}
-		static void InitializeResourceManager(const std::string& shaderMetadataPath) {
-			if (!s_ResourceManager) {
-				//s_ResourceManager = std::make_unique<ResourceManager>(shaderMetadataPath);
-				s_ResourceManager = std::make_unique<ResourceManager>();
+		static void InitializeRenderer() {
+			//if (!s_ResourceManager) {
+			//	//s_ResourceManager = std::make_unique<ResourceManager>(shaderMetadataPath);
+			//	s_ResourceManager = std::make_unique<ResourceManager>();
+			//}
+			if (!s_Renderer)
+			{
+				s_Renderer = std::make_unique<Renderer>();
 			}
 		}
 	protected:
-		static std::unique_ptr<ResourceManager> s_ResourceManager;
+		static std::unique_ptr<Renderer> s_Renderer;
 	};
 
 	class TestMenu : public Test

@@ -7,42 +7,14 @@
 ResourceManager::ResourceManager()
 {
 	m_ShaderManager = std::make_unique<ShaderManager>("../shaders/metadata.json", "../shaders/config.json");
+	m_MaterialManager = std::make_unique<MaterialManager>();
 }
-
-std::unordered_map<std::string, std::string> G_Texture_Path
-{
-	{"cuteDog", "../assets/cute_dog.png"},
-	{"duckDiffuse", "../assets/rubber_duck/textures/Duck_baseColor.png"},
-
-	{"damagedHelmet1", "../assets/DamagedHelmet/glTF/Default_albedo.jpg"},
-	{"damagedHelmet2", "../assets/DamagedHelmet/glTF/Default_AO.jpg"},
-	{"damagedHelmet3", "../assets/DamagedHelmet/glTF/Default_emissive.jpg"}
-
-};
 
 std::shared_ptr<Texture2D> ResourceManager::GetTexture(const std::string& textureName)
 {
-	if (textureName.empty())
-		return nullptr;
-
-	if (m_Textures.find(textureName) != m_Textures.end()) {
-		return m_Textures[textureName];
-	}
-
-	std::shared_ptr<Texture2D> texture;
-	if (G_Texture_Path.find(textureName) != G_Texture_Path.end())
-		texture = std::make_shared<Texture2D>(G_Texture_Path[textureName]);
-	else
-		texture = std::make_shared<Texture2D>(textureName);
-
-	m_Textures[textureName] = texture;
-	return texture;
+	return m_MaterialManager->GetTexture(textureName);
 }
 
-bool ResourceManager::DeleteTexture(const std::string& textureName)
-{
-	return m_Textures.erase(textureName);
-}
 
 
 std::shared_ptr<Mesh> CreateMesh(std::string meshName) {
@@ -68,6 +40,11 @@ bool ResourceManager::DeleteMesh(const std::string& meshName)
 	return m_Meshes.erase(meshName);
 }
 
+std::shared_ptr<Material> ResourceManager::GetMaterial(const std::string& materialName)
+{
+	return m_MaterialManager->GetMaterial(materialName);
+}
+
 std::unordered_map<std::string, std::string> G_Model_Path
 {
 	{"duck", "../assets/rubber_duck/scene.gltf"},
@@ -75,26 +52,26 @@ std::unordered_map<std::string, std::string> G_Model_Path
 	{"pig", "../assets/pig_triangulated.obj"}
 };
 
-std::shared_ptr<Model> ResourceManager::GetModel(const std::string& modelName)
-{
-	if (m_Models.find(modelName) != m_Models.end()) {
-		return m_Models[modelName];
-	}
-
-	std::shared_ptr<Model> model;
-	if (G_Model_Path.find(modelName) != G_Model_Path.end())
-		model = std::make_shared<Model>(G_Model_Path[modelName]);
-	else
-		model = std::make_shared<Model>(modelName);
-
-	m_Models[modelName] = model;
-	return model;
-}
-
-bool ResourceManager::DeleteModel(const std::string& modelName)
-{
-	return m_Models.erase(modelName);
-}
+//std::shared_ptr<Model> ResourceManager::GetModel(const std::string& modelName)
+//{
+//	if (m_Models.find(modelName) != m_Models.end()) {
+//		return m_Models[modelName];
+//	}
+//
+//	std::shared_ptr<Model> model;
+//	if (G_Model_Path.find(modelName) != G_Model_Path.end())
+//		model = std::make_shared<Model>(G_Model_Path[modelName]);
+//	else
+//		model = std::make_shared<Model>(modelName);
+//
+//	m_Models[modelName] = model;
+//	return model;
+//}
+//
+//bool ResourceManager::DeleteModel(const std::string& modelName)
+//{
+//	return m_Models.erase(modelName);
+//}
 
 std::shared_ptr<Shader> ResourceManager::GetShader(const std::string& shaderName)
 {
@@ -106,9 +83,9 @@ std::shared_ptr<ComputeShader> ResourceManager::GetComputeShader(const std::stri
 	return m_ShaderManager->GetComputeShader(shaderName);
 }
 
-std::shared_ptr<MeshBuffer> ResourceManager::GetMeshBuffer(const std::string& meshName, const MeshLayout& layout)
+std::shared_ptr<MeshBuffer> ResourceManager::GetMeshBuffer(const std::string& meshName, const MeshLayout& mLayout)
 {
-	MeshKey key = { meshName, layout };
+	MeshKey key = { meshName, mLayout };
 
 	if (m_MeshBuffers.find(key) != m_MeshBuffers.end())
 		return m_MeshBuffers[key];
@@ -116,13 +93,13 @@ std::shared_ptr<MeshBuffer> ResourceManager::GetMeshBuffer(const std::string& me
 
 	auto mesh = GetMesh(meshName);
 
-	m_MeshBuffers[key] = std::make_shared<MeshBuffer>(mesh, layout);
+	m_MeshBuffers[key] = std::make_shared<MeshBuffer>(mesh, mLayout);
 	return m_MeshBuffers[key];
 
 }
 
-bool ResourceManager::DeleteMeshBuffer(const std::string& meshName, MeshLayout layout)
+bool ResourceManager::DeleteMeshBuffer(const std::string& meshName, MeshLayout mLayout)
 {
-	MeshKey key = { meshName, layout };
+	MeshKey key = { meshName, mLayout };
 	return m_MeshBuffers.erase(key);
 }

@@ -1,31 +1,21 @@
 #pragma once
+
+#include "Renderer/RenderObject.h"
+#include "Resources/ResourceManager.h"
+#include "Utilities/Utility.h"
+
 #include <glad/glad.h>
 
-#include <Utilities/Utility.h>
-#include "Graphics/Buffers/VertexArray.h"
-#include "Graphics/Buffers/IndexBuffer.h"
-#include "Graphics/Shaders/Shader.h"
+#include <memory>
 
-class Screen {
-public:
-    static int s_Width;
-    static int s_Height;
-
-    static void setResolution(int w, int h) {
-        s_Width = w;
-        s_Height = h;
-    }
-};
-
-struct FrameData
-{
-    static glm::mat4 s_View;
-    static glm::mat4 s_Projection;
-};
+class ResourceManager;
 
 class Renderer
 {
 public:
-    void Draw(const VertexArray& va, const IndexBuffer& ib, const Shader& shader) const;
+    Renderer();
+    void Render(const RenderObject& renderObject) const;
     void Clear() const;
+private:
+    std::unique_ptr<ResourceManager> m_ResourceManager;
 };

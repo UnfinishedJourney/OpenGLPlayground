@@ -2,7 +2,7 @@
 #include "imgui.h"
 
 namespace test {
-	std::unique_ptr<ResourceManager> Test::s_ResourceManager = nullptr;
+	std::unique_ptr<Renderer> Test::s_Renderer = nullptr;
 
 	TestMenu::TestMenu(std::shared_ptr<Test>& currentTest)
 		: m_CurrentTest(currentTest)

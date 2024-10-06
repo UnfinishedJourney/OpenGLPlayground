@@ -13,7 +13,6 @@ void GLClearError();
 
 bool GlLogCall(const char* function, const char* file, int line);
 
-
 enum class TextureType {
 	Albedo,
 	Normal,
