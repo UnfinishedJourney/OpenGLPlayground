@@ -12,12 +12,12 @@ namespace test {
 
 	class MovingCube : public RenderObject {
 	public:
-		MovingCube(std::shared_ptr<MeshBuffer> meshComp, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
-			: RenderObject(meshComp, mat, std::move(transform))
+		MovingCube(std::shared_ptr<MeshBuffer> meshBuffer, MaterialName materialName, ShaderName shaderName, std::unique_ptr<Transform> transform)
+			: RenderObject(std::move(meshBuffer), materialName, shaderName, std::move(transform))
 		{}
 
 		void Update(float deltaTime) override {
-			m_Transform->SetRotation(glm::vec4(0.5, 1.0, 0.0, 0.5 + (float)glfwGetTime() * 0.1f));
+			m_Transform->SetRotation(glm::vec3(0.0, 0.0 + (float)glfwGetTime() * 1.0f, 0.0));
 		}
 	};
 
@@ -26,13 +26,12 @@ namespace test {
 	{
 	public:
 		TestSimpleCube();
-		~TestSimpleCube();
+		~TestSimpleCube() override = default;
 
 		void OnUpdate(float deltaTime) override;
 		void OnRender() override;
 		void OnImGuiRender() override;
 	private:
-		std::unique_ptr<MovingCube> m_Cube;
-		//std::unique_ptr<ResourceManager> m_ResourceManager;
+		std::shared_ptr<MovingCube> m_Cube;
 	};
 }

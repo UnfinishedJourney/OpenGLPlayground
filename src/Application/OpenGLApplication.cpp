@@ -68,7 +68,7 @@ void Application::Init() {
     testMenu = std::make_shared<test::TestMenu>(currentTest);
     currentTest = testMenu;
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
-    //testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
+    testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
     //testMenu->RegisterTest<test::TestAssimp>("Assimp");
     //testMenu->RegisterTest<test::TestLights>("Lights");
     //testMenu->RegisterTest<test::TestInstance>("Instances");

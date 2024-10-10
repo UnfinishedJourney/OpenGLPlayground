@@ -1,9 +1,11 @@
 #pragma once
 
+#include <vector>
+
 class IndexBuffer
 {
 public:
-	IndexBuffer(const unsigned int* data, unsigned int count);
+	IndexBuffer(const std::vector<unsigned int>& data, unsigned int count);
 	IndexBuffer(unsigned int rendererID, unsigned int count);
 	~IndexBuffer();
 

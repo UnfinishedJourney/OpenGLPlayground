@@ -1,5 +1,5 @@
 #include "Resources/ResourceManager.h"
-
+#include "Utilities/Logger.h"
 #include "Graphics/Meshes/Cube.h"
 
 #include <unordered_map>
@@ -15,7 +15,13 @@ std::shared_ptr<Texture2D> ResourceManager::GetTexture(const std::string& textur
 	return m_MaterialManager->GetTexture(textureName);
 }
 
-
+void ResourceManager::SetUniform(const std::string& uniName, UniformValue uni)
+{
+	std::visit([&](auto&& arg) {
+		m_ShaderManager->GetCurrentlyBoundShader()->SetUniform(uniName, arg);
+		Logger::GetLogger()->debug("Set uniform '{}' with value.", uniName);
+		}, uni);
+}
 
 std::shared_ptr<Mesh> CreateMesh(std::string meshName) {
 	if (meshName == "cube")

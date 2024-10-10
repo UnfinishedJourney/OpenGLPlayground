@@ -19,10 +19,6 @@ namespace test {
 		virtual void OnRender() {}
 		virtual void OnImGuiRender() {}
 		static void InitializeRenderer() {
-			//if (!s_ResourceManager) {
-			//	//s_ResourceManager = std::make_unique<ResourceManager>(shaderMetadataPath);
-			//	s_ResourceManager = std::make_unique<ResourceManager>();
-			//}
 			if (!s_Renderer)
 			{
 				s_Renderer = std::make_unique<Renderer>();

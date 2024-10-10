@@ -38,6 +38,11 @@ public:
     std::shared_ptr<Mesh> GetMesh(const std::string& meshName);
     bool DeleteMesh(const std::string& meshName);
 
+    void AddMaterial(std::string name, std::shared_ptr<Material> material)
+    {
+        m_MaterialManager->AddMaterial(name, material);
+    }
+
     std::shared_ptr<Material> GetMaterial(const std::string& materialName);
 
     //std::shared_ptr<Model> GetModel(const std::string& modelName);
@@ -64,6 +69,8 @@ public:
         //check shader for compute, etc type
         m_MaterialManager->BindMaterial(materialName, m_ShaderManager->GetCurrentlyBoundShader());
     }
+
+    void SetUniform(const std::string& uniName, UniformValue uni);
 
 private:
     std::unique_ptr<ShaderManager> m_ShaderManager;

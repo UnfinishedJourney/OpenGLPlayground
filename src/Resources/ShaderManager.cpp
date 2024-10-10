@@ -10,7 +10,7 @@
 
 // Constructor remains unchanged
 ShaderManager::ShaderManager(const std::string& metadataPath, const std::string& configPath)
-    : m_MetadataPath(metadataPath), m_ConfigPath(configPath), m_MetaHasChanged(false), m_CurrentlyBoundShader("")
+    : m_MetadataPath(metadataPath), m_ConfigPath(configPath), m_CurrentlyBoundShader(""), m_MetaHasChanged(false)
 {
     Initialize();
 }

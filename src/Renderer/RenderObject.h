@@ -4,36 +4,58 @@
 #include "Scene/Transform.h"
 
 #include <memory>
+#include <utility>
 #include <string>
+
+
+struct MaterialName {
+    std::string value;
+
+    explicit MaterialName(std::string name) : value(std::move(name)) {}
+};
+
+struct ShaderName {
+    std::string value;
+
+    explicit ShaderName(std::string name) : value(std::move(name)) {}
+};
+
+inline MaterialName operator"" _mt(const char* str, std::size_t size) {
+    return MaterialName{ std::string(str) };
+}
+
+inline ShaderName operator"" _sh(const char* str, std::size_t size) {
+    return ShaderName{ std::string(str) };
+}
 
 class MeshBuffer;
 
 class RenderObject {
-
 public:
-    RenderObject(std::shared_ptr<MeshBuffer> meshBuffer, std::string materialName, std::string shaderName, std::unique_ptr<Transform> transform)
-        : m_MeshBuffer(meshBuffer), m_MaterialName(materialName), m_ShaderName(shaderName), m_Transform(std::move(transform))
+    RenderObject(std::shared_ptr<MeshBuffer> meshBuffer, MaterialName materialName, ShaderName shaderName, std::unique_ptr<Transform> transform)
+        : m_MaterialName(std::move(materialName.value)),
+        m_ShaderName(std::move(shaderName.value)),
+        m_MeshBuffer(std::move(meshBuffer)),
+        m_Transform(std::move(transform))
     {
     }
 
-    //virtual void Render() {
-    //    GLCall(glDrawElements(GL_TRIANGLES, meshBuffer->GetNVerts(), GL_UNSIGNED_INT, nullptr));
-    //    for (auto& meshBuffer : m_MeshBuffers)
-    //    {
-    //        meshBuffer->Bind();
-    //        m_Material->Bind();
-    //        glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_Transform->GetModelMatrix();
-    //        m_Material->GetShader()->SetUniform("u_MVP", mvp);
-    //        GLCall(glDrawElements(GL_TRIANGLES, meshBuffer->GetNVerts(), GL_UNSIGNED_INT, nullptr));
-    //    }
-    //}
+    virtual ~RenderObject() = default;
 
-    //virtual void Update(float deltaTime) 
-    //{
-    //    return;
-    //}
+    RenderObject(const RenderObject&) = delete;
+
+    RenderObject& operator=(const RenderObject&) = delete;
+
+    RenderObject(RenderObject&&) noexcept = default;
+
+    RenderObject& operator=(RenderObject&&) noexcept = default;
+
+    virtual void Update(float deltaTime)
+    {
+    }
     std::string m_MaterialName;
     std::string m_ShaderName;
     std::shared_ptr<MeshBuffer> m_MeshBuffer;
     std::unique_ptr<Transform> m_Transform;
+protected:
 };

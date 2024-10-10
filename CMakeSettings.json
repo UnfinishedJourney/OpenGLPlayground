@@ -1,0 +1,28 @@
+{
+    "configurations": [
+      {
+        "name": "x64-Release-MSVC",
+        "generator": "Visual Studio 17 2022",
+        "configurationType": "Release",
+        "inheritEnvironments": [ "msvc_x64" ],
+        "buildRoot": "${projectDir}/out/build/${name}",
+        "installRoot": "${projectDir}/out/install/${name}",
+        "cmakeCommandArgs": "",
+        "buildCommandArgs": "",
+        "ctestCommandArgs": "",
+        "variables": []
+      },
+      {
+        "name": "x64-Release-Clang",
+        "generator": "Visual Studio 17 2022",
+        "configurationType": "Release",
+        "inheritEnvironments": [ "msvc_x64" ],
+        "buildRoot": "${projectDir}/out/build/${name}",
+        "installRoot": "${projectDir}/out/install/${name}",
+        "cmakeCommandArgs": "-DUSE_CLANG=ON -DUSE_CLANG_TIDY=ON",
+        "buildCommandArgs": "",
+        "ctestCommandArgs": "",
+        "variables": []
+      }
+    ]
+  }
