@@ -116,14 +116,14 @@ MeshBuffer::MeshBuffer(std::shared_ptr<Mesh> mesh, const MeshLayout& mLayout)
 
 void MeshBuffer::Bind() const
 {
-    Logger::GetLogger()->info("Binding VertexArray and IndexBuffer.");
+    Logger::GetLogger()->debug("Binding MeshBuffer.");
     m_VAO->Bind();
     m_IB->Bind();
 }
 
 void MeshBuffer::Unbind() const
 {
-    Logger::GetLogger()->info("Unbinding VertexArray and IndexBuffer.");
+    Logger::GetLogger()->debug("Unbinding MeshBuffer.");
     m_VAO->Unbind();
     m_IB->Unbind();
 }

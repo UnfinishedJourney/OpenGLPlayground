@@ -16,8 +16,6 @@
 #include "Application/InputManager.h"
 #include "Utilities/Logger.h"
 
-#include "glm.hpp"
-#include "gtc/matrix_transform.hpp"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -35,7 +33,6 @@ void showFPS(GLFWwindow* window);
 
 struct Application {
     GLFWwindow* window;
-    Renderer renderer;
     Camera camera;
     CameraController cameraController;
     InputManager inputManager;
@@ -60,15 +57,17 @@ void Application::Init() {
     window = GLContext::InitOpenGL(Screen::s_Width, Screen::s_Height, "My Application", glfw_onKey, glfw_onMouseScroll, glfw_onMouseMove, glfw_onWindowSize);
 
     glfwSetWindowUserPointer(window, this);
-    test::Test::InitializeRenderer();
+    //test::Test::InitializeRenderer();
     glfwSetWindowSizeCallback(window, glfw_onWindowSize);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-
+    auto renderer = std::make_shared<Renderer>();
     currentTest = nullptr;
-    testMenu = std::make_shared<test::TestMenu>(currentTest);
+    testMenu = std::make_shared<test::TestMenu>(currentTest, renderer);
     currentTest = testMenu;
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
     testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
+    testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
     //testMenu->RegisterTest<test::TestAssimp>("Assimp");
     //testMenu->RegisterTest<test::TestLights>("Lights");
     //testMenu->RegisterTest<test::TestInstance>("Instances");
@@ -104,8 +103,7 @@ void Application::Run() {
         }
 
         FrameData::s_View = camera.GetViewMatrix();
-
-        renderer.Clear();
+        currentTest->Clear();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -154,7 +152,12 @@ void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode)
 void glfw_onMouseMove(GLFWwindow* window, double xpos, double ypos) {
     Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         app->cameraController.ProcessMouseMovement(static_cast<float>(xpos), static_cast<float>(ypos));
+    }
+    else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        app->cameraController.Reset();
     }
 }
 

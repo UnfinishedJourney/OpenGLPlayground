@@ -25,7 +25,7 @@ namespace test {
 	class TestSimpleCube : public Test
 	{
 	public:
-		TestSimpleCube();
+		TestSimpleCube(std::shared_ptr<Renderer>& renderer);
 		~TestSimpleCube() override = default;
 
 		void OnUpdate(float deltaTime) override;

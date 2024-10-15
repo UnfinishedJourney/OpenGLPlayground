@@ -15,7 +15,8 @@ class Renderer
 {
 public:
     Renderer();
-    void Render(std::shared_ptr<RenderObject> renderObject) const;
+    void Render(const std::shared_ptr<RenderObject>& renderObject) const;
+    void RenderSkybox(const std::shared_ptr<MeshBuffer>& meshBuffer, const std::string& textureName, const std::string& shaderName) const;
     void Clear() const;
     std::unique_ptr<ResourceManager> m_ResourceManager;
 };

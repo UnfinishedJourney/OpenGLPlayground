@@ -1,4 +1,5 @@
 #include "VertexBufferLayout.h"
+#include "Utilities/Logger.h" 
 
 #include <vector>
 #include <glad/glad.h>
@@ -12,28 +13,45 @@ void VertexBufferLayout::Push(unsigned int count)
 template<>
 void VertexBufferLayout::Push<float>(unsigned int count)
 {
-    m_Elements.push_back({ GL_FLOAT, count, 0 });
-    m_Stride += count * VertexBufferElement::GetSizeOfType(GL_FLOAT);
+    GLenum type = GL_FLOAT;
+    unsigned char normalized = 0;
+
+    m_Elements.push_back({ type, count, normalized, VertexBufferElement::GetSizeOfType(type) });
+    m_Stride += count * VertexBufferElement::GetSizeOfType(type);
+
+    Logger::GetLogger()->info("Added VertexBufferElement: type=GL_FLOAT, count={}, normalized={}, size={}. Stride is now {}.",
+        count, static_cast<unsigned int>(normalized), VertexBufferElement::GetSizeOfType(type), m_Stride);
 }
 
 template<>
 void VertexBufferLayout::Push<unsigned int>(unsigned int count)
 {
-    m_Elements.push_back({ GL_UNSIGNED_INT, count, 0 });
-    m_Stride += count * VertexBufferElement::GetSizeOfType(GL_UNSIGNED_INT);
+    GLenum type = GL_UNSIGNED_INT;
+    unsigned char normalized = 0;
+
+    m_Elements.push_back({ type, count, normalized, VertexBufferElement::GetSizeOfType(type) });
+    m_Stride += count * VertexBufferElement::GetSizeOfType(type);
+
+    Logger::GetLogger()->info("Added VertexBufferElement: type=GL_UNSIGNED_INT, count={}, normalized={}, size={}. Stride is now {}.",
+        count, static_cast<unsigned int>(normalized), VertexBufferElement::GetSizeOfType(type), m_Stride);
 }
 
 template<>
 void VertexBufferLayout::Push<unsigned char>(unsigned int count)
 {
-    m_Elements.push_back({ GL_UNSIGNED_BYTE, count, 1 });
-    m_Stride += count * VertexBufferElement::GetSizeOfType(GL_UNSIGNED_BYTE);
+    GLenum type = GL_UNSIGNED_BYTE;
+    unsigned char normalized = 1;
+
+    m_Elements.push_back({ type, count, normalized, VertexBufferElement::GetSizeOfType(type) });
+    m_Stride += count * VertexBufferElement::GetSizeOfType(type);
+
+    Logger::GetLogger()->info("Added VertexBufferElement: type=GL_UNSIGNED_BYTE, count={}, normalized={}, size={}. Stride is now {}.",
+        count, static_cast<unsigned int>(normalized), VertexBufferElement::GetSizeOfType(type), m_Stride);
 }
 
 template<typename T>
 void VertexBufferLayout::Push(unsigned int count, size_t size, bool b_normalized)
 {
-    // Example implementation, adjust as needed
     unsigned int type;
     if constexpr (std::is_same_v<T, float>) {
         type = GL_FLOAT;
@@ -48,6 +66,11 @@ void VertexBufferLayout::Push(unsigned int count, size_t size, bool b_normalized
         static_assert(sizeof(T) == 0, "Unsupported type for VertexBufferLayout::Push with size");
     }
 
-    m_Elements.push_back({ type, count, static_cast<unsigned char>(b_normalized), size });
+    unsigned char normalized = b_normalized ? 1 : 0;
+
+    m_Elements.push_back({ type, count, normalized, size });
     m_Stride += count * VertexBufferElement::GetSizeOfType(type);
+
+    Logger::GetLogger()->info("Added VertexBufferElement: type={}, count={}, normalized={}, size={}. Stride is now {}.",
+        type, count, static_cast<unsigned int>(normalized), size, m_Stride);
 }

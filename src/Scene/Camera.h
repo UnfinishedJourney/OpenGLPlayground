@@ -107,10 +107,11 @@ public:
             m_LastX = xpos;
             m_LastY = ypos;
             m_FirstMouse = false;
+            return; 
         }
 
         float xOffset = xpos - m_LastX;
-        float yOffset = m_LastY - ypos; 
+        float yOffset = m_LastY - ypos;
 
         m_LastX = xpos;
         m_LastY = ypos;
@@ -119,7 +120,6 @@ public:
         yOffset *= m_Sensitivity;
 
         m_Camera.Rotate(xOffset, yOffset);
-        FrameData::s_View = m_Camera.GetViewMatrix();
     }
 
     void ProcessMouseScroll(float yOffset) {
@@ -132,6 +132,10 @@ public:
     void SetSpeed(float speed) {
         m_Speed = speed;
         m_Camera.SetSpeed(speed);
+    }
+
+    void Reset() {
+        m_FirstMouse = true;
     }
 
 private:

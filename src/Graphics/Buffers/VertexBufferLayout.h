@@ -1,11 +1,9 @@
 #pragma once
 
-#include <vector>
+#include "Utilities/Utility.h"
 #include <glad/glad.h>
 
-#ifndef ASSERT
-#define ASSERT(x) 
-#endif
+#include <vector>
 
 struct VertexBufferElement
 {

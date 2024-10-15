@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <utility>
+#include <memory>
 #include <string>
 #include <functional>
 #include <vector>
@@ -12,33 +13,33 @@ namespace test {
 	class Test
 	{
 	public:
-		Test() {}
-		virtual ~Test() {}
+		Test(std::shared_ptr<Renderer>& renderer)
+			: m_Renderer(renderer)
+		{}
+		virtual ~Test() = default;
 
 		virtual void OnUpdate(float deltaTime) {}
 		virtual void OnRender() {}
 		virtual void OnImGuiRender() {}
-		static void InitializeRenderer() {
-			if (!s_Renderer)
-			{
-				s_Renderer = std::make_unique<Renderer>();
-			}
+		void Clear() const
+		{
+			m_Renderer->Clear();
 		}
 	protected:
-		static std::unique_ptr<Renderer> s_Renderer;
+		std::shared_ptr<Renderer> m_Renderer;
 	};
 
 	class TestMenu : public Test
 	{
 	public:
-		TestMenu(std::shared_ptr<Test>& currentTest);
+		TestMenu(std::shared_ptr<Test>& currentTest, std::shared_ptr<Renderer>& renderer);
 		void OnImGuiRender() override;
 
 		template<typename T>
 		void RegisterTest(const std::string& name)
 		{
 			std::cout << "Register test " << name << std::endl;
-			m_Tests.push_back(std::make_pair(name, []() {return std::make_shared<T>(); }));
+			m_Tests.push_back(std::make_pair(name, [this]() {return std::make_shared<T>(m_Renderer); }));
 		}
 
 	private:

@@ -15,6 +15,57 @@ std::shared_ptr<Texture2D> ResourceManager::GetTexture(const std::string& textur
 	return m_MaterialManager->GetTexture(textureName);
 }
 
+std::shared_ptr<CubeMapTexture> ResourceManager::GetCubeMapTexture(const std::string& name)
+{
+	if (name.empty())
+		return nullptr;
+
+	auto it = m_TexturesCubeMap.find(name);
+	if (it != m_TexturesCubeMap.end())
+	{
+		return it->second;
+	}
+
+	auto texIt = m_TextureCubeMap.find(name);
+	if (texIt == m_TextureCubeMap.end())
+	{
+		std::cerr << "CubeMapTexture not found: " << name << std::endl;
+		return nullptr;
+	}
+
+	const auto& facePaths = texIt->second;
+
+	std::shared_ptr<CubeMapTexture> cubeMapTexture;
+	try
+	{
+		cubeMapTexture = std::make_shared<CubeMapTexture>(facePaths);
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Failed to load CubeMapTexture '" << name << "': " << e.what() << std::endl;
+		return nullptr;
+	}
+
+	m_TexturesCubeMap[name] = cubeMapTexture;
+	return cubeMapTexture;
+}
+
+void ResourceManager::BindCubeMapTexture(const std::string& name, unsigned int slot) const
+{
+	if (m_CurrentlyBoundCubeMap == name)
+		return;
+
+	auto cubeMap = m_TexturesCubeMap.at(name);
+	if (cubeMap) {
+		cubeMap->Bind(slot);
+	}
+	else {
+		throw std::runtime_error("CubeMapTexture '" + name + "' not found.");
+	}
+	m_CurrentlyBoundCubeMap = name;
+
+}
+
 void ResourceManager::SetUniform(const std::string& uniName, UniformValue uni)
 {
 	std::visit([&](auto&& arg) {

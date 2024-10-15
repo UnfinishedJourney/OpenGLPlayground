@@ -9,7 +9,7 @@ uniform mat4 u_MVP;
 
 void main() {
     Vec = position;
-    gl_Position = u_MVP * vec4(position,1.0);
+    gl_Position = u_MVP * vec4(50.0*position,1.0);
 }
 
 #shader fragment

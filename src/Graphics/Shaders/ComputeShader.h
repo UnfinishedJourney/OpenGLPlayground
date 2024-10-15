@@ -2,7 +2,8 @@
 
 #include "Graphics/Shaders/BaseShader.h"
 
-class ComputeShader : public BaseShader {
+class ComputeShader : public BaseShader 
+{
 public:
     explicit ComputeShader(const std::filesystem::path& filepath)
         : BaseShader(filepath)

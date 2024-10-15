@@ -56,7 +56,6 @@ unsigned int BaseShader::CompileShader(unsigned int type, const std::string& sou
     glShaderSource(shader, 1, &src, nullptr);
     glCompileShader(shader);
 
-    // Check compilation status
     int success;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -104,10 +103,6 @@ unsigned int BaseShader::LinkProgram(const std::vector<unsigned int>& shaders) c
 
 std::string BaseShader::ReadFile(const std::filesystem::path& filepath) const {
     auto logger = Logger::GetLogger();
-    logger->info("Current working directory: {}", std::filesystem::current_path().generic_string());
-
-    logger->info("Attempting to open shader file: {}", filepath.generic_string());
-
     if (!std::filesystem::exists(filepath)) {
         logger->error("Shader file does not exist: {}", filepath.string());
         throw std::runtime_error("Shader file does not exist: " + filepath.string());
@@ -144,7 +139,7 @@ std::string BaseShader::ResolveIncludes(const std::string& source, const std::fi
             std::string includePathStr = line.substr(start + 1, end - start - 1);
             std::filesystem::path includePath = directory / includePathStr;
 
-            logger->info("Including file: {}", includePath.generic_string());
+            logger->debug("Including file: {}", includePath.generic_string());
 
             std::string includedSource = ReadFile(includePath);
 
@@ -162,20 +157,16 @@ std::string BaseShader::ResolveIncludes(const std::string& source, const std::fi
 
 bool BaseShader::LoadBinary(const std::filesystem::path& binaryPath) {
     auto logger = Logger::GetLogger();
-    logger->info("Attempting to load shader binary: {}", binaryPath.generic_string());
 
-    // Open the binary file
     std::ifstream inStream(binaryPath, std::ios::binary);
     if (!inStream.is_open()) {
         logger->error("Failed to open shader binary file: {}", binaryPath.generic_string());
         return false;
     }
 
-    // Read the binary format
     GLenum binaryFormat;
     inStream.read(reinterpret_cast<char*>(&binaryFormat), sizeof(GLenum));
 
-    // Read the binary data
     std::vector<GLubyte> binaryData((std::istreambuf_iterator<char>(inStream)), std::istreambuf_iterator<char>());
     inStream.close();
 
@@ -184,17 +175,14 @@ bool BaseShader::LoadBinary(const std::filesystem::path& binaryPath) {
         return false;
     }
 
-    // Create the program object
     m_RendererID = glCreateProgram();
     if (m_RendererID == 0) {
         logger->error("Error creating shader program object.");
         return false;
     }
 
-    // Load the binary data into the program
     glProgramBinary(m_RendererID, binaryFormat, binaryData.data(), static_cast<GLsizei>(binaryData.size()));
 
-    // Check for successful linking
     GLint status;
     glGetProgramiv(m_RendererID, GL_LINK_STATUS, &status);
     if (GL_FALSE == status) {
@@ -212,18 +200,17 @@ void BaseShader::SaveBinary(const std::filesystem::path& binaryPath) const {
     auto logger = Logger::GetLogger();
     GLint formats;
     glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &formats);
-    logger->info("Number of binary formats supported by this driver: {}", formats);
+    logger->debug("Number of binary formats supported by this driver: {}", formats);
 
     if (formats > 0) {
         GLint binaryLength;
         glGetProgramiv(m_RendererID, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
-        logger->info("Program binary length: {} bytes", binaryLength);
+        logger->debug("Program binary length: {} bytes", binaryLength);
 
         std::vector<GLubyte> binary(binaryLength);
         GLenum binaryFormat;
         glGetProgramBinary(m_RendererID, binaryLength, nullptr, &binaryFormat, binary.data());
 
-        // Write the binary format first, so it can be read during loading
         std::ofstream outStream(binaryPath, std::ios::binary);
         if (!outStream.is_open()) {
             logger->error("Failed to open file for writing shader binary: {}", binaryPath.generic_string());

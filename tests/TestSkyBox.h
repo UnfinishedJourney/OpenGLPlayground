@@ -1,32 +1,25 @@
 #pragma once
 
 #include "Test.h"
-#include "Graphics/Shaders/Shader.h"
-#include "Graphics/Textures/TextureSkyBox.h"
-#include "Graphics/Buffers/VertexBuffer.h"
-#include "Graphics/Buffers/VertexBufferLayout.h"
-#include "Graphics/Buffers/IndexBuffer.h"
-#include "Graphics/Meshes/SkyBox.h"
+#include "Renderer/RenderObject.h"
+#include "Resources/ResourceManager.h"
 
-#include "glm.hpp"
-#include "gtc/matrix_transform.hpp"
-
+#include <GLFW/glfw3.h>
 #include <memory>
 
+
 namespace test {
+
 	class TestSkyBox : public Test
 	{
 	public:
-		TestSkyBox();
-		~TestSkyBox();
+		TestSkyBox(std::shared_ptr<Renderer>& renderer);
+		~TestSkyBox() override = default;
 
 		void OnUpdate(float deltaTime) override;
 		void OnRender() override;
 		void OnImGuiRender() override;
 	private:
-		std::unique_ptr<SkyBox> m_SkyBox;
-		std::unique_ptr<Shader> m_Shader;
-
-		glm::mat4 m_Model;
+		std::shared_ptr<MeshBuffer> m_MeshComponent;
 	};
 }

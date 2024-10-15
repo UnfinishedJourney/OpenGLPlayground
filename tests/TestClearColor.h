@@ -6,7 +6,7 @@ namespace test {
 	class TestClearColor : public Test
 	{
 	public:
-		TestClearColor();
+		TestClearColor(std::shared_ptr<Renderer>& renderer);
 		~TestClearColor();
 
 		void OnUpdate(float deltaTime) override;

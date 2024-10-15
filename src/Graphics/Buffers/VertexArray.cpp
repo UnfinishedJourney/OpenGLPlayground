@@ -1,9 +1,5 @@
 #include "Graphics/Buffers/VertexArray.h"
-#include "Utilities/Utility.h"
 #include "Utilities/Logger.h" 
-#include "Graphics/Buffers/VertexBufferLayout.h"
-
-#include <cstdint>
 
 VertexArray::VertexArray()
     : m_RendererID(0)
@@ -30,6 +26,30 @@ VertexArray::~VertexArray()
     GLCall(glDeleteVertexArrays(1, &m_RendererID));
 }
 
+VertexArray::VertexArray(VertexArray&& other) noexcept
+    : m_RendererID(other.m_RendererID)
+{
+    other.m_RendererID = 0;
+    Logger::GetLogger()->info("Moved VertexArray with ID {}.", m_RendererID);
+}
+
+VertexArray& VertexArray::operator=(VertexArray&& other) noexcept
+{
+    if (this != &other) {
+        // Release current resource
+        if (m_RendererID != 0) {
+            GLCall(glDeleteVertexArrays(1, &m_RendererID));
+            Logger::GetLogger()->info("Deleted VertexArray with ID {}.", m_RendererID);
+        }
+
+        // Move resources
+        m_RendererID = other.m_RendererID;
+        other.m_RendererID = 0;
+        Logger::GetLogger()->info("Assigned VertexArray with ID {}.", m_RendererID);
+    }
+    return *this;
+}
+
 void VertexArray::AddBuffer(const VertexBuffer& vertexBuffer, const VertexBufferLayout& vbLayout) const
 {
     Logger::GetLogger()->info("Adding VertexBuffer ID {} to VertexArray ID {}.", vertexBuffer.GetRendererID(), m_RendererID);
@@ -49,7 +69,7 @@ void VertexArray::AddBuffer(const VertexBuffer& vertexBuffer, const VertexBuffer
     }
 
     Unbind();
-    Logger::GetLogger()->info("Added VertexBuffer ID {} to VertexArray ID {} successfully.", vertexBuffer.GetRendererID(), m_RendererID);
+    Logger::GetLogger()->info("Successfully added VertexBuffer ID {} to VertexArray ID {}.", vertexBuffer.GetRendererID(), m_RendererID);
 }
 
 void VertexArray::AddInstancedBuffer(const VertexBuffer& vertexBuffer, const VertexBufferLayout& vbLayout, unsigned int divisor) const
@@ -73,7 +93,7 @@ void VertexArray::AddInstancedBuffer(const VertexBuffer& vertexBuffer, const Ver
     }
 
     Unbind();
-    Logger::GetLogger()->info("Added Instanced VertexBuffer ID {} to VertexArray ID {} successfully.", vertexBuffer.GetRendererID(), m_RendererID);
+    Logger::GetLogger()->info("Successfully added Instanced VertexBuffer ID {} to VertexArray ID {}.", vertexBuffer.GetRendererID(), m_RendererID);
 }
 
 void VertexArray::Bind() const

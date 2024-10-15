@@ -4,7 +4,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-class GLContext {
+class GLContext 
+{
 public:
     static GLFWwindow* InitOpenGL(int width, int height, const std::string& title,
         GLFWkeyfun keyfun, GLFWscrollfun scrollfun, GLFWcursorposfun cursorposfun,

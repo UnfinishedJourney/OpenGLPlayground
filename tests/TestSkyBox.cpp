@@ -1,37 +1,34 @@
 #include "TestSkyBox.h"
-#include <GLFW/glfw3.h>
-#include "Renderer/Renderer.h"
-#include "imgui.h"
+#include "Graphics/Meshes/Cube.h"
 
-namespace test {
-    TestSkyBox::TestSkyBox()
-    {
-        //GLCall(glDisable(GL_DEPTH_TEST));
-        SkyBoxHelper sbh;
-        auto texID = sbh.LoadCubeMap("../assets/cube/pisa/pisa", ".png");
-        m_SkyBox = std::make_unique<SkyBox>(texID, 100.0);
-        m_Shader = std::make_unique<Shader>("../shaders/SkyBox.shader");
-        m_Shader->Bind();
-    }
+test::TestSkyBox::TestSkyBox(std::shared_ptr<Renderer>& renderer)
+    : Test(renderer)
+{
+    MeshLayout skyBoxMeshLayout = {
+        true,
+        false,
+        false,
+        false,
+        {}
+    };
 
-    TestSkyBox::~TestSkyBox()
-    {
+    m_MeshComponent = m_Renderer->m_ResourceManager->GetMeshBuffer("cube", skyBoxMeshLayout);
+    std::shared_ptr<Shader> shader = m_Renderer->m_ResourceManager->GetShader("skyBox");
+    std::shared_ptr<CubeMapTexture> texture = m_Renderer->m_ResourceManager->GetCubeMapTexture("pisa");
 
-    }
+}
 
-    void TestSkyBox::OnUpdate(float deltaTime)
-    {
-    }
+void test::TestSkyBox::OnUpdate(float deltaTime)
+{
+}
 
-    void TestSkyBox::OnRender()
-    {
-        GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
-        GLCall(glClear(GL_COLOR_BUFFER_BIT));
+void test::TestSkyBox::OnRender()
+{
+    GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
+    GLCall(glClear(GL_COLOR_BUFFER_BIT));
+    m_Renderer->RenderSkybox(m_MeshComponent, "pisa", "skyBox");
+}
 
-        m_SkyBox->Draw(m_Shader);
-    }
-
-    void TestSkyBox::OnImGuiRender()
-    {
-    }
+void test::TestSkyBox::OnImGuiRender()
+{
 }

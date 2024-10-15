@@ -7,7 +7,7 @@
 
 void Material::AddTexture(std::weak_ptr<Texture2D> texture, unsigned int textureUnit)
 {
-    if (auto sharedTexture = texture.lock()) { // Check if the texture is still valid
+    if (auto sharedTexture = texture.lock()) { 
         m_Textures[textureUnit] = texture;
         Logger::GetLogger()->info("Texture added to unit {}.", textureUnit);
     }
@@ -47,7 +47,6 @@ void Material::Bind(std::shared_ptr<BaseShader> shader)
         return;
     }
 
-    //need to add shader, material name
     Logger::GetLogger()->info("Binding material to shader '{}'.", "unknown");
 
     for (const auto& [name, value] : m_Params)
@@ -75,11 +74,10 @@ void Material::Unbind()
 {
     Logger::GetLogger()->info("Unbinding material textures.");
 
-    // Iterate over all textures and unbind them
     for (const auto& [unit, weakTexture] : m_Textures)
     {
-        if (auto texture = weakTexture.lock()) { // Safely obtain shared_ptr
-            texture->Unbind(unit); // Specify the texture unit
+        if (auto texture = weakTexture.lock()) { 
+            texture->Unbind(unit); 
             Logger::GetLogger()->info("Texture unbound from unit {}.", unit);
         }
     }

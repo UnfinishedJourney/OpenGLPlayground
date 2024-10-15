@@ -8,7 +8,8 @@
 void ComputeShader::LoadShader(const std::filesystem::path& filepath) {
     m_Filepath = filepath;
 
-    if (m_RendererID) {
+    if (m_RendererID) 
+    {
         glDeleteProgram(m_RendererID);
         m_RendererID = 0;
     }
@@ -16,24 +17,26 @@ void ComputeShader::LoadShader(const std::filesystem::path& filepath) {
     std::filesystem::path binaryPath = filepath;
     binaryPath.replace_extension(".bin");
 
-    if (!LoadBinary(binaryPath)) {
+    if (!LoadBinary(binaryPath)) 
+    {
         ReloadShader();
     }
 }
 
 void ComputeShader::ReloadShader() {
-    if (m_RendererID) {
+    if (m_RendererID) 
+    {
         glDeleteProgram(m_RendererID);
         m_RendererID = 0;
     }
 
     m_UniformLocationCache.clear();
 
-    try {
+    try 
+    {
         std::string source = ReadFile(m_Filepath);
         source = ResolveIncludes(source, m_Filepath.parent_path());
 
-        // Parse shader source code using #shader directives
         enum class ShaderType { NONE, COMPUTE };
         ShaderType type = ShaderType::NONE;
         std::stringstream computeShaderSource;
@@ -41,44 +44,46 @@ void ComputeShader::ReloadShader() {
         std::istringstream stream(source);
         std::string line;
 
-        while (std::getline(stream, line)) {
-            // Remove carriage return character
-            if (!line.empty() && line.back() == '\r') {
+        while (std::getline(stream, line)) 
+        {
+            if (!line.empty() && line.back() == '\r') 
+            {
                 line.pop_back();
             }
 
-            if (line.find("#shader") != std::string::npos) {
-                // Determine the shader type
-                if (line.find("compute") != std::string::npos) {
+            if (line.find("#shader") != std::string::npos) 
+            {
+                if (line.find("compute") != std::string::npos) 
+                {
                     type = ShaderType::COMPUTE;
                 }
-                else {
+                else 
+                {
                     type = ShaderType::NONE;
                 }
-                // Skip the #shader line
             }
-            else if (type == ShaderType::COMPUTE) {
+            else if (type == ShaderType::COMPUTE) 
+            {
                 computeShaderSource << line << '\n';
             }
         }
 
-        if (computeShaderSource.str().empty()) {
+        if (computeShaderSource.str().empty()) 
+        {
             throw std::runtime_error("Compute shader not found in file: " + m_Filepath.string());
         }
 
-        // Compile compute shader
         unsigned int shader = CompileShader(GL_COMPUTE_SHADER, computeShaderSource.str());
 
-        // Link program
         m_RendererID = LinkProgram({ shader });
 
         std::filesystem::path binaryPath = m_Filepath;
         binaryPath.replace_extension(".bin");
 
-        // Save the binary for future use
         SaveBinary(binaryPath);
     }
-    catch (const std::exception& e) {
+    catch (const std::exception& e) 
+    {
         std::cerr << "Error reloading compute shader: " << e.what() << std::endl;
     }
 }

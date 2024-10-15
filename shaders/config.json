@@ -27,6 +27,10 @@
 		"helmet": {
             "binary_path": "../shaders/Helmet.bin",
             "source_path": "../shaders/Helmet.shader"
+        },
+        "skyBox": {
+            "binary_path": "../shaders/SkyBox.bin",
+            "source_path": "../shaders/SkyBox.shader"
         }
     },
 

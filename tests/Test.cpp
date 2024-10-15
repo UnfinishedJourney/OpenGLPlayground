@@ -2,10 +2,9 @@
 #include "imgui.h"
 
 namespace test {
-	std::unique_ptr<Renderer> Test::s_Renderer = nullptr;
 
-	TestMenu::TestMenu(std::shared_ptr<Test>& currentTest)
-		: m_CurrentTest(currentTest)
+	TestMenu::TestMenu(std::shared_ptr<Test>& currentTest, std::shared_ptr<Renderer>& renderer)
+		: Test(renderer), m_CurrentTest(currentTest)
 	{
 	}
 
