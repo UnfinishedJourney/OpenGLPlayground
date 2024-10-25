@@ -1,178 +1,93 @@
 #include "Renderer/Renderer.h"
-#include <iostream>
 #include "Utilities/Logger.h"
 #include "Scene/FrameData.h"
 #include "Utilities/Utility.h" 
+#include "Graphics/Buffers/UniformBuffer.h"
 
 Renderer::Renderer()
 {
     auto logger = Logger::GetLogger();
     logger->info("Initializing Renderer.");
 
-    try {
-        m_ResourceManager = std::make_unique<ResourceManager>();
-        logger->info("ResourceManager initialized successfully.");
+    //m_ResourceManager = std::make_unique<ResourceManager>("../shaders/metadata.json", "../shaders/config.json");
+    m_ResourceManager = std::make_unique<ResourceManager>();
+    logger->info("ResourceManager initialized successfully.");
+
+    m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), 0, GL_DYNAMIC_DRAW);
+    logger->info("Created FrameData UBO with binding point 0.");
+}
+
+void Renderer::UpdateFrameDataUBO() const
+{
+    FrameCommonData frameData;
+    frameData.view = FrameData::s_View;  
+    frameData.proj = FrameData::s_Projection; 
+    frameData.cameraPos = glm::vec4(FrameData::s_CameraPos, 1.0f);
+
+    m_FrameDataUBO->SetData(frameData, 0);
+}
+
+void Renderer::BindShaderAndMaterial(const std::shared_ptr<RenderObject>& renderObject) const
+{
+    if (!renderObject) {
+        Logger::GetLogger()->error("RenderObject is nullptr.");
+        return;
     }
-    catch (const std::exception& e) {
-        logger->critical("Failed to initialize ResourceManager: {}", e.what());
-        throw; 
-    }
+
+    m_ResourceManager->BindShader(renderObject->m_ShaderName);
+    m_ResourceManager->BindMaterial(renderObject->m_MaterialName);
+
+    //if (!m_ResourceManager->BindShader(renderObject->m_ShaderName)) {
+    //    Logger::GetLogger()->error("Failed to bind shader '{}'.", renderObject->m_ShaderName);
+    //}
+
+    //if (!m_ResourceManager->BindMaterial(renderObject->m_MaterialName)) {
+    //    Logger::GetLogger()->error("Failed to bind material '{}'.", renderObject->m_MaterialName);
+    //}
 }
 
 void Renderer::Render(const std::shared_ptr<RenderObject>& renderObject) const
 {
-    auto logger = Logger::GetLogger();
-    logger->debug("Starting Render process for RenderObject: {}", "");
+    UpdateFrameDataUBO();
 
-    if (!renderObject) {
-        logger->error("RenderObject is nullptr. Skipping rendering.");
-        return;
-    }
-
-    try {
-        logger->debug("Binding Shader: {}", renderObject->m_ShaderName);
-        m_ResourceManager->BindShader(renderObject->m_ShaderName);
-    }
-    catch (const std::exception& e) {
-        logger->error("Failed to bind shader '{}': {}", renderObject->m_ShaderName, e.what());
-        return;
-    }
-
-    try {
-        logger->debug("Binding Material: {}", renderObject->m_MaterialName);
-        m_ResourceManager->BindMaterial(renderObject->m_MaterialName);
-    }
-    catch (const std::exception& e) {
-        logger->error("Failed to bind material '{}': {}", renderObject->m_MaterialName, e.what());
-        return;
-    }
+    BindShaderAndMaterial(renderObject);
 
     glm::mat4 modelMatrix = renderObject->m_Transform->GetModelMatrix();
     glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * modelMatrix;
-    logger->debug("Calculated MVP matrix for RenderObject '{}'.", "");
 
-    try {
-        logger->debug("Setting uniform 'u_MVP' for Shader: {}", renderObject->m_ShaderName);
-        m_ResourceManager->SetUniform("u_MVP", mvp);
-    }
-    catch (const std::exception& e) {
-        logger->error("Failed to set uniform 'u_MVP' for shader '{}': {}", renderObject->m_ShaderName, e.what());
-        return;
-    }
+    m_ResourceManager->SetUniform("u_MVP", mvp);
 
-    try {
-        logger->debug("Binding MeshBuffer for RenderObject '{}'.", "");
-        renderObject->m_MeshBuffer->Bind();
-    }
-    catch (const std::exception& e) {
-        logger->error("Failed to bind MeshBuffer for RenderObject '{}': {}", "", e.what());
-        return;
-    }
-
-    try {
-        logger->debug("Executing glDrawElements for RenderObject '{}'.", "");
-        GLCall(glDrawElements(GL_TRIANGLES, renderObject->m_MeshBuffer->GetNVerts(), GL_UNSIGNED_INT, nullptr));
-        logger->debug("glDrawElements executed successfully for RenderObject '{}'.", "");
-    }
-    catch (const std::exception& e) {
-        logger->error("glDrawElements failed for RenderObject '{}': {}", "", e.what());
-    }
-
-    logger->debug("Render process completed for RenderObject '{}'.", "");
+    renderObject->m_MeshBuffer->Bind();
+    GLCall(glDrawElements(GL_TRIANGLES, renderObject->m_MeshBuffer->GetNVerts(), GL_UNSIGNED_INT, nullptr));
 }
 
 void Renderer::RenderSkybox(const std::shared_ptr<MeshBuffer>& meshBuffer, const std::string& textureName, const std::string& shaderName) const
 {
-    auto logger = Logger::GetLogger();
-    logger->debug("Starting RenderSkybox process.");
-
     if (!meshBuffer) {
-        logger->error("Skybox MeshBuffer is nullptr. Skipping skybox rendering.");
+        Logger::GetLogger()->error("Skybox MeshBuffer is nullptr.");
         return;
     }
 
-    try {
-        logger->debug("Binding Shader: {}", shaderName);
-        m_ResourceManager->BindShader(shaderName);
-    }
-    catch (const std::exception& e) {
-        logger->error("Failed to bind skybox shader '{}': {}", shaderName, e.what());
-        return;
-    }
+    UpdateFrameDataUBO();
 
-    try {
-        logger->debug("Binding CubeMapTexture: {}", textureName);
-        m_ResourceManager->BindCubeMapTexture(textureName, 0); // Binding to texture unit 0
-    }
-    catch (const std::exception& e) {
-        logger->error("Failed to bind cube map texture '{}': {}", textureName, e.what());
-        return;
-    }
+    m_ResourceManager->BindShader(shaderName);
+    m_ResourceManager->BindCubeMapTexture(textureName, 0);
 
-    logger->debug("Adjusting OpenGL state for skybox rendering.");
-    glDepthFunc(GL_LEQUAL); // Change depth function so skybox is rendered behind all objects
-    glDepthMask(GL_FALSE);  // Disable depth writing
+    glDepthFunc(GL_LEQUAL);
+    glDepthMask(GL_FALSE);
 
-    try {
-        logger->debug("Setting uniform 'u_MVP' for Shader: {}", shaderName);
-        auto mvp = FrameData::s_Projection * FrameData::s_View;
-        m_ResourceManager->SetUniform("u_MVP", mvp);
-    }
-    catch (const std::exception& e) {
-        logger->error("Failed to set uniforms for skybox shader '{}': {}", shaderName, e.what());
-        // Restore OpenGL state before returning
-        glDepthFunc(GL_LESS);
-        glDepthMask(GL_TRUE);
-        return;
-    }
+    glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View;
+    m_ResourceManager->SetUniform("u_MVP", mvp);
 
-    try {
-        logger->debug("Binding MeshBuffer for Skybox.");
-        meshBuffer->Bind();
-    }
-    catch (const std::exception& e) {
-        logger->error("Failed to bind MeshBuffer for Skybox: {}", e.what());
-        // Restore OpenGL state before returning
-        glDepthFunc(GL_LESS);
-        glDepthMask(GL_TRUE);
-        return;
-    }
+    meshBuffer->Bind();
+    GLCall(glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(meshBuffer->GetNVerts()), GL_UNSIGNED_INT, nullptr));
 
-    try {
-        logger->debug("Executing glDrawElements for Skybox.");
-        GLCall(glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(meshBuffer->GetNVerts()), GL_UNSIGNED_INT, nullptr));
-        logger->debug("glDrawElements executed successfully for Skybox.");
-    }
-    catch (const std::exception& e) {
-        logger->error("glDrawElements failed for Skybox: {}", e.what());
-    }
-
-    // Unbind MeshBuffer
-    meshBuffer->Unbind();
-
-    // Restore OpenGL state
-    logger->debug("Restoring OpenGL state after skybox rendering.");
     glDepthFunc(GL_LESS);
     glDepthMask(GL_TRUE);
-
-    logger->debug("RenderSkybox process completed.");
 }
 
 void Renderer::Clear() const
 {
-    auto logger = Logger::GetLogger();
-    logger->debug("Clearing the screen.");
-
-    try {
-        GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
-        logger->debug("Set clear color to (0.3, 0.4, 0.55, 1.0).");
-
-        GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-        logger->debug("Cleared color and depth buffers.");
-    }
-    catch (const std::exception& e) {
-        logger->error("Failed to clear buffers: {}", e.what());
-    }
-
-    logger->debug("Screen cleared successfully.");
+    GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
+    GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 }

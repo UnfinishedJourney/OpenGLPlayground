@@ -1,39 +1,46 @@
 {
+    "compute_shaders": {
+        "brdf_compute": {
+            "binary_last_modified": 13374175768,
+            "source_last_modified": 13371736251
+        }
+    },
     "global": {
-        "driver_version": "4.3.0 NVIDIA 561.09",
-        "glsl_version": "4.30 NVIDIA via Cg compiler",
+        "driver_version": "4.5.0 NVIDIA 566.03",
         "openGL_profile": "core"
     },
     "shaders": {
         "basic": {
-            "binary_last_modified": 13371925553,
-            "source_last_modified": 13371242132
+            "binary_last_modified": 13374178016,
+            "source_last_modified": 13374178012
         },
         "duck": {
-            "binary_last_modified": 13371925553,
-            "source_last_modified": 13371242132
+            "binary_last_modified": 13374175768,
+            "source_last_modified": 13370269386
+        },
+        "helmet": {
+            "binary_last_modified": 13373413410,
+            "source_last_modified": 13374178108
         },
         "instance": {
-            "binary_last_modified": 13371925549,
+            "binary_last_modified": 13374175768,
             "source_last_modified": 13371399916
         },
         "lights": {
-            "binary_last_modified": 13371925553,
-            "source_last_modified": 13371242132
+            "binary_last_modified": 13374175768,
+            "source_last_modified": 13371052626
         },
         "pbr": {
-            "binary_last_modified": 13371910576,
+            "binary_last_modified": 13374175768,
             "source_last_modified": 13371425904
         },
         "quad": {
-            "binary_last_modified": 13371925553,
-            "source_last_modified": 13371242132
-        }
-    },
-    "compute_shaders": {
-        "brdf_compute": {
-            "binary_last_modified": 0,
-            "source_last_modified": 0
+            "binary_last_modified": 13374175768,
+            "source_last_modified": 13371734187
+        },
+        "skyBox": {
+            "binary_last_modified": 13374175768,
+            "source_last_modified": 13373413266
         }
     }
 }

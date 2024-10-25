@@ -1,42 +1,41 @@
 {
     "shaders": {
         "basic": {
-            "binary_path": "../shaders/Basic.bin",
+            "binary_path": "../shaders/bin/Basic.bin",
             "source_path": "../shaders/Basic.shader"
         },
-		"duck": {
-            "binary_path": "../shaders/Duck.bin",
+        "duck": {
+            "binary_path": "../shaders/bin/Duck.bin",
             "source_path": "../shaders/Duck.shader"
         },
-		"lights": {
-            "binary_path": "../shaders/Lights.bin",
+        "lights": {
+            "binary_path": "../shaders/bin/Lights.bin",
             "source_path": "../shaders/Lights.shader"
         },
-		"instance": {
-            "binary_path": "../shaders/Instance.bin",
+        "instance": {
+            "binary_path": "../shaders/bin/Instance.bin",
             "source_path": "../shaders/Instance.shader"
         },
-		"pbr": {
-            "binary_path": "../shaders/PBR.bin",
+        "pbr": {
+            "binary_path": "../shaders/bin/PBR.bin",
             "source_path": "../shaders/PBR.shader"
         },
-		"quad": {
-            "binary_path": "../shaders/Quad.bin",
+        "quad": {
+            "binary_path": "../shaders/bin/Quad.bin",
             "source_path": "../shaders/Quad.shader"
         },
-		"helmet": {
-            "binary_path": "../shaders/Helmet.bin",
+        "helmet": {
+            "binary_path": "../shaders/bin/Helmet.bin",
             "source_path": "../shaders/Helmet.shader"
         },
         "skyBox": {
-            "binary_path": "../shaders/SkyBox.bin",
+            "binary_path": "../shaders/bin/SkyBox.bin",
             "source_path": "../shaders/SkyBox.shader"
         }
     },
-
     "compute_shaders": {
         "brdf_compute": {
-            "binary_path": "../shaders/BRDFCompute.bin",
+            "binary_path": "../shaders/bin/BRDFCompute.bin",
             "source_path": "../shaders/BRDFCompute.shader"
         }
     }

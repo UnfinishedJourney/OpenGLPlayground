@@ -24,6 +24,7 @@ int Screen::s_Width = 960;
 int Screen::s_Height = 540;
 glm::mat4 FrameData::s_Projection = glm::mat4(1.0f);
 glm::mat4 FrameData::s_View = glm::mat4(1.0f);
+glm::vec3 FrameData::s_CameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 
 void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode);
 void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY);

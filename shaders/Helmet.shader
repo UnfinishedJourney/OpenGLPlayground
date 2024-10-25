@@ -11,7 +11,7 @@ out vec3 fragPos;      //world pos
 out vec3 normal;       //normal world
 out mat3 TBN;          //from tangent to world
 
-#include "Common.shader"
+#include "Common/Common.shader"
 
 void main()
 {

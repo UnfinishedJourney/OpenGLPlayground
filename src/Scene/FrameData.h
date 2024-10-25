@@ -17,4 +17,5 @@ struct FrameData
 {
     static glm::mat4 s_View;
     static glm::mat4 s_Projection;
+    static glm::vec3 s_CameraPos;
 };

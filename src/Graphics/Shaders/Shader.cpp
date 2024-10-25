@@ -72,6 +72,8 @@ void Shader::ReloadShader()
 
         std::vector<unsigned int> shaders;
 
+        std::cout << shaderSources[ShaderType::VERTEX].str() << std::endl;
+
         if (shaderSources.find(ShaderType::VERTEX) != shaderSources.end()) 
         {
             shaders.push_back(CompileShader(GL_VERTEX_SHADER, shaderSources[ShaderType::VERTEX].str()));

@@ -11,6 +11,7 @@ enum CameraMovement {
     RIGHT
 };
 
+//return camera to starting position. New test. Keyboard
 class Camera
 {
 public:
@@ -44,6 +45,8 @@ public:
             m_CameraPos -= glm::normalize(glm::cross(m_CameraFront, m_CameraUp)) * velocity;
         if (direction == RIGHT)
             m_CameraPos += glm::normalize(glm::cross(m_CameraFront, m_CameraUp)) * velocity;
+
+        FrameData::s_CameraPos = m_CameraPos;
     }
 
     void Rotate(float xOffset, float yOffset) {
