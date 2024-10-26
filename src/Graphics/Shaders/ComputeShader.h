@@ -1,20 +1,15 @@
 #pragma once
 
-#include "Graphics/Shaders/BaseShader.h"
+#include "BaseShader.h"
 
-class ComputeShader : public BaseShader 
-{
+class ComputeShader : public BaseShader {
 public:
-    explicit ComputeShader(const std::filesystem::path& filepath)
-        : BaseShader(filepath)
-    {
-        LoadShader(filepath);
-    }
+    ComputeShader(std::filesystem::path sourcePath, std::filesystem::path binaryPath);
 
     void ReloadShader() override;
 
-    void Dispatch(unsigned int numGroupsX, unsigned int numGroupsY, unsigned int numGroupsZ) const;
+    void Dispatch(GLuint numGroupsX, GLuint numGroupsY, GLuint numGroupsZ) const;
 
 protected:
-    void LoadShader(const std::filesystem::path& filepath) override;
+    void LoadShader();
 };

@@ -86,7 +86,7 @@ target_include_directories(OpenGLApplication PRIVATE
     ${DEPS_DIR}/GLAD/include
     ${DEPS_DIR}/json/include
     ${DEPS_DIR}/spdlog/include
-    ${DEPS_DIR}/glm
+    ${DEPS_DIR}/GLM
     ${DEPS_DIR}/assimp_related/include
     ${CMAKE_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/vendor/stb_image

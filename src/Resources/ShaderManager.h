@@ -1,14 +1,17 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
-
 #include <string>
 #include <unordered_map>
 #include <filesystem>
-#include <fstream>
-#include <iostream>
 #include <memory>
-#include <vector>
+#include <shared_mutex>
+#include <mutex>
+#include <queue>
+#include <nlohmann/json.hpp>
+
+#include "Graphics/Shaders/BaseShader.h"
+#include "Graphics/Shaders/Shader.h"
+#include "Graphics/Shaders/ComputeShader.h"
 
 struct GlobalMetadata {
     std::string driverVersion;
@@ -16,52 +19,50 @@ struct GlobalMetadata {
 };
 
 struct ShaderMetadata {
-    std::string sourcePath;
-    std::string binaryPath;
+    std::filesystem::path sourcePath;
+    std::filesystem::path binaryPath;
     std::filesystem::file_time_type sourceLastModified;
-    std::filesystem::file_time_type binaryLastModified; //add more advanced checkup to recompile code
-    bool isComputeShader;
+    std::filesystem::file_time_type binaryLastModified;
+    bool isComputeShader = false;
 };
-
-//add include checkup
-//add hot reloading
-//use asynch loading
-
-class BaseShader;
-class ComputeShader;
-class Shader;
 
 class ShaderManager {
 public:
-    ShaderManager(const std::string& metadataPath, const std::string& configPath);
+    ShaderManager(const std::filesystem::path& metadataPath, const std::filesystem::path& configPath);
     ~ShaderManager() = default;
 
     void Initialize();
 
-    std::shared_ptr<Shader> GetShader(const std::string& name);
-    std::shared_ptr<BaseShader> GetCurrentlyBoundShader()
-    {
-        return m_Shaders[m_CurrentlyBoundShader];
-    }
-    std::shared_ptr<ComputeShader> GetComputeShader(const std::string& name);
+    std::shared_ptr<Shader> GetShader(std::string_view name);
+    std::shared_ptr<ComputeShader> GetComputeShader(std::string_view name);
     void ReloadAllShaders();
-    void BindShader(const std::string& shaderName);
+    void BindShader(std::string_view shaderName);
+
+    std::shared_ptr<BaseShader> GetCurrentlyBoundShader() const;
 
 private:
-    std::string m_MetadataPath;
-    std::string m_ConfigPath;
+    std::filesystem::path m_MetadataPath;
+    std::filesystem::path m_ConfigPath;
     std::string m_CurrentlyBoundShader;
 
-    bool m_MetaHasChanged;
+    mutable std::shared_mutex m_ShaderMutex;
+
     GlobalMetadata m_GlobalMetadata;
     std::unordered_map<std::string, ShaderMetadata> m_ShadersMetadata;
     std::unordered_map<std::string, std::shared_ptr<BaseShader>> m_Shaders;
 
     bool LoadMetadata();
-    bool SaveMetadata();
+    bool SaveMetadata() const;
     bool LoadConfig();
     void LoadShaders();
 
-    bool IsGlobalMetadataChanged();
-    bool IsShaderOutdated(const std::string& shaderName);
+    bool IsGlobalMetadataChanged() const;
+    bool IsShaderOutdated(const std::string& shaderName) const;
+
+    // Command queue for OpenGL calls
+    //void EnqueueGLCommand(std::function<void()> command);
+    //void ExecuteGLCommands();
+
+    //std::queue<std::function<void()>> m_GLCommandQueue;
+    //mutable std::mutex m_GLCommandQueueMutex;
 };

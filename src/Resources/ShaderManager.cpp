@@ -1,16 +1,13 @@
-#include "Resources/ShaderManager.h"
+#include "ShaderManager.h"
 #include "Utilities/Logger.h"
-#include "Graphics/Shaders/Shader.h"
-#include "Graphics/Shaders/ComputeShader.h"
 
 #include <glad/glad.h>
-#include <chrono>
 #include <fstream>
-#include <nlohmann/json.hpp>
+#include <chrono>
+#include <stdexcept>
 
-// Constructor remains unchanged
-ShaderManager::ShaderManager(const std::string& metadataPath, const std::string& configPath)
-    : m_MetadataPath(metadataPath), m_ConfigPath(configPath), m_CurrentlyBoundShader(""), m_MetaHasChanged(false)
+ShaderManager::ShaderManager(const std::filesystem::path& metadataPath, const std::filesystem::path& configPath)
+    : m_MetadataPath(metadataPath), m_ConfigPath(configPath)
 {
     Initialize();
 }
@@ -18,13 +15,9 @@ ShaderManager::ShaderManager(const std::string& metadataPath, const std::string&
 void ShaderManager::Initialize()
 {
     auto logger = Logger::GetLogger();
-    if (!logger) {
-        std::cerr << "Logger not initialized!" << std::endl;
-        return;
-    }
-    logger->info("Initializing ShaderManager with metadata path: '{}' and config path: '{}'.", m_MetadataPath, m_ConfigPath);
+    logger->info("Initializing ShaderManager with metadata path: '{}' and config path: '{}'.",
+        m_MetadataPath.string(), m_ConfigPath.string());
 
-    // Load configuration and metadata
     if (!LoadMetadata()) {
         logger->warn("Failed to load metadata. Initializing with default values.");
     }
@@ -35,89 +28,12 @@ void ShaderManager::Initialize()
 
     LoadShaders();
 
-    // Check if global metadata has changed
     if (IsGlobalMetadataChanged()) {
-        m_MetaHasChanged = true;
         logger->info("Global metadata has changed. Recompiling and reloading all shaders.");
-
-        // Recompile and reload all shaders
-        for (const auto& [name, _] : m_ShadersMetadata) {
-            try {
-                m_Shaders[name]->ReloadShader();
-                m_ShadersMetadata[name].binaryLastModified = std::filesystem::last_write_time(m_ShadersMetadata[name].binaryPath);
-                logger->info("Recompiled and reloaded shader: '{}'.", name);
-            }
-            catch (const std::exception& e) {
-                logger->error("Failed to reload shader '{}': {}", name, e.what());
-            }
-        }
-
-        // Update global metadata
+        ReloadAllShaders();
         m_GlobalMetadata.driverVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
-        m_GlobalMetadata.openGLProfile = "core"; // Replace with actual profile if necessary
-        logger->info("Updated global metadata: Driver Version = '{}', OpenGL Profile = '{}'.", m_GlobalMetadata.driverVersion, m_GlobalMetadata.openGLProfile);
-    }
-
-    if (m_MetaHasChanged) {
-        if (SaveMetadata()) {
-            logger->info("Metadata saved successfully.");
-        }
-        else {
-            logger->error("Failed to save metadata.");
-        }
-    }
-}
-
-// Method to reload all shaders with logging
-void ShaderManager::ReloadAllShaders()
-{
-    auto logger = Logger::GetLogger();
-    logger->info("Reloading all shaders.");
-
-    for (const auto& [name, metadata] : m_ShadersMetadata)
-    {
-        try {
-            std::filesystem::file_time_type binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
-            std::filesystem::file_time_type sourceLastModified = std::filesystem::last_write_time(metadata.sourcePath);
-
-            if (sourceLastModified >= binaryLastModified)
-            {
-                m_Shaders[name]->ReloadShader();
-                m_ShadersMetadata[name].binaryLastModified = std::filesystem::last_write_time(m_ShadersMetadata[name].binaryPath);
-                logger->info("Reloaded outdated shader: '{}'.", name);
-            }
-            else {
-                logger->debug("Shader '{}' is up-to-date. No reload needed.", name);
-            }
-        }
-        catch (const std::exception& e) {
-            logger->error("Error reloading shader '{}': {}", name, e.what());
-        }
-    }
-}
-
-void ShaderManager::BindShader(const std::string& shaderName)
-{
-    auto logger = Logger::GetLogger();
-
-    if (shaderName == m_CurrentlyBoundShader) {
-        logger->debug("Shader '{}' is already bound. Skipping bind.", shaderName);
-        return;
-    }
-
-    auto shaderIt = m_Shaders.find(shaderName);
-    if (shaderIt == m_Shaders.end()) {
-        logger->error("Shader '{}' not found. Cannot bind.", shaderName);
-        return;
-    }
-
-    try {
-        shaderIt->second->Bind();
-        m_CurrentlyBoundShader = shaderName;
-        logger->info("Shader '{}' bound successfully.", shaderName);
-    }
-    catch (const std::exception& e) {
-        logger->error("Failed to bind shader '{}': {}", shaderName, e.what());
+        m_GlobalMetadata.openGLProfile = "core"; // Adjust as necessary
+        SaveMetadata();
     }
 }
 
@@ -128,19 +44,26 @@ void ShaderManager::LoadShaders()
 
     for (const auto& [name, metadata] : m_ShadersMetadata) {
         try {
+            std::shared_ptr<BaseShader> shader;
             if (metadata.isComputeShader) {
-                m_Shaders[name] = std::make_shared<ComputeShader>(metadata.sourcePath);
+                shader = std::make_shared<ComputeShader>(metadata.sourcePath, metadata.binaryPath);
                 logger->info("Loaded ComputeShader '{}'.", name);
             }
             else {
-                m_Shaders[name] = std::make_shared<Shader>(metadata.sourcePath);
+                shader = std::make_shared<Shader>(metadata.sourcePath, metadata.binaryPath);
                 logger->info("Loaded Shader '{}'.", name);
             }
 
+            // Thread-safe insertion
+            {
+                std::unique_lock lock(m_ShaderMutex);
+                m_Shaders[name] = shader;
+            }
+
             if (IsShaderOutdated(name)) {
-                m_Shaders[name]->ReloadShader();
-                m_ShadersMetadata[name].binaryLastModified = std::filesystem::last_write_time(m_ShadersMetadata[name].binaryPath);
-                m_MetaHasChanged = true;
+                shader->ReloadShader();
+                m_ShadersMetadata[name].binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
+                SaveMetadata();
                 logger->info("Shader '{}' was outdated and has been reloaded.", name);
             }
             else {
@@ -153,18 +76,111 @@ void ShaderManager::LoadShaders()
     }
 }
 
+void ShaderManager::ReloadAllShaders()
+{
+    auto logger = Logger::GetLogger();
+    logger->info("Reloading all shaders.");
+
+    for (const auto& [name, shader] : m_Shaders) {
+        try {
+            shader->ReloadShader();
+            m_ShadersMetadata[name].binaryLastModified = std::filesystem::last_write_time(m_ShadersMetadata[name].binaryPath);
+            logger->info("Reloaded shader '{}'.", name);
+        }
+        catch (const std::exception& e) {
+            logger->error("Error reloading shader '{}': {}", name, e.what());
+        }
+    }
+
+    SaveMetadata();
+}
+
+void ShaderManager::BindShader(std::string_view shaderName)
+{
+    auto logger = Logger::GetLogger();
+
+    if (shaderName == m_CurrentlyBoundShader) {
+        logger->debug("Shader '{}' is already bound.", shaderName);
+        return;
+    }
+
+    std::shared_ptr<BaseShader> shader;
+    {
+        std::shared_lock lock(m_ShaderMutex);
+        auto it = m_Shaders.find(std::string(shaderName));
+        if (it == m_Shaders.end()) {
+            logger->error("Shader '{}' not found.", shaderName);
+            return;
+        }
+        shader = it->second;
+    }
+
+    try {
+        shader->Bind();
+        m_CurrentlyBoundShader = std::string(shaderName);
+        logger->info("Shader '{}' bound successfully.", std::string(shaderName));
+    }
+    catch (const std::exception& e) {
+        logger->error("Failed to bind shader '{}': {}", std::string(shaderName), e.what());
+    }
+         
+    //EnqueueGLCommand([shader, shaderNameStr = std::string(shaderName), this, logger]() {
+    //    try {
+    //        shader->Bind();
+    //        m_CurrentlyBoundShader = shaderNameStr;
+    //        logger->info("Shader '{}' bound successfully.", shaderNameStr);
+    //    }
+    //    catch (const std::exception& e) {
+    //        logger->error("Failed to bind shader '{}': {}", shaderNameStr, e.what());
+    //    }
+    //    });
+}
+
+std::shared_ptr<Shader> ShaderManager::GetShader(std::string_view name)
+{
+    std::shared_lock lock(m_ShaderMutex);
+    auto it = m_Shaders.find(std::string(name));
+    if (it != m_Shaders.end()) {
+        return std::dynamic_pointer_cast<Shader>(it->second);
+    }
+    Logger::GetLogger()->error("Shader '{}' not found.", name);
+    return nullptr;
+}
+
+std::shared_ptr<ComputeShader> ShaderManager::GetComputeShader(std::string_view name)
+{
+    std::shared_lock lock(m_ShaderMutex);
+    auto it = m_Shaders.find(std::string(name));
+    if (it != m_Shaders.end()) {
+        return std::dynamic_pointer_cast<ComputeShader>(it->second);
+    }
+    Logger::GetLogger()->error("ComputeShader '{}' not found.", name);
+    return nullptr;
+}
+
+std::shared_ptr<BaseShader> ShaderManager::GetCurrentlyBoundShader() const
+{
+    std::shared_lock lock(m_ShaderMutex);
+    auto it = m_Shaders.find(m_CurrentlyBoundShader);
+    if (it != m_Shaders.end()) {
+        return it->second;
+    }
+    return nullptr;
+}
+
 bool ShaderManager::LoadMetadata()
 {
     auto logger = Logger::GetLogger();
-    logger->info("Loading metadata from '{}'.", m_MetadataPath);
+    logger->info("Loading metadata from '{}'.", m_MetadataPath.string());
+
+    if (!std::filesystem::exists(m_MetadataPath)) {
+        logger->warn("Metadata file '{}' does not exist.", m_MetadataPath.string());
+        return false;
+    }
 
     std::ifstream file(m_MetadataPath);
-    if (!file.is_open()) {
-        logger->warn("Metadata file '{}' could not be opened. Initializing default metadata.", m_MetadataPath);
-        // Initialize default metadata
-        m_GlobalMetadata.driverVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
-        m_GlobalMetadata.openGLProfile = "core"; // Replace with actual profile if necessary
-        m_ShadersMetadata.clear();
+    if (!file) {
+        logger->error("Failed to open metadata file '{}'.", m_MetadataPath.string());
         return false;
     }
 
@@ -172,38 +188,19 @@ bool ShaderManager::LoadMetadata()
         nlohmann::json jsonData;
         file >> jsonData;
 
-        // Load global metadata
-        if (jsonData.contains("global")) {
-            m_GlobalMetadata.driverVersion = jsonData["global"].value("driver_version", "");
-            m_GlobalMetadata.openGLProfile = jsonData["global"].value("openGL_profile", "");
-            logger->info("Loaded global metadata: Driver Version = '{}', OpenGL Profile = '{}'.", m_GlobalMetadata.driverVersion, m_GlobalMetadata.openGLProfile);
-        }
+        m_GlobalMetadata.driverVersion = jsonData["global"]["driver_version"].get<std::string>();
+        m_GlobalMetadata.openGLProfile = jsonData["global"]["openGL_profile"].get<std::string>();
 
-        // Load shaders metadata
-        if (jsonData.contains("shaders")) {
-            for (auto& [name, shaderData] : jsonData["shaders"].items()) {
-                ShaderMetadata metadata;
-                metadata.binaryLastModified = std::filesystem::file_time_type(std::chrono::seconds(shaderData.value("binary_last_modified", 0)));
-                metadata.sourceLastModified = std::filesystem::file_time_type(std::chrono::seconds(shaderData.value("source_last_modified", 0)));
-                metadata.isComputeShader = false;
-                m_ShadersMetadata[name] = metadata;
-                logger->info("Loaded metadata for Shader '{}'.", name);
-            }
-        }
-
-        if (jsonData.contains("compute_shaders")) {
-            for (auto& [name, shaderData] : jsonData["compute_shaders"].items()) {
-                ShaderMetadata metadata;
-                metadata.binaryLastModified = std::filesystem::file_time_type(std::chrono::seconds(shaderData.value("binary_last_modified", 0)));
-                metadata.sourceLastModified = std::filesystem::file_time_type(std::chrono::seconds(shaderData.value("source_last_modified", 0)));
-                metadata.isComputeShader = true;
-                m_ShadersMetadata[name] = metadata;
-                logger->info("Loaded metadata for ComputeShader '{}'.", name);
-            }
+        for (const auto& [name, shaderData] : jsonData["shaders"].items()) {
+            ShaderMetadata metadata;
+            metadata.isComputeShader = shaderData["is_compute_shader"].get<bool>();
+            metadata.sourcePath = shaderData["source_path"].get<std::string>();
+            metadata.binaryPath = shaderData["binary_path"].get<std::string>();
+            m_ShadersMetadata[name] = metadata;
         }
     }
     catch (const std::exception& e) {
-        logger->error("Error parsing metadata file '{}': {}", m_MetadataPath, e.what());
+        logger->error("Error parsing metadata file '{}': {}", m_MetadataPath.string(), e.what());
         return false;
     }
 
@@ -211,59 +208,57 @@ bool ShaderManager::LoadMetadata()
     return true;
 }
 
-bool ShaderManager::SaveMetadata()
+bool ShaderManager::SaveMetadata() const
 {
     auto logger = Logger::GetLogger();
-    logger->info("Saving metadata to '{}'.", m_MetadataPath);
+    logger->info("Saving metadata to '{}'.", m_MetadataPath.string());
 
     nlohmann::json jsonData;
 
-    // Save global metadata
     jsonData["global"]["driver_version"] = m_GlobalMetadata.driverVersion;
     jsonData["global"]["openGL_profile"] = m_GlobalMetadata.openGLProfile;
-    logger->info("Saved global metadata.");
 
-    // Save shaders metadata
     for (const auto& [name, metadata] : m_ShadersMetadata) {
-        if (metadata.isComputeShader) {
-            jsonData["compute_shaders"][name]["binary_last_modified"] = std::chrono::duration_cast<std::chrono::seconds>(metadata.binaryLastModified.time_since_epoch()).count();
-            jsonData["compute_shaders"][name]["source_last_modified"] = std::chrono::duration_cast<std::chrono::seconds>(metadata.sourceLastModified.time_since_epoch()).count();
-            logger->info("Saved metadata for ComputeShader '{}'.", name);
-        }
-        else {
-            jsonData["shaders"][name]["binary_last_modified"] = std::chrono::duration_cast<std::chrono::seconds>(metadata.binaryLastModified.time_since_epoch()).count();
-            jsonData["shaders"][name]["source_last_modified"] = std::chrono::duration_cast<std::chrono::seconds>(metadata.sourceLastModified.time_since_epoch()).count();
-            logger->info("Saved metadata for Shader '{}'.", name);
-        }
+        jsonData["shaders"][name]["is_compute_shader"] = metadata.isComputeShader;
+        jsonData["shaders"][name]["source_path"] = metadata.sourcePath.string();
+        jsonData["shaders"][name]["binary_path"] = metadata.binaryPath.string();
+        jsonData["shaders"][name]["source_last_modified"] = std::chrono::duration_cast<std::chrono::seconds>(
+            metadata.sourceLastModified.time_since_epoch()).count();
+        jsonData["shaders"][name]["binary_last_modified"] = std::chrono::duration_cast<std::chrono::seconds>(
+            metadata.binaryLastModified.time_since_epoch()).count();
     }
 
     std::ofstream file(m_MetadataPath);
-    if (!file.is_open()) {
-        logger->error("Failed to save metadata to file: '{}'.", m_MetadataPath);
+    if (!file) {
+        logger->error("Failed to open metadata file '{}' for writing.", m_MetadataPath.string());
         return false;
     }
 
     try {
-        file << jsonData.dump(4); // Pretty print with 4 spaces indentation
-        logger->info("Metadata saved successfully to '{}'.", m_MetadataPath);
+        file << jsonData.dump(4);
     }
     catch (const std::exception& e) {
-        logger->error("Error writing metadata to file '{}': {}", m_MetadataPath, e.what());
+        logger->error("Error writing metadata to file '{}': {}", m_MetadataPath.string(), e.what());
         return false;
     }
 
-    m_MetaHasChanged = false;
+    logger->info("Metadata saved successfully.");
     return true;
 }
 
 bool ShaderManager::LoadConfig()
 {
     auto logger = Logger::GetLogger();
-    logger->info("Loading config from '{}'.", m_ConfigPath);
+    logger->info("Loading config from '{}'.", m_ConfigPath.string());
+
+    if (!std::filesystem::exists(m_ConfigPath)) {
+        logger->error("Config file '{}' does not exist.", m_ConfigPath.string());
+        return false;
+    }
 
     std::ifstream file(m_ConfigPath);
-    if (!file.is_open()) {
-        logger->error("Failed to open config file: '{}'.", m_ConfigPath);
+    if (!file) {
+        logger->error("Failed to open config file '{}'.", m_ConfigPath.string());
         return false;
     }
 
@@ -271,71 +266,33 @@ bool ShaderManager::LoadConfig()
         nlohmann::json jsonData;
         file >> jsonData;
 
-        // Load shaders paths from config
-        if (jsonData.contains("shaders")) {
-            for (auto& [name, shaderData] : jsonData["shaders"].items()) {
-                ShaderMetadata metadata;
-                metadata.sourcePath = shaderData.value("source_path", "");
-                metadata.binaryPath = shaderData.value("binary_path", "");
-                metadata.isComputeShader = false;
+        for (const auto& [name, shaderData] : jsonData["shaders"].items()) {
+            ShaderMetadata metadata;
+            metadata.isComputeShader = shaderData.value("is_compute_shader", false);
+            metadata.sourcePath = shaderData["source_path"].get<std::string>();
+            metadata.binaryPath = shaderData["binary_path"].get<std::string>();
 
-                // Initialize last modified times
-                if (std::filesystem::exists(metadata.sourcePath)) {
-                    metadata.sourceLastModified = std::filesystem::last_write_time(metadata.sourcePath);
-                    logger->info("Shader source path '{}' exists for Shader '{}'.", metadata.sourcePath, name);
-                }
-                else {
-                    metadata.sourceLastModified = std::filesystem::file_time_type::min();
-                    logger->warn("Shader source path '{}' does not exist for Shader '{}'.", metadata.sourcePath, name);
-                }
-
-                if (std::filesystem::exists(metadata.binaryPath)) {
-                    metadata.binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
-                    logger->info("Shader binary path '{}' exists for Shader '{}'.", metadata.binaryPath, name);
-                }
-                else {
-                    metadata.binaryLastModified = std::filesystem::file_time_type::min();
-                    logger->warn("Shader binary path '{}' does not exist for Shader '{}'.", metadata.binaryPath, name);
-                }
-
-                m_ShadersMetadata[name] = metadata;
-                logger->info("Loaded config for Shader '{}'.", name);
+            if (std::filesystem::exists(metadata.sourcePath)) {
+                metadata.sourceLastModified = std::filesystem::last_write_time(metadata.sourcePath);
             }
-        }
-
-        if (jsonData.contains("compute_shaders")) {
-            for (auto& [name, shaderData] : jsonData["compute_shaders"].items()) {
-                ShaderMetadata metadata;
-                metadata.sourcePath = shaderData.value("source_path", "");
-                metadata.binaryPath = shaderData.value("binary_path", "");
-                metadata.isComputeShader = true;
-
-                // Initialize last modified times
-                if (std::filesystem::exists(metadata.sourcePath)) {
-                    metadata.sourceLastModified = std::filesystem::last_write_time(metadata.sourcePath);
-                    logger->info("ComputeShader source path '{}' exists for ComputeShader '{}'.", metadata.sourcePath, name);
-                }
-                else {
-                    metadata.sourceLastModified = std::filesystem::file_time_type::min();
-                    logger->warn("ComputeShader source path '{}' does not exist for ComputeShader '{}'.", metadata.sourcePath, name);
-                }
-
-                if (std::filesystem::exists(metadata.binaryPath)) {
-                    metadata.binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
-                    logger->info("ComputeShader binary path '{}' exists for ComputeShader '{}'.", metadata.binaryPath, name);
-                }
-                else {
-                    metadata.binaryLastModified = std::filesystem::file_time_type::min();
-                    logger->warn("ComputeShader binary path '{}' does not exist for ComputeShader '{}'.", metadata.binaryPath, name);
-                }
-
-                m_ShadersMetadata[name] = metadata;
-                logger->info("Loaded config for ComputeShader '{}'.", name);
+            else {
+                metadata.sourceLastModified = std::filesystem::file_time_type::min();
+                logger->warn("Shader source path '{}' does not exist for Shader '{}'.", metadata.sourcePath.string(), name);
             }
+
+            if (std::filesystem::exists(metadata.binaryPath)) {
+                metadata.binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
+            }
+            else {
+                metadata.binaryLastModified = std::filesystem::file_time_type::min();
+                logger->warn("Shader binary path '{}' does not exist for Shader '{}'.", metadata.binaryPath.string(), name);
+            }
+
+            m_ShadersMetadata[name] = metadata;
         }
     }
     catch (const std::exception& e) {
-        logger->error("Error parsing config file '{}': {}", m_ConfigPath, e.what());
+        logger->error("Error parsing config file '{}': {}", m_ConfigPath.string(), e.what());
         return false;
     }
 
@@ -343,87 +300,51 @@ bool ShaderManager::LoadConfig()
     return true;
 }
 
-bool ShaderManager::IsGlobalMetadataChanged()
+bool ShaderManager::IsGlobalMetadataChanged() const
 {
-    auto logger = Logger::GetLogger();
-    logger->info("Checking if global metadata has changed.");
+    auto currentDriverVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
+    auto currentOpenGLProfile = "core"; // Adjust as necessary
 
-    // Get current values
-    std::string currentDriverVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
-    std::string currentOpenGLProfile = "core"; // Replace with actual profile if necessary
-
-    // Compare with saved metadata
-    bool hasChanged = (m_GlobalMetadata.driverVersion != currentDriverVersion) ||
-        (m_GlobalMetadata.openGLProfile != currentOpenGLProfile);
-
-    if (hasChanged) {
-        logger->info("Global metadata has changed.");
-    }
-    else {
-        logger->debug("Global metadata has not changed.");
-    }
-
-    return hasChanged;
+    return m_GlobalMetadata.driverVersion != currentDriverVersion ||
+        m_GlobalMetadata.openGLProfile != currentOpenGLProfile;
 }
 
-bool ShaderManager::IsShaderOutdated(const std::string& shaderName)
+bool ShaderManager::IsShaderOutdated(const std::string& shaderName) const
 {
-    auto logger = Logger::GetLogger();
-    logger->debug("Checking if Shader '{}' is outdated.", shaderName);
-
-    const auto& it = m_ShadersMetadata.find(shaderName);
+    auto it = m_ShadersMetadata.find(shaderName);
     if (it == m_ShadersMetadata.end()) {
-        logger->error("Shader metadata not found for shader: '{}'.", shaderName);
+        Logger::GetLogger()->error("Shader metadata not found for shader '{}'.", shaderName);
         return false;
     }
 
-    const ShaderMetadata& metadata = it->second;
+    const auto& metadata = it->second;
 
-    try {
-        // Get the last write times
-        std::filesystem::file_time_type sourceLastModified = std::filesystem::last_write_time(metadata.sourcePath);
-        if (!std::filesystem::exists(metadata.binaryPath))
-            return true;
-        std::filesystem::file_time_type binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
-
-        bool isOutdated = sourceLastModified >= binaryLastModified;
-        if (isOutdated) {
-            m_ShadersMetadata[shaderName].sourceLastModified = sourceLastModified;
-            m_ShadersMetadata[shaderName].binaryLastModified = binaryLastModified;
-            logger->info("Shader '{}' is outdated.", shaderName);
-        }
-        else {
-            logger->debug("Shader '{}' is up-to-date.", shaderName);
-        }
-
-        return isOutdated;
+    if (!std::filesystem::exists(metadata.binaryPath)) {
+        return true;
     }
-    catch (const std::exception& e) {
-        logger->error("Error checking if shader '{}' is outdated: {}", shaderName, e.what());
-        return false;
-    }
+
+    auto sourceLastModified = std::filesystem::last_write_time(metadata.sourcePath);
+    auto binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
+
+    return sourceLastModified > binaryLastModified;
 }
 
-std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& name)
-{
-    auto logger = Logger::GetLogger();
-    auto it = m_Shaders.find(name);
-    if (it != m_Shaders.end()) {
-        logger->debug("Retrieved Shader '{}'.", name);
-        return std::dynamic_pointer_cast<Shader>(it->second);
-    }
-    logger->error("Shader '{}' not found.", name);
-    return nullptr;
-}
-
-std::shared_ptr<ComputeShader> ShaderManager::GetComputeShader(const std::string& name)
-{
-    auto logger = Logger::GetLogger();
-    auto it = m_Shaders.find(name);
-    if (it != m_Shaders.end()) {
-        logger->debug("Retrieved ComputeShader '{}'.", name);
-        return std::dynamic_pointer_cast<ComputeShader>(it->second);
-    }
-    logger->error("ComputeShader '{}' not found.", name);
-    return nullptr;
-}
+//void ShaderManager::EnqueueGLCommand(std::function<void()> command)
+//{
+//    std::lock_guard lock(m_GLCommandQueueMutex);
+//    m_GLCommandQueue.push(std::move(command));
+//}
+//
+//void ShaderManager::ExecuteGLCommands()
+//{
+//    std::queue<std::function<void()>> commands;
+//    {
+//        std::lock_guard lock(m_GLCommandQueueMutex);
+//        std::swap(commands, m_GLCommandQueue);
+//    }
+//
+//    while (!commands.empty()) {
+//        commands.front()();
+//        commands.pop();
+//    }
+//}

@@ -1,18 +1,13 @@
 #pragma once
 
-#include "Graphics/Shaders/BaseShader.h"
+#include "BaseShader.h"
 
-class Shader : public BaseShader 
-{
+class Shader : public BaseShader {
 public:
-    explicit Shader(const std::filesystem::path& filepath)
-        : BaseShader(filepath)
-    {
-        LoadShader(filepath);
-    }
+    Shader(std::filesystem::path sourcePath, std::filesystem::path binaryPath);
 
     void ReloadShader() override;
 
 protected:
-    void LoadShader(const std::filesystem::path& filepath) override;
+    void LoadShader();
 };
