@@ -1,17 +1,12 @@
 #pragma once
 
-#include "Graphics/Buffers/VertexBuffer.h"
-#include "Graphics/Buffers/VertexBufferLayout.h"
-
 #include <glad/glad.h>
-
-#include <vector>
-#include <stdexcept>
+#include "VertexBuffer.h"
+#include "VertexBufferLayout.h"
 
 class VertexArray {
 public:
     VertexArray();
-    explicit VertexArray(unsigned int rendererID);
     ~VertexArray();
 
     VertexArray(const VertexArray&) = delete;
@@ -20,11 +15,10 @@ public:
     VertexArray(VertexArray&& other) noexcept;
     VertexArray& operator=(VertexArray&& other) noexcept;
 
-    void AddBuffer(const VertexBuffer& vertexBuffer, const VertexBufferLayout& vbLayout) const;
-    void AddInstancedBuffer(const VertexBuffer& vertexBuffer, const VertexBufferLayout& vbLayout, unsigned int divisor) const;
+    void AddBuffer(const VertexBuffer& vertexBuffer, const VertexBufferLayout& layout);
     void Bind() const;
     void Unbind() const;
 
 private:
-    unsigned int m_RendererID;
+    GLuint m_RendererID = 0;
 };

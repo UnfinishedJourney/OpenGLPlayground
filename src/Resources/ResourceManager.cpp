@@ -150,7 +150,7 @@ std::shared_ptr<MeshBuffer> ResourceManager::GetMeshBuffer(const std::string& me
 
 	auto mesh = GetMesh(meshName);
 
-	m_MeshBuffers[key] = std::make_shared<MeshBuffer>(mesh, mLayout);
+	m_MeshBuffers[key] = std::make_shared<MeshBuffer>(*mesh.get(), mLayout);
 	return m_MeshBuffers[key];
 
 }

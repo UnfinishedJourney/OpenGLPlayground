@@ -2,7 +2,7 @@
 #include "Utilities/Logger.h"
 #include "Graphics/Shaders/BaseShader.h"
 
-#include <gtc/type_ptr.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <algorithm>
 
 void Material::AddTexture(std::weak_ptr<Texture2D> texture, unsigned int textureUnit)

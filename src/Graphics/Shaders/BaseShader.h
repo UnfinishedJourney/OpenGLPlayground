@@ -5,7 +5,7 @@
 #include <vector>
 #include <filesystem>
 #include <stdexcept>
-#include <glm.hpp>
+#include <glm/glm.hpp>
 
 class ShaderManager;
 

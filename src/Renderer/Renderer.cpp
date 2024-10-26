@@ -24,7 +24,7 @@ void Renderer::UpdateFrameDataUBO() const
     frameData.proj = FrameData::s_Projection; 
     frameData.cameraPos = glm::vec4(FrameData::s_CameraPos, 1.0f);
 
-    m_FrameDataUBO->SetData(frameData, 0);
+    m_FrameDataUBO->SetData(frameData);
 }
 
 void Renderer::BindShaderAndMaterial(const std::shared_ptr<RenderObject>& renderObject) const
@@ -58,7 +58,7 @@ void Renderer::Render(const std::shared_ptr<RenderObject>& renderObject) const
     m_ResourceManager->SetUniform("u_MVP", mvp);
 
     renderObject->m_MeshBuffer->Bind();
-    GLCall(glDrawElements(GL_TRIANGLES, renderObject->m_MeshBuffer->GetNVerts(), GL_UNSIGNED_INT, nullptr));
+    GLCall(glDrawElements(GL_TRIANGLES, renderObject->m_MeshBuffer->GetVertexCount(), GL_UNSIGNED_INT, nullptr));
 }
 
 void Renderer::RenderSkybox(const std::shared_ptr<MeshBuffer>& meshBuffer, const std::string& textureName, const std::string& shaderName) const
@@ -80,7 +80,7 @@ void Renderer::RenderSkybox(const std::shared_ptr<MeshBuffer>& meshBuffer, const
     m_ResourceManager->SetUniform("u_MVP", mvp);
 
     meshBuffer->Bind();
-    GLCall(glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(meshBuffer->GetNVerts()), GL_UNSIGNED_INT, nullptr));
+    GLCall(glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(meshBuffer->GetVertexCount()), GL_UNSIGNED_INT, nullptr));
 
     glDepthFunc(GL_LESS);
     glDepthMask(GL_TRUE);

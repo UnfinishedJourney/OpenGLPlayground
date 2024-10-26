@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Graphics/Meshes/Mesh.h"
+#include "Graphics/Meshes/MeshLayout.h"
+#include "Graphics/Buffers/MeshBuffer.h"
 //#include "Graphics/Meshes/Model.h"
 #include "Graphics/Materials/Material.h"
 #include "Graphics/Textures/Texture2D.h"

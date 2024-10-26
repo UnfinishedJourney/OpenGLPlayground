@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/Meshes/Mesh.h"
+#include "Graphics/Buffers/MeshBuffer.h"
 #include "Scene/Transform.h"
 
 #include <memory>

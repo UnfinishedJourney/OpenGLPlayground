@@ -1,11 +1,11 @@
 #pragma once
 
 #include <glad/glad.h>
+#include <span>
 
 class VertexBuffer {
 public:
-    VertexBuffer(const void* data, unsigned int size, GLenum target = GL_ARRAY_BUFFER, GLenum usage = GL_STATIC_DRAW);
-
+    VertexBuffer(std::span<const std::byte> data, GLenum usage = GL_STATIC_DRAW);
     ~VertexBuffer();
 
     VertexBuffer(const VertexBuffer&) = delete;
@@ -16,11 +16,9 @@ public:
 
     void Bind() const;
     void Unbind() const;
-    [[nodiscard]]  unsigned int GetRendererID() const { return m_RendererID; }
-    [[nodiscard]]  GLenum GetTarget() const { return m_Target; }
+    [[nodiscard]] GLuint GetRendererID() const { return m_RendererID; }
 
 private:
-    unsigned int m_RendererID;
-    GLenum m_Target;
-    GLenum m_Usage;
+    GLuint m_RendererID = 0;
+    GLenum m_Usage = GL_STATIC_DRAW;
 };

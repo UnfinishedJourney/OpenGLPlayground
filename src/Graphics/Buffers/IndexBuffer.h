@@ -1,19 +1,24 @@
 #pragma once
 
-#include <vector>
+#include <span>
+#include <glad/glad.h>
 
-class IndexBuffer
-{
+class IndexBuffer {
 public:
-	IndexBuffer(const std::vector<unsigned int>& data, unsigned int count);
-	IndexBuffer(unsigned int rendererID, unsigned int count);
-	~IndexBuffer();
+    IndexBuffer(std::span<const GLuint> data);
+    ~IndexBuffer();
 
-	void Bind() const;
-	void Unbind() const;
-	unsigned int GetCount() const;
+    IndexBuffer(const IndexBuffer&) = delete;
+    IndexBuffer& operator=(const IndexBuffer&) = delete;
+
+    IndexBuffer(IndexBuffer&& other) noexcept;
+    IndexBuffer& operator=(IndexBuffer&& other) noexcept;
+
+    void Bind() const;
+    void Unbind() const;
+    [[nodiscard]] GLsizei GetCount() const;
 
 private:
-	unsigned int m_RendererID;
-	unsigned int m_Count;
+    GLuint m_RendererID = 0;
+    GLsizei m_Count = 0;
 };

@@ -1,52 +1,58 @@
-#include <glad/glad.h>
-#include "Graphics/Buffers/IndexBuffer.h"
-#include "Utilities/Utility.h"
-#include "Utilities/Logger.h" 
+#include "IndexBuffer.h"
+#include "Utilities/Logger.h"
+#include <stdexcept>
 
-IndexBuffer::IndexBuffer(const std::vector<unsigned int>& data, unsigned int count)
-    : m_Count(count)
-{
-    Logger::GetLogger()->info("Creating IndexBuffer with {} indices.", count);
+IndexBuffer::IndexBuffer(std::span<const GLuint> data)
+    : m_Count(static_cast<GLsizei>(data.size())) {
+    Logger::GetLogger()->info("Creating IndexBuffer with {} indices.", m_Count);
 
-    ASSERT(sizeof(unsigned int) == sizeof(GLuint));
-    Logger::GetLogger()->debug("Verified size of unsigned int matches GLuint.");
+    glCreateBuffers(1, &m_RendererID);
+    if (m_RendererID == 0) {
+        Logger::GetLogger()->error("Failed to create Index Buffer Object.");
+        throw std::runtime_error("Failed to create Index Buffer Object.");
+    }
 
-    GLCall(glGenBuffers(1, &m_RendererID));
-    Logger::GetLogger()->info("Generated OpenGL Index Buffer with ID {}.", m_RendererID);
-
-    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_RendererID));
-    Logger::GetLogger()->debug("Bound Index Buffer ID {}.", m_RendererID);
-
-    GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(unsigned int), data.data(), GL_STATIC_DRAW));
-    Logger::GetLogger()->info("Uploaded {} bytes of index data to Buffer ID {}.", count * sizeof(unsigned int), m_RendererID);
+    glNamedBufferData(m_RendererID, m_Count * sizeof(GLuint), data.data(), GL_STATIC_DRAW);
+    Logger::GetLogger()->debug("Uploaded {} bytes of index data to Buffer ID {}.", m_Count * sizeof(GLuint), m_RendererID);
 }
 
-IndexBuffer::IndexBuffer(unsigned int rendererID, unsigned int count)
-    : m_RendererID(rendererID), m_Count(count)
-{
-    Logger::GetLogger()->info("Creating IndexBuffer with existing Renderer ID {} and {} indices.", rendererID, count);
+IndexBuffer::~IndexBuffer() {
+    if (m_RendererID != 0) {
+        glDeleteBuffers(1, &m_RendererID);
+        Logger::GetLogger()->info("Deleted IndexBuffer with Renderer ID {}.", m_RendererID);
+    }
 }
 
-IndexBuffer::~IndexBuffer()
-{
-    Logger::GetLogger()->info("Deleting IndexBuffer with Renderer ID {}.", m_RendererID);
-    GLCall(glDeleteBuffers(1, &m_RendererID));
+IndexBuffer::IndexBuffer(IndexBuffer&& other) noexcept
+    : m_RendererID(other.m_RendererID), m_Count(other.m_Count) {
+    other.m_RendererID = 0;
+    other.m_Count = 0;
+    Logger::GetLogger()->debug("Moved IndexBuffer with ID {}.", m_RendererID);
 }
 
-void IndexBuffer::Bind() const
-{
-    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_RendererID));
-    Logger::GetLogger()->debug("Bound Index Buffer ID {}.", m_RendererID);
+IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other) noexcept {
+    if (this != &other) {
+        if (m_RendererID != 0) {
+            glDeleteBuffers(1, &m_RendererID);
+            Logger::GetLogger()->info("Deleted IndexBuffer with Renderer ID {}.", m_RendererID);
+        }
+        m_RendererID = other.m_RendererID;
+        m_Count = other.m_Count;
+        other.m_RendererID = 0;
+        other.m_Count = 0;
+        Logger::GetLogger()->debug("Moved IndexBuffer with ID {}.", m_RendererID);
+    }
+    return *this;
 }
 
-void IndexBuffer::Unbind() const
-{
-    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
-    Logger::GetLogger()->debug("Unbound Index Buffer.");
+void IndexBuffer::Bind() const {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_RendererID);
 }
 
-unsigned int IndexBuffer::GetCount() const
-{
-    Logger::GetLogger()->debug("Retrieving count: {}.", m_Count);
+void IndexBuffer::Unbind() const {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+GLsizei IndexBuffer::GetCount() const {
     return m_Count;
 }
