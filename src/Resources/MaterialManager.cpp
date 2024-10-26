@@ -1,53 +1,56 @@
 #include "Resources/MaterialManager.h"
 #include "Utilities/Logger.h"
 
-#include <glad/glad.h>
-#include <fstream>
-#include <nlohmann/json.hpp>
+#include <unordered_map>
+#include <filesystem>
 
-std::shared_ptr<Material> MaterialManager::GetMaterial(const std::string& materialName)
-{
-    return m_Materials[materialName];
-}
-
-std::unordered_map<std::string, std::string> G_Texture_Path
-{
+static std::unordered_map<std::string, std::filesystem::path> G_Texture_Path{
     {"cuteDog", "../assets/cute_dog.png"},
     {"duckDiffuse", "../assets/rubber_duck/textures/Duck_baseColor.png"},
-
     {"damagedHelmet1", "../assets/DamagedHelmet/glTF/Default_albedo.jpg"},
     {"damagedHelmet2", "../assets/DamagedHelmet/glTF/Default_AO.jpg"},
     {"damagedHelmet3", "../assets/DamagedHelmet/glTF/Default_emissive.jpg"}
-
 };
 
-std::shared_ptr<Texture2D> MaterialManager::GetTexture(const std::string& textureName)
-{
-    if (textureName.empty())
+std::shared_ptr<Material> MaterialManager::GetMaterial(std::string_view materialName) {
+    auto it = m_Materials.find(std::string(materialName));
+    if (it != m_Materials.end()) {
+        return it->second;
+    }
+    else {
+        Logger::GetLogger()->warn("Material '{}' not found.", materialName);
         return nullptr;
+    }
+}
 
-    if (m_Textures.find(textureName) != m_Textures.end()) {
-        return m_Textures[textureName];
+std::shared_ptr<Texture2D> MaterialManager::GetTexture(std::string_view textureName) {
+    if (textureName.empty()) {
+        return nullptr;
+    }
+
+    auto it = m_Textures.find(std::string(textureName));
+    if (it != m_Textures.end()) {
+        return it->second;
     }
 
     std::shared_ptr<Texture2D> texture;
-    if (G_Texture_Path.find(textureName) != G_Texture_Path.end())
-        texture = std::make_shared<Texture2D>(G_Texture_Path[textureName]);
-    else
+    auto pathIt = G_Texture_Path.find(std::string(textureName));
+    if (pathIt != G_Texture_Path.end()) {
+        texture = std::make_shared<Texture2D>(pathIt->second);
+    }
+    else {
         texture = std::make_shared<Texture2D>(textureName);
+    }
 
-    m_Textures[textureName] = texture;
+    m_Textures[std::string(textureName)] = texture;
     return texture;
 }
 
-void MaterialManager::AddMaterial(std::string name, std::shared_ptr<Material> material)
-{
-	m_Materials[name] = material;
+void MaterialManager::AddMaterial(std::string_view name, std::shared_ptr<Material> material) {
+    m_Materials[std::string(name)] = std::move(material);
 }
 
-//need to check if the shader is the same and bind through shader
-void MaterialManager::BindMaterial(const std::string& name, std::shared_ptr<BaseShader> shader)
-{
+void MaterialManager::BindMaterial(std::string_view name, std::shared_ptr<BaseShader> shader) {
     auto logger = Logger::GetLogger();
 
     if (name == m_CurrentlyBoundMaterial) {
@@ -55,9 +58,9 @@ void MaterialManager::BindMaterial(const std::string& name, std::shared_ptr<Base
         return;
     }
 
-    auto materialIt = m_Materials.find(name);
+    auto materialIt = m_Materials.find(std::string(name));
     if (materialIt == m_Materials.end()) {
-        logger->error("materials '{}' not found. Cannot bind.", name);
+        logger->error("Material '{}' not found. Cannot bind.", name);
         return;
     }
 
@@ -71,7 +74,6 @@ void MaterialManager::BindMaterial(const std::string& name, std::shared_ptr<Base
     }
 }
 
-//need to add unbind
-void MaterialManager::UnbindMaterial(const std::string& name)
-{
+void MaterialManager::UnbindMaterial(std::string_view name) {
+    // Implement unbind logic if necessary
 }

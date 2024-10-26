@@ -1,18 +1,12 @@
 #pragma once
 
 #include "Graphics/Textures/TextureBase.h"
-#include "Utilities/Utility.h"
-#include "stb_image.h"
-#include <glad/glad.h>
-#include <string>
-#include <iostream>
-#include <stdexcept>
+#include <string_view>
 
-class Texture2D : public TextureBase
-{
+class Texture2D : public TextureBase {
 public:
-    Texture2D();
-    explicit Texture2D(const std::string& path);
+    Texture2D() = default;
+    explicit Texture2D(std::filesystem::path filePath);
 
     ~Texture2D() override = default;
 
@@ -21,9 +15,9 @@ public:
     Texture2D(Texture2D&& other) noexcept = default;
     Texture2D& operator=(Texture2D&& other) noexcept = default;
 
-    void Bind(unsigned int slot = 0) const override;
-    void Unbind(unsigned int slot = 0) const override;
+    void Bind(GLuint slot = 0) const override;
+    void Unbind(GLuint slot = 0) const override;
 
 private:
-    void LoadTexture(const std::string& path);
+    void LoadTexture();
 };

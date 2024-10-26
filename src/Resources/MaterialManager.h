@@ -1,27 +1,26 @@
 #pragma once
 
-#include <Graphics/Materials/Material.h>
-#include "Graphics/Textures/Texture2D.h"
-#include <nlohmann/json.hpp>
-
 #include <string>
 #include <unordered_map>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
 #include <memory>
-#include <vector>
+#include <string_view>
+#include <filesystem>
+
+#include "Graphics/Materials/Material.h"
+#include "Graphics/Textures/Texture2D.h"
+#include "Graphics/Shaders/BaseShader.h"
+#include "Utilities/Logger.h"
 
 class MaterialManager {
 public:
     MaterialManager() = default;
     ~MaterialManager() = default;
 
-    std::shared_ptr<Material> GetMaterial(const std::string& materialName);
-    std::shared_ptr<Texture2D> GetTexture(const std::string& textureName);
-    void AddMaterial(std::string name, std::shared_ptr<Material> material);
-    void BindMaterial(const std::string& name, std::shared_ptr<BaseShader> shader);
-    void UnbindMaterial(const std::string& name);
+    std::shared_ptr<Material> GetMaterial(std::string_view materialName);
+    std::shared_ptr<Texture2D> GetTexture(std::string_view textureName);
+    void AddMaterial(std::string_view name, std::shared_ptr<Material> material);
+    void BindMaterial(std::string_view name, std::shared_ptr<BaseShader> shader);
+    void UnbindMaterial(std::string_view name);
 
 private:
     std::string m_CurrentlyBoundMaterial;

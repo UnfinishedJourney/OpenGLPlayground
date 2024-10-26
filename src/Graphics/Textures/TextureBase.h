@@ -1,16 +1,14 @@
 #pragma once
 
-#include "Utilities/Utility.h"
-#include <glad/glad.h>
 #include <string>
-#include <iostream>
-#include <stdexcept>
+#include <filesystem>
+#include <glad/glad.h>
+#include "Utilities/Logger.h"
 
-class TextureBase
-{
+class TextureBase {
 public:
-    TextureBase();
-    explicit TextureBase(const std::string& path);
+    TextureBase() = default;
+    explicit TextureBase(std::filesystem::path filePath);
     virtual ~TextureBase();
 
     TextureBase(const TextureBase& other) = delete;
@@ -18,20 +16,20 @@ public:
     TextureBase(TextureBase&& other) noexcept;
     TextureBase& operator=(TextureBase&& other) noexcept;
 
-    virtual void Bind(unsigned int slot = 0) const = 0;
-    virtual void Unbind(unsigned int slot = 0) const = 0;
+    virtual void Bind(GLuint slot = 0) const = 0;
+    virtual void Unbind(GLuint slot = 0) const = 0;
 
-    inline int GetWidth() const { return m_Width; }
-    inline int GetHeight() const { return m_Height; }
-    inline GLuint GetRendererID() const { return m_RendererID; }
-    inline const std::string& GetFilePath() const { return m_FilePath; }
+    int GetWidth() const noexcept { return m_Width; }
+    int GetHeight() const noexcept { return m_Height; }
+    GLuint GetRendererID() const noexcept { return m_RendererID; }
+    const std::filesystem::path& GetFilePath() const noexcept { return m_FilePath; }
 
 protected:
-    virtual void Release() noexcept;
+    void Release() noexcept;
 
     GLuint m_RendererID = 0;
-    std::string m_FilePath;
-    unsigned char* m_LocalBuffer = nullptr;
-    int m_Width = 0, m_Height = 0, m_BPP = 0;
-
+    std::filesystem::path m_FilePath;
+    int m_Width = 0;
+    int m_Height = 0;
+    int m_BPP = 0; // Bits Per Pixel
 };
