@@ -1,33 +1,30 @@
 #pragma once
 
 #include "Test.h"
-#include "Resources/ResourceManager.h"
 #include "Renderer/RenderObject.h"
-#include "Scene/Scene.h"
+#include "Resources/ResourceManager.h"
 
 #include <GLFW/glfw3.h>
 #include <memory>
-
 namespace test {
 
 	class LightObject : public RenderObject {
 	public:
-		LightObject(std::vector<std::shared_ptr<MeshBuffer>> meshBuffers, std::shared_ptr<Material> mat, std::unique_ptr<Transform> transform)
-			: RenderObject(meshBuffers, mat, std::move(transform))
+		LightObject(std::shared_ptr<MeshBuffer> meshBuffer, MaterialName materialName, ShaderName shaderName, std::shared_ptr<Transform> transform)
+			: RenderObject(std::move(meshBuffer), materialName, shaderName, std::move(transform))
 		{}
-		virtual void Render() override;
 	};
 
 	class TestLights : public Test
 	{
 	public:
-		TestLights();
+		TestLights(std::shared_ptr<Renderer>& renderer);
+		//~TestLight() override = default;
 
 		void OnUpdate(float deltaTime) override;
 		void OnRender() override;
 		void OnImGuiRender() override;
 	private:
-		std::unique_ptr<Scene> m_Scene;
-		//std::unique_ptr<ResourceManager> m_ResourceManager;
+		std::vector<std::shared_ptr<LightObject>> m_Pig;
 	};
 }

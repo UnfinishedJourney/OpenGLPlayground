@@ -45,7 +45,7 @@ private:
     std::filesystem::path m_ConfigPath;
     std::string m_CurrentlyBoundShader;
 
-    mutable std::shared_mutex m_ShaderMutex;
+    //mutable std::shared_mutex m_ShaderMutex;
 
     GlobalMetadata m_GlobalMetadata;
     std::unordered_map<std::string, ShaderMetadata> m_ShadersMetadata;

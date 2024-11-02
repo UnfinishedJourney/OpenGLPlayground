@@ -8,9 +8,9 @@
             "binary_path": "../shaders/bin/Duck.bin",
             "source_path": "../shaders/Duck.shader"
         },
-        "lights": {
-            "binary_path": "../shaders/bin/Lights.bin",
-            "source_path": "../shaders/Lights.shader"
+        "simplelights": {
+            "binary_path": "../shaders/bin/SimpleLights.bin",
+            "source_path": "../shaders/SimpleLights.shader"
         },
         "instance": {
             "binary_path": "../shaders/bin/Instance.bin",

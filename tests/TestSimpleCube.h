@@ -12,7 +12,7 @@ namespace test {
 
 	class MovingCube : public RenderObject {
 	public:
-		MovingCube(std::shared_ptr<MeshBuffer> meshBuffer, MaterialName materialName, ShaderName shaderName, std::unique_ptr<Transform> transform)
+		MovingCube(std::shared_ptr<MeshBuffer> meshBuffer, MaterialName materialName, ShaderName shaderName, std::shared_ptr<Transform> transform)
 			: RenderObject(std::move(meshBuffer), materialName, shaderName, std::move(transform))
 		{}
 

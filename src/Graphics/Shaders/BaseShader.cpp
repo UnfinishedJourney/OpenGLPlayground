@@ -39,6 +39,16 @@ GLint BaseShader::GetUniformLocation(std::string_view name) const {
 }
 
 GLuint BaseShader::CompileShader(GLenum shaderType, const std::string& source) const {
+    // For debugging, write the preprocessed shader source to a file
+    std::string shaderTypeStr = (shaderType == GL_VERTEX_SHADER) ? "vertex" :
+        (shaderType == GL_FRAGMENT_SHADER) ? "fragment" :
+        (shaderType == GL_COMPUTE_SHADER) ? "compute" : "unknown";
+
+    // Uncomment the following lines if you wish to output the preprocessed shader source for debugging
+    // std::ofstream outFile("preprocessed_" + shaderTypeStr + ".glsl");
+    // outFile << source;
+    // outFile.close();
+
     GLuint shader = glCreateShader(shaderType);
     const char* src = source.c_str();
     glShaderSource(shader, 1, &src, nullptr);
@@ -52,19 +62,12 @@ GLuint BaseShader::CompileShader(GLenum shaderType, const std::string& source) c
         std::string infoLog(static_cast<size_t>(maxLength), '\0');
         glGetShaderInfoLog(shader, maxLength, &maxLength, infoLog.data());
 
-        std::string shaderTypeStr = (shaderType == GL_VERTEX_SHADER) ? "VERTEX" :
-            (shaderType == GL_FRAGMENT_SHADER) ? "FRAGMENT" :
-            (shaderType == GL_COMPUTE_SHADER) ? "COMPUTE" : "UNKNOWN";
-
         glDeleteShader(shader);
         Logger::GetLogger()->error("{} shader compilation failed:\n{}", shaderTypeStr, infoLog);
         throw std::runtime_error(shaderTypeStr + " shader compilation failed:\n" + infoLog);
     }
 
-    Logger::GetLogger()->info("{} shader compiled successfully.",
-        (shaderType == GL_VERTEX_SHADER) ? "Vertex" :
-        (shaderType == GL_FRAGMENT_SHADER) ? "Fragment" :
-        (shaderType == GL_COMPUTE_SHADER) ? "Compute" : "Unknown");
+    Logger::GetLogger()->info("{} shader compiled successfully.", shaderTypeStr);
 
     return shader;
 }
@@ -119,30 +122,83 @@ std::string BaseShader::ReadFile(const std::filesystem::path& filepath) const {
     return contents.str();
 }
 
-std::string BaseShader::ResolveIncludes(const std::string& source, const std::filesystem::path& directory) const {
+// Modified ResolveIncludes function with comment handling and include guards
+std::string BaseShader::ResolveIncludes(const std::string& source, const std::filesystem::path& directory, std::unordered_set<std::string>& includedFiles) const {
     std::istringstream stream(source);
     std::ostringstream processedSource;
     std::string line;
+    bool inBlockComment = false;
 
     while (std::getline(stream, line)) {
-        if (line.find("#include") != std::string::npos) {
-            size_t start = line.find_first_of("\"<");
-            size_t end = line.find_first_of("\">", start + 1);
+        std::string originalLine = line;
+        std::string trimmedLine = line;
+        // Remove leading whitespace
+        trimmedLine.erase(0, trimmedLine.find_first_not_of(" \t"));
+
+        // Handle block comments
+        if (inBlockComment) {
+            size_t endComment = trimmedLine.find("*/");
+            if (endComment != std::string::npos) {
+                inBlockComment = false;
+                trimmedLine = trimmedLine.substr(endComment + 2);
+            }
+            else {
+                continue; // Skip line inside block comment
+            }
+        }
+
+        // Check for start of block comment
+        size_t startBlockComment = trimmedLine.find("/*");
+        if (startBlockComment != std::string::npos) {
+            inBlockComment = true;
+            trimmedLine = trimmedLine.substr(0, startBlockComment);
+        }
+
+        // Remove single-line comments
+        size_t singleLineComment = trimmedLine.find("//");
+        if (singleLineComment != std::string::npos) {
+            trimmedLine = trimmedLine.substr(0, singleLineComment);
+        }
+
+        // Trim again after removing comments
+        trimmedLine.erase(0, trimmedLine.find_first_not_of(" \t"));
+        trimmedLine.erase(trimmedLine.find_last_not_of(" \t\r\n") + 1);
+
+        // Skip empty lines
+        if (trimmedLine.empty()) {
+            processedSource << originalLine << '\n'; // Preserve original line formatting
+            continue;
+        }
+
+        // Process includes
+        if (trimmedLine.find("#include") == 0) {
+            size_t start = trimmedLine.find_first_of("\"<");
+            size_t end = trimmedLine.find_first_of("\">", start + 1);
             if (start == std::string::npos || end == std::string::npos) {
-                Logger::GetLogger()->error("Invalid #include syntax: {}", line);
-                throw std::runtime_error("Invalid #include syntax: " + line);
+                Logger::GetLogger()->error("Invalid #include syntax: {}", originalLine);
+                throw std::runtime_error("Invalid #include syntax: " + originalLine);
             }
 
-            std::string includePathStr = line.substr(start + 1, end - start - 1);
+            std::string includePathStr = trimmedLine.substr(start + 1, end - start - 1);
             std::filesystem::path includePath = directory / includePathStr;
+
+            // Normalize the path
+            includePath = std::filesystem::weakly_canonical(includePath);
+
+            // Check if the file has already been included
+            if (includedFiles.find(includePath.string()) != includedFiles.end()) {
+                continue; // Skip including again
+            }
+            includedFiles.insert(includePath.string());
+
             Logger::GetLogger()->debug("Including file: {}", includePath.string());
 
             std::string includedSource = ReadFile(includePath);
-            includedSource = ResolveIncludes(includedSource, includePath.parent_path());
+            includedSource = ResolveIncludes(includedSource, includePath.parent_path(), includedFiles);
             processedSource << includedSource << '\n';
         }
         else {
-            processedSource << line << '\n';
+            processedSource << originalLine << '\n';
         }
     }
 

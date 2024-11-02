@@ -4,9 +4,9 @@
 #include <sstream>
 #include <memory>
 
-#define WIN32_LEAN_AND_MEAN
-
 #include <glad/glad.h>
+//#define WIN32_LEAN_AND_MEAN
+
 #include <GLFW/glfw3.h>
 
 #include "Application/OpenGLContext.h"
@@ -19,7 +19,8 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-
+#define USING_EASY_PROFILER
+#include "easy/profiler.h"
 int Screen::s_Width = 960;
 int Screen::s_Height = 540;
 glm::mat4 FrameData::s_Projection = glm::mat4(1.0f);
@@ -51,6 +52,8 @@ struct Application {
 
 
 void Application::Init() {
+    EASY_FUNCTION(profiler::colors::Magenta);
+    EASY_BLOCK("App Init");
     Logger::Init();
     auto logger = Logger::GetLogger();
     logger->info("Application started.");
@@ -69,8 +72,8 @@ void Application::Init() {
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
     testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
     testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
+    testMenu->RegisterTest<test::TestLights>("Lights");
     //testMenu->RegisterTest<test::TestAssimp>("Assimp");
-    //testMenu->RegisterTest<test::TestLights>("Lights");
     //testMenu->RegisterTest<test::TestInstance>("Instances");
     //testMenu->RegisterTest<test::TestPBR>("PBR");
     //testMenu->RegisterTest<test::TestComputeShader>("Compute");
@@ -78,6 +81,7 @@ void Application::Init() {
 
     FrameData::s_View = camera.GetViewMatrix();
     FrameData::s_Projection = glm::perspective(glm::radians(camera.GetFOV()), (float)Screen::s_Width / (float)Screen::s_Height, 0.1f, 100.0f);
+    EASY_END_BLOCK;
 }
 
 void Application::Run() {
@@ -133,10 +137,13 @@ void Application::Cleanup() {
 }
 
 int main() {
+    EASY_PROFILER_ENABLE;
+    profiler::startListen();
     Application app;
     app.Init();
     app.Run();
     app.Cleanup();
+    profiler::dumpBlocksToFile("profile_data.prof");
     return 0;
 }
 

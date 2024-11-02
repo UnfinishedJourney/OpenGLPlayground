@@ -3,17 +3,12 @@
 #include <string>
 #include <unordered_map>
 #include <filesystem>
-#include <glad/glad.h>
-#include <glm/glm.hpp>
 #include <memory>
 #include <string_view>
+#include <unordered_set>
 
-/// <future work>
-/// 1) hot reloading
-/// 2) vertex and fragment separate?
-/// 3) bins to bin folder
-/// 4) Shaderc, SPIR-V
-/// </future work>
+#include <glad/glad.h>
+#include <glm/glm.hpp>
 
 class BaseShader {
 public:
@@ -48,7 +43,7 @@ protected:
 
     // Utility methods
     std::string ReadFile(const std::filesystem::path& filepath) const;
-    std::string ResolveIncludes(const std::string& source, const std::filesystem::path& directory) const;
+    std::string ResolveIncludes(const std::string& source, const std::filesystem::path& directory, std::unordered_set<std::string>& includedFiles) const;
 
     // Binary handling
     bool LoadBinary();

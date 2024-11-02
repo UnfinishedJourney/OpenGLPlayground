@@ -17,12 +17,12 @@ test::TestSimpleCube::TestSimpleCube(std::shared_ptr<Renderer>& renderer)
     std::shared_ptr<Texture2D> texture = m_Renderer->m_ResourceManager->GetTexture("cuteDog");
 
     std::shared_ptr<Material> material = std::make_shared<Material>();
-    std::unique_ptr<Transform> transform = std::make_unique<Transform>();
+    std::shared_ptr<Transform> transform = std::make_shared<Transform>();
 
     material->AddTexture(texture);
     m_Renderer->m_ResourceManager->AddMaterial("dogMat", material);
 
-    m_Cube = std::make_unique<MovingCube>(meshComponent, "dogMat"_mt, "basic"_sh, std::move(transform));
+    m_Cube = std::make_unique<MovingCube>(meshComponent, "dogMat"_mt, "basic"_sh, transform);
     GLCall(glEnable(GL_BLEND));
     GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 }

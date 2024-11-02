@@ -9,5 +9,5 @@ public:
     void ReloadShader() override;
 
 protected:
-    void LoadShader();
+    void LoadShader(bool bReload = false);
 };

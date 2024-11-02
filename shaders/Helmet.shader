@@ -6,6 +6,8 @@ layout (location = 1) in vec3 normals;
 layout (location = 2) in vec3 tangents;
 layout (location = 3) in vec2 uvs;
 
+uniform mat4 u_Model;
+
 out vec2 tc;           //uvs
 out vec3 fragPos;      //world pos
 out vec3 normal;       //normal world

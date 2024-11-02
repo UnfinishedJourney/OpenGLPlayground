@@ -42,6 +42,13 @@ public:
         return m_ModelMatrix;
     }
 
+    glm::mat3 GetNormalMatrix() {
+        if (m_NeedsUpdating) {
+            UpdateModelMatrix();
+        }
+        return glm::mat3(m_ModelMatrix);
+    }
+
 private:
     glm::vec3 m_Position;
     glm::quat m_Rotation;

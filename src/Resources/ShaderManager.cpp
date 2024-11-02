@@ -56,7 +56,7 @@ void ShaderManager::LoadShaders()
 
             // Thread-safe insertion
             {
-                std::unique_lock lock(m_ShaderMutex);
+                //std::unique_lock lock(m_ShaderMutex);
                 m_Shaders[name] = shader;
             }
 
@@ -106,7 +106,7 @@ void ShaderManager::BindShader(std::string_view shaderName)
 
     std::shared_ptr<BaseShader> shader;
     {
-        std::shared_lock lock(m_ShaderMutex);
+        //std::shared_lock lock(m_ShaderMutex);
         auto it = m_Shaders.find(std::string(shaderName));
         if (it == m_Shaders.end()) {
             logger->error("Shader '{}' not found.", shaderName);
@@ -138,7 +138,7 @@ void ShaderManager::BindShader(std::string_view shaderName)
 
 std::shared_ptr<Shader> ShaderManager::GetShader(std::string_view name)
 {
-    std::shared_lock lock(m_ShaderMutex);
+    //std::shared_lock lock(m_ShaderMutex);
     auto it = m_Shaders.find(std::string(name));
     if (it != m_Shaders.end()) {
         return std::dynamic_pointer_cast<Shader>(it->second);
@@ -149,7 +149,7 @@ std::shared_ptr<Shader> ShaderManager::GetShader(std::string_view name)
 
 std::shared_ptr<ComputeShader> ShaderManager::GetComputeShader(std::string_view name)
 {
-    std::shared_lock lock(m_ShaderMutex);
+    //std::shared_lock lock(m_ShaderMutex);
     auto it = m_Shaders.find(std::string(name));
     if (it != m_Shaders.end()) {
         return std::dynamic_pointer_cast<ComputeShader>(it->second);
@@ -160,7 +160,7 @@ std::shared_ptr<ComputeShader> ShaderManager::GetComputeShader(std::string_view 
 
 std::shared_ptr<BaseShader> ShaderManager::GetCurrentlyBoundShader() const
 {
-    std::shared_lock lock(m_ShaderMutex);
+    //std::shared_lock lock(m_ShaderMutex);
     auto it = m_Shaders.find(m_CurrentlyBoundShader);
     if (it != m_Shaders.end()) {
         return it->second;
@@ -193,7 +193,6 @@ bool ShaderManager::LoadMetadata()
 
         for (const auto& [name, shaderData] : jsonData["shaders"].items()) {
             ShaderMetadata metadata;
-            metadata.isComputeShader = shaderData["is_compute_shader"].get<bool>();
             metadata.sourcePath = shaderData["source_path"].get<std::string>();
             metadata.binaryPath = shaderData["binary_path"].get<std::string>();
             m_ShadersMetadata[name] = metadata;
@@ -290,6 +289,31 @@ bool ShaderManager::LoadConfig()
 
             m_ShadersMetadata[name] = metadata;
         }
+
+        /*for (const auto& [name, shaderData] : jsonData["compute_shaders"].items()) {
+            ShaderMetadata metadata;
+            metadata.isComputeShader = shaderData.value("is_compute_shader", true);
+            metadata.sourcePath = shaderData["source_path"].get<std::string>();
+            metadata.binaryPath = shaderData["binary_path"].get<std::string>();
+
+            if (std::filesystem::exists(metadata.sourcePath)) {
+                metadata.sourceLastModified = std::filesystem::last_write_time(metadata.sourcePath);
+            }
+            else {
+                metadata.sourceLastModified = std::filesystem::file_time_type::min();
+                logger->warn("Shader source path '{}' does not exist for Shader '{}'.", metadata.sourcePath.string(), name);
+            }
+
+            if (std::filesystem::exists(metadata.binaryPath)) {
+                metadata.binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
+            }
+            else {
+                metadata.binaryLastModified = std::filesystem::file_time_type::min();
+                logger->warn("Shader binary path '{}' does not exist for Shader '{}'.", metadata.binaryPath.string(), name);
+            }
+
+            m_ShadersMetadata[name] = metadata;
+        }*/
     }
     catch (const std::exception& e) {
         logger->error("Error parsing config file '{}': {}", m_ConfigPath.string(), e.what());
@@ -326,7 +350,8 @@ bool ShaderManager::IsShaderOutdated(const std::string& shaderName) const
     auto sourceLastModified = std::filesystem::last_write_time(metadata.sourcePath);
     auto binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
 
-    return sourceLastModified > binaryLastModified;
+    bool res = sourceLastModified > binaryLastModified;
+    return res;
 }
 
 //void ShaderManager::EnqueueGLCommand(std::function<void()> command)

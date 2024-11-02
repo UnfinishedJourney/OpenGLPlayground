@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.10)
 # =====================================================================
 # Опции для выбора компилятора и включения clang-tidy
 # =====================================================================
-
 option(USE_CLANG "Использовать компилятор Clang вместо текущего компилятора" OFF)
 option(USE_CLANG_TIDY "Включить clang-tidy для анализа кода" OFF)
 
@@ -81,6 +80,28 @@ group_sources(${CMAKE_SOURCE_DIR}/vendor ${VENDOR_FILES})
 # Указание исполняемого файла
 add_executable(OpenGLApplication ${SRC_FILES} ${TEST_FILES} ${VENDOR_FILES})
 
+# =====================================================================
+# Ручное подключение easy_profiler
+# =====================================================================
+
+# Укажите пути к easy_profiler
+set(EASY_PROFILER_INCLUDE_DIR "C:/Program Files (x86)/easy_profiler/include")
+set(EASY_PROFILER_LIB_DIR "C:/Program Files (x86)/easy_profiler/lib")
+set(EASY_PROFILER_DLL "C:/Program Files (x86)/easy_profiler/bin/easy_profiler.dll")
+
+# Добавление include директории
+target_include_directories(OpenGLApplication PRIVATE ${EASY_PROFILER_INCLUDE_DIR})
+
+# Линковка с библиотекой easy_profiler
+target_link_libraries(OpenGLApplication PRIVATE "${EASY_PROFILER_LIB_DIR}/easy_profiler.lib")
+
+# Автоматическое копирование easy_profiler.dll в директорию сборки
+add_custom_command(TARGET OpenGLApplication POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${EASY_PROFILER_DLL}"
+    $<TARGET_FILE_DIR:OpenGLApplication>)
+
+# Дополнительные include директории
 target_include_directories(OpenGLApplication PRIVATE 
     ${DEPS_DIR}/GLFW/include
     ${DEPS_DIR}/GLAD/include

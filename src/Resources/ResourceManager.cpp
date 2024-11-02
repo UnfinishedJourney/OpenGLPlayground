@@ -8,7 +8,7 @@ ResourceManager::ResourceManager()
     m_MaterialManager = std::make_unique<MaterialManager>();
 
     // Initialize CubeMap textures
-    m_TextureCubeMap = {
+    m_TextureCubeMapPath = {
         {"pisa", {
             "../assets/cube/pisa/pisa_posx.png",
             "../assets/cube/pisa/pisa_negx.png",
@@ -18,7 +18,54 @@ ResourceManager::ResourceManager()
             "../assets/cube/pisa/pisa_negz.png"
         }}
     };
+
+    m_ModelPath = {
+        {"pig", "../assets/pig_triangulated.obj"}
+    };
 }
+
+// Add Model methods
+std::shared_ptr<Model> ResourceManager::GetModel(std::string_view modelName) {
+    auto it = m_Models.find(std::string(modelName));
+    if (it != m_Models.end()) {
+        return it->second;
+    }
+
+    // Load model if not found
+    std::shared_ptr<Model> model;
+
+    auto modelIt = m_ModelPath.find(std::string(modelName));
+    if (modelIt == m_ModelPath.end()) {
+        Logger::GetLogger()->error("Model not found: '{}'", modelName);
+        return nullptr;
+    }
+
+    auto modelPath = modelIt->second;
+    if (std::filesystem::exists(modelPath)) {
+        model = std::make_shared<Model>(modelPath.string());
+        m_Models[std::string(modelName)] = model;
+        return model;
+    }
+    else {
+        Logger::GetLogger()->warn("Model '{}' not found at path '{}'. Returning nullptr.", modelName, modelPath.string());
+        return nullptr;
+    }
+}
+
+bool ResourceManager::DeleteModel(std::string_view modelName) {
+    return m_Models.erase(std::string(modelName)) > 0;
+}
+
+std::vector<std::shared_ptr<MeshBuffer>> ResourceManager::GetModelMeshBuffers(std::string_view modelName, const MeshLayout& layout) {
+    auto model = GetModel(modelName);
+    if (!model) {
+        Logger::GetLogger()->error("Model '{}' not found. Cannot create MeshBuffers.", modelName);
+        return {};
+    }
+
+    return model->GetMeshBuffers(layout);
+}
+
 
 std::shared_ptr<Texture2D> ResourceManager::GetTexture(std::string_view textureName) {
     return m_MaterialManager->GetTexture(textureName);
@@ -34,8 +81,8 @@ std::shared_ptr<CubeMapTexture> ResourceManager::GetCubeMapTexture(std::string_v
         return it->second;
     }
 
-    auto texIt = m_TextureCubeMap.find(std::string(name));
-    if (texIt == m_TextureCubeMap.end()) {
+    auto texIt = m_TextureCubeMapPath.find(std::string(name));
+    if (texIt == m_TextureCubeMapPath.end()) {
         Logger::GetLogger()->error("CubeMapTexture not found: '{}'", name);
         return nullptr;
     }

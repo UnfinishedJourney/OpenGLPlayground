@@ -4,8 +4,8 @@
 
 #include <GLFW/glfw3.h>
 
-#include <glm.hpp>
-#include <ext.hpp>
+#include <glm/glm.hpp>
+#include <glm/ext.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/cimport.h>
@@ -19,53 +19,44 @@
 
 namespace test {
 
-    void LightObject::Render()
+    TestLights::TestLights(std::shared_ptr<Renderer>& renderer)
+        : Test(renderer)
     {
-        for (auto& meshBuffer : m_MeshBuffers)
-        {
-            meshBuffer->Bind();
-            m_Material->Bind();
-            glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * m_Transform->GetModelMatrix();
-            m_Material->GetShader()->SetUniform("u_MVP", mvp);
-            glm::mat4 mv = FrameData::s_View * m_Transform->GetModelMatrix();
-            m_Material->GetShader()->SetUniform("u_ModelView", mv);
-            glm::mat3 normalMatrix = glm::mat3(mv);
-            m_Material->GetShader()->SetUniform("u_NormalMatrix", normalMatrix);
-            GLCall(glDrawElements(GL_TRIANGLES, meshBuffer->GetNVerts(), GL_UNSIGNED_INT, nullptr));
-        }
-    }
+        //float x(0.0), y(0.0), z(0.0);
+        //for (int i = 0; i < 4; i++)
+        //{
+        //    x = 2.0f * cosf((glm::two_pi<float>() / 4) * i);
+        //    z = 2.0f * sinf((glm::two_pi<float>() / 4) * i);
+        //    m_Scene->AddLight({ glm::vec4(x, 1.2f, z + 1.0f, 1.0f) , glm::vec3(0.8f, 0.8f, 0.8f) });
+        //}
 
-    TestLights::TestLights()
-    {
-        m_Scene = std::make_unique<Scene>();
-        float x(0.0), y(0.0), z(0.0);
-        for (int i = 0; i < 4; i++)
-        {
-            x = 2.0f * cosf((glm::two_pi<float>() / 4) * i);
-            z = 2.0f * sinf((glm::two_pi<float>() / 4) * i);
-            m_Scene->AddLight({ glm::vec4(x, 1.2f, z + 1.0f, 1.0f) , glm::vec3(0.8f, 0.8f, 0.8f) });
-        }
+        MeshLayout pigMeshLayout = {
+        true,
+        false,
+        false,
+        false,
+        {}
+        };
 
-        auto model = s_ResourceManager->GetModel("pig");
-        MeshLayout meshLayout = { true, true, false, false, {} };
-        std::shared_ptr<Shader> shader = s_ResourceManager->GetShader("lights");
+        auto meshComponents = m_Renderer->m_ResourceManager->GetModelMeshBuffers("pig", pigMeshLayout);
+        std::shared_ptr<Shader> shader = m_Renderer->m_ResourceManager->GetShader("simplelights");
+
         std::shared_ptr<Material> material = std::make_shared<Material>();
-        std::unique_ptr<Transform> transform = std::make_unique<Transform>();
-        transform->SetRotation(glm::vec3(-1.57, 0.0, 0.0));
+        std::shared_ptr<Transform> transform = std::make_shared<Transform>();
+        material->AddParam<glm::vec3>("material.Ka", glm::vec3(1.0, 0.0, 0.0));
+        material->AddParam<glm::vec3>("material.Kd", glm::vec3(1.0, 0.0, 0.0));
+        material->AddParam<glm::vec3>("material.Ks", glm::vec3(1.0, 0.0, 0.0));
+        material->AddParam<float>("material.shininess", 1.0);
 
-        material->SetShader(shader);
-        material->AddParam<float>("Ks", 1.0);
-        material->AddParam<float>("Kd", 1.0);
-        material->AddParam<float>("Shininess", 1.0);
+        m_Renderer->m_ResourceManager->AddMaterial("pigMat", material);
 
-        auto renderObject = std::make_unique<LightObject>(model->GetMeshBuffers(meshLayout), material, std::move(transform));
-
-        m_Scene->AddObj(std::move(renderObject));
-
-        m_Scene->AddLightShader(shader);
-
+        for (auto meshComponent : meshComponents)
+        {
+            m_Pig.push_back(std::make_unique<LightObject>(meshComponent, "pigMat"_mt, "simplelights"_sh, transform));
+        }
         GLCall(glEnable(GL_BLEND));
         GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
 
     }
 
@@ -77,7 +68,8 @@ namespace test {
     {
         GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
         GLCall(glClear(GL_COLOR_BUFFER_BIT));
-        m_Scene->Render();
+        for (auto pigPart: m_Pig)
+            m_Renderer->Render(pigPart);
     }
 
     void TestLights::OnImGuiRender()

@@ -33,7 +33,7 @@ class MeshBuffer;
 
 class RenderObject {
 public:
-    RenderObject(std::shared_ptr<MeshBuffer> meshBuffer, MaterialName materialName, ShaderName shaderName, std::unique_ptr<Transform> transform)
+    RenderObject(std::shared_ptr<MeshBuffer> meshBuffer, MaterialName materialName, ShaderName shaderName, std::shared_ptr<Transform> transform)
         : m_MaterialName(std::move(materialName.value)),
         m_ShaderName(std::move(shaderName.value)),
         m_MeshBuffer(std::move(meshBuffer)),
@@ -57,6 +57,6 @@ public:
     std::string m_MaterialName;
     std::string m_ShaderName;
     std::shared_ptr<MeshBuffer> m_MeshBuffer;
-    std::unique_ptr<Transform> m_Transform;
+    std::shared_ptr<Transform> m_Transform;
 protected:
 };

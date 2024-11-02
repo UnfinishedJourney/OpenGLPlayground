@@ -1,4 +1,4 @@
-#include "Renderer/Renderer.h"
+﻿#include "Renderer/Renderer.h"
 #include "Utilities/Logger.h"
 #include "Scene/FrameData.h"
 #include "Utilities/Utility.h" 
@@ -9,12 +9,64 @@ Renderer::Renderer()
     auto logger = Logger::GetLogger();
     logger->info("Initializing Renderer.");
 
-    //m_ResourceManager = std::make_unique<ResourceManager>("../shaders/metadata.json", "../shaders/config.json");
     m_ResourceManager = std::make_unique<ResourceManager>();
     logger->info("ResourceManager initialized successfully.");
 
     m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), 0, GL_DYNAMIC_DRAW);
     logger->info("Created FrameData UBO with binding point 0.");
+
+    // Initialize lights data with one light
+    m_LightsData = {
+        { glm::vec4(10.0f, 10.0f, 10.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) },
+        { glm::vec4(10.0f, 10.0f, 10.0f, 1.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f) },
+        { glm::vec4(10.0f, 10.0f, 10.0f, 1.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f) }
+        // Add more lights here if needed
+    };
+
+    // Calculate buffer size: size of numLights + size of lightsData
+    //GLsizeiptr bufferSize = sizeof(uint32_t) + m_LightsData.size() * sizeof(LightData);
+    GLsizeiptr bufferSize = m_LightsData.size() * sizeof(LightData);
+
+
+    // Create and bind the SSBO for lights
+    glGenBuffers(1, &m_LightsSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_LightsSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW); // Allocate without initializing
+
+    // Initialize numLights and lightsData
+    uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
+    //glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(uint32_t), &numLights);
+    //glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(uint32_t), m_LightsData.size() * sizeof(LightData), m_LightsData.data());
+
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_LightsData.size() * sizeof(LightData), m_LightsData.data());
+
+    // Bind the SSBO to binding point 1 (ensure your shaders use the same binding point)
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_LightsSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+    logger->info("Initialized Lights SSBO with {} light(s).", m_LightsData.size());
+}
+
+Renderer::~Renderer()
+{
+    glDeleteBuffers(1, &m_LightsSSBO);
+    // Delete other OpenGL resources if needed
+}
+
+void Renderer::UpdateLightsData(const std::vector<LightData>& lights) const
+{
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_LightsSSBO);
+
+    // Update the number of lights
+    uint32_t numLights = static_cast<uint32_t>(lights.size());
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(uint32_t), &numLights);
+
+    // Update the lights data
+    GLsizeiptr dataOffset = sizeof(uint32_t); // Assuming the first 4 bytes store numLights
+    GLsizeiptr dataSize = lights.size() * sizeof(LightData);
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, dataOffset, dataSize, lights.data());
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 void Renderer::UpdateFrameDataUBO() const
@@ -49,13 +101,16 @@ void Renderer::BindShaderAndMaterial(const std::shared_ptr<RenderObject>& render
 void Renderer::Render(const std::shared_ptr<RenderObject>& renderObject) const
 {
     UpdateFrameDataUBO();
-
+    //UpdateLightsData(m_LightsData);
     BindShaderAndMaterial(renderObject);
 
     glm::mat4 modelMatrix = renderObject->m_Transform->GetModelMatrix();
+    glm::mat3 normalMatrix = renderObject->m_Transform->GetNormalMatrix();
     glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * modelMatrix;
 
     m_ResourceManager->SetUniform("u_MVP", mvp);
+    m_ResourceManager->SetUniform("u_Model", modelMatrix);
+    m_ResourceManager->SetUniform("u_NormalMatrix", normalMatrix);
 
     renderObject->m_MeshBuffer->Bind();
     GLCall(glDrawElements(GL_TRIANGLES, renderObject->m_MeshBuffer->GetVertexCount(), GL_UNSIGNED_INT, nullptr));

@@ -18,9 +18,9 @@ public:
 
     std::shared_ptr<Material> GetMaterial(std::string_view materialName);
     std::shared_ptr<Texture2D> GetTexture(std::string_view textureName);
-    void AddMaterial(std::string_view name, std::shared_ptr<Material> material);
-    void BindMaterial(std::string_view name, std::shared_ptr<BaseShader> shader);
-    void UnbindMaterial(std::string_view name);
+    void AddMaterial(std::string_view name, const std::shared_ptr<Material>& material);
+    void BindMaterial(std::string_view name, const std::shared_ptr<BaseShader>& shader);
+    void UnbindMaterial();
 
 private:
     std::string m_CurrentlyBoundMaterial;
