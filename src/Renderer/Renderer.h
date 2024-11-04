@@ -1,11 +1,14 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 #include "Resources/ResourceManager.h"
 #include "Graphics/Buffers/UniformBuffer.h"
 #include "Renderer/RenderObject.h"
+#include "Renderer/Batch.h"
 #include "Graphics/Meshes/Mesh.h"
 #include "Scene/Lights.h"
+#include "Renderer/BatchManager.h"
 
 struct FrameCommonData
 {
@@ -26,15 +29,20 @@ public:
     void Clear() const;
 
     std::unique_ptr<ResourceManager> m_ResourceManager;
+    void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
+    void RenderScene();
 
 private:
     void UpdateFrameDataUBO() const;
 
-    void BindShaderAndMaterial(const std::shared_ptr<RenderObject>& renderObject) const;
+    void BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const;
 
     std::unique_ptr<UniformBuffer> m_FrameDataUBO;
     GLuint m_LightsSSBO;
 
     // Assuming you have a collection of lights
     std::vector<LightData> m_LightsData;
+
+    std::vector<std::unique_ptr<Batch>> m_Batches;
+    BatchManager m_BatchManager;
 };

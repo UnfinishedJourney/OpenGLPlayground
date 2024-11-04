@@ -71,6 +71,7 @@ public:
 
     // Model MeshBuffers
     std::vector<std::shared_ptr<MeshBuffer>> GetModelMeshBuffers(std::string_view modelName, const MeshLayout& layout);
+    const std::vector<MeshInfo>& GetModelMeshInfos(std::string_view modelName);
 
     // Shader and Material binding
     void ReloadAllShaders();

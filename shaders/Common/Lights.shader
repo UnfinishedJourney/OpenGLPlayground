@@ -3,7 +3,7 @@ struct LightData {
     vec4 color;    // xyz: color, w: intensity
 };
 
-layout(std430, binding = 1) buffer LightsBuffer {
-    //uint numLights;
+layout(std140, binding = 1) buffer LightsBuffer {
+    uint numLights;
     LightData lightsData[];
 };

@@ -12,19 +12,19 @@ test::TestSimpleCube::TestSimpleCube(std::shared_ptr<Renderer>& renderer)
         {TextureType::Albedo}
     };
 
-    std::shared_ptr<MeshBuffer> meshComponent = m_Renderer->m_ResourceManager->GetMeshBuffer("cube", cubeMeshLayout);
-    std::shared_ptr<Shader> shader = m_Renderer->m_ResourceManager->GetShader("basic");
-    std::shared_ptr<Texture2D> texture = m_Renderer->m_ResourceManager->GetTexture("cuteDog");
+    //std::shared_ptr<MeshBuffer> meshComponent = m_Renderer->m_ResourceManager->GetMeshBuffer("cube", cubeMeshLayout);
+    //std::shared_ptr<Shader> shader = m_Renderer->m_ResourceManager->GetShader("basic");
+    //std::shared_ptr<Texture2D> texture = m_Renderer->m_ResourceManager->GetTexture("cuteDog");
 
-    std::shared_ptr<Material> material = std::make_shared<Material>();
-    std::shared_ptr<Transform> transform = std::make_shared<Transform>();
+    //std::shared_ptr<Material> material = std::make_shared<Material>();
+    //std::shared_ptr<Transform> transform = std::make_shared<Transform>();
 
-    material->AddTexture(texture);
-    m_Renderer->m_ResourceManager->AddMaterial("dogMat", material);
+    //material->AddTexture(texture);
+    //m_Renderer->m_ResourceManager->AddMaterial("dogMat", material);
 
-    m_Cube = std::make_unique<MovingCube>(meshComponent, "dogMat"_mt, "basic"_sh, transform);
-    GLCall(glEnable(GL_BLEND));
-    GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    //m_Cube = std::make_unique<MovingCube>(meshComponent, "dogMat", "basic", transform);
+    //GLCall(glEnable(GL_BLEND));
+    //GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 }
 
 void test::TestSimpleCube::OnUpdate(float deltaTime)
@@ -34,9 +34,9 @@ void test::TestSimpleCube::OnUpdate(float deltaTime)
 
 void test::TestSimpleCube::OnRender()
 {
-    GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
-    GLCall(glClear(GL_COLOR_BUFFER_BIT));
-    m_Renderer->Render(m_Cube);
+    //GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
+    //GLCall(glClear(GL_COLOR_BUFFER_BIT));
+    //m_Renderer->Render(m_Cube);
 }
 
 void test::TestSimpleCube::OnImGuiRender()

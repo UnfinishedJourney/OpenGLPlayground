@@ -1,3 +1,5 @@
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -5,7 +7,6 @@
 #include <memory>
 
 #include <glad/glad.h>
-//#define WIN32_LEAN_AND_MEAN
 
 #include <GLFW/glfw3.h>
 

@@ -1,6 +1,7 @@
 #include "Resources/ResourceManager.h"
 #include "Utilities/Logger.h"
 #include "Graphics/Meshes/Cube.h"
+#include "Graphics/Meshes/Sphere.h"
 
 ResourceManager::ResourceManager()
     : m_CurrentlyBoundCubeMap("") {
@@ -66,6 +67,15 @@ std::vector<std::shared_ptr<MeshBuffer>> ResourceManager::GetModelMeshBuffers(st
     return model->GetMeshBuffers(layout);
 }
 
+const std::vector<MeshInfo>& ResourceManager::GetModelMeshInfos(std::string_view modelName) {
+    auto model = GetModel(modelName);
+    if (!model) {
+        Logger::GetLogger()->error("Model '{}' not found. Cannot get MeshInfos.", modelName);
+        return {};
+    }
+
+    return model->GetMeshesInfo();
+}
 
 std::shared_ptr<Texture2D> ResourceManager::GetTexture(std::string_view textureName) {
     return m_MaterialManager->GetTexture(textureName);
@@ -145,6 +155,11 @@ std::shared_ptr<Mesh> ResourceManager::GetMesh(std::string_view meshName) {
     if (meshName == "cube") {
         mesh = std::make_shared<Cube>();
     }
+    
+    else if (meshName == "sphere") {
+        mesh = std::make_shared<Sphere>();
+    }
+
     else {
         Logger::GetLogger()->warn("Mesh '{}' not found. Returning nullptr.", meshName);
         return nullptr;

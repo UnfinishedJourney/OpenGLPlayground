@@ -1,13 +1,14 @@
 #include "Graphics/Meshes/Model.h"
-#include "Graphics/Buffers/MeshBuffer.h"
 #include "Utilities/Logger.h"
+#include <stdexcept>
+#include <filesystem>
 
-Model::Model(const std::string& path_to_model, bool bCenterModel)
-    : m_FilePath(path_to_model) {
+Model::Model(const std::string& pathToModel, bool centerModel)
+    : m_FilePath(pathToModel) {
     ProcessModel();
     m_MeshBuffersCache.resize(m_MeshesInfo.size());
 
-    if (bCenterModel) {
+    if (centerModel) {
         CenterModel();
     }
 }
@@ -17,8 +18,7 @@ void Model::ProcessModel() {
     const aiScene* scene = importer.ReadFile(m_FilePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace);
 
     if (!scene || !scene->HasMeshes()) {
-        Logger::GetLogger()->error("Unable to load file: {}", m_FilePath);
-        return;
+        throw std::runtime_error("Unable to load model: " + m_FilePath);
     }
 
     ProcessNode(scene, scene->mRootNode);
@@ -53,46 +53,27 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
     }
 
     for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
-        glm::vec3 temp = {
-            aiMesh->mVertices[i].x,
-            aiMesh->mVertices[i].y,
-            aiMesh->mVertices[i].z
-        };
-        myMesh->positions.push_back(temp);
+        // Positions
+        myMesh->positions.emplace_back(aiMesh->mVertices[i].x, aiMesh->mVertices[i].y, aiMesh->mVertices[i].z);
 
+        // Normals
         if (aiMesh->HasNormals()) {
-            temp = {
-                aiMesh->mNormals[i].x,
-                aiMesh->mNormals[i].y,
-                aiMesh->mNormals[i].z
-            };
-            myMesh->normals.push_back(temp);
+            myMesh->normals.emplace_back(aiMesh->mNormals[i].x, aiMesh->mNormals[i].y, aiMesh->mNormals[i].z);
         }
 
+        // Tangents and Bitangents
         if (aiMesh->HasTangentsAndBitangents()) {
-            glm::vec3 tangent = {
-                aiMesh->mTangents[i].x,
-                aiMesh->mTangents[i].y,
-                aiMesh->mTangents[i].z
-            };
-            myMesh->tangents.push_back(tangent);
-
-            glm::vec3 bitangent = {
-                aiMesh->mBitangents[i].x,
-                aiMesh->mBitangents[i].y,
-                aiMesh->mBitangents[i].z
-            };
-            myMesh->bitangents.push_back(bitangent);
+            myMesh->tangents.emplace_back(aiMesh->mTangents[i].x, aiMesh->mTangents[i].y, aiMesh->mTangents[i].z);
+            myMesh->bitangents.emplace_back(aiMesh->mBitangents[i].x, aiMesh->mBitangents[i].y, aiMesh->mBitangents[i].z);
         }
 
+        // Texture Coordinates
         if (aiMesh->HasTextureCoords(0)) {
-            myMesh->uvs[TextureType::Albedo].push_back({
-                aiMesh->mTextureCoords[0][i].x,
-                aiMesh->mTextureCoords[0][i].y
-                });
+            myMesh->uvs[TextureType::Albedo].emplace_back(aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y);
         }
     }
 
+    // Process indices
     for (unsigned int i = 0; i < aiMesh->mNumFaces; i++) {
         aiFace face = aiMesh->mFaces[i];
         for (unsigned int j = 0; j < face.mNumIndices; j++) {
@@ -100,15 +81,15 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
         }
     }
 
+    // Load textures
     MeshTextures meshTextures;
-
-    std::string directory = m_FilePath.substr(0, m_FilePath.find_last_of('/'));
+    std::filesystem::path directory = std::filesystem::path(m_FilePath).parent_path();
     if (aiMesh->mMaterialIndex >= 0) {
         aiMaterial* aiMat = scene->mMaterials[aiMesh->mMaterialIndex];
-        meshTextures = LoadTextures(scene, aiMat, directory);
+        meshTextures = LoadTextures(scene, aiMat, directory.string());
     }
 
-    m_MeshesInfo.push_back(std::make_unique<MeshInfo>(MeshInfo{ meshTextures, myMesh }));
+    m_MeshesInfo.push_back(MeshInfo{ std::move(meshTextures), std::move(myMesh) });
 }
 
 MeshTextures Model::LoadTextures(const aiScene* scene, aiMaterial* aiMat, const std::string& directory) {
@@ -122,30 +103,24 @@ MeshTextures Model::LoadTextures(const aiScene* scene, aiMaterial* aiMat, const 
         // Add more mappings as needed
     };
 
-    for (const auto& pair : aiToMyTextureType) {
-        aiTextureType aiType = pair.first;
-        TextureType myType = pair.second;
-
+    for (const auto& [aiType, myType] : aiToMyTextureType) {
         unsigned int textureCount = aiMat->GetTextureCount(aiType);
         for (unsigned int i = 0; i < textureCount; ++i) {
             aiString str;
             if (aiMat->GetTexture(aiType, i, &str) == AI_SUCCESS) {
                 std::string texturePath = str.C_Str();
-                std::string fullPath = directory + "/" + texturePath;
+                std::filesystem::path fullPath = std::filesystem::path(directory) / texturePath;
 
-                auto texture = std::make_shared<Texture2D>(fullPath);
-                if (texture) {
-                    result.textures[myType] = texture;
+                try {
+                    auto texture = std::make_shared<Texture2D>(fullPath.string());
+                    result.textures[myType] = std::move(texture);
                 }
-                else {
-                    Logger::GetLogger()->warn("Couldn't load texture: {}", fullPath);
+                catch (const std::exception& e) {
+                    Logger::GetLogger()->warn("Couldn't load texture '{}': {}", fullPath.string(), e.what());
                 }
             }
         }
     }
-
-    // Handle other texture types if needed
-    // ...
 
     return result;
 }
@@ -155,7 +130,7 @@ glm::vec3 Model::CalculateModelCenter() const {
     size_t totalVertices = 0;
 
     for (const auto& meshInfo : m_MeshesInfo) {
-        auto& mesh = meshInfo->mesh;
+        const auto& mesh = meshInfo.mesh;
         totalVertices += mesh->positions.size();
         for (const auto& position : mesh->positions) {
             center += position;
@@ -173,7 +148,7 @@ void Model::CenterModel() {
     glm::vec3 center = CalculateModelCenter();
 
     for (auto& meshInfo : m_MeshesInfo) {
-        auto& mesh = meshInfo->mesh;
+        auto& mesh = meshInfo.mesh;
         for (auto& position : mesh->positions) {
             position -= center;
         }
@@ -182,8 +157,7 @@ void Model::CenterModel() {
 
 std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLayout& layout) {
     if (meshIndex >= m_MeshesInfo.size()) {
-        Logger::GetLogger()->error("Invalid mesh index: {}", meshIndex);
-        return nullptr;
+        throw std::out_of_range("Invalid mesh index: " + std::to_string(meshIndex));
     }
 
     auto& cache = m_MeshBuffersCache[meshIndex];
@@ -192,7 +166,7 @@ std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLay
         return it->second;
     }
     else {
-        auto meshBuffer = std::make_shared<MeshBuffer>(*m_MeshesInfo[meshIndex]->mesh, layout);
+        auto meshBuffer = std::make_shared<MeshBuffer>(*m_MeshesInfo[meshIndex].mesh, layout);
         cache[layout] = meshBuffer;
         return meshBuffer;
     }
@@ -208,7 +182,7 @@ std::vector<std::shared_ptr<MeshBuffer>> Model::GetMeshBuffers(const MeshLayout&
             result[i] = it->second;
         }
         else {
-            auto meshBuffer = std::make_shared<MeshBuffer>(*m_MeshesInfo[i]->mesh, layout);
+            auto meshBuffer = std::make_shared<MeshBuffer>(*m_MeshesInfo[i].mesh, layout);
             cache[layout] = meshBuffer;
             result[i] = meshBuffer;
         }
@@ -217,3 +191,13 @@ std::vector<std::shared_ptr<MeshBuffer>> Model::GetMeshBuffers(const MeshLayout&
     return result;
 }
 
+std::shared_ptr<Texture2D> Model::GetTexture(size_t meshIndex, TextureType type) const {
+    if (meshIndex >= m_MeshesInfo.size()) {
+        throw std::out_of_range("Invalid mesh index: " + std::to_string(meshIndex));
+    }
+    auto it = m_MeshesInfo[meshIndex].meshTextures.textures.find(type);
+    if (it != m_MeshesInfo[meshIndex].meshTextures.textures.end()) {
+        return it->second;
+    }
+    return nullptr;
+}

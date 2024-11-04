@@ -12,8 +12,12 @@ namespace test {
 
 	class MovingCube : public RenderObject {
 	public:
-		MovingCube(std::shared_ptr<MeshBuffer> meshBuffer, MaterialName materialName, ShaderName shaderName, std::shared_ptr<Transform> transform)
-			: RenderObject(std::move(meshBuffer), materialName, shaderName, std::move(transform))
+		MovingCube(const std::shared_ptr<Mesh>& mesh,
+			const MeshLayout& meshLayout,
+			const std::string& materialName,
+			const std::string& shaderName,
+			const std::shared_ptr<Transform>& transform)
+			: RenderObject(mesh, meshLayout, materialName, shaderName, transform)
 		{}
 
 		void Update(float deltaTime) override {

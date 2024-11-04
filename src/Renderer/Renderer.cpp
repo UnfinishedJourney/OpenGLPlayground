@@ -23,10 +23,12 @@ Renderer::Renderer()
         // Add more lights here if needed
     };
 
-    // Calculate buffer size: size of numLights + size of lightsData
-    //GLsizeiptr bufferSize = sizeof(uint32_t) + m_LightsData.size() * sizeof(LightData);
-    GLsizeiptr bufferSize = m_LightsData.size() * sizeof(LightData);
+    //Calculate buffer size: size of numLights + size of lightsData
+    GLsizeiptr bufferSize = sizeof(glm::vec4) + m_LightsData.size() * sizeof(LightData); // need to understand why std430 layout becomes std140, so uint needs to use 16 bytes, maybe because perframedata uses 140
+    //GLsizeiptr bufferSize = m_LightsData.size() * sizeof(LightData);
 
+    auto a = sizeof(uint32_t);
+    auto b = sizeof(glm::vec4);
 
     // Create and bind the SSBO for lights
     glGenBuffers(1, &m_LightsSSBO);
@@ -35,10 +37,10 @@ Renderer::Renderer()
 
     // Initialize numLights and lightsData
     uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
-    //glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(uint32_t), &numLights);
-    //glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(uint32_t), m_LightsData.size() * sizeof(LightData), m_LightsData.data());
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(glm::vec4), &numLights);
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4), m_LightsData.size() * sizeof(LightData), m_LightsData.data());
 
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_LightsData.size() * sizeof(LightData), m_LightsData.data());
+    //glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_LightsData.size() * sizeof(LightData), m_LightsData.data());
 
     // Bind the SSBO to binding point 1 (ensure your shaders use the same binding point)
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_LightsSSBO);
@@ -55,18 +57,7 @@ Renderer::~Renderer()
 
 void Renderer::UpdateLightsData(const std::vector<LightData>& lights) const
 {
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_LightsSSBO);
-
-    // Update the number of lights
-    uint32_t numLights = static_cast<uint32_t>(lights.size());
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(uint32_t), &numLights);
-
-    // Update the lights data
-    GLsizeiptr dataOffset = sizeof(uint32_t); // Assuming the first 4 bytes store numLights
-    GLsizeiptr dataSize = lights.size() * sizeof(LightData);
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, dataOffset, dataSize, lights.data());
-
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    //will add when will start changing scene lights
 }
 
 void Renderer::UpdateFrameDataUBO() const
@@ -79,41 +70,28 @@ void Renderer::UpdateFrameDataUBO() const
     m_FrameDataUBO->SetData(frameData);
 }
 
-void Renderer::BindShaderAndMaterial(const std::shared_ptr<RenderObject>& renderObject) const
+void Renderer::BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const
 {
-    if (!renderObject) {
-        Logger::GetLogger()->error("RenderObject is nullptr.");
-        return;
-    }
-
-    m_ResourceManager->BindShader(renderObject->m_ShaderName);
-    m_ResourceManager->BindMaterial(renderObject->m_MaterialName);
-
-    //if (!m_ResourceManager->BindShader(renderObject->m_ShaderName)) {
-    //    Logger::GetLogger()->error("Failed to bind shader '{}'.", renderObject->m_ShaderName);
-    //}
-
-    //if (!m_ResourceManager->BindMaterial(renderObject->m_MaterialName)) {
-    //    Logger::GetLogger()->error("Failed to bind material '{}'.", renderObject->m_MaterialName);
-    //}
+    m_ResourceManager->BindShader(shaderName);
+    m_ResourceManager->BindMaterial(materialName);
 }
 
 void Renderer::Render(const std::shared_ptr<RenderObject>& renderObject) const
 {
-    UpdateFrameDataUBO();
-    //UpdateLightsData(m_LightsData);
-    BindShaderAndMaterial(renderObject);
+    //UpdateFrameDataUBO();
+    ////UpdateLightsData(m_LightsData);
+    //BindShaderAndMaterial(renderObject->GetShaderName(), renderObject->GetMaterialName());
 
-    glm::mat4 modelMatrix = renderObject->m_Transform->GetModelMatrix();
-    glm::mat3 normalMatrix = renderObject->m_Transform->GetNormalMatrix();
-    glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * modelMatrix;
+    //glm::mat4 modelMatrix = renderObject->GetTransform()->GetModelMatrix();
+    //glm::mat3 normalMatrix = renderObject->GetTransform()->GetNormalMatrix();
+    //glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * modelMatrix;
 
-    m_ResourceManager->SetUniform("u_MVP", mvp);
-    m_ResourceManager->SetUniform("u_Model", modelMatrix);
-    m_ResourceManager->SetUniform("u_NormalMatrix", normalMatrix);
+    //m_ResourceManager->SetUniform("u_MVP", mvp);
+    //m_ResourceManager->SetUniform("u_Model", modelMatrix);
+    //m_ResourceManager->SetUniform("u_NormalMatrix", normalMatrix);
 
-    renderObject->m_MeshBuffer->Bind();
-    GLCall(glDrawElements(GL_TRIANGLES, renderObject->m_MeshBuffer->GetVertexCount(), GL_UNSIGNED_INT, nullptr));
+    //renderObject->GetMeshBuffer()->Bind();
+    //GLCall(glDrawElements(GL_TRIANGLES, renderObject->GetMeshBuffer()->GetIndexCount(), GL_UNSIGNED_INT, nullptr));
 }
 
 void Renderer::RenderSkybox(const std::shared_ptr<MeshBuffer>& meshBuffer, const std::string& textureName, const std::string& shaderName) const
@@ -135,10 +113,38 @@ void Renderer::RenderSkybox(const std::shared_ptr<MeshBuffer>& meshBuffer, const
     m_ResourceManager->SetUniform("u_MVP", mvp);
 
     meshBuffer->Bind();
-    GLCall(glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(meshBuffer->GetVertexCount()), GL_UNSIGNED_INT, nullptr));
+    GLCall(glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(meshBuffer->GetIndexCount()), GL_UNSIGNED_INT, nullptr));
 
     glDepthFunc(GL_LESS);
     glDepthMask(GL_TRUE);
+}
+
+void Renderer::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)
+{
+    m_BatchManager.AddRenderObject(renderObject);
+}
+
+void Renderer::RenderScene()
+{
+    UpdateFrameDataUBO();
+    m_BatchManager.BuildBatches();
+
+    const auto& batches = m_BatchManager.GetBatches();
+    for (const auto& batch : batches) {
+        // Bind shader and material
+        BindShaderAndMaterial(batch->GetShaderName(), batch->GetMaterialName());
+
+        glm::mat4 modelMatrix = batch->GetTransform()->GetModelMatrix();
+        glm::mat3 normalMatrix = batch->GetTransform()->GetNormalMatrix();
+
+        glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * modelMatrix;
+        auto t = batch->GetTransform();
+        m_ResourceManager->SetUniform("u_MVP", mvp);
+        m_ResourceManager->SetUniform("u_Model", modelMatrix);
+        m_ResourceManager->SetUniform("u_NormalMatrix", normalMatrix);
+        // Render the batch
+        batch->Render();
+    }
 }
 
 void Renderer::Clear() const

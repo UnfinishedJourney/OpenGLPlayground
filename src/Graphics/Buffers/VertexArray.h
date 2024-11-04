@@ -19,6 +19,11 @@ public:
     void Bind() const;
     void Unbind() const;
 
+    [[nodiscard]] GLuint GetRendererID() const
+    {
+        return m_RendererID;
+    }
+
 private:
     GLuint m_RendererID = 0;
 };

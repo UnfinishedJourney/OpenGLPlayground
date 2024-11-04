@@ -27,7 +27,7 @@ MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout) {
     }
 
     // Interleave vertex data according to the layout
-    std::vector<GLfloat> vertexData;
+    std::vector<GLfloat> vertexData; // need to reserve size
     size_t vertexCount = mesh.positions.size();
 
     for (size_t i = 0; i < vertexCount; ++i) {
