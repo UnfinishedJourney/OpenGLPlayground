@@ -71,35 +71,36 @@ MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout) {
     GLuint offset = 0;
 
     if (layout.hasPositions) {
-        vbLayout.Push<GLfloat>(3);
+        vbLayout.Push<GLfloat>(3, 0);
         Logger::GetLogger()->debug("Added position attribute to layout.");
         offset += 3 * sizeof(GLfloat);
         ++attributeIndex;
     }
 
     if (layout.hasNormals) {
-        vbLayout.Push<GLfloat>(3);
+        vbLayout.Push<GLfloat>(3, 1);
         Logger::GetLogger()->debug("Added normal attribute to layout.");
         offset += 3 * sizeof(GLfloat);
         ++attributeIndex;
     }
 
     if (layout.hasTangents) {
-        vbLayout.Push<GLfloat>(3);
+        vbLayout.Push<GLfloat>(3, 2);
         Logger::GetLogger()->debug("Added tangent attribute to layout.");
         offset += 3 * sizeof(GLfloat);
         ++attributeIndex;
     }
 
     if (layout.hasBitangents) {
-        vbLayout.Push<GLfloat>(3);
+        vbLayout.Push<GLfloat>(3, 3);
         Logger::GetLogger()->debug("Added bitangent attribute to layout.");
         offset += 3 * sizeof(GLfloat);
         ++attributeIndex;
     }
 
+    int uvi = 0;
     for (const auto& texType [[maybe_unused]] : layout.textureTypes) {
-        vbLayout.Push<GLfloat>(2);
+        vbLayout.Push<GLfloat>(2, 3 + ++uvi);
         Logger::GetLogger()->debug("Added UV attribute to layout.");
         offset += 2 * sizeof(GLfloat);
         ++attributeIndex;
@@ -118,10 +119,8 @@ MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout) {
 
 void MeshBuffer::Bind() const {
     m_VAO->Bind();
-    m_IB->Bind();
 }
 
 void MeshBuffer::Unbind() const {
     m_VAO->Unbind();
-    m_IB->Unbind();
 }

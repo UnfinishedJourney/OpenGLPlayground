@@ -14,9 +14,8 @@ public:
     IndexBuffer(IndexBuffer&& other) noexcept;
     IndexBuffer& operator=(IndexBuffer&& other) noexcept;
 
-    void Bind() const;
-    void Unbind() const;
-    [[nodiscard]] GLsizei GetCount() const;
+    [[nodiscard]] GLuint GetRendererID() const { return m_RendererID; }
+    [[nodiscard]] GLsizei GetCount() const { return m_Count; }
 
 private:
     GLuint m_RendererID = 0;

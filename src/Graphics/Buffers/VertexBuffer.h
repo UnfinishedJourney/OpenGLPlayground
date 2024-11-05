@@ -16,6 +16,9 @@ public:
 
     void Bind() const;
     void Unbind() const;
+
+    void UpdateData(std::span<const std::byte> data, GLintptr offset = 0);
+
     [[nodiscard]] GLuint GetRendererID() const { return m_RendererID; }
 
 private:

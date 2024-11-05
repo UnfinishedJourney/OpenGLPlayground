@@ -32,13 +32,13 @@ namespace test {
 
         MeshLayout pigMeshLayout = {
         true,
-        false,
+        true,
         false,
         false,
         {}
         };
 
-        auto meshComponents = m_Renderer->m_ResourceManager->GetModelMeshBuffers("pig", pigMeshLayout);
+        auto meshInfos = m_Renderer->m_ResourceManager->GetModelMeshInfos("pig");
         std::shared_ptr<Shader> shader = m_Renderer->m_ResourceManager->GetShader("simplelights");
 
         std::shared_ptr<Material> material = std::make_shared<Material>();
@@ -50,10 +50,22 @@ namespace test {
 
         m_Renderer->m_ResourceManager->AddMaterial("pigMat", material);
 
-        for (auto meshComponent : meshComponents)
+        for (auto&[meshTextures, mesh] : meshInfos)
         {
-            m_Pig.push_back(std::make_unique<LightObject>(meshComponent, "pigMat"_mt, "simplelights"_sh, transform));
+            auto ro = std::make_shared<LightObject>(mesh, pigMeshLayout, "pigMat", "simplelights", transform);
+            m_Renderer->AddRenderObject(ro);
         }
+
+        //for (auto& meshComponent : meshComponents)
+        //{
+        //    std::shared_ptr<Transform> transform = std::make_shared<Transform>();
+        //    auto lightObject = std::make_shared<LightObject>(meshComponent, "pigMat", "simplelights", transform);
+        //    m_Pig.push_back(lightObject);
+
+        //    // Add RenderObject to Renderer for batching
+        //    m_Renderer->AddRenderObject(lightObject);
+        //}
+
         GLCall(glEnable(GL_BLEND));
         GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
@@ -66,10 +78,10 @@ namespace test {
 
     void TestLights::OnRender()
     {
-        GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
-        GLCall(glClear(GL_COLOR_BUFFER_BIT));
-        for (auto pigPart: m_Pig)
-            m_Renderer->Render(pigPart);
+        m_Renderer->Clear();
+        m_Renderer->RenderScene();
+        //for (auto pigPart: m_Pig)
+            //m_Renderer->Render(pigPart);
     }
 
     void TestLights::OnImGuiRender()
