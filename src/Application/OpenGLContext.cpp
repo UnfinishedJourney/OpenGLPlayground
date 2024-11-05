@@ -1,121 +1,144 @@
 #include "Application/OpenGLContext.h"
-#include <iostream>
-
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
 #include "Utilities/Logger.h"
+#include <glad/glad.h>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
-void GLAPIENTRY OpenGLMessageCallback(GLenum source, GLenum type, GLuint id,
+void GLAPIENTRY GLContext::OpenGLMessageCallback(GLenum source, GLenum type, GLuint id,
     GLenum severity, GLsizei length,
     const GLchar* message, const void* userParam)
 {
-    if (severity == GL_DEBUG_SEVERITY_HIGH) 
-    {
-        Logger::GetLogger()->error("[OpenGL Error] (ID: {}) {}", id, message);
+    auto logger = Logger::GetLogger();
+
+    std::string sourceStr;
+    switch (source) {
+    case GL_DEBUG_SOURCE_API:             sourceStr = "API"; break;
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   sourceStr = "Window System"; break;
+    case GL_DEBUG_SOURCE_SHADER_COMPILER: sourceStr = "Shader Compiler"; break;
+    case GL_DEBUG_SOURCE_THIRD_PARTY:     sourceStr = "Third Party"; break;
+    case GL_DEBUG_SOURCE_APPLICATION:     sourceStr = "Application"; break;
+    case GL_DEBUG_SOURCE_OTHER:           sourceStr = "Other"; break;
     }
-    else if (severity == GL_DEBUG_SEVERITY_MEDIUM) 
-    {
-        Logger::GetLogger()->warn("[OpenGL Warning] (ID: {}) {}", id, message);
+
+    std::string typeStr;
+    switch (type) {
+    case GL_DEBUG_TYPE_ERROR:               typeStr = "Error"; break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: typeStr = "Deprecated Behavior"; break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  typeStr = "Undefined Behavior"; break;
+    case GL_DEBUG_TYPE_PORTABILITY:         typeStr = "Portability"; break;
+    case GL_DEBUG_TYPE_PERFORMANCE:         typeStr = "Performance"; break;
+    case GL_DEBUG_TYPE_MARKER:              typeStr = "Marker"; break;
+    case GL_DEBUG_TYPE_PUSH_GROUP:          typeStr = "Push Group"; break;
+    case GL_DEBUG_TYPE_POP_GROUP:           typeStr = "Pop Group"; break;
+    case GL_DEBUG_TYPE_OTHER:               typeStr = "Other"; break;
     }
-    else 
-    {
-        Logger::GetLogger()->info("[OpenGL Info] (ID: {}) {}", id, message);
+
+    std::string severityStr;
+    switch (severity) {
+    case GL_DEBUG_SEVERITY_HIGH:         severityStr = "High"; break;
+    case GL_DEBUG_SEVERITY_MEDIUM:       severityStr = "Medium"; break;
+    case GL_DEBUG_SEVERITY_LOW:          severityStr = "Low"; break;
+    case GL_DEBUG_SEVERITY_NOTIFICATION: severityStr = "Notification"; break;
     }
+
+    logger->error("OpenGL [{} - {} - {}] (ID: {}): {}", sourceStr, typeStr, severityStr, id, message);
 }
 
-void InitOpenGLDebug() {
+void GLContext::InitOpenGLDebug() {
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(OpenGLMessageCallback, nullptr);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE,
-        0, nullptr, GL_FALSE);
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH,
-        0, nullptr, GL_TRUE);
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM,
-        0, nullptr, GL_TRUE);
+        0, nullptr, GL_TRUE); // Enable all messages
 }
 
 GLFWwindow* GLContext::InitOpenGL(int width, int height, const std::string& title,
-    GLFWkeyfun keyfun, GLFWscrollfun scrollfun, GLFWcursorposfun cursorposfun,
+    GLFWkeyfun keyfun,
+    GLFWscrollfun scrollfun,
+    GLFWcursorposfun cursorposfun,
     GLFWwindowsizefun windowsizefun)
 {
-    Logger::GetLogger()->info("Initializing GLFW...");
+    auto logger = Logger::GetLogger();
+    logger->info("Initializing GLFW...");
 
-    if (!glfwInit()) 
-    {
-        Logger::GetLogger()->error("Failed to initialize GLFW.");
-        exit(EXIT_FAILURE);
+    if (!glfwInit()) {
+        logger->error("Failed to initialize GLFW.");
+        return nullptr;
     }
-    Logger::GetLogger()->info("GLFW initialized successfully.");
+
+    logger->info("GLFW initialized successfully.");
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    Logger::GetLogger()->debug("Set GLFW window hints: OpenGL 4.5 Core Profile.");
+
+    // Enable OpenGL Debug Context
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
     GLFWwindow* window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-    if (!window) 
-    {
-        Logger::GetLogger()->error("Failed to create GLFW window.");
+    if (!window) {
+        logger->error("Failed to create GLFW window.");
         glfwTerminate();
-        exit(EXIT_FAILURE);
+        return nullptr;
     }
-    Logger::GetLogger()->info("GLFW window created successfully. Size: {}x{}, Title: '{}'.", width, height, title);
+
+    logger->info("GLFW window created successfully. Size: {}x{}, Title: '{}'.", width, height, title);
 
     glfwMakeContextCurrent(window);
-    Logger::GetLogger()->debug("Made the created GLFW window the current context.");
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) 
-    {
-        Logger::GetLogger()->error("Failed to initialize GLAD.");
-        exit(EXIT_FAILURE);
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        logger->error("Failed to initialize GLAD.");
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        return nullptr;
     }
-    Logger::GetLogger()->info("GLAD initialized successfully.");
+
+    logger->info("GLAD initialized successfully.");
 
     glViewport(0, 0, width, height);
-    Logger::GetLogger()->debug("Set viewport to (0, 0, {}, {}).", width, height);
 
-    glfwSetKeyCallback(window, keyfun);
-    glfwSetScrollCallback(window, scrollfun);
-    glfwSetCursorPosCallback(window, cursorposfun);
-    glfwSetWindowSizeCallback(window, windowsizefun);
-    Logger::GetLogger()->debug("Set GLFW callbacks: Key, Scroll, CursorPos, WindowSize.");
+    // Set callbacks if provided
+    if (keyfun) glfwSetKeyCallback(window, keyfun);
+    if (scrollfun) glfwSetScrollCallback(window, scrollfun);
+    if (cursorposfun) glfwSetCursorPosCallback(window, cursorposfun);
+    if (windowsizefun) glfwSetWindowSizeCallback(window, windowsizefun);
 
-    glfwSwapInterval(1);
-    Logger::GetLogger()->debug("Enabled VSync (Swap Interval 1).");
+    glfwSwapInterval(1); // Enable VSync
 
     glEnable(GL_DEPTH_TEST);
-    Logger::GetLogger()->debug("Enabled GL_DEPTH_TEST.");
 
-    Logger::GetLogger()->info("Initializing ImGui...");
+    logger->info("Initializing ImGui...");
+    IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    const char* glsl_version = "#version 330";
+    const char* glsl_version = "#version 450";
     ImGui_ImplOpenGL3_Init(glsl_version);
     ImGui::StyleColorsDark();
-    Logger::GetLogger()->info("ImGui initialized successfully.");
+    logger->info("ImGui initialized successfully.");
 
+    // Initialize OpenGL Debugging
     InitOpenGLDebug();
-    Logger::GetLogger()->info("OpenGL Debugger initialized.");
+    logger->info("OpenGL Debugging initialized.");
 
-    Logger::GetLogger()->info("OpenGL context initialized and ready for use.");
+    logger->info("OpenGL context initialized and ready for use.");
 
     return window;
 }
 
 void GLContext::Cleanup(GLFWwindow* window)
 {
-    Logger::GetLogger()->info("Starting cleanup of OpenGL context.");
+    auto logger = Logger::GetLogger();
+    logger->info("Starting cleanup of OpenGL context.");
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-    Logger::GetLogger()->debug("ImGui context shutdown successfully.");
+    logger->debug("ImGui context shutdown successfully.");
 
     glfwDestroyWindow(window);
-    Logger::GetLogger()->debug("Destroyed GLFW window.");
+    logger->debug("Destroyed GLFW window.");
 
     glfwTerminate();
-    Logger::GetLogger()->info("GLFW terminated. OpenGL context cleanup completed.");
+    logger->info("GLFW terminated. OpenGL context cleanup completed.");
 }

@@ -7,14 +7,13 @@ public:
     static int s_Width;
     static int s_Height;
 
-    static void setResolution(int w, int h) {
-        s_Width = w;
-        s_Height = h;
+    static void SetResolution(int width, int height) {
+        s_Width = width;
+        s_Height = height;
     }
 };
 
-struct FrameData
-{
+struct FrameData {
     static glm::mat4 s_View;
     static glm::mat4 s_Projection;
     static glm::vec3 s_CameraPos;

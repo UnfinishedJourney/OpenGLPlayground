@@ -44,5 +44,5 @@ void main()
     
     // Set the fragment color
     color = vec4(0.0, 1.0, 0.0, 1.0);
-    color.xyz = lightsData[1].color.xyz;
+    color.xyz = lightsData[0].color.xyz;
 }

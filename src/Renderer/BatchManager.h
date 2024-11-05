@@ -13,6 +13,7 @@ public:
     const std::vector<std::shared_ptr<Batch>>& GetBatches() const;
 
 private:
+    bool b_wasBuilt = true; //change that logic later
     std::vector<std::shared_ptr<RenderObject>> m_RenderObjects;
 
     std::vector<std::shared_ptr<Batch>> m_StaticBatches;

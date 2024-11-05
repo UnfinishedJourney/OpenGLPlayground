@@ -3,10 +3,14 @@
 void BatchManager::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)
 {
     m_RenderObjects.push_back(renderObject);
+    b_wasBuilt = false;
 }
 
 void BatchManager::BuildBatches()
 {
+    if (b_wasBuilt == true)
+        return;
+
     // Clear existing batches
     m_StaticBatches.clear();
     m_DynamicBatches.clear();
@@ -23,6 +27,7 @@ void BatchManager::BuildBatches()
     m_AllBatches.reserve(m_StaticBatches.size() + m_DynamicBatches.size());
     m_AllBatches.insert(m_AllBatches.end(), m_StaticBatches.begin(), m_StaticBatches.end());
     m_AllBatches.insert(m_AllBatches.end(), m_DynamicBatches.begin(), m_DynamicBatches.end());
+    b_wasBuilt = true;
 }
 
 std::vector<std::shared_ptr<Batch>> BatchManager::BuildBatchesFromRenderObjects(
