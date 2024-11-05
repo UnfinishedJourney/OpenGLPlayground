@@ -10,9 +10,14 @@ class BatchManager {
 public:
     void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
     void BuildBatches();
-    const std::vector<std::unique_ptr<Batch>>& GetBatches() const;
+    const std::vector<std::shared_ptr<Batch>>& GetBatches() const;
 
 private:
     std::vector<std::shared_ptr<RenderObject>> m_RenderObjects;
-    std::vector<std::unique_ptr<Batch>> m_Batches;
+
+    std::vector<std::shared_ptr<Batch>> m_StaticBatches;
+    std::vector<std::shared_ptr<Batch>> m_DynamicBatches;
+    std::vector<std::shared_ptr<Batch>> m_AllBatches;
+
+    std::vector<std::shared_ptr<Batch>> BuildBatchesFromRenderObjects(const std::vector<std::shared_ptr<RenderObject>>& renderObjects);
 };

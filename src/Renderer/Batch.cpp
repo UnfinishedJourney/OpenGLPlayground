@@ -5,9 +5,9 @@
 Batch::Batch(const std::string& shaderName, const std::string& materialName, const MeshLayout& meshLayout)
     : m_ShaderName(shaderName),
     m_MaterialName(materialName),
-    m_MeshLayout(meshLayout)
+    m_MeshLayout(meshLayout),
+    m_VAO(std::make_unique<VertexArray>())
 {
-    m_VAO = std::make_unique<VertexArray>();
 }
 
 Batch::~Batch()
@@ -18,6 +18,15 @@ Batch::~Batch()
 void Batch::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)
 {
     m_RenderObjects.push_back(renderObject);
+    m_IsDirty = true;
+}
+
+void Batch::Update()
+{
+    if (!m_IsDirty) return;
+
+    BuildBatch();
+    m_IsDirty = false;
 }
 
 void Batch::BuildBatch()
@@ -59,7 +68,7 @@ void Batch::BuildBatch()
         totalIndexCount += ro->GetMesh()->GetIndexCount();
     }
 
-    combinedVertexData.reserve(totalVertexCount * attributeIndex);
+    combinedVertexData.reserve(totalVertexCount * (vertexBufferLayout.GetStride() / sizeof(float)));
     combinedIndices.reserve(totalIndexCount);
 
     for (const auto& ro : m_RenderObjects) {
@@ -112,13 +121,26 @@ void Batch::BuildBatch()
 
     m_IndexCount = static_cast<GLsizei>(combinedIndices.size());
 
-    // Create buffers
+    // Create or update VertexBuffer
     std::span<const std::byte> vertexSpan{
         reinterpret_cast<const std::byte*>(combinedVertexData.data()),
         combinedVertexData.size() * sizeof(float)
     };
-    m_VBO = std::make_unique<VertexBuffer>(vertexSpan);
-    m_IBO = std::make_unique<IndexBuffer>(std::span<const GLuint>(combinedIndices.data(), combinedIndices.size()));
+    if (!m_VBO) {
+        m_VBO = std::make_unique<VertexBuffer>(vertexSpan, GL_DYNAMIC_DRAW);
+    }
+    else {
+        m_VBO->UpdateData(vertexSpan);
+    }
+
+    // Create or update IndexBuffer
+    std::span<const GLuint> indexSpan(combinedIndices.data(), combinedIndices.size());
+    if (!m_IBO) {
+        m_IBO = std::make_unique<IndexBuffer>(indexSpan, GL_DYNAMIC_DRAW);
+    }
+    else {
+        m_IBO->UpdateData(indexSpan);
+    }
 
     // Set up VertexArray
     m_VAO->Bind();
@@ -131,4 +153,5 @@ void Batch::Render() const
 {
     m_VAO->Bind();
     GLCall(glDrawElements(GL_TRIANGLES, m_IndexCount, GL_UNSIGNED_INT, nullptr));
+    m_VAO->Unbind();
 }

@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <string>
-
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Meshes/MeshLayout.h"
 #include "Scene/Transform.h"
@@ -26,10 +25,13 @@ public:
 
     virtual void Update(float deltaTime);
 
+    bool IsStatic() const { return m_IsStatic; }
+
 protected:
     std::string m_ShaderName;
     std::string m_MaterialName;
     std::shared_ptr<Mesh> m_Mesh;
     MeshLayout m_MeshLayout;
     std::shared_ptr<Transform> m_Transform;
+    bool m_IsStatic = true; // Set to false if the object is dynamic
 };

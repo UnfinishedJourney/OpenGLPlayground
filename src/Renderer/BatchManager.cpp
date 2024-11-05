@@ -7,12 +7,33 @@ void BatchManager::AddRenderObject(const std::shared_ptr<RenderObject>& renderOb
 
 void BatchManager::BuildBatches()
 {
-    m_Batches.clear();
+    // Clear existing batches
+    m_StaticBatches.clear();
+    m_DynamicBatches.clear();
+
+    if (m_RenderObjects.empty()) {
+        return;
+    }
+
+    // For now, treat all render objects as static
+    m_StaticBatches = BuildBatchesFromRenderObjects(m_RenderObjects);
+
+    // Combine all batches into m_AllBatches
+    m_AllBatches.clear();
+    m_AllBatches.reserve(m_StaticBatches.size() + m_DynamicBatches.size());
+    m_AllBatches.insert(m_AllBatches.end(), m_StaticBatches.begin(), m_StaticBatches.end());
+    m_AllBatches.insert(m_AllBatches.end(), m_DynamicBatches.begin(), m_DynamicBatches.end());
+}
+
+std::vector<std::shared_ptr<Batch>> BatchManager::BuildBatchesFromRenderObjects(
+    const std::vector<std::shared_ptr<RenderObject>>& renderObjects)
+{
+    std::vector<std::shared_ptr<Batch>> batches;
 
     // Group RenderObjects by shader, material, and MeshLayout
     std::unordered_map<std::string, std::unordered_map<std::string, std::unordered_map<MeshLayout, std::vector<std::shared_ptr<RenderObject>>>>> batchMap;
 
-    for (const auto& ro : m_RenderObjects) {
+    for (const auto& ro : renderObjects) {
         const auto& shaderName = ro->GetShaderName();
         const auto& materialName = ro->GetMaterialName();
         const auto& meshLayout = ro->GetMeshLayout();
@@ -27,22 +48,24 @@ void BatchManager::BuildBatches()
             const auto& materialName = materialPair.first;
             for (const auto& layoutPair : materialPair.second) {
                 const auto& meshLayout = layoutPair.first;
-                const auto& renderObjects = layoutPair.second;
+                const auto& ros = layoutPair.second;
 
-                auto batch = std::make_unique<Batch>(shaderName, materialName, meshLayout);
+                auto batch = std::make_shared<Batch>(shaderName, materialName, meshLayout);
 
-                for (const auto& ro : renderObjects) {
+                for (const auto& ro : ros) {
                     batch->AddRenderObject(ro);
                 }
 
-                batch->BuildBatch();
-                m_Batches.push_back(std::move(batch));
+                batch->Update(); // Build or update the batch
+                batches.push_back(batch);
             }
         }
     }
+
+    return batches;
 }
 
-const std::vector<std::unique_ptr<Batch>>& BatchManager::GetBatches() const
+const std::vector<std::shared_ptr<Batch>>& BatchManager::GetBatches() const
 {
-    return m_Batches;
+    return m_AllBatches;
 }
