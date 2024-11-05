@@ -34,15 +34,12 @@ public:
 
 private:
     void UpdateFrameDataUBO() const;
-
     void BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const;
 
     std::unique_ptr<UniformBuffer> m_FrameDataUBO;
     GLuint m_LightsSSBO;
 
-    // Assuming you have a collection of lights
     std::vector<LightData> m_LightsData;
 
-    std::vector<std::unique_ptr<Batch>> m_Batches;
     BatchManager m_BatchManager;
 };

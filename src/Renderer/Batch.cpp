@@ -1,6 +1,5 @@
 ﻿#include "Renderer/Batch.h"
 #include "Utilities/Logger.h"
-#include "Utilities/Utility.h"
 #include <glad/glad.h>
 
 Batch::Batch(const std::string& shaderName, const std::string& materialName, const MeshLayout& meshLayout)
@@ -30,28 +29,38 @@ void Batch::BuildBatch()
 
     // Build VertexBufferLayout from MeshLayout
     VertexBufferLayout vertexBufferLayout;
+    GLuint attributeIndex = 0;
     if (m_MeshLayout.hasPositions) {
-        vertexBufferLayout.Push<float>(3, 0); // Positions
+        vertexBufferLayout.Push<float>(3, attributeIndex++); // Positions
     }
     if (m_MeshLayout.hasNormals) {
-        vertexBufferLayout.Push<float>(3, 1); // Normals
+        vertexBufferLayout.Push<float>(3, attributeIndex++); // Normals
     }
     if (m_MeshLayout.hasTangents) {
-        vertexBufferLayout.Push<float>(3, 2); // Tangents
+        vertexBufferLayout.Push<float>(3, attributeIndex++); // Tangents
     }
     if (m_MeshLayout.hasBitangents) {
-        vertexBufferLayout.Push<float>(3, 3); // Bitangents
+        vertexBufferLayout.Push<float>(3, attributeIndex++); // Bitangents
     }
-
-    int uvi = 0;
     for (const auto& texType : m_MeshLayout.textureTypes) {
-        vertexBufferLayout.Push<float>(2, 3 + ++uvi); // Texture Coordinates
+        vertexBufferLayout.Push<float>(2, attributeIndex++); // Texture Coordinates
     }
 
     // Combine vertex data
-    std::vector<std::byte> combinedVertexData;
+    std::vector<float> combinedVertexData;
     std::vector<GLuint> combinedIndices;
     GLuint vertexOffset = 0;
+    size_t totalVertexCount = 0;
+    size_t totalIndexCount = 0;
+
+    // Pre-calculate total sizes to reserve memory
+    for (const auto& ro : m_RenderObjects) {
+        totalVertexCount += ro->GetMesh()->GetVertexCount();
+        totalIndexCount += ro->GetMesh()->GetIndexCount();
+    }
+
+    combinedVertexData.reserve(totalVertexCount * attributeIndex);
+    combinedIndices.reserve(totalIndexCount);
 
     for (const auto& ro : m_RenderObjects) {
         const auto& mesh = ro->GetMesh();
@@ -59,28 +68,24 @@ void Batch::BuildBatch()
         // Interleave vertex data
         size_t vertexCount = mesh->positions.size();
         for (size_t i = 0; i < vertexCount; ++i) {
-            // Positions
-            if (m_MeshLayout.hasPositions && i < mesh->positions.size()) {
+            if (m_MeshLayout.hasPositions) {
                 const glm::vec3& position = mesh->positions[i];
-                combinedVertexData.insert(combinedVertexData.end(), reinterpret_cast<const std::byte*>(&position), reinterpret_cast<const std::byte*>(&position) + sizeof(glm::vec3));
+                combinedVertexData.insert(combinedVertexData.end(), { position.x, position.y, position.z });
             }
 
-            // Normals
-            if (m_MeshLayout.hasNormals && i < mesh->normals.size()) {
+            if (m_MeshLayout.hasNormals) {
                 const glm::vec3& normal = mesh->normals[i];
-                combinedVertexData.insert(combinedVertexData.end(), reinterpret_cast<const std::byte*>(&normal), reinterpret_cast<const std::byte*>(&normal) + sizeof(glm::vec3));
+                combinedVertexData.insert(combinedVertexData.end(), { normal.x, normal.y, normal.z });
             }
 
-            // Tangents
-            if (m_MeshLayout.hasTangents && i < mesh->tangents.size()) {
+            if (m_MeshLayout.hasTangents) {
                 const glm::vec3& tangent = mesh->tangents[i];
-                combinedVertexData.insert(combinedVertexData.end(), reinterpret_cast<const std::byte*>(&tangent), reinterpret_cast<const std::byte*>(&tangent) + sizeof(glm::vec3));
+                combinedVertexData.insert(combinedVertexData.end(), { tangent.x, tangent.y, tangent.z });
             }
 
-            // Bitangents
-            if (m_MeshLayout.hasBitangents && i < mesh->bitangents.size()) {
+            if (m_MeshLayout.hasBitangents) {
                 const glm::vec3& bitangent = mesh->bitangents[i];
-                combinedVertexData.insert(combinedVertexData.end(), reinterpret_cast<const std::byte*>(&bitangent), reinterpret_cast<const std::byte*>(&bitangent) + sizeof(glm::vec3));
+                combinedVertexData.insert(combinedVertexData.end(), { bitangent.x, bitangent.y, bitangent.z });
             }
 
             // Texture Coordinates
@@ -88,12 +93,11 @@ void Batch::BuildBatch()
                 const auto& uvMap = mesh->uvs.find(texType);
                 if (uvMap != mesh->uvs.end() && i < uvMap->second.size()) {
                     const glm::vec2& texCoord = uvMap->second[i];
-                    combinedVertexData.insert(combinedVertexData.end(), reinterpret_cast<const std::byte*>(&texCoord), reinterpret_cast<const std::byte*>(&texCoord) + sizeof(glm::vec2));
+                    combinedVertexData.insert(combinedVertexData.end(), { texCoord.x, texCoord.y });
                 }
                 else {
                     // Insert default texCoord if not available
-                    glm::vec2 defaultTexCoord(0.0f, 0.0f);
-                    combinedVertexData.insert(combinedVertexData.end(), reinterpret_cast<const std::byte*>(&defaultTexCoord), reinterpret_cast<const std::byte*>(&defaultTexCoord) + sizeof(glm::vec2));
+                    combinedVertexData.insert(combinedVertexData.end(), { 0.0f, 0.0f });
                 }
             }
         }
@@ -109,13 +113,17 @@ void Batch::BuildBatch()
     m_IndexCount = static_cast<GLsizei>(combinedIndices.size());
 
     // Create buffers
-    m_VBO = std::make_unique<VertexBuffer>(std::span<const std::byte>(combinedVertexData.data(), combinedVertexData.size()));
+    std::span<const std::byte> vertexSpan{
+        reinterpret_cast<const std::byte*>(combinedVertexData.data()),
+        combinedVertexData.size() * sizeof(float)
+    };
+    m_VBO = std::make_unique<VertexBuffer>(vertexSpan);
     m_IBO = std::make_unique<IndexBuffer>(std::span<const GLuint>(combinedIndices.data(), combinedIndices.size()));
 
     // Set up VertexArray
     m_VAO->Bind();
     m_VAO->AddBuffer(*m_VBO, vertexBufferLayout);
-    m_VAO->SetIndexBuffer(*m_IBO); // Bind the index buffer to the VAO
+    m_VAO->SetIndexBuffer(*m_IBO);
     m_VAO->Unbind();
 }
 
@@ -123,5 +131,4 @@ void Batch::Render() const
 {
     m_VAO->Bind();
     GLCall(glDrawElements(GL_TRIANGLES, m_IndexCount, GL_UNSIGNED_INT, nullptr));
-    //m_VAO->Unbind();
 }

@@ -1,34 +1,46 @@
 #include "Graphics/Buffers/MeshBuffer.h"
 #include "Utilities/Logger.h"
-#include <glm/gtc/type_ptr.hpp>
-#include <vector>
 #include <stdexcept>
 
 MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout) {
-    Logger::GetLogger()->info("Initializing MeshBuffer with provided mesh and layout.");
+    Logger::GetLogger()->info("Initializing MeshBuffer.");
 
+    CreateBuffers(mesh, layout);
+}
+
+void MeshBuffer::CreateBuffers(const Mesh& mesh, const MeshLayout& layout) {
     // Validate mesh data according to the layout
     if (layout.hasPositions && mesh.positions.empty()) {
-        throw std::runtime_error("MeshLayout requires positions, but mesh has none.");
+        throw std::runtime_error("Mesh requires positions, but none were found.");
     }
     if (layout.hasNormals && mesh.normals.empty()) {
-        throw std::runtime_error("MeshLayout requires normals, but mesh has none.");
+        throw std::runtime_error("Mesh requires normals, but none were found.");
     }
     if (layout.hasTangents && mesh.tangents.empty()) {
-        throw std::runtime_error("MeshLayout requires tangents, but mesh has none.");
+        throw std::runtime_error("Mesh requires tangents, but none were found.");
     }
     if (layout.hasBitangents && mesh.bitangents.empty()) {
-        throw std::runtime_error("MeshLayout requires bitangents, but mesh has none.");
+        throw std::runtime_error("Mesh requires bitangents, but none were found.");
     }
     for (const auto& texType : layout.textureTypes) {
-        if (mesh.uvs.find(texType) == mesh.uvs.end() || mesh.uvs.at(texType).size() != mesh.positions.size()) {
-            throw std::runtime_error("MeshLayout requires UVs for a texture type, but mesh UVs are missing or mismatched.");
+        if (!mesh.HasTextureCoords(texType)) {
+            throw std::runtime_error("Mesh requires texture coordinates, but none were found.");
         }
     }
 
-    // Interleave vertex data according to the layout
-    std::vector<GLfloat> vertexData; // need to reserve size
+    // Interleave vertex data
+    std::vector<float> vertexData;
     size_t vertexCount = mesh.positions.size();
+    size_t stride = 0;
+
+    // Calculate stride
+    if (layout.hasPositions) stride += 3;
+    if (layout.hasNormals) stride += 3;
+    if (layout.hasTangents) stride += 3;
+    if (layout.hasBitangents) stride += 3;
+    stride += layout.textureTypes.size() * 2;
+
+    vertexData.reserve(vertexCount * stride);
 
     for (size_t i = 0; i < vertexCount; ++i) {
         if (layout.hasPositions) {
@@ -57,64 +69,35 @@ MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout) {
         }
     }
 
-    Logger::GetLogger()->info("Creating VertexBuffer.");
+    m_VertexCount = vertexCount;
+
+    // Create VertexBuffer
     std::span<const std::byte> vertexSpan{
         reinterpret_cast<const std::byte*>(vertexData.data()),
-        vertexData.size() * sizeof(GLfloat)
+        vertexData.size() * sizeof(float)
     };
-
     m_VB = std::make_shared<VertexBuffer>(vertexSpan);
 
-    Logger::GetLogger()->info("Setting up VertexBufferLayout.");
+    // Create VertexBufferLayout
     VertexBufferLayout vbLayout;
     GLuint attributeIndex = 0;
-    GLuint offset = 0;
-
-    if (layout.hasPositions) {
-        vbLayout.Push<GLfloat>(3, 0);
-        Logger::GetLogger()->debug("Added position attribute to layout.");
-        offset += 3 * sizeof(GLfloat);
-        ++attributeIndex;
+    if (layout.hasPositions) vbLayout.Push<float>(3, attributeIndex++);
+    if (layout.hasNormals) vbLayout.Push<float>(3, attributeIndex++);
+    if (layout.hasTangents) vbLayout.Push<float>(3, attributeIndex++);
+    if (layout.hasBitangents) vbLayout.Push<float>(3, attributeIndex++);
+    for (const auto& texType : layout.textureTypes) {
+        vbLayout.Push<float>(2, attributeIndex++);
     }
+    m_Layout = vbLayout;
 
-    if (layout.hasNormals) {
-        vbLayout.Push<GLfloat>(3, 1);
-        Logger::GetLogger()->debug("Added normal attribute to layout.");
-        offset += 3 * sizeof(GLfloat);
-        ++attributeIndex;
-    }
-
-    if (layout.hasTangents) {
-        vbLayout.Push<GLfloat>(3, 2);
-        Logger::GetLogger()->debug("Added tangent attribute to layout.");
-        offset += 3 * sizeof(GLfloat);
-        ++attributeIndex;
-    }
-
-    if (layout.hasBitangents) {
-        vbLayout.Push<GLfloat>(3, 3);
-        Logger::GetLogger()->debug("Added bitangent attribute to layout.");
-        offset += 3 * sizeof(GLfloat);
-        ++attributeIndex;
-    }
-
-    int uvi = 0;
-    for (const auto& texType [[maybe_unused]] : layout.textureTypes) {
-        vbLayout.Push<GLfloat>(2, 3 + ++uvi);
-        Logger::GetLogger()->debug("Added UV attribute to layout.");
-        offset += 2 * sizeof(GLfloat);
-        ++attributeIndex;
-    }
-
-    Logger::GetLogger()->info("Creating VertexArray and adding VertexBuffer.");
+    // Create VertexArray and add buffers
     m_VAO = std::make_shared<VertexArray>();
-    m_VAO->AddBuffer(*m_VB.get(), vbLayout);
-
-    Logger::GetLogger()->info("Creating IndexBuffer.");
+    m_VAO->AddBuffer(*m_VB, vbLayout);
     m_IB = std::make_shared<IndexBuffer>(std::span<const GLuint>(mesh.indices));
     m_IndexCount = mesh.indices.size();
+    m_VAO->SetIndexBuffer(*m_IB);
 
-    Logger::GetLogger()->info("MeshBuffer initialization complete.");
+    Logger::GetLogger()->info("MeshBuffer initialized successfully.");
 }
 
 void MeshBuffer::Bind() const {

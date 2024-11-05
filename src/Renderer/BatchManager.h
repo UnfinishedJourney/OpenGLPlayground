@@ -4,6 +4,7 @@
 #include <memory>
 #include "Renderer/Batch.h"
 #include "Renderer/RenderObject.h"
+#include <unordered_map>
 
 class BatchManager {
 public:

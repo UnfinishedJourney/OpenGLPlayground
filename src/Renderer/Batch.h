@@ -3,7 +3,6 @@
 #include <vector>
 #include <memory>
 #include <string>
-
 #include "Renderer/RenderObject.h"
 #include "Graphics/Buffers/VertexArray.h"
 #include "Graphics/Buffers/VertexBuffer.h"
@@ -23,7 +22,6 @@ public:
     const std::string& GetMaterialName() const { return m_MaterialName; }
     const MeshLayout& GetMeshLayout() const { return m_MeshLayout; }
     const std::shared_ptr<Transform>& GetTransform() const { return m_RenderObjects[0]->GetTransform(); }
-
 
 private:
     std::string m_ShaderName;

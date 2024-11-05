@@ -1,19 +1,20 @@
 #include "Graphics/Meshes/Model.h"
 #include "Utilities/Logger.h"
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
 #include <stdexcept>
-#include <filesystem>
 
 Model::Model(const std::string& pathToModel, bool centerModel)
     : m_FilePath(pathToModel) {
-    ProcessModel();
-    m_MeshBuffersCache.resize(m_MeshesInfo.size());
+    LoadModel();
+    m_MeshBuffersCache.resize(m_MeshInfos.size());
 
     if (centerModel) {
         CenterModel();
     }
 }
 
-void Model::ProcessModel() {
+void Model::LoadModel() {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(m_FilePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace);
 
@@ -25,13 +26,13 @@ void Model::ProcessModel() {
 }
 
 void Model::ProcessNode(const aiScene* scene, const aiNode* node) {
-    // Process each mesh located at the current node
+    // Process each mesh at the current node
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         ProcessMesh(scene, mesh);
     }
 
-    // Recursively process each of the children nodes
+    // Recursively process each child node
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
         ProcessNode(scene, node->mChildren[i]);
     }
@@ -85,14 +86,14 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
     MeshTextures meshTextures;
     std::filesystem::path directory = std::filesystem::path(m_FilePath).parent_path();
     if (aiMesh->mMaterialIndex >= 0) {
-        aiMaterial* aiMat = scene->mMaterials[aiMesh->mMaterialIndex];
-        meshTextures = LoadTextures(scene, aiMat, directory.string());
+        aiMaterial* material = scene->mMaterials[aiMesh->mMaterialIndex];
+        meshTextures = LoadTextures(material, directory.string());
     }
 
-    m_MeshesInfo.push_back(MeshInfo{ std::move(meshTextures), std::move(myMesh) });
+    m_MeshInfos.push_back({ std::move(meshTextures), std::move(myMesh) });
 }
 
-MeshTextures Model::LoadTextures(const aiScene* scene, aiMaterial* aiMat, const std::string& directory) {
+MeshTextures Model::LoadTextures(aiMaterial* material, const std::string& directory) {
     MeshTextures result;
 
     std::unordered_map<aiTextureType, TextureType> aiToMyTextureType = {
@@ -104,10 +105,10 @@ MeshTextures Model::LoadTextures(const aiScene* scene, aiMaterial* aiMat, const 
     };
 
     for (const auto& [aiType, myType] : aiToMyTextureType) {
-        unsigned int textureCount = aiMat->GetTextureCount(aiType);
+        unsigned int textureCount = material->GetTextureCount(aiType);
         for (unsigned int i = 0; i < textureCount; ++i) {
             aiString str;
-            if (aiMat->GetTexture(aiType, i, &str) == AI_SUCCESS) {
+            if (material->GetTexture(aiType, i, &str) == AI_SUCCESS) {
                 std::string texturePath = str.C_Str();
                 std::filesystem::path fullPath = std::filesystem::path(directory) / texturePath;
 
@@ -129,7 +130,7 @@ glm::vec3 Model::CalculateModelCenter() const {
     glm::vec3 center(0.0f);
     size_t totalVertices = 0;
 
-    for (const auto& meshInfo : m_MeshesInfo) {
+    for (const auto& meshInfo : m_MeshInfos) {
         const auto& mesh = meshInfo.mesh;
         totalVertices += mesh->positions.size();
         for (const auto& position : mesh->positions) {
@@ -147,7 +148,7 @@ glm::vec3 Model::CalculateModelCenter() const {
 void Model::CenterModel() {
     glm::vec3 center = CalculateModelCenter();
 
-    for (auto& meshInfo : m_MeshesInfo) {
+    for (auto& meshInfo : m_MeshInfos) {
         auto& mesh = meshInfo.mesh;
         for (auto& position : mesh->positions) {
             position -= center;
@@ -156,7 +157,7 @@ void Model::CenterModel() {
 }
 
 std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLayout& layout) {
-    if (meshIndex >= m_MeshesInfo.size()) {
+    if (meshIndex >= m_MeshInfos.size()) {
         throw std::out_of_range("Invalid mesh index: " + std::to_string(meshIndex));
     }
 
@@ -166,23 +167,23 @@ std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLay
         return it->second;
     }
     else {
-        auto meshBuffer = std::make_shared<MeshBuffer>(*m_MeshesInfo[meshIndex].mesh, layout);
+        auto meshBuffer = std::make_shared<MeshBuffer>(*m_MeshInfos[meshIndex].mesh, layout);
         cache[layout] = meshBuffer;
         return meshBuffer;
     }
 }
 
 std::vector<std::shared_ptr<MeshBuffer>> Model::GetMeshBuffers(const MeshLayout& layout) {
-    std::vector<std::shared_ptr<MeshBuffer>> result(m_MeshesInfo.size());
+    std::vector<std::shared_ptr<MeshBuffer>> result(m_MeshInfos.size());
 
-    for (size_t i = 0; i < m_MeshesInfo.size(); i++) {
+    for (size_t i = 0; i < m_MeshInfos.size(); i++) {
         auto& cache = m_MeshBuffersCache[i];
         auto it = cache.find(layout);
         if (it != cache.end()) {
             result[i] = it->second;
         }
         else {
-            auto meshBuffer = std::make_shared<MeshBuffer>(*m_MeshesInfo[i].mesh, layout);
+            auto meshBuffer = std::make_shared<MeshBuffer>(*m_MeshInfos[i].mesh, layout);
             cache[layout] = meshBuffer;
             result[i] = meshBuffer;
         }
@@ -192,11 +193,11 @@ std::vector<std::shared_ptr<MeshBuffer>> Model::GetMeshBuffers(const MeshLayout&
 }
 
 std::shared_ptr<Texture2D> Model::GetTexture(size_t meshIndex, TextureType type) const {
-    if (meshIndex >= m_MeshesInfo.size()) {
+    if (meshIndex >= m_MeshInfos.size()) {
         throw std::out_of_range("Invalid mesh index: " + std::to_string(meshIndex));
     }
-    auto it = m_MeshesInfo[meshIndex].meshTextures.textures.find(type);
-    if (it != m_MeshesInfo[meshIndex].meshTextures.textures.end()) {
+    auto it = m_MeshInfos[meshIndex].meshTextures.textures.find(type);
+    if (it != m_MeshInfos[meshIndex].meshTextures.textures.end()) {
         return it->second;
     }
     return nullptr;

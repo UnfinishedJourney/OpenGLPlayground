@@ -8,8 +8,6 @@
 
 class UniformBuffer {
 public:
-    using UniformValue = std::variant<int, float, glm::vec3, glm::mat4>;
-
     UniformBuffer(GLsizeiptr size, GLuint bindingPoint, GLenum usage = GL_DYNAMIC_DRAW);
     ~UniformBuffer();
 
@@ -22,8 +20,12 @@ public:
     void Bind() const;
     void Unbind() const;
 
-    template <typename T>
-    void SetData(const T& data, GLintptr offset = 0) const;
+    // Updated SetData method
+    void SetData(const void* data, GLsizeiptr size, GLintptr offset = 0) const;
+
+    // New methods for buffer mapping
+    void* MapBuffer(GLenum access) const;
+    void UnmapBuffer() const;
 
     [[nodiscard]] GLuint GetRendererID() const { return m_RendererID; }
     [[nodiscard]] GLuint GetBindingPoint() const { return m_BindingPoint; }
@@ -35,13 +37,3 @@ private:
     GLenum m_Usage = GL_DYNAMIC_DRAW;
     GLsizeiptr m_Size = 0;
 };
-
-template <typename T>
-void UniformBuffer::SetData(const T& data, GLintptr offset) const {
-    if (offset + sizeof(T) > m_Size) {
-        Logger::GetLogger()->error("SetData out of range: offset ({}) + size ({}) > buffer size ({})", offset, sizeof(T), m_Size);
-        throw std::out_of_range("UniformBuffer::SetData out of range");
-    }
-    glNamedBufferSubData(m_RendererID, offset, sizeof(T), &data);
-    Logger::GetLogger()->debug("Updated UniformBuffer ID: {} at offset: {} with size: {}", m_RendererID, offset, sizeof(T));
-}

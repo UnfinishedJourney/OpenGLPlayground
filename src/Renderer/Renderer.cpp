@@ -63,11 +63,11 @@ void Renderer::UpdateLightsData(const std::vector<LightData>& lights) const
 void Renderer::UpdateFrameDataUBO() const
 {
     FrameCommonData frameData;
-    frameData.view = FrameData::s_View;  
-    frameData.proj = FrameData::s_Projection; 
+    frameData.view = FrameData::s_View;
+    frameData.proj = FrameData::s_Projection;
     frameData.cameraPos = glm::vec4(FrameData::s_CameraPos, 1.0f);
 
-    m_FrameDataUBO->SetData(frameData);
+    m_FrameDataUBO->SetData(&frameData, sizeof(FrameCommonData));
 }
 
 void Renderer::BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const
