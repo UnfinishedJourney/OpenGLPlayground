@@ -1,34 +1,51 @@
 #include "TestSkyBox.h"
-#include "Graphics/Meshes/Cube.h"
+#include "Renderer/Renderer.h"
+#include "Resources/ResourceManager.h"
 
-test::TestSkyBox::TestSkyBox(std::shared_ptr<Renderer>& renderer)
-    : Test(renderer)
-{
-    MeshLayout skyBoxMeshLayout = {
-        true,
-        false,
-        false,
-        false,
-        {}
-    };
+namespace test {
 
-    m_MeshComponent = m_Renderer->m_ResourceManager->GetMeshBuffer("cube", skyBoxMeshLayout);
-    std::shared_ptr<Shader> shader = m_Renderer->m_ResourceManager->GetShader("skyBox");
-    std::shared_ptr<CubeMapTexture> texture = m_Renderer->m_ResourceManager->GetCubeMapTexture("pisa");
+    TestSkyBox::TestSkyBox()
+        : m_SkyboxTextureName("pisa"), m_SkyboxShaderName("skyBox")
+    {
+    }
 
-}
+    void TestSkyBox::OnEnter()
+    {
+        auto& resourceManager = ResourceManager::GetInstance();
 
-void test::TestSkyBox::OnUpdate(float deltaTime)
-{
-}
+        MeshLayout skyBoxMeshLayout = {
+            true, // Positions
+            false, // Normals
+            false, // Texture Coordinates
+            false, // Tangents and Bitangents
+            {}
+        };
 
-void test::TestSkyBox::OnRender()
-{
-    GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
-    GLCall(glClear(GL_COLOR_BUFFER_BIT));
-    m_Renderer->RenderSkybox(m_MeshComponent, "pisa", "skyBox");
-}
+        m_SkyboxMeshBuffer = resourceManager.GetMeshBuffer("cube", skyBoxMeshLayout);
 
-void test::TestSkyBox::OnImGuiRender()
-{
+        // Ensure that the skybox texture and shader are loaded
+        resourceManager.GetCubeMapTexture(m_SkyboxTextureName);
+        resourceManager.GetShader(m_SkyboxShaderName);
+    }
+
+    void TestSkyBox::OnExit()
+    {
+        m_SkyboxMeshBuffer.reset();
+    }
+
+    void TestSkyBox::OnUpdate(float deltaTime)
+    {
+    }
+
+    void TestSkyBox::OnRender()
+    {
+        Renderer::GetInstance().Clear(0.3f, 0.4f, 0.55f, 1.0f);
+        Renderer::GetInstance().RenderSkybox(m_SkyboxMeshBuffer, m_SkyboxTextureName, m_SkyboxShaderName);
+    }
+
+    void TestSkyBox::OnImGuiRender()
+    {
+        // Add ImGui controls if needed
+    }
+
 }

@@ -41,8 +41,14 @@ namespace std {
 
 class ResourceManager {
 public:
-    ResourceManager();
-    ~ResourceManager() = default;
+    static ResourceManager& GetInstance() {
+        static ResourceManager instance;
+        return instance;
+    }
+
+    // Delete copy constructor and assignment operator to prevent copies
+    ResourceManager(const ResourceManager&) = delete;
+    ResourceManager& operator=(const ResourceManager&) = delete;
 
     // Texture management
     std::shared_ptr<Texture2D> GetTexture(std::string_view textureName);
@@ -80,6 +86,9 @@ public:
     void SetUniform(std::string_view uniformName, const UniformValue& value);
 
 private:
+    ResourceManager();
+    ~ResourceManager() = default;
+
     mutable std::string m_CurrentlyBoundCubeMap;
     std::unique_ptr<ShaderManager> m_ShaderManager;
     std::unique_ptr<MaterialManager> m_MaterialManager;
@@ -92,5 +101,4 @@ private:
 
     std::unordered_map<std::string, std::array<std::filesystem::path, 6>> m_TextureCubeMapPath;
     std::unordered_map<std::string, std::shared_ptr<CubeMapTexture>> m_TexturesCubeMap;
-
 };

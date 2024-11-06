@@ -6,12 +6,16 @@
 class Transform {
 public:
     Transform()
-        : m_Position(0.0f), m_Rotation(glm::quat(glm::vec3(0.0, 0.0, 0.0))), m_Scale(1.0f), m_ModelMatrix(1.0f), m_NeedsUpdating(true)
+        : m_Position(glm::vec3(0.0, 0.0, 0.0)), m_Rotation(glm::quat(glm::vec3(0.0, 0.0, 0.0))), m_Scale(1.0f), m_ModelMatrix(1.0f), m_NeedsUpdating(true)
     {}
 
     void SetPosition(const glm::vec3& position) {
         m_Position = position;
         m_NeedsUpdating = true;
+    }
+
+    glm::quat GetRotation() {
+        return m_Rotation;
     }
 
     void SetRotation(const glm::vec3& eulerAngles) {

@@ -6,6 +6,7 @@
 #include "AllTests.h"
 #include "Scene/FrameData.h"
 #include "Scene/Camera.h"
+#include "Renderer/Renderer.h"
 #include "Scene/CameraController.h"
 #include "Application/InputManager.h"
 
@@ -42,9 +43,9 @@ public:
 
 private:
     void ProcessInput(double deltaTime);
-    std::shared_ptr<Renderer> renderer;
     std::shared_ptr<spdlog::logger> logger;
 };
+
 
 Application::Application()
     : window(nullptr), camera(), inputManager(), cameraController(camera, inputManager), lastTime(0.0)
@@ -74,16 +75,17 @@ void Application::Init()
     glfwSetWindowUserPointer(window, this);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-    renderer = std::make_shared<Renderer>();
+    // Initialize the Renderer singleton
+    Renderer::GetInstance().Initialize();
 
     currentTest = nullptr;
-    testMenu = std::make_shared<test::TestMenu>(currentTest, renderer);
+    testMenu = std::make_shared<test::TestMenu>(currentTest);
     currentTest = testMenu;
 
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
     testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
     testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
-    testMenu->RegisterTest<test::TestLights>("Lights");
+    //testMenu->RegisterTest<test::TestLights>("Lights");
     // Add more tests as needed
 
     FrameData::s_View = camera.GetViewMatrix();
@@ -112,8 +114,8 @@ void Application::Run()
 
         FrameData::s_View = camera.GetViewMatrix();
         FrameData::s_CameraPos = camera.GetPosition();
-
-        currentTest->Clear();
+        Renderer::GetInstance().Clear();
+        //currentTest->Clear();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -125,7 +127,9 @@ void Application::Run()
 
             ImGui::Begin("Test");
             if (currentTest != testMenu && ImGui::Button("<- Back")) {
+                currentTest->OnExit();
                 currentTest = testMenu;
+                currentTest->OnEnter();
             }
             currentTest->OnImGuiRender();
             ImGui::End();

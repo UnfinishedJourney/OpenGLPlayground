@@ -2,8 +2,8 @@
 
 #include <memory>
 #include <vector>
-#include "Resources/ResourceManager.h"
 #include "Graphics/Buffers/UniformBuffer.h"
+#include "Graphics/Buffers/MeshBuffer.h"
 #include "Renderer/RenderObject.h"
 #include "Renderer/BatchManager.h"
 #include "Scene/Lights.h"
@@ -18,19 +18,27 @@ struct FrameCommonData
 class Renderer
 {
 public:
-    Renderer();
-    ~Renderer();
+    static Renderer& GetInstance() {
+        static Renderer instance;
+        return instance;
+    }
 
+    // Delete copy constructor and assignment operator
+    Renderer(const Renderer&) = delete;
+    Renderer& operator=(const Renderer&) = delete;
+
+    void Initialize(); // Added initialization method
     void RenderSkybox(const std::shared_ptr<MeshBuffer>& meshBuffer, const std::string& textureName, const std::string& shaderName) const;
     void UpdateLightsData(const std::vector<LightData>& lights) const;
-    void Clear() const;
+    void Clear(float r = 0.3f, float g = 0.2f, float b = 0.8f, float a = 1.0f) const;
 
     void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
     void RenderScene();
 
-    std::unique_ptr<ResourceManager> m_ResourceManager;
-
 private:
+    Renderer();
+    ~Renderer();
+
     void UpdateFrameDataUBO() const;
     void BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const;
 

@@ -1,25 +1,27 @@
 #pragma once
 
+#include "Graphics/Buffers/MeshBuffer.h"
 #include "Test.h"
-#include "Renderer/RenderObject.h"
-#include "Resources/ResourceManager.h"
-
-#include <GLFW/glfw3.h>
 #include <memory>
-
 
 namespace test {
 
-	class TestSkyBox : public Test
-	{
-	public:
-		TestSkyBox(std::shared_ptr<Renderer>& renderer);
-		~TestSkyBox() override = default;
+    class TestSkyBox : public Test
+    {
+    public:
+        TestSkyBox();
+        ~TestSkyBox() override = default;
 
-		void OnUpdate(float deltaTime) override;
-		void OnRender() override;
-		void OnImGuiRender() override;
-	private:
-		std::shared_ptr<MeshBuffer> m_MeshComponent;
-	};
+        void OnEnter() override;
+        void OnExit() override;
+        void OnUpdate(float deltaTime) override;
+        void OnRender() override;
+        void OnImGuiRender() override;
+
+    private:
+        std::shared_ptr<MeshBuffer> m_SkyboxMeshBuffer;
+        std::string m_SkyboxTextureName;
+        std::string m_SkyboxShaderName;
+    };
+
 }

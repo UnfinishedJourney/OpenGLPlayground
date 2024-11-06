@@ -1,16 +1,25 @@
 ﻿#include "Renderer/Renderer.h"
+#include "Resources/ResourceManager.h"
 #include "Utilities/Logger.h"
 #include "Scene/FrameData.h"
 #include "Utilities/Utility.h"
 #include <glad/glad.h>
 
 Renderer::Renderer()
+    : m_FrameDataUBO(nullptr), m_LightsSSBO(0)
+{
+    // Constructor is private; initialization is done in Initialize()
+}
+
+Renderer::~Renderer()
+{
+    glDeleteBuffers(1, &m_LightsSSBO);
+}
+
+void Renderer::Initialize()
 {
     auto logger = Logger::GetLogger();
     logger->info("Initializing Renderer.");
-
-    m_ResourceManager = std::make_unique<ResourceManager>();
-    logger->info("ResourceManager initialized successfully.");
 
     m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), 0, GL_DYNAMIC_DRAW);
     logger->info("Created FrameData UBO with binding point 0.");
@@ -41,11 +50,6 @@ Renderer::Renderer()
     logger->info("Initialized Lights SSBO with {} light(s).", m_LightsData.size());
 }
 
-Renderer::~Renderer()
-{
-    glDeleteBuffers(1, &m_LightsSSBO);
-}
-
 void Renderer::UpdateLightsData(const std::vector<LightData>& lights) const
 {
     // Update lights data as needed
@@ -63,8 +67,8 @@ void Renderer::UpdateFrameDataUBO() const
 
 void Renderer::BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const
 {
-    m_ResourceManager->BindShader(shaderName);
-    m_ResourceManager->BindMaterial(materialName);
+    ResourceManager::GetInstance().BindShader(shaderName);
+    ResourceManager::GetInstance().BindMaterial(materialName);
 }
 
 void Renderer::RenderSkybox(const std::shared_ptr<MeshBuffer>& meshBuffer, const std::string& textureName, const std::string& shaderName) const
@@ -76,14 +80,14 @@ void Renderer::RenderSkybox(const std::shared_ptr<MeshBuffer>& meshBuffer, const
 
     UpdateFrameDataUBO();
 
-    m_ResourceManager->BindShader(shaderName);
-    m_ResourceManager->BindCubeMapTexture(textureName, 0);
+    ResourceManager::GetInstance().BindShader(shaderName);
+    ResourceManager::GetInstance().BindCubeMapTexture(textureName, 0);
 
     glDepthFunc(GL_LEQUAL);
     glDepthMask(GL_FALSE);
 
     glm::mat4 mvp = FrameData::s_Projection * glm::mat4(glm::mat3(FrameData::s_View)); // Remove translation
-    m_ResourceManager->SetUniform("u_MVP", mvp);
+    ResourceManager::GetInstance().SetUniform("u_MVP", mvp);
 
     meshBuffer->Bind();
     GLCall(glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(meshBuffer->GetIndexCount()), GL_UNSIGNED_INT, nullptr));
@@ -116,16 +120,18 @@ void Renderer::RenderScene()
         glm::mat4 modelMatrix = renderObjects.front()->GetTransform()->GetModelMatrix();
         glm::mat3 normalMatrix = renderObjects.front()->GetTransform()->GetNormalMatrix();
 
-        m_ResourceManager->SetUniform("u_Model", modelMatrix);
-        m_ResourceManager->SetUniform("u_NormalMatrix", normalMatrix);
+        glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * modelMatrix;
+        ResourceManager::GetInstance().SetUniform("u_MVP", mvp);
+        ResourceManager::GetInstance().SetUniform("u_Model", modelMatrix);
+        ResourceManager::GetInstance().SetUniform("u_NormalMatrix", normalMatrix);
 
         // Render the batch
         batch->Render();
     }
 }
 
-void Renderer::Clear() const
+void Renderer::Clear(float r, float g, float b, float a) const
 {
-    GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
+    GLCall(glClearColor(r, g, b, a));
     GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 }

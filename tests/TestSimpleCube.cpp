@@ -1,44 +1,73 @@
 #include "TestSimpleCube.h"
+#include "Renderer/Renderer.h"
+#include "Resources/ResourceManager.h"
+#include "Graphics/Meshes/Mesh.h"
+#include "Scene/Transform.h"
+#include <GLFW/glfw3.h>
 
-test::TestSimpleCube::TestSimpleCube(std::shared_ptr<Renderer>& renderer)
-    : Test(renderer)
-{
-    //std::shared_ptr<Mesh> cubeMesh = s_ResourceManager->GetMesh("cube");
-    MeshLayout cubeMeshLayout = {
-        true,
-        false,
-        false,
-        false,
-        {TextureType::Albedo}
-    };
+namespace test {
 
-    //std::shared_ptr<MeshBuffer> meshComponent = m_Renderer->m_ResourceManager->GetMeshBuffer("cube", cubeMeshLayout);
-    //std::shared_ptr<Shader> shader = m_Renderer->m_ResourceManager->GetShader("basic");
-    //std::shared_ptr<Texture2D> texture = m_Renderer->m_ResourceManager->GetTexture("cuteDog");
+    TestSimpleCube::TestSimpleCube()
+    {
+    }
 
-    //std::shared_ptr<Material> material = std::make_shared<Material>();
-    //std::shared_ptr<Transform> transform = std::make_shared<Transform>();
+    void TestSimpleCube::OnEnter()
+    {
+        auto& resourceManager = ResourceManager::GetInstance();
 
-    //material->AddTexture(texture);
-    //m_Renderer->m_ResourceManager->AddMaterial("dogMat", material);
+        auto cubeMesh = resourceManager.GetMesh("cube");
+        MeshLayout cubeMeshLayout = {
+            true, // Positions
+            false, // Normals
+            false, // Texture Coordinates
+            false, // Tangents and Bitangents
+            {TextureType::Albedo}
+        };
 
-    //m_Cube = std::make_unique<MovingCube>(meshComponent, "dogMat", "basic", transform);
-    //GLCall(glEnable(GL_BLEND));
-    //GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-}
+        auto meshBuffer = resourceManager.GetMeshBuffer("cube", cubeMeshLayout);
+        auto shader = resourceManager.GetShader("basic");
+        auto texture = resourceManager.GetTexture("cuteDog");
 
-void test::TestSimpleCube::OnUpdate(float deltaTime)
-{
-    m_Cube->Update(deltaTime);
-}
+        auto material = std::make_shared<Material>();
+        material->AddTexture(texture);
+        resourceManager.AddMaterial("cubeMaterial", material);
 
-void test::TestSimpleCube::OnRender()
-{
-    //GLCall(glClearColor(0.3f, 0.4f, 0.55f, 1.0f));
-    //GLCall(glClear(GL_COLOR_BUFFER_BIT));
-    //m_Renderer->Render(m_Cube);
-}
+        auto transform = std::make_shared<Transform>();
 
-void test::TestSimpleCube::OnImGuiRender()
-{
+        m_Cube = std::make_shared<RenderObject>(cubeMesh, cubeMeshLayout, "cubeMaterial", "basic", transform);
+        Renderer::GetInstance().AddRenderObject(m_Cube);
+        GLCall(glEnable(GL_BLEND));
+        GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    }
+
+    void TestSimpleCube::OnExit()
+    {
+        m_Cube.reset();
+    }
+
+    void TestSimpleCube::OnUpdate(float deltaTime)
+    {
+        //if (m_Cube)
+        //{
+        //    m_Cube->GetTransform()->AddRotation(glm::vec3(0.0, deltaTime, 0.0));
+        //}
+    }
+
+    void TestSimpleCube::OnRender()
+    {
+        // Remove the clear call here if Application is already clearing the screen
+        // If not, you can keep it or adjust as needed
+        Renderer::GetInstance().Clear(0.3f, 0.4f, 0.55f, 1.0f);
+
+        if (m_Cube)
+        {
+            Renderer::GetInstance().RenderScene(); // Ensure this method renders the scene correctly
+        }
+    }
+
+    void TestSimpleCube::OnImGuiRender()
+    {
+        // Add ImGui controls if needed
+    }
+
 }
