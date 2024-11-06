@@ -12,3 +12,5 @@ src/Utilities/ThreadPool.cpp
 src/Utilities/ThreadPool.h
 src/Utilities/ThreadPoolManager.cpp
 src/Utilities/ThreadPoolManager.h
+shaders/metadata.json
+shaders/bin/
