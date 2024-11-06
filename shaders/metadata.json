@@ -1,46 +1,71 @@
 {
-    "compute_shaders": {
-        "brdf_compute": {
-            "binary_last_modified": 13374175768,
-            "source_last_modified": 13371736251
-        }
-    },
     "global": {
         "driver_version": "4.5.0 NVIDIA 566.03",
         "openGL_profile": "core"
     },
     "shaders": {
         "basic": {
-            "binary_last_modified": 13374178016,
-            "source_last_modified": 13374178012
+            "binary_last_modified": 13375366024,
+            "binary_path": "../shaders/bin/Basic.bin",
+            "is_compute_shader": false,
+            "source_last_modified": 13375366388,
+            "source_path": "../shaders/Basic.shader"
+        },
+        "brdf_compute": {
+            "binary_last_modified": 0,
+            "binary_path": "../shaders/bin/BRDFCompute.bin",
+            "is_compute_shader": false,
+            "source_last_modified": 0,
+            "source_path": "../shaders/BRDFCompute.shader"
         },
         "duck": {
-            "binary_last_modified": 13374175768,
-            "source_last_modified": 13370269386
+            "binary_last_modified": 13375365930,
+            "binary_path": "../shaders/bin/Duck.bin",
+            "is_compute_shader": false,
+            "source_last_modified": 13370269386,
+            "source_path": "../shaders/Duck.shader"
         },
         "helmet": {
-            "binary_last_modified": 13373413410,
-            "source_last_modified": 13374178108
+            "binary_last_modified": 13375365930,
+            "binary_path": "../shaders/bin/Helmet.bin",
+            "is_compute_shader": false,
+            "source_last_modified": 13374942044,
+            "source_path": "../shaders/Helmet.shader"
         },
         "instance": {
-            "binary_last_modified": 13374175768,
-            "source_last_modified": 13371399916
-        },
-        "lights": {
-            "binary_last_modified": 13374175768,
-            "source_last_modified": 13371052626
+            "binary_last_modified": 13375365930,
+            "binary_path": "../shaders/bin/Instance.bin",
+            "is_compute_shader": false,
+            "source_last_modified": 13371399916,
+            "source_path": "../shaders/Instance.shader"
         },
         "pbr": {
-            "binary_last_modified": 13374175768,
-            "source_last_modified": 13371425904
+            "binary_last_modified": 13375365930,
+            "binary_path": "../shaders/bin/PBR.bin",
+            "is_compute_shader": false,
+            "source_last_modified": 13371425904,
+            "source_path": "../shaders/PBR.shader"
         },
         "quad": {
-            "binary_last_modified": 13374175768,
-            "source_last_modified": 13371734187
+            "binary_last_modified": 13375365930,
+            "binary_path": "../shaders/bin/Quad.bin",
+            "is_compute_shader": false,
+            "source_last_modified": 13371734187,
+            "source_path": "../shaders/Quad.shader"
+        },
+        "simplelights": {
+            "binary_last_modified": 13375365930,
+            "binary_path": "../shaders/bin/SimpleLights.bin",
+            "is_compute_shader": false,
+            "source_last_modified": 13375293764,
+            "source_path": "../shaders/SimpleLights.shader"
         },
         "skyBox": {
-            "binary_last_modified": 13374175768,
-            "source_last_modified": 13373413266
+            "binary_last_modified": 13375365930,
+            "binary_path": "../shaders/bin/SkyBox.bin",
+            "is_compute_shader": false,
+            "source_last_modified": 13373413266,
+            "source_path": "../shaders/SkyBox.shader"
         }
     }
 }

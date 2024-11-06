@@ -1,0 +1,79 @@
+[2024-11-06 13:40:27.234] [ENGINE] [info] Logger initialized successfully.
+[2024-11-06 13:40:27.234] [ENGINE] [info] Application started.
+[2024-11-06 13:40:27.234] [ENGINE] [info] Initializing GLFW...
+[2024-11-06 13:40:27.300] [ENGINE] [info] GLFW initialized successfully.
+[2024-11-06 13:40:27.557] [ENGINE] [info] GLFW window created successfully. Size: 800x600, Title: 'OpenGL Application'.
+[2024-11-06 13:40:27.559] [ENGINE] [info] GLAD initialized successfully.
+[2024-11-06 13:40:27.560] [ENGINE] [info] Initializing ImGui...
+[2024-11-06 13:40:27.560] [ENGINE] [info] ImGui initialized successfully.
+[2024-11-06 13:40:27.560] [ENGINE] [info] OpenGL Debugging initialized.
+[2024-11-06 13:40:27.560] [ENGINE] [info] OpenGL context initialized and ready for use.
+[2024-11-06 13:40:27.560] [ENGINE] [info] Initializing Renderer.
+[2024-11-06 13:40:27.560] [ENGINE] [info] Created UniformBuffer ID: 1 with binding point: 0 and size: 144
+[2024-11-06 13:40:27.560] [ENGINE] [info] Created FrameData UBO with binding point 0.
+[2024-11-06 13:40:27.561] [ENGINE] [info] Initialized Lights SSBO with 1 light(s).
+[2024-11-06 13:40:29.757] [ENGINE] [info] Initializing ShaderManager with metadata path: '../shaders/metadata.json' and config path: '../shaders/config.json'.
+[2024-11-06 13:40:29.757] [ENGINE] [info] Loading metadata from '../shaders/metadata.json'.
+[2024-11-06 13:40:29.762] [ENGINE] [info] Metadata loaded successfully.
+[2024-11-06 13:40:29.762] [ENGINE] [info] Loading config from '../shaders/config.json'.
+[2024-11-06 13:40:29.764] [ENGINE] [info] Config loaded successfully.
+[2024-11-06 13:40:29.764] [ENGINE] [info] Loading shaders.
+[2024-11-06 13:40:29.765] [ENGINE] [info] Successfully loaded shader binary from '../shaders/bin/Basic.bin'.
+[2024-11-06 13:40:29.765] [ENGINE] [info] Loaded shader binary from '../shaders/bin/Basic.bin'.
+[2024-11-06 13:40:29.765] [ENGINE] [info] Loaded Shader 'basic'.
+[2024-11-06 13:40:29.766] [ENGINE] [info] Successfully loaded shader binary from '../shaders/bin/Basic.bin'.
+[2024-11-06 13:40:29.766] [ENGINE] [info] Loaded shader binary from '../shaders/bin/Basic.bin'.
+[2024-11-06 13:40:29.766] [ENGINE] [info] Saving metadata to '../shaders/metadata.json'.
+[2024-11-06 13:40:29.767] [ENGINE] [info] Metadata saved successfully.
+[2024-11-06 13:40:29.768] [ENGINE] [info] Shader 'basic' was outdated and has been reloaded.
+[2024-11-06 13:40:29.768] [ENGINE] [warning] Shader binary file does not exist: ../shaders/bin/BRDFCompute.bin
+[2024-11-06 13:40:29.768] [ENGINE] [info] Shader file '../shaders/BRDFCompute.shader' read successfully.
+[2024-11-06 13:40:29.769] [ENGINE] [error] Failed to load shader 'brdf_compute': Shader source does not contain both vertex and fragment shaders.
+[2024-11-06 13:40:29.771] [ENGINE] [info] Successfully loaded shader binary from '../shaders/bin/Helmet.bin'.
+[2024-11-06 13:40:29.771] [ENGINE] [info] Loaded shader binary from '../shaders/bin/Helmet.bin'.
+[2024-11-06 13:40:29.771] [ENGINE] [info] Loaded Shader 'helmet'.
+[2024-11-06 13:40:29.772] [ENGINE] [info] Successfully loaded shader binary from '../shaders/bin/Duck.bin'.
+[2024-11-06 13:40:29.772] [ENGINE] [info] Loaded shader binary from '../shaders/bin/Duck.bin'.
+[2024-11-06 13:40:29.772] [ENGINE] [info] Loaded Shader 'duck'.
+[2024-11-06 13:40:29.773] [ENGINE] [info] Successfully loaded shader binary from '../shaders/bin/Instance.bin'.
+[2024-11-06 13:40:29.773] [ENGINE] [info] Loaded shader binary from '../shaders/bin/Instance.bin'.
+[2024-11-06 13:40:29.773] [ENGINE] [info] Loaded Shader 'instance'.
+[2024-11-06 13:40:29.774] [ENGINE] [info] Successfully loaded shader binary from '../shaders/bin/PBR.bin'.
+[2024-11-06 13:40:29.774] [ENGINE] [info] Loaded shader binary from '../shaders/bin/PBR.bin'.
+[2024-11-06 13:40:29.774] [ENGINE] [info] Loaded Shader 'pbr'.
+[2024-11-06 13:40:29.775] [ENGINE] [info] Successfully loaded shader binary from '../shaders/bin/SimpleLights.bin'.
+[2024-11-06 13:40:29.776] [ENGINE] [info] Loaded shader binary from '../shaders/bin/SimpleLights.bin'.
+[2024-11-06 13:40:29.776] [ENGINE] [info] Loaded Shader 'simplelights'.
+[2024-11-06 13:40:29.776] [ENGINE] [info] Successfully loaded shader binary from '../shaders/bin/Quad.bin'.
+[2024-11-06 13:40:29.776] [ENGINE] [info] Loaded shader binary from '../shaders/bin/Quad.bin'.
+[2024-11-06 13:40:29.776] [ENGINE] [info] Loaded Shader 'quad'.
+[2024-11-06 13:40:29.777] [ENGINE] [info] Successfully loaded shader binary from '../shaders/bin/SkyBox.bin'.
+[2024-11-06 13:40:29.777] [ENGINE] [info] Loaded shader binary from '../shaders/bin/SkyBox.bin'.
+[2024-11-06 13:40:29.777] [ENGINE] [info] Loaded Shader 'skyBox'.
+[2024-11-06 13:40:29.887] [ENGINE] [info] Parameter 'material.Ka' added.
+[2024-11-06 13:40:29.887] [ENGINE] [info] Parameter 'material.Kd' added.
+[2024-11-06 13:40:29.887] [ENGINE] [info] Parameter 'material.Ks' added.
+[2024-11-06 13:40:29.888] [ENGINE] [info] Parameter 'material.shininess' added.
+[2024-11-06 13:40:29.890] [ENGINE] [info] Created VertexArray with ID 1.
+[2024-11-06 13:40:29.912] [ENGINE] [info] Created VertexBuffer with ID 5.
+[2024-11-06 13:40:29.912] [ENGINE] [info] Created IndexBuffer with ID 6.
+[2024-11-06 13:40:29.912] [ENGINE] [info] Added buffer to VertexArray ID 1 with binding index 0.
+[2024-11-06 13:40:29.912] [ENGINE] [info] Set IndexBuffer ID 6 to VertexArray ID 1.
+[2024-11-06 13:40:29.912] [ENGINE] [info] Shader 'simplelights' bound successfully.
+[2024-11-06 13:40:29.912] [ENGINE] [warning] Uniform 'material.shininess' not found in shader program ID 7.
+[2024-11-06 13:40:29.912] [ENGINE] [warning] Uniform 'material.Ka' not found in shader program ID 7.
+[2024-11-06 13:40:29.912] [ENGINE] [warning] Uniform 'material.Kd' not found in shader program ID 7.
+[2024-11-06 13:40:29.912] [ENGINE] [warning] Uniform 'material.Ks' not found in shader program ID 7.
+[2024-11-06 13:40:29.912] [ENGINE] [warning] Uniform 'u_MVP' not found in shader program ID 7.
+[2024-11-06 13:40:29.912] [ENGINE] [warning] Uniform 'u_NormalMatrix' not found in shader program ID 7.
+[2024-11-06 13:40:31.513] [ENGINE] [info] Starting cleanup of OpenGL context.
+[2024-11-06 13:40:31.532] [ENGINE] [info] GLFW terminated. OpenGL context cleanup completed.
+[2024-11-06 13:40:31.532] [ENGINE] [info] Application terminated gracefully.
+[2024-11-06 13:40:31.533] [ENGINE] [info] Deleted shader program with ID: 1
+[2024-11-06 13:40:31.533] [ENGINE] [info] Deleted shader program with ID: 4
+[2024-11-06 13:40:31.533] [ENGINE] [info] Deleted shader program with ID: 2
+[2024-11-06 13:40:31.533] [ENGINE] [info] Deleted shader program with ID: 5
+[2024-11-06 13:40:31.533] [ENGINE] [info] Deleted shader program with ID: 6
+[2024-11-06 13:40:31.533] [ENGINE] [info] Deleted shader program with ID: 8
+[2024-11-06 13:40:31.533] [ENGINE] [info] Deleted shader program with ID: 7
+[2024-11-06 13:40:31.533] [ENGINE] [info] Deleted shader program with ID: 9

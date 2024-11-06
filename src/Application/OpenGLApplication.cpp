@@ -85,7 +85,7 @@ void Application::Init()
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
     testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
     testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
-    //testMenu->RegisterTest<test::TestLights>("Lights");
+    testMenu->RegisterTest<test::TestLights>("Lights");
     // Add more tests as needed
 
     FrameData::s_View = camera.GetViewMatrix();

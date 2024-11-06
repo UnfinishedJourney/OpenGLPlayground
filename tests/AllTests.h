@@ -2,7 +2,7 @@
 #include "TestClearColor.h"
 #include "TestSimpleCube.h"
 #include "TestSkyBox.h"
-//#include "TestLights.h"
+#include "TestLights.h"
 //#include "TestAssimp.h"
 //#include "TestInstance.h"
 //#include "TestPBR.h"
