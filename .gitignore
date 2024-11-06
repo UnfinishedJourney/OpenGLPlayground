@@ -8,7 +8,6 @@ HideTests/
 cmake.txt
 logs/
 profile_data.prof
-vendor/
 src/Utilities/ThreadPool.cpp
 src/Utilities/ThreadPool.h
 src/Utilities/ThreadPoolManager.cpp
