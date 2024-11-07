@@ -5,6 +5,8 @@
 #include "Utilities/Utility.h"
 #include <glad/glad.h>
 
+#define DEBUG_LIGHTS
+
 Renderer::Renderer()
     : m_FrameDataUBO(nullptr), m_LightsSSBO(0)
 {
@@ -48,6 +50,19 @@ void Renderer::Initialize()
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     logger->info("Initialized Lights SSBO with {} light(s).", m_LightsData.size());
+
+    auto& resourceManager = ResourceManager::GetInstance();
+
+    MeshLayout lightMeshLayout = {
+        true, 
+        false, 
+        false, 
+        false, 
+        {}
+    };
+
+    m_LightSphereMeshBuffer = resourceManager.GetMeshBuffer("lightsphere", lightMeshLayout);
+
 }
 
 void Renderer::UpdateLightsData(const std::vector<LightData>& lights) const
@@ -128,6 +143,31 @@ void Renderer::RenderScene()
         // Render the batch
         batch->Render();
     }
+
+#ifdef DEBUG_LIGHTS
+    RenderLightSpheres();
+#endif
+}
+
+void Renderer::RenderLightSpheres()
+{
+    //if (!m_LightSphereShader || !m_LightSphereMesh) {
+    //    Logger::GetLogger()->error("Light spheres shader or mesh is not initialized.");
+    //    return;
+    //}
+
+    auto& resourceManager = ResourceManager::GetInstance();
+    resourceManager.BindShader("debugLights");
+
+    // Set the MVP matrix
+    glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * glm::mat4(1.0f); // Identity for model
+    resourceManager.SetUniform("u_MVP", mvp);
+
+    // Bind the sphere mesh
+    m_LightSphereMeshBuffer->Bind();
+
+    // Draw all instances in a single draw call
+    GLCall(glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(m_LightSphereMeshBuffer->GetIndexCount()), GL_UNSIGNED_INT, 0, static_cast<GLsizei>(m_LightsData.size())));
 }
 
 void Renderer::Clear(float r, float g, float b, float a) const

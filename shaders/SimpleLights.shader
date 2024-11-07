@@ -42,7 +42,6 @@ void main()
     // Calculate lighting using Phong model
     //vec3 lighting = CalculatePhongLighting(norm, viewDir, FragPos);
     
-    // Set the fragment color
-    color = vec4(0.0, 1.0, 0.0, 1.0);
     color.xyz = lightsData[0].color.xyz;
+    color.w = 1.0;
 }

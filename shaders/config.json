@@ -31,6 +31,10 @@
         "skyBox": {
             "binary_path": "../shaders/bin/SkyBox.bin",
             "source_path": "../shaders/SkyBox.shader"
+        },
+        "debugLights": {
+            "binary_path": "../shaders/bin/DebugLights.bin",
+            "source_path": "../shaders/DebugLights.shader"
         }
     },
     "compute_shaders": {

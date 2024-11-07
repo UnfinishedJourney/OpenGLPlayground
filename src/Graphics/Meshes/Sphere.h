@@ -13,3 +13,16 @@ public:
 
     Sphere(float radius = 1.0f, unsigned int sectorCount = 36, unsigned int stackCount = 18);
 };
+
+struct LightSphere : Sphere {
+public:
+    /*
+     * radius The radius of the sphere.
+     * sectorCount Number of longitudinal slices.
+     * stackCount Number of latitudinal stacks.
+     */
+
+    LightSphere()
+        : Sphere(0.1, 36, 18)
+    {}
+};

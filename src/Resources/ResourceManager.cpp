@@ -160,6 +160,10 @@ std::shared_ptr<Mesh> ResourceManager::GetMesh(std::string_view meshName) {
         mesh = std::make_shared<Sphere>();
     }
 
+    else if (meshName == "lightsphere") {
+        mesh = std::make_shared<LightSphere>();
+    }
+
     else {
         Logger::GetLogger()->warn("Mesh '{}' not found. Returning nullptr.", meshName);
         return nullptr;

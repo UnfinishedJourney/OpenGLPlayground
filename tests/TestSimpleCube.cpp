@@ -24,7 +24,6 @@ namespace test {
             {TextureType::Albedo}
         };
 
-        auto meshBuffer = resourceManager.GetMeshBuffer("cube", cubeMeshLayout);
         auto shader = resourceManager.GetShader("basic");
         auto texture = resourceManager.GetTexture("cuteDog");
 

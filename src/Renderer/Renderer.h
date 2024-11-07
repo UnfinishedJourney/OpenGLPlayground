@@ -34,6 +34,7 @@ public:
 
     void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
     void RenderScene();
+    void RenderLightSpheres();
 
 private:
     Renderer();
@@ -46,6 +47,7 @@ private:
     GLuint m_LightsSSBO;
 
     std::vector<LightData> m_LightsData;
+    std::shared_ptr<MeshBuffer> m_LightSphereMeshBuffer;
 
     BatchManager m_BatchManager;
 };
