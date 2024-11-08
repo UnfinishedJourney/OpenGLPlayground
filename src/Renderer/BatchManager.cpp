@@ -6,6 +6,15 @@ void BatchManager::AddRenderObject(const std::shared_ptr<RenderObject>& renderOb
     b_wasBuilt = false;
 }
 
+void BatchManager::Clear()
+{
+    m_RenderObjects.clear();
+    m_StaticBatches.clear();
+    m_DynamicBatches.clear();
+    m_AllBatches.clear();
+    b_wasBuilt = false;
+}
+
 void BatchManager::BuildBatches()
 {
     if (b_wasBuilt == true)

@@ -35,6 +35,7 @@ public:
     void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
     void RenderScene();
     void RenderLightSpheres();
+    void ClearRenderObjects();
 
 private:
     Renderer();

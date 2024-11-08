@@ -33,7 +33,7 @@ namespace test {
 
         auto transform = std::make_shared<Transform>();
 
-        m_Cube = std::make_shared<RenderObject>(cubeMesh, cubeMeshLayout, "cubeMaterial", "basic", transform);
+        auto m_Cube = std::make_shared<RenderObject>(cubeMesh, cubeMeshLayout, "cubeMaterial", "basic", transform);
         Renderer::GetInstance().AddRenderObject(m_Cube);
         GLCall(glEnable(GL_BLEND));
         GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
@@ -41,7 +41,8 @@ namespace test {
 
     void TestSimpleCube::OnExit()
     {
-        m_Cube.reset();
+        Renderer::GetInstance().ClearRenderObjects();
+        //m_Cube.reset();
     }
 
     void TestSimpleCube::OnUpdate(float deltaTime)
@@ -57,11 +58,7 @@ namespace test {
         // Remove the clear call here if Application is already clearing the screen
         // If not, you can keep it or adjust as needed
         Renderer::GetInstance().Clear(0.3f, 0.4f, 0.55f, 1.0f);
-
-        if (m_Cube)
-        {
-            Renderer::GetInstance().RenderScene(); // Ensure this method renders the scene correctly
-        }
+        Renderer::GetInstance().RenderScene();
     }
 
     void TestSimpleCube::OnImGuiRender()

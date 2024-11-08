@@ -201,17 +201,21 @@ void glfw_onMouseScroll(GLFWwindow* window, double xoffset, double yoffset)
 
 void glfw_onWindowSize(GLFWwindow* window, int width, int height)
 {
+    Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
     if (height == 0)
         height = 1;
 
-    Screen::s_Width = width;
-    Screen::s_Height = height;
-
+    // Update the viewport
     glViewport(0, 0, width, height);
 
-    Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
-    FrameData::s_Projection = glm::perspective(glm::radians(app->camera.GetFOV()),
-        static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+    // Retrieve current display parameters
+    float displayHeight = Screen::s_DisplayHeight;
+    float viewerDistance = Screen::s_ViewerDistance;
+
+    // Update screen resolution and physical parameters
+    Screen::SetResolution(width, height, displayHeight, viewerDistance);
+
+    app->cameraController.SetDisplayParameters(displayHeight, viewerDistance);
 }
 
 void showFPS(GLFWwindow* window)

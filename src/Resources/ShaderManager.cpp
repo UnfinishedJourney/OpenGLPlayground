@@ -118,7 +118,7 @@ void ShaderManager::BindShader(std::string_view shaderName)
     try {
         shader->Bind();
         m_CurrentlyBoundShader = std::string(shaderName);
-        logger->info("Shader '{}' bound successfully.", std::string(shaderName));
+        logger->debug("Shader '{}' bound successfully.", std::string(shaderName));
     }
     catch (const std::exception& e) {
         logger->error("Failed to bind shader '{}': {}", std::string(shaderName), e.what());

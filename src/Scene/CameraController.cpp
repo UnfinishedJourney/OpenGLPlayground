@@ -1,17 +1,18 @@
-#include "Scene/CameraController.h"
-#include "Application/InputManager.h"
-#include "Scene/FrameData.h"
+#include "CameraController.h"
+#include "FrameData.h"
 #include <GLFW/glfw3.h>
+#include <algorithm> // For std::clamp
 
 CameraController::CameraController(Camera& camera, InputManager& inputManager)
     : m_Camera(camera),
     m_InputManager(inputManager),
-    m_Sensitivity(0.1f),
+    m_Sensitivity(0.05f), // Reduced sensitivity for smoother rotation
     m_Speed(10.0f),
     m_LastX(0.0f),
     m_LastY(0.0f),
     m_FirstMouse(true)
 {
+    // Camera already updates FOV based on Screen's static parameters
 }
 
 void CameraController::Update(float deltaTime) {
@@ -30,11 +31,11 @@ void CameraController::Update(float deltaTime) {
         m_Camera.Move(CameraMovement::Right, deltaTime);
 
     // Upward movement - Space key
-    if (m_InputManager.IsKeyPressed(GLFW_KEY_W))
+    if (m_InputManager.IsKeyPressed(GLFW_KEY_SPACE))
         m_Camera.Move(CameraMovement::Up, deltaTime);
 
     // Downward movement - Left Control key
-    if (m_InputManager.IsKeyPressed(GLFW_KEY_S))
+    if (m_InputManager.IsKeyPressed(GLFW_KEY_LEFT_CONTROL))
         m_Camera.Move(CameraMovement::Down, deltaTime);
 }
 
@@ -47,7 +48,7 @@ void CameraController::ProcessMouseMovement(float xpos, float ypos) {
     }
 
     float xOffset = xpos - m_LastX;
-    float yOffset = m_LastY - ypos;
+    float yOffset = m_LastY - ypos; // Reversed since y-coordinates go from bottom to top
 
     m_LastX = xpos;
     m_LastY = ypos;
@@ -56,13 +57,19 @@ void CameraController::ProcessMouseMovement(float xpos, float ypos) {
 }
 
 void CameraController::ProcessMouseScroll(float yOffset) {
-    float fov = m_Camera.GetFOV() - yOffset;
-    m_Camera.SetFOV(fov);
+    // Calculate the physical FOV based on current Screen's static parameters
+    float displayHeight = Screen::s_DisplayHeight;
+    float viewerDistance = Screen::s_ViewerDistance;
+    float physicalFOV = 2.0f * glm::degrees(std::atan((displayHeight / 2.0f) / viewerDistance));
 
-    // Update projection matrix
-    FrameData::s_Projection = glm::perspective(glm::radians(m_Camera.GetFOV()),
-        static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height),
-        0.1f, 100.0f);
+    // Apply scroll-based FOV adjustments within constraints
+    float fovChange = yOffset * 1.0f; // Adjust the multiplier for desired sensitivity
+    float newFOV = m_Camera.GetFOV() - fovChange;
+
+    // Clamp the new FOV to within physicalFOV ± 10 degrees
+    newFOV = glm::clamp(newFOV, physicalFOV - 10.0f, physicalFOV + 10.0f);
+
+    m_Camera.SetFOV(newFOV);
 }
 
 void CameraController::SetSpeed(float speed) {
@@ -72,4 +79,13 @@ void CameraController::SetSpeed(float speed) {
 
 void CameraController::Reset() {
     m_FirstMouse = true;
+}
+
+void CameraController::SetDisplayParameters(float displayHeight, float viewerDistance) {
+
+    // For example, if you allow changing the viewer distance at runtime:
+    Screen::s_DisplayHeight = displayHeight;
+    Screen::s_ViewerDistance = viewerDistance;
+
+    m_Camera.UpdateFOV();
 }

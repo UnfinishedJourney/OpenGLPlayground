@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Scene/Camera.h"
+#include "Camera.h"
 #include "Application/InputManager.h"
 
 class CameraController {
@@ -13,6 +13,9 @@ public:
 
     void SetSpeed(float speed);
     void Reset();
+
+    // Methods to set display parameters dynamically
+    void SetDisplayParameters(float displayHeight, float viewerDistance);
 
 private:
     Camera& m_Camera;

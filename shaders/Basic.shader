@@ -8,12 +8,10 @@ layout(location = 1) in vec2 texCoord;
 out vec2 v_TexCoord;
 
 uniform mat4 u_MVP;
-out vec3 LightColor;
 
 void main()
 {
     gl_Position = u_MVP * vec4(position, 1.0);
-    LightColor = 
     v_TexCoord = texCoord;
 }
 

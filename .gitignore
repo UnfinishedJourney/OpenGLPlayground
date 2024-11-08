@@ -14,3 +14,4 @@ src/Utilities/ThreadPoolManager.cpp
 src/Utilities/ThreadPoolManager.h
 shaders/metadata.json
 shaders/bin/
+/src/Utilities/TaskQueue.h

@@ -6,7 +6,7 @@
 class Transform {
 public:
     Transform()
-        : m_Position(glm::vec3(0.0, 0.0, 0.0)), m_Rotation(glm::quat(glm::vec3(0.0, 0.0, 0.0))), m_Scale(1.0f), m_ModelMatrix(1.0f), m_NeedsUpdating(true)
+        : m_Position(glm::vec3(0.0, 0.0, 0.0)), m_Rotation(glm::quat(glm::vec3(0.0, 0.0, 0.0))), m_Scale(1.0f), m_ModelMatrix(1.0f), m_NormalMatrix(1.0), m_NeedsUpdating(true)
     {}
 
     void SetPosition(const glm::vec3& position) {
@@ -50,13 +50,14 @@ public:
         if (m_NeedsUpdating) {
             UpdateModelMatrix();
         }
-        return glm::mat3(m_ModelMatrix);
+        return m_NormalMatrix;
     }
 
 private:
     glm::vec3 m_Position;
     glm::quat m_Rotation;
     glm::vec3 m_Scale;
+    glm::mat3 m_NormalMatrix;
     glm::mat4 m_ModelMatrix;
     bool m_NeedsUpdating;
 
@@ -64,6 +65,7 @@ private:
         m_ModelMatrix = glm::translate(glm::mat4(1.0f), m_Position) *
             glm::mat4_cast(m_Rotation) *
             glm::scale(glm::mat4(1.0f), m_Scale);
+        m_NormalMatrix = glm::transpose(glm::inverse(glm::mat3(m_ModelMatrix)));
         m_NeedsUpdating = false;
     }
 };

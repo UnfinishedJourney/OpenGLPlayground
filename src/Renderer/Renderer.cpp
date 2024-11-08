@@ -28,7 +28,7 @@ void Renderer::Initialize()
 
     // Initialize lights data
     m_LightsData = {
-        { glm::vec4(10.0f, 10.0f, 10.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) },
+        { glm::vec4(1.5f, 1.5f, 1.5f, 1.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) },
         // Add more lights as needed
     };
 
@@ -123,14 +123,15 @@ void Renderer::RenderScene()
 
     const auto& batches = m_BatchManager.GetBatches();
     for (const auto& batch : batches) {
-        // Bind shader and material
-        BindShaderAndMaterial(batch->GetShaderName(), batch->GetMaterialName());
 
         // Get the model matrix from the first RenderObject
         const auto& renderObjects = batch->GetRenderObjects();
         if (renderObjects.empty()) {
             continue; // Skip if no render objects
         }
+
+        // Bind shader and material
+        BindShaderAndMaterial(batch->GetShaderName(), batch->GetMaterialName());
 
         glm::mat4 modelMatrix = renderObjects.front()->GetTransform()->GetModelMatrix();
         glm::mat3 normalMatrix = renderObjects.front()->GetTransform()->GetNormalMatrix();
@@ -156,18 +157,23 @@ void Renderer::RenderLightSpheres()
     //    return;
     //}
 
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
+
     auto& resourceManager = ResourceManager::GetInstance();
     resourceManager.BindShader("debugLights");
-
-    // Set the MVP matrix
-    glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * glm::mat4(1.0f); // Identity for model
-    resourceManager.SetUniform("u_MVP", mvp);
 
     // Bind the sphere mesh
     m_LightSphereMeshBuffer->Bind();
 
     // Draw all instances in a single draw call
     GLCall(glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(m_LightSphereMeshBuffer->GetIndexCount()), GL_UNSIGNED_INT, 0, static_cast<GLsizei>(m_LightsData.size())));
+}
+
+void Renderer::ClearRenderObjects()
+{
+    m_BatchManager.Clear();
 }
 
 void Renderer::Clear(float r, float g, float b, float a) const

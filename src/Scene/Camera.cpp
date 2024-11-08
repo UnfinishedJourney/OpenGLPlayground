@@ -1,16 +1,38 @@
-#include "Scene/Camera.h"
-#include "Scene/FrameData.h"
+#include "Camera.h"
+#include "FrameData.h"
+#include <algorithm> // For std::clamp
+#include <cmath>     // For atan
 
-Camera::Camera(const glm::vec3& position, const glm::vec3& up, float yaw, float pitch, float fov)
+Camera::Camera(
+    const glm::vec3& position,
+    const glm::vec3& up,
+    float yaw,
+    float pitch
+)
     : m_Position(position),
     m_WorldUp(up),
     m_Yaw(yaw),
     m_Pitch(pitch),
-    m_FOV(fov),
     m_Speed(10.0f),
     m_MouseSensitivity(0.1f)
 {
+    UpdateFOV();
     UpdateCameraVectors();
+
+    // Initialize the projection matrix
+    float aspectRatio = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
+    FrameData::s_Projection = glm::perspective(
+        glm::radians(m_FOV),
+        aspectRatio,
+        0.1f,
+        500.0f
+    );
+
+    // Initialize the view matrix
+    FrameData::s_View = GetViewMatrix();
+
+    // Initialize the camera position in FrameData
+    FrameData::s_CameraPos = m_Position;
 }
 
 glm::mat4 Camera::GetViewMatrix() const {
@@ -22,7 +44,17 @@ float Camera::GetFOV() const {
 }
 
 void Camera::SetFOV(float fov) {
+    // Clamp the FOV to prevent extreme distortion
     m_FOV = glm::clamp(fov, 1.0f, 120.0f);
+
+    // Update the projection matrix with the new FOV
+    float aspectRatio = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
+    FrameData::s_Projection = glm::perspective(
+        glm::radians(m_FOV),
+        aspectRatio,
+        0.1f,
+        500.0f
+    );
 }
 
 void Camera::Move(CameraMovement direction, float deltaTime) {
@@ -40,6 +72,7 @@ void Camera::Move(CameraMovement direction, float deltaTime) {
     if (direction == CameraMovement::Down)
         m_Position -= m_WorldUp * velocity;
 
+    // Update the camera position in FrameData
     FrameData::s_CameraPos = m_Position;
 }
 
@@ -50,11 +83,8 @@ void Camera::Rotate(float xOffset, float yOffset) {
     m_Yaw += xOffset;
     m_Pitch += yOffset;
 
-    // Constrain the pitch
-    if (m_Pitch > 89.0f)
-        m_Pitch = 89.0f;
-    if (m_Pitch < -89.0f)
-        m_Pitch = -89.0f;
+    // Constrain the pitch to prevent flipping
+    m_Pitch = glm::clamp(m_Pitch, -89.0f, 89.0f);
 
     UpdateCameraVectors();
 }
@@ -63,19 +93,41 @@ void Camera::SetSpeed(float speed) {
     m_Speed = speed;
 }
 
+void Camera::UpdateFOV()
+{
+    // Access static members from Screen class
+    float displayHeight = Screen::s_DisplayHeight;
+    float viewerDistance = Screen::s_ViewerDistance;
+
+    // Calculate the physical FOV based on display size and viewer distance
+    float physicalFOV = 2.0f * glm::degrees(std::atan((displayHeight / 2.0f) / viewerDistance));
+
+    // Clamp the FOV to prevent extreme distortion
+    m_FOV = glm::clamp(physicalFOV, 1.0f, 120.0f);
+
+    // Update the projection matrix with the new FOV
+    float aspectRatio = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
+    FrameData::s_Projection = glm::perspective(
+        glm::radians(m_FOV),
+        aspectRatio,
+        0.1f,
+        500.0f
+    );
+}
+
 void Camera::UpdateCameraVectors() {
     // Calculate the new Front vector
     glm::vec3 front;
-    front.x = cos(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
-    front.y = sin(glm::radians(m_Pitch));
-    front.z = sin(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
+    front.x = std::cos(glm::radians(m_Yaw)) * std::cos(glm::radians(m_Pitch));
+    front.y = std::sin(glm::radians(m_Pitch));
+    front.z = std::sin(glm::radians(m_Yaw)) * std::cos(glm::radians(m_Pitch));
     m_Front = glm::normalize(front);
 
-    // Also re-calculate the Right and Up vector
+    // Re-calculate the Right and Up vectors
     m_Right = glm::normalize(glm::cross(m_Front, m_WorldUp));  // Normalize the vectors
     m_Up = glm::normalize(glm::cross(m_Right, m_Front));
 
-    // Update the FrameData view matrix
+    // Update the View matrix in FrameData
     FrameData::s_View = GetViewMatrix();
     FrameData::s_CameraPos = m_Position;
 }

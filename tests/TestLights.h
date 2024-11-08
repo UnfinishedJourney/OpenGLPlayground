@@ -19,7 +19,6 @@ namespace test {
         void OnImGuiRender() override;
 
     private:
-        std::shared_ptr<RenderObject> m_Cube;
     };
 
 }

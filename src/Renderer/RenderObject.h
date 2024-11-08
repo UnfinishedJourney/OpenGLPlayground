@@ -6,6 +6,7 @@
 #include "Graphics/Meshes/MeshLayout.h"
 #include "Scene/Transform.h"
 
+//maybe should add predicate function to change object every frame
 class RenderObject {
 public:
     RenderObject(const std::shared_ptr<Mesh>& mesh,

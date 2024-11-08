@@ -50,7 +50,7 @@ namespace test {
 
     void TestLights::OnExit()
     {
-        m_Cube.reset();
+        Renderer::GetInstance().ClearRenderObjects();
     }
 
     void TestLights::OnUpdate(float deltaTime)

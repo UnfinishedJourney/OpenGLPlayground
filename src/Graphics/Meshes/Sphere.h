@@ -23,6 +23,6 @@ public:
      */
 
     LightSphere()
-        : Sphere(0.1, 36, 18)
+        : Sphere(0.2, 20, 10)
     {}
 };
