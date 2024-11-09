@@ -7,6 +7,7 @@
 #include "Scene/FrameData.h"
 #include "Scene/Camera.h"
 #include "Renderer/Renderer.h"
+#include "Resources/ResourceManager.h"
 #include "Scene/CameraController.h"
 #include "Application/InputManager.h"
 
@@ -115,7 +116,6 @@ void Application::Run()
         FrameData::s_View = camera.GetViewMatrix();
         FrameData::s_CameraPos = camera.GetPosition();
         Renderer::GetInstance().Clear();
-        //currentTest->Clear();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -139,6 +139,7 @@ void Application::Run()
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
+        inputManager.Update(); // Update key states at the end of the frame
         EASY_END_BLOCK;
     }
 }
@@ -152,6 +153,10 @@ void Application::Cleanup()
 void Application::ProcessInput(double deltaTime)
 {
     cameraController.Update(deltaTime);
+    if (inputManager.WasKeyJustPressed(GLFW_KEY_R)) {
+        Logger::GetLogger()->info("Reloading all shaders...");
+        ResourceManager::GetInstance().ReloadAllShaders();
+    }
 }
 
 int main()
