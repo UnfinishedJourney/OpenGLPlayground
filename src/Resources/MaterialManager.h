@@ -7,7 +7,7 @@
 #include <filesystem>
 
 #include "Graphics/Materials/Material.h"
-#include "Graphics/Textures/Texture2D.h"
+#include "Graphics/Textures/TextureBase.h"
 #include "Graphics/Shaders/BaseShader.h"
 #include "Utilities/Logger.h"
 
@@ -17,7 +17,7 @@ public:
     ~MaterialManager() = default;
 
     std::shared_ptr<Material> GetMaterial(std::string_view materialName);
-    std::shared_ptr<Texture2D> GetTexture(std::string_view textureName);
+    std::shared_ptr<TextureBase> GetTexture(std::string_view textureName);
     void AddMaterial(std::string_view name, const std::shared_ptr<Material>& material);
     void BindMaterial(std::string_view name, const std::shared_ptr<BaseShader>& shader);
     void UnbindMaterial();
@@ -25,5 +25,5 @@ public:
 private:
     std::string m_CurrentlyBoundMaterial;
     std::unordered_map<std::string, std::shared_ptr<Material>> m_Materials;
-    std::unordered_map<std::string, std::shared_ptr<Texture2D>> m_Textures;
+    std::unordered_map<std::string, std::shared_ptr<TextureBase>> m_Textures;
 };

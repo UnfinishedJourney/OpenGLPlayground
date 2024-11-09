@@ -24,6 +24,7 @@ namespace test {
         m_SkyboxMeshBuffer = resourceManager.GetMeshBuffer("cube", skyBoxMeshLayout);
 
         // Ensure that the skybox texture and shader are loaded
+        //without it there is an error, need to check
         resourceManager.GetCubeMapTexture(m_SkyboxTextureName);
         resourceManager.GetShader(m_SkyboxShaderName);
     }

@@ -51,7 +51,7 @@ public:
     ResourceManager& operator=(const ResourceManager&) = delete;
 
     // Texture management
-    std::shared_ptr<Texture2D> GetTexture(std::string_view textureName);
+    std::shared_ptr<TextureBase> GetTexture(std::string_view textureName);
     std::shared_ptr<CubeMapTexture> GetCubeMapTexture(std::string_view textureName);
     void BindCubeMapTexture(std::string_view name, GLuint slot) const;
 
@@ -95,7 +95,6 @@ private:
 
     std::unordered_map<std::string, std::shared_ptr<Mesh>> m_Meshes;
     std::unordered_map<MeshKey, std::shared_ptr<MeshBuffer>> m_MeshBuffers;
-    std::unordered_map<std::string, std::shared_ptr<Texture2D>> m_Textures;
     std::unordered_map<std::string, std::filesystem::path> m_ModelPath;
     std::unordered_map<std::string, std::shared_ptr<Model>> m_Models;
 

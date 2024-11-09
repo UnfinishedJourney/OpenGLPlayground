@@ -22,7 +22,7 @@ std::shared_ptr<Material> MaterialManager::GetMaterial(std::string_view material
     }
 }
 
-std::shared_ptr<Texture2D> MaterialManager::GetTexture(std::string_view textureName) {
+std::shared_ptr<TextureBase> MaterialManager::GetTexture(std::string_view textureName) {
     if (textureName.empty()) {
         return nullptr;
     }
@@ -32,13 +32,13 @@ std::shared_ptr<Texture2D> MaterialManager::GetTexture(std::string_view textureN
         return it->second;
     }
 
-    std::shared_ptr<Texture2D> texture;
+    std::shared_ptr<TextureBase> texture;
     auto pathIt = G_Texture_Path.find(std::string(textureName));
     if (pathIt != G_Texture_Path.end()) {
-        texture = std::make_shared<Texture2D>(pathIt->second);
+        texture = std::make_shared<TextureBase>(pathIt->second);
     }
     else {
-        texture = std::make_shared<Texture2D>(std::filesystem::path(textureName));
+        texture = std::make_shared<TextureBase>(std::filesystem::path(textureName));
     }
 
     m_Textures[std::string(textureName)] = texture;

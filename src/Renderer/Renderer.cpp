@@ -5,7 +5,7 @@
 #include "Utilities/Utility.h"
 #include <glad/glad.h>
 
-#define DEBUG_LIGHTS
+//#define DEBUG_LIGHTS
 
 Renderer::Renderer()
     : m_FrameDataUBO(nullptr), m_LightsSSBO(0)

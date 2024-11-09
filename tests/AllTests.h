@@ -3,6 +3,7 @@
 #include "TestSimpleCube.h"
 #include "TestSkyBox.h"
 #include "TestLights.h"
+#include "TestSkyBoxReflection.h"
 //#include "TestAssimp.h"
 //#include "TestInstance.h"
 //#include "TestPBR.h"

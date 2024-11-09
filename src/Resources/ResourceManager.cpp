@@ -77,7 +77,7 @@ const std::vector<MeshInfo>& ResourceManager::GetModelMeshInfos(std::string_view
     return model->GetMeshesInfo();
 }
 
-std::shared_ptr<Texture2D> ResourceManager::GetTexture(std::string_view textureName) {
+std::shared_ptr<TextureBase> ResourceManager::GetTexture(std::string_view textureName) {
     return m_MaterialManager->GetTexture(textureName);
 }
 

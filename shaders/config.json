@@ -35,12 +35,15 @@
         "debugLights": {
             "binary_path": "../shaders/bin/DebugLights.bin",
             "source_path": "../shaders/DebugLights.shader"
-        }
-    },
-    "compute_shaders": {
+        },
+        "reflectSkybox": {
+            "binary_path": "../shaders/bin/ReflectSkybox.bin",
+            "source_path": "../shaders/ReflectSkybox.shader"
+        },
         "brdf_compute": {
             "binary_path": "../shaders/bin/BRDFCompute.bin",
-            "source_path": "../shaders/BRDFCompute.shader"
+            "source_path": "../shaders/BRDFCompute.shader",
+            "is_compute_shader": true
         }
     }
 }

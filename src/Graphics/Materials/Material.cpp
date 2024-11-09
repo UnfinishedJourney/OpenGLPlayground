@@ -2,7 +2,7 @@
 #include "Utilities/Logger.h"
 #include <glm/gtc/type_ptr.hpp>
 
-void Material::AddTexture(const std::shared_ptr<Texture2D>& texture, GLuint textureUnit) {
+void Material::AddTexture(const std::shared_ptr<TextureBase>& texture, GLuint textureUnit) {
     if (texture) {
         m_Textures[textureUnit] = texture;
         Logger::GetLogger()->info("Texture added to unit {}.", textureUnit);
@@ -31,7 +31,7 @@ const std::unordered_map<std::string, UniformValue>& Material::GetParams() const
     return m_Params;
 }
 
-const std::unordered_map<GLuint, std::shared_ptr<Texture2D>>& Material::GetTextures() const {
+const std::unordered_map<GLuint, std::shared_ptr<TextureBase>>& Material::GetTextures() const {
     return m_Textures;
 }
 

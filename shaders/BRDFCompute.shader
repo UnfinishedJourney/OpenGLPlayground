@@ -1,4 +1,3 @@
-#shader compute
 #version 460 core
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
@@ -13,6 +12,7 @@ const uint BRDF_W = 256u;
 const uint BRDF_H = 256u;
 const float PI = 3.1415926536;
 
+// Hash function for random number generation
 float random(uint seed)
 {
     uint bits = (seed << 16u) | (seed >> 16u);
@@ -24,6 +24,7 @@ float random(uint seed)
     return fract(sin(rdi) * 43758.5453);
 }
 
+// Hammersley sequence for sample distribution
 vec2 hammersley2d(uint i, uint N) 
 {
     uint bits = (i << 16u) | (i >> 16u);
@@ -35,6 +36,7 @@ vec2 hammersley2d(uint i, uint N)
     return vec2(float(i) / float(N), rdi);
 }
 
+// Importance sampling for GGX
 vec3 importanceSample_GGX(vec2 Xi, float roughness, vec3 normal) 
 {
     float alpha = roughness * roughness;
@@ -50,6 +52,7 @@ vec3 importanceSample_GGX(vec2 Xi, float roughness, vec3 normal)
     return normalize(tangentX * H.x + tangentY * H.y + normal * H.z);
 }
 
+// Schlick-Smith GGX geometry function
 float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
 {
     float k = (roughness * roughness) / 2.0;
@@ -58,6 +61,7 @@ float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
     return GL * GV;
 }
 
+// BRDF calculation
 vec2 BRDF(float NoV, float roughness)
 {
     const vec3 N = vec3(0.0, 0.0, 1.0);

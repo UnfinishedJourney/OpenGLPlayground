@@ -16,8 +16,10 @@ public:
     TextureBase(TextureBase&& other) noexcept;
     TextureBase& operator=(TextureBase&& other) noexcept;
 
-    virtual void Bind(GLuint slot = 0) const = 0;
-    virtual void Unbind(GLuint slot = 0) const = 0;
+    virtual void Bind(GLuint slot = 0) const
+    {}
+    virtual void Unbind(GLuint slot = 0) const
+    {}
 
     int GetWidth() const noexcept { return m_Width; }
     int GetHeight() const noexcept { return m_Height; }
