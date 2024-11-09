@@ -11,5 +11,5 @@ public:
     void Dispatch(GLuint numGroupsX, GLuint numGroupsY, GLuint numGroupsZ) const;
 
 protected:
-    void LoadShader();
+    void LoadShader(bool bReload = false);
 };

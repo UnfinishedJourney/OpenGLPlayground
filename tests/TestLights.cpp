@@ -27,10 +27,12 @@ namespace test {
         auto shader = resourceManager.GetShader("simplelights");
 
         auto material = std::make_shared<Material>();
-        material->AddParam<glm::vec3>("material.Ka", glm::vec3(1.0, 0.0, 0.0));
-        material->AddParam<glm::vec3>("material.Kd", glm::vec3(1.0, 0.0, 0.0));
-        material->AddParam<glm::vec3>("material.Ks", glm::vec3(1.0, 0.0, 0.0));
-        material->AddParam<float>("material.shininess", 1.0);
+
+        //gold
+        material->AddParam<glm::vec3>("material.Ka", glm::vec3(0.24725f, 0.1995f, 0.0745f));
+        material->AddParam<glm::vec3>("material.Kd", glm::vec3(0.75164f, 0.60648f, 0.22648f));
+        material->AddParam<glm::vec3>("material.Ks", glm::vec3(0.628281f, 0.555802f, 0.366065f));
+        material->AddParam<float>("material.shininess", 51.2f);
 
         resourceManager.AddMaterial("pigMaterial", material);
 

@@ -14,33 +14,11 @@ void ComputeShader::ReloadShader() {
         m_RendererID = 0;
     }
     m_UniformLocationCache.clear();
-    LoadBinary();
-    // Read shader source
-    std::string source = ReadFile(m_SourcePath);
-    std::unordered_set<std::string> includedFiles;
-    source = ResolveIncludes(source, m_SourcePath.parent_path(), includedFiles);
-
-    // No need to separate shader types for compute shaders
-    // Compile shader
-    GLuint shader = CompileShader(GL_COMPUTE_SHADER, source);
-
-    // Link program
-    m_RendererID = LinkProgram({ shader });
-
-    // Save binary if binary path is provided
-    if (!m_BinaryPath.empty()) {
-        SaveBinary();
-    }
+    LoadShader(true);
 }
 
-void ComputeShader::LoadShader() {
-    if (m_RendererID) {
-        glDeleteProgram(m_RendererID);
-        m_RendererID = 0;
-    }
-    m_UniformLocationCache.clear();
-
-    if (!m_BinaryPath.empty() && LoadBinary()) {
+void ComputeShader::LoadShader(bool bReload) {
+    if (!bReload && !m_BinaryPath.empty() && LoadBinary()) {
         Logger::GetLogger()->info("Loaded compute shader binary from '{}'.", m_BinaryPath.string());
         return;
     }
@@ -50,7 +28,6 @@ void ComputeShader::LoadShader() {
     std::unordered_set<std::string> includedFiles;
     source = ResolveIncludes(source, m_SourcePath.parent_path(), includedFiles);
 
-    // No need to separate shader types for compute shaders
     // Compile shader
     GLuint shader = CompileShader(GL_COMPUTE_SHADER, source);
 

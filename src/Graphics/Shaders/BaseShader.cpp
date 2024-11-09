@@ -39,15 +39,9 @@ GLint BaseShader::GetUniformLocation(std::string_view name) const {
 }
 
 GLuint BaseShader::CompileShader(GLenum shaderType, const std::string& source) const {
-    // For debugging, write the preprocessed shader source to a file
     std::string shaderTypeStr = (shaderType == GL_VERTEX_SHADER) ? "vertex" :
         (shaderType == GL_FRAGMENT_SHADER) ? "fragment" :
         (shaderType == GL_COMPUTE_SHADER) ? "compute" : "unknown";
-
-    // Uncomment the following lines if you wish to output the preprocessed shader source for debugging
-    // std::ofstream outFile("preprocessed_" + shaderTypeStr + ".glsl");
-    // outFile << source;
-    // outFile.close();
 
     GLuint shader = glCreateShader(shaderType);
     const char* src = source.c_str();
@@ -122,7 +116,6 @@ std::string BaseShader::ReadFile(const std::filesystem::path& filepath) const {
     return contents.str();
 }
 
-// Modified ResolveIncludes function with comment handling and include guards
 std::string BaseShader::ResolveIncludes(const std::string& source, const std::filesystem::path& directory, std::unordered_set<std::string>& includedFiles) const {
     std::istringstream stream(source);
     std::ostringstream processedSource;

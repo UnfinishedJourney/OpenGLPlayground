@@ -14,7 +14,7 @@ void Shader::ReloadShader() {
         m_RendererID = 0;
     }
     m_UniformLocationCache.clear();
-    LoadShader();
+    LoadShader(true);
 }
 
 void Shader::LoadShader(bool bReload) {
@@ -29,13 +29,12 @@ void Shader::LoadShader(bool bReload) {
     // Separate shader types
     enum class ShaderType { NONE, VERTEX, FRAGMENT };
     ShaderType type = ShaderType::NONE;
+
     std::unordered_map<ShaderType, std::string> shaderSources;
+    std::unordered_map<ShaderType, std::unordered_set<std::string>> includedFilesMap;
 
     std::istringstream stream(source);
     std::string line;
-
-    std::ostringstream vertexShaderStream;
-    std::ostringstream fragmentShaderStream;
 
     while (std::getline(stream, line)) {
         if (line.find("#shader") != std::string::npos) {
@@ -50,26 +49,22 @@ void Shader::LoadShader(bool bReload) {
             }
         }
         else {
-            if (type == ShaderType::VERTEX) {
-                vertexShaderStream << line << '\n';
-            }
-            else if (type == ShaderType::FRAGMENT) {
-                fragmentShaderStream << line << '\n';
+            if (type != ShaderType::NONE) {
+                shaderSources[type] += line + '\n';
             }
         }
     }
 
-    if (vertexShaderStream.str().empty() || fragmentShaderStream.str().empty()) {
+    if (shaderSources[ShaderType::VERTEX].empty() || shaderSources[ShaderType::FRAGMENT].empty()) {
         throw std::runtime_error("Shader source does not contain both vertex and fragment shaders.");
     }
 
-    // Process vertex shader includes
+    // Process shader includes
     std::unordered_set<std::string> vertexIncludedFiles;
-    std::string vertexSource = ResolveIncludes(vertexShaderStream.str(), m_SourcePath.parent_path(), vertexIncludedFiles);
+    std::string vertexSource = ResolveIncludes(shaderSources[ShaderType::VERTEX], m_SourcePath.parent_path(), vertexIncludedFiles);
 
-    // Process fragment shader includes
     std::unordered_set<std::string> fragmentIncludedFiles;
-    std::string fragmentSource = ResolveIncludes(fragmentShaderStream.str(), m_SourcePath.parent_path(), fragmentIncludedFiles);
+    std::string fragmentSource = ResolveIncludes(shaderSources[ShaderType::FRAGMENT], m_SourcePath.parent_path(), fragmentIncludedFiles);
 
     // Compile shaders
     std::vector<GLuint> shaders;

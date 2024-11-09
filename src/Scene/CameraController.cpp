@@ -31,11 +31,11 @@ void CameraController::Update(float deltaTime) {
         m_Camera.Move(CameraMovement::Right, deltaTime);
 
     // Upward movement - Space key
-    if (m_InputManager.IsKeyPressed(GLFW_KEY_SPACE))
+    if (m_InputManager.IsKeyPressed(GLFW_KEY_W))
         m_Camera.Move(CameraMovement::Up, deltaTime);
 
     // Downward movement - Left Control key
-    if (m_InputManager.IsKeyPressed(GLFW_KEY_LEFT_CONTROL))
+    if (m_InputManager.IsKeyPressed(GLFW_KEY_S))
         m_Camera.Move(CameraMovement::Down, deltaTime);
 }
 

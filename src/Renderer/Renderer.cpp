@@ -28,7 +28,7 @@ void Renderer::Initialize()
 
     // Initialize lights data
     m_LightsData = {
-        { glm::vec4(1.5f, 1.5f, 1.5f, 1.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { glm::vec4(1.5f, 1.5f, 1.5f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) },
         // Add more lights as needed
     };
 
@@ -136,8 +136,6 @@ void Renderer::RenderScene()
         glm::mat4 modelMatrix = renderObjects.front()->GetTransform()->GetModelMatrix();
         glm::mat3 normalMatrix = renderObjects.front()->GetTransform()->GetNormalMatrix();
 
-        glm::mat4 mvp = FrameData::s_Projection * FrameData::s_View * modelMatrix;
-        ResourceManager::GetInstance().SetUniform("u_MVP", mvp);
         ResourceManager::GetInstance().SetUniform("u_Model", modelMatrix);
         ResourceManager::GetInstance().SetUniform("u_NormalMatrix", normalMatrix);
 
