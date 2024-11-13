@@ -6,6 +6,7 @@
 
 
 Scene::Scene()
+    : m_PostProcessingShaderName("presentTexture")
 {
     auto logger = Logger::GetLogger();
     m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), 0, GL_DYNAMIC_DRAW);
@@ -36,7 +37,10 @@ Scene::Scene()
 
 Scene::~Scene()
 {
-    // Clean up resources if necessary
+    if (m_LightsSSBO)
+    {
+        glDeleteBuffers(1, &m_LightsSSBO);
+    }
 }
 
 void Scene::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)

@@ -2,44 +2,18 @@
 
 #include <glad/glad.h>
 
-class RenderState {
-public:
-    RenderState();
+struct RenderState {
+    bool depthTestEnabled = true;
+    GLenum depthFunc = GL_LESS;
+    bool depthMask = GL_TRUE;
 
-    // State configuration methods
-    void SetCullFace(bool enabled, GLenum cullFace = GL_BACK);
-    void SetDepthTest(bool enabled);
-    void SetDepthFunc(GLenum func);
-    void SetBlend(bool enabled, GLenum sfactor = GL_SRC_ALPHA, GLenum dfactor = GL_ONE_MINUS_SRC_ALPHA);
-    void SetDepthMask(bool enabled);
-    void SetStencilTest(bool enabled);
-    void SetStencilFunc(GLenum func, GLint ref, GLuint mask);
-    void SetStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass);
-    // Add more state configurations as needed
+    bool blendingEnabled = false;
+    GLenum blendSrcFactor = GL_ONE;
+    GLenum blendDstFactor = GL_ZERO;
 
-    void Apply();
+    bool faceCullingEnabled = false;
+    GLenum cullFace = GL_BACK;
+    GLenum frontFace = GL_CCW;
 
-private:
-    // State variables
-    bool m_CullFaceEnabled;
-    GLenum m_CullFaceMode;
-
-    bool m_DepthTestEnabled;
-    GLenum m_DepthFunc;
-
-    bool m_BlendEnabled;
-    GLenum m_BlendSFactor;
-    GLenum m_BlendDFactor;
-
-    bool m_DepthMaskEnabled;
-
-    bool m_StencilTestEnabled;
-    GLenum m_StencilFunc;
-    GLint m_StencilRef;
-    GLuint m_StencilMask;
-    GLenum m_StencilSFail;
-    GLenum m_StencilDPFail;
-    GLenum m_StencilDPPass;
-
-    // Add more state variables as needed
+    // Add more states as needed
 };

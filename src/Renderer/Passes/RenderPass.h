@@ -1,15 +1,18 @@
 #pragma once
 
-#include "Renderer/RenderState.h"
+#include <memory>
 #include "Scene/Scene.h"
+#include "Graphics/Buffers/FrameBuffer.h"
 
-class RenderPass {
+// Base class for render passes
+class RenderPass
+{
 public:
-    virtual void Setup() = 0;
-    virtual void Render(const Scene& scene) = 0;
-    virtual void Teardown() = 0;
     virtual ~RenderPass() = default;
 
-protected:
-    RenderState m_RenderState;
+    // Execute the render pass with the given scene
+    virtual void Execute(const std::shared_ptr<Scene>& scene) = 0;
+
+    // Update the framebuffer (e.g., when window size changes)
+    virtual void UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer) = 0;
 };

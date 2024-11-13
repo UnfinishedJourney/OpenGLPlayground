@@ -45,7 +45,6 @@ private:
     std::shared_ptr<spdlog::logger> logger;
 };
 
-
 Application::Application()
     : window(nullptr), inputManager(), cameraController(inputManager), lastTime(0.0)
 {
@@ -75,21 +74,24 @@ void Application::Init()
     glfwSetWindowUserPointer(window, this);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-    // Initialize the Renderer singleton
-    Renderer::GetInstance().Initialize();
+    // Get initial window size
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+
+    // Initialize the Renderer singleton with window dimensions
+    Renderer::GetInstance().Initialize(width, height);
 
     currentTest = nullptr;
     testMenu = std::make_shared<test::TestMenu>(currentTest);
     currentTest = testMenu;
 
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
-    //testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
-    //testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
+    // testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
+    // testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
     testMenu->RegisterTest<test::TestLights>("Lights");
-    //testMenu->RegisterTest<test::TestSkyBoxReflection>("SkyboxReflection");
+    // testMenu->RegisterTest<test::TestSkyBoxReflection>("SkyboxReflection");
     // Add more tests as needed
 }
-
 
 void Application::Run()
 {
@@ -100,7 +102,6 @@ void Application::Run()
 
     lastTime = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
-        //EASY_BLOCK("Main Loop");
         showFPS(window);
 
         double currentTime = glfwGetTime();
@@ -109,26 +110,31 @@ void Application::Run()
 
         glfwPollEvents();
 
-        // Update CameraController's camera based on the current test
-        if (currentTest) {
-            auto scene = currentTest->GetScene();
-            cameraController.SetCamera(scene ? scene->GetCamera() : nullptr);
-        }
-        else {
-            cameraController.SetCamera(nullptr);
-        }
-
         ProcessInput(deltaTime);
 
-        Renderer::GetInstance().Clear();
-
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
+        // Update current test
         if (currentTest) {
             currentTest->OnUpdate(static_cast<float>(deltaTime));
-            currentTest->OnRender();
+
+            // Get the scene from the current test
+            auto scene = currentTest->GetScene();
+
+            // Update CameraController's camera based on the current scene
+            cameraController.SetCamera(scene ? scene->GetCamera() : nullptr);
+
+            // Render the scene
+            if (scene) {
+                Renderer::GetInstance().RenderScene(scene);
+            }
+            else {
+                // Clear the screen if no scene is present
+                Renderer::GetInstance().Clear();
+            }
+
+            // Render ImGui
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
 
             ImGui::Begin("Test");
             if (currentTest != testMenu && ImGui::Button("<- Back")) {
@@ -138,13 +144,14 @@ void Application::Run()
             }
             currentTest->OnImGuiRender();
             ImGui::End();
-        }
 
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        glfwSwapBuffers(window);
-        inputManager.Update(); // Update key states at the end of the frame
-        //EASY_END_BLOCK;
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+            // Swap buffers
+            glfwSwapBuffers(window);
+            inputManager.Update(); // Update key states at the end of the frame
+        }
     }
 }
 
@@ -158,7 +165,7 @@ void Application::ProcessInput(double deltaTime)
 {
     cameraController.Update(deltaTime);
     if (inputManager.WasKeyJustPressed(GLFW_KEY_R)) {
-        Logger::GetLogger()->info("Reloading all shaders...");
+        logger->info("Reloading all shaders...");
         ResourceManager::GetInstance().ReloadAllShaders();
     }
 }
@@ -215,6 +222,9 @@ void glfw_onWindowSize(GLFWwindow* window, int width, int height)
 
     // Update the viewport
     glViewport(0, 0, width, height);
+
+    // Update the Renderer with the new window size
+    Renderer::GetInstance().OnWindowResize(width, height);
 
     // Retrieve current display parameters
     float displayHeight = Screen::s_DisplayHeight;

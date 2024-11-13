@@ -35,6 +35,21 @@ public:
     void BuildBatches() const;
     void BindLightSSBO() const;
 
+    std::string GetPostProcessingShaderName() const
+    {
+        return m_PostProcessingShaderName;
+    }
+
+    void SetPostProcessingShaderName(std::string shaderName)
+    {
+        m_PostProcessingShaderName = shaderName;
+    }
+
+    std::vector<LightData> GetLights() const
+    {
+        return m_LightsData;
+    }
+
     // Accessors
     const std::shared_ptr<Camera>& GetCamera() const { return m_Camera; }
 
@@ -50,6 +65,6 @@ private:
     std::unique_ptr<UniformBuffer> m_FrameDataUBO;
     //std::unique_ptr<ShaderStorageBuffer> m_LightsSSBO;
     GLuint m_LightsSSBO;
-
+    std::string m_PostProcessingShaderName;
     // Other necessary data and methods
 };

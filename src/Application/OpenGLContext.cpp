@@ -42,7 +42,7 @@ void GLAPIENTRY GLContext::OpenGLMessageCallback(GLenum source, GLenum type, GLu
     case GL_DEBUG_SEVERITY_NOTIFICATION: severityStr = "Notification"; break;
     }
 
-    if (severity == GL_DEBUG_SEVERITY_HIGH)
+    if (severity == GL_DEBUG_SEVERITY_HIGH || severity == GL_DEBUG_SEVERITY_MEDIUM)
         logger->error("OpenGL [{} - {} - {}] (ID: {}): {}", sourceStr, typeStr, severityStr, id, message);
 }
 

@@ -2,58 +2,58 @@
 
 #include <memory>
 #include <vector>
-#include "Graphics/Buffers/UniformBuffer.h"
-#include "Graphics/Buffers/MeshBuffer.h"
-#include "Graphics/Buffers/FrameBuffer.h"
-#include "Graphics/Shaders/Shader.h"
-#include "Renderer/RenderObject.h"
-#include "Renderer/BatchManager.h"
-#include "Scene/Lights.h"
 #include "Scene/Scene.h"
-
-//need to update windows size properly
+#include "Renderer/Passes/RenderPass.h"
+#include "Graphics/Buffers/FrameBuffer.h"
 
 class Renderer
 {
 public:
-    static Renderer& GetInstance() {
+    static Renderer& GetInstance()
+    {
         static Renderer instance;
         return instance;
     }
 
-    // Delete copy constructor and assignment operator
-    Renderer(const Renderer&) = delete;
-    Renderer& operator=(const Renderer&) = delete;
+    // Initialize the renderer with the window dimensions
+    void Initialize(int width, int height);
 
-    void Initialize(); // Added initialization method
-
-    ///!!!LATER
-    //void RenderSkybox(const std::shared_ptr<MeshBuffer>& meshBuffer, const std::string& textureName, const std::string& shaderName) const;
-    void UpdateLightsData(const std::vector<LightData>& lights) const;
-    void Clear(float r = 0.3f, float g = 0.2f, float b = 0.8f, float a = 1.0f) const;
-    void SetupFrameBuffers();
-    void SetupFullscreenQuad();
-
-    //void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
+    // Render the given scene
     void RenderScene(const std::shared_ptr<Scene>& scene);
-    //void RenderLightSpheres();
-    //void ClearRenderObjects();
+
+    // Handle window resizing
+    void OnWindowResize(int width, int height);
+
+    void Clear(float r = 0.3f, float g = 0.2f, float b = 0.8f, float a = 1.0f) const;
 
 private:
     Renderer();
     ~Renderer();
 
-    //void UpdateFrameDataUBO() const;
-    void BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const;
+    // Delete copy constructor and assignment operator
+    Renderer(const Renderer&) = delete;
+    Renderer& operator=(const Renderer&) = delete;
 
-    //std::unique_ptr<UniformBuffer> m_FrameDataUBO;
-    GLuint m_LightsSSBO;
+    // Setup the fullscreen quad for post-processing
+    void SetupFullscreenQuad();
 
-    //std::vector<LightData> m_LightsData;
-    std::shared_ptr<MeshBuffer> m_LightSphereMeshBuffer;
-    std::unique_ptr<FrameBuffer> m_SceneFrameBuffer;
+    // Initialize passes for the scene
+    void InitializePassesForScene(const std::shared_ptr<Scene>& scene);
+
+    // Create framebuffer for the scene
+    std::shared_ptr<FrameBuffer> CreateFramebufferForScene(const std::shared_ptr<Scene>& scene, int width, int height);
+
+    // Window dimensions
+    int m_Width;
+    int m_Height;
+
+    // Fullscreen quad VAO and VBO
     GLuint m_FullscreenQuadVAO = 0;
     GLuint m_FullscreenQuadVBO = 0;
 
-    //BatchManager m_BatchManager;
+    // Render passes
+    std::vector<std::unique_ptr<RenderPass>> m_RenderPasses;
+
+    // Current scene
+    std::shared_ptr<Scene> m_CurrentScene;
 };
