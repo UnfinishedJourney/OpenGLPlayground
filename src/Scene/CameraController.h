@@ -2,10 +2,11 @@
 
 #include "Camera.h"
 #include "Application/InputManager.h"
+#include <memory>
 
 class CameraController {
 public:
-    CameraController(Camera& camera, InputManager& inputManager);
+    CameraController(InputManager& inputManager);
 
     void Update(float deltaTime);
     void ProcessMouseMovement(float xpos, float ypos);
@@ -16,9 +17,11 @@ public:
 
     // Methods to set display parameters dynamically
     void SetDisplayParameters(float displayHeight, float viewerDistance);
+    void SetCamera(std::shared_ptr<Camera> camera) { m_Camera = camera; }
+    bool HasCamera() const { return m_Camera != nullptr; }
 
 private:
-    Camera& m_Camera;
+    std::shared_ptr<Camera> m_Camera;
     InputManager& m_InputManager;
     float m_Sensitivity;
     float m_Speed;

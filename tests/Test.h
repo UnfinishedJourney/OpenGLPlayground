@@ -4,6 +4,7 @@
 #include <functional>
 #include <string>
 #include <memory>
+#include "Scene/Scene.h"
 
 namespace test {
 
@@ -18,6 +19,8 @@ namespace test {
         virtual void OnUpdate(float deltaTime) {}
         virtual void OnRender() {}
         virtual void OnImGuiRender() {}
+
+        virtual std::shared_ptr<Scene> GetScene() const { return nullptr; }
     };
 
     class TestMenu : public Test

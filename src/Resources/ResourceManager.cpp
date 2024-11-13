@@ -1,7 +1,6 @@
 #include "Resources/ResourceManager.h"
 #include "Utilities/Logger.h"
-#include "Graphics/Meshes/Cube.h"
-#include "Graphics/Meshes/Sphere.h"
+#include "Graphics/Meshes/AllMeshes.h"
 
 ResourceManager::ResourceManager()
     : m_CurrentlyBoundCubeMap("") {
@@ -162,6 +161,10 @@ std::shared_ptr<Mesh> ResourceManager::GetMesh(std::string_view meshName) {
 
     else if (meshName == "lightsphere") {
         mesh = std::make_shared<LightSphere>();
+    }
+
+    else if (meshName == "quad") {
+        mesh = std::make_shared<Quad>();
     }
 
     else {

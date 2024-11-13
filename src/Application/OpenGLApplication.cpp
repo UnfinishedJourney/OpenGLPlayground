@@ -4,8 +4,7 @@
 #include "Application/OpenGLContext.h"
 #include "Utilities/Logger.h"
 #include "AllTests.h"
-#include "Scene/FrameData.h"
-#include "Scene/Camera.h"
+#include "Scene/Screen.h"
 #include "Renderer/Renderer.h"
 #include "Resources/ResourceManager.h"
 #include "Scene/CameraController.h"
@@ -35,7 +34,6 @@ public:
     void Cleanup();
 
     GLFWwindow* window;
-    Camera camera;
     CameraController cameraController;
     InputManager inputManager;
     std::shared_ptr<test::Test> currentTest;
@@ -49,8 +47,9 @@ private:
 
 
 Application::Application()
-    : window(nullptr), camera(), inputManager(), cameraController(camera, inputManager), lastTime(0.0)
+    : window(nullptr), inputManager(), cameraController(inputManager), lastTime(0.0)
 {
+    cameraController.SetCamera(nullptr);
     Logger::Init();
     logger = Logger::GetLogger();
     logger->info("Application started.");
@@ -84,16 +83,13 @@ void Application::Init()
     currentTest = testMenu;
 
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
-    testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
-    testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
+    //testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
+    //testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
     testMenu->RegisterTest<test::TestLights>("Lights");
-    testMenu->RegisterTest<test::TestSkyBoxReflection>("SkyboxReflection");
+    //testMenu->RegisterTest<test::TestSkyBoxReflection>("SkyboxReflection");
     // Add more tests as needed
-
-    FrameData::s_View = camera.GetViewMatrix();
-    FrameData::s_Projection = glm::perspective(glm::radians(camera.GetFOV()),
-        static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height), 0.1f, 100.0f);
 }
+
 
 void Application::Run()
 {
@@ -104,7 +100,7 @@ void Application::Run()
 
     lastTime = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
-        EASY_BLOCK("Main Loop");
+        //EASY_BLOCK("Main Loop");
         showFPS(window);
 
         double currentTime = glfwGetTime();
@@ -112,10 +108,18 @@ void Application::Run()
         lastTime = currentTime;
 
         glfwPollEvents();
+
+        // Update CameraController's camera based on the current test
+        if (currentTest) {
+            auto scene = currentTest->GetScene();
+            cameraController.SetCamera(scene ? scene->GetCamera() : nullptr);
+        }
+        else {
+            cameraController.SetCamera(nullptr);
+        }
+
         ProcessInput(deltaTime);
 
-        FrameData::s_View = camera.GetViewMatrix();
-        FrameData::s_CameraPos = camera.GetPosition();
         Renderer::GetInstance().Clear();
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -138,10 +142,9 @@ void Application::Run()
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
         glfwSwapBuffers(window);
         inputManager.Update(); // Update key states at the end of the frame
-        EASY_END_BLOCK;
+        //EASY_END_BLOCK;
     }
 }
 
@@ -173,7 +176,6 @@ int main()
     return 0;
 }
 
-// Callback functions
 void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));

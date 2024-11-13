@@ -1,14 +1,15 @@
 ﻿#include "Renderer/Renderer.h"
 #include "Resources/ResourceManager.h"
 #include "Utilities/Logger.h"
-#include "Scene/FrameData.h"
+#include "Scene/Screen.h"
 #include "Utilities/Utility.h"
 #include <glad/glad.h>
 
 //#define DEBUG_LIGHTS
 
+
 Renderer::Renderer()
-    : m_FrameDataUBO(nullptr), m_LightsSSBO(0)
+    : m_SceneFrameBuffer(nullptr), m_LightsSSBO(0)
 {
     // Constructor is private; initialization is done in Initialize()
 }
@@ -23,46 +24,100 @@ void Renderer::Initialize()
     auto logger = Logger::GetLogger();
     logger->info("Initializing Renderer.");
 
-    m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), 0, GL_DYNAMIC_DRAW);
-    logger->info("Created FrameData UBO with binding point 0.");
+    //m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), 0, GL_DYNAMIC_DRAW);
+    //logger->info("Created FrameData UBO with binding point 0.");
 
     // Initialize lights data
-    m_LightsData = {
-        { glm::vec4(1.5f, 1.5f, 1.5f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) },
-        // Add more lights as needed
-    };
+    //m_LightsData = {
+    //    { glm::vec4(1.5f, 1.5f, 1.5f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) },
+    //    // Add more lights as needed
+    //};
 
     // Calculate buffer size
-    GLsizeiptr bufferSize = sizeof(glm::vec4) + m_LightsData.size() * sizeof(LightData);
+    //GLsizeiptr bufferSize = sizeof(glm::vec4) + m_LightsData.size() * sizeof(LightData);
 
-    // Create and bind the SSBO for lights
-    glGenBuffers(1, &m_LightsSSBO);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_LightsSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
+    //// Create and bind the SSBO for lights
+    //glGenBuffers(1, &m_LightsSSBO);
+    //glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_LightsSSBO);
+    //glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
 
-    // Initialize numLights and lightsData
-    uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(glm::vec4), &numLights);
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4), m_LightsData.size() * sizeof(LightData), m_LightsData.data());
+    //// Initialize numLights and lightsData
+    //uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
+    //glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(glm::vec4), &numLights);
+    //glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4), m_LightsData.size() * sizeof(LightData), m_LightsData.data());
 
-    // Bind the SSBO to binding point 1
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_LightsSSBO);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    //// Bind the SSBO to binding point 1
+    //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_LightsSSBO);
+    //glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-    logger->info("Initialized Lights SSBO with {} light(s).", m_LightsData.size());
+    //logger->info("Initialized Lights SSBO with {} light(s).", m_LightsData.size());
 
-    auto& resourceManager = ResourceManager::GetInstance();
 
-    MeshLayout lightMeshLayout = {
-        true, 
-        false, 
-        false, 
-        false, 
-        {}
+
+    //!!!!
+    //! DEBUG LAYER
+    //auto& resourceManager = ResourceManager::GetInstance();
+
+    //MeshLayout lightMeshLayout = {
+    //    true, 
+    //    false, 
+    //    false, 
+    //    false, 
+    //    {}
+    //};
+
+    //m_LightSphereMeshBuffer = resourceManager.GetMeshBuffer("lightsphere", lightMeshLayout);
+
+
+
+    SetupFrameBuffers();
+    SetupFullscreenQuad();
+}
+
+void Renderer::SetupFrameBuffers()
+{
+    auto logger = Logger::GetLogger();
+
+    // Define color attachments
+    std::vector<FrameBufferTextureAttachment> colorAttachments = {
+        { GL_COLOR_ATTACHMENT0, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE }
     };
 
-    m_LightSphereMeshBuffer = resourceManager.GetMeshBuffer("lightsphere", lightMeshLayout);
+    // Create Scene Framebuffer with color and depth attachments
+    int width = Screen::s_Width;
+    int height = Screen::s_Height;
 
+    static int s_Height;
+    m_SceneFrameBuffer = std::make_unique<FrameBuffer>(width, height, colorAttachments, true);
+    logger->info("Scene FrameBuffer created with ID {}.", m_SceneFrameBuffer->GetRendererID());
+}
+
+void Renderer::SetupFullscreenQuad()
+{
+    auto logger = Logger::GetLogger();
+    float quadVertices[] = {
+        // positions        // texCoords
+        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
+         1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+         1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+         1.0f,  1.0f, 0.0f,  1.0f, 1.0f
+    };
+
+    glGenVertexArrays(1, &m_FullscreenQuadVAO);
+    glGenBuffers(1, &m_FullscreenQuadVBO);
+    glBindVertexArray(m_FullscreenQuadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_FullscreenQuadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0); // Position
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1); // TexCoords
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+
+    logger->info("Fullscreen Quad VAO and VBO set up.");
 }
 
 void Renderer::UpdateLightsData(const std::vector<LightData>& lights) const
@@ -70,15 +125,15 @@ void Renderer::UpdateLightsData(const std::vector<LightData>& lights) const
     // Update lights data as needed
 }
 
-void Renderer::UpdateFrameDataUBO() const
-{
-    FrameCommonData frameData;
-    frameData.view = FrameData::s_View;
-    frameData.proj = FrameData::s_Projection;
-    frameData.cameraPos = glm::vec4(FrameData::s_CameraPos, 1.0f);
-
-    m_FrameDataUBO->SetData(&frameData, sizeof(FrameCommonData));
-}
+//void Renderer::UpdateFrameDataUBO() const
+//{
+//    FrameCommonData frameData;
+//    frameData.view = FrameData::s_View;
+//    frameData.proj = FrameData::s_Projection;
+//    frameData.cameraPos = glm::vec4(FrameData::s_CameraPos, 1.0f);
+//
+//    m_FrameDataUBO->SetData(&frameData, sizeof(FrameCommonData));
+//}
 
 void Renderer::BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const
 {
@@ -86,42 +141,47 @@ void Renderer::BindShaderAndMaterial(const std::string& shaderName, const std::s
     ResourceManager::GetInstance().BindMaterial(materialName);
 }
 
-void Renderer::RenderSkybox(const std::shared_ptr<MeshBuffer>& meshBuffer, const std::string& textureName, const std::string& shaderName) const
+//void Renderer::RenderSkybox(const std::shared_ptr<MeshBuffer>& meshBuffer, const std::string& textureName, const std::string& shaderName) const
+//{
+//    if (!meshBuffer) {
+//        Logger::GetLogger()->error("Skybox MeshBuffer is nullptr.");
+//        return;
+//    }
+//
+//    UpdateFrameDataUBO();
+//
+//    ResourceManager::GetInstance().BindShader(shaderName);
+//    ResourceManager::GetInstance().BindCubeMapTexture(textureName, 0);
+//
+//    glDepthFunc(GL_LEQUAL);
+//    glDepthMask(GL_FALSE);
+//
+//    glm::mat4 mvp = FrameData::s_Projection * glm::mat4(glm::mat3(FrameData::s_View)); // Remove translation
+//    ResourceManager::GetInstance().SetUniform("u_MVP", mvp);
+//
+//    meshBuffer->Bind();
+//    GLCall(glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(meshBuffer->GetIndexCount()), GL_UNSIGNED_INT, nullptr));
+//
+//    glDepthFunc(GL_LESS);
+//    glDepthMask(GL_TRUE);
+//}
+
+//void Renderer::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)
+//{
+//    m_BatchManager.AddRenderObject(renderObject);
+//}
+
+void Renderer::RenderScene(const std::shared_ptr<Scene>& scene)
 {
-    if (!meshBuffer) {
-        Logger::GetLogger()->error("Skybox MeshBuffer is nullptr.");
-        return;
-    }
+    scene->UpdateFrameDataUBO();
+    scene->BuildBatches();
+    //m_BatchManager.BuildBatches();
 
-    UpdateFrameDataUBO();
+    m_SceneFrameBuffer->Bind();
+    Clear();
 
-    ResourceManager::GetInstance().BindShader(shaderName);
-    ResourceManager::GetInstance().BindCubeMapTexture(textureName, 0);
-
-    glDepthFunc(GL_LEQUAL);
-    glDepthMask(GL_FALSE);
-
-    glm::mat4 mvp = FrameData::s_Projection * glm::mat4(glm::mat3(FrameData::s_View)); // Remove translation
-    ResourceManager::GetInstance().SetUniform("u_MVP", mvp);
-
-    meshBuffer->Bind();
-    GLCall(glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(meshBuffer->GetIndexCount()), GL_UNSIGNED_INT, nullptr));
-
-    glDepthFunc(GL_LESS);
-    glDepthMask(GL_TRUE);
-}
-
-void Renderer::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)
-{
-    m_BatchManager.AddRenderObject(renderObject);
-}
-
-void Renderer::RenderScene()
-{
-    UpdateFrameDataUBO();
-    m_BatchManager.BuildBatches();
-
-    const auto& batches = m_BatchManager.GetBatches();
+    //const auto& batches = m_BatchManager.GetBatches();
+    const auto& batches = scene->GetBatches();
     for (const auto& batch : batches) {
 
         // Get the model matrix from the first RenderObject
@@ -143,36 +203,58 @@ void Renderer::RenderScene()
         batch->Render();
     }
 
-#ifdef DEBUG_LIGHTS
-    RenderLightSpheres();
-#endif
+    m_SceneFrameBuffer->Unbind();
+
+//#ifdef DEBUG_LIGHTS
+//    RenderLightSpheres();
+//#endif
+
+    auto postProcessingShader = ResourceManager::GetInstance().GetShader("presentTexture");
+    if (!postProcessingShader)
+    {
+        Logger::GetLogger()->error("postProcessingShader not found!");
+        return;
+    }
+
+    ResourceManager::GetInstance().BindShader("presentTexture");
+    //ResourceManager::GetInstance().SetUniform("RenderTex", 0);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_SceneFrameBuffer->GetTexture(GL_COLOR_ATTACHMENT0));
+
+    glBindVertexArray(m_FullscreenQuadVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+
+    Logger::GetLogger()->debug("Rendered scene directly to screen without post-processing.");
+
 }
 
-void Renderer::RenderLightSpheres()
-{
-    //if (!m_LightSphereShader || !m_LightSphereMesh) {
-    //    Logger::GetLogger()->error("Light spheres shader or mesh is not initialized.");
-    //    return;
-    //}
+//void Renderer::RenderLightSpheres()
+//{
+//    //if (!m_LightSphereShader || !m_LightSphereMesh) {
+//    //    Logger::GetLogger()->error("Light spheres shader or mesh is not initialized.");
+//    //    return;
+//    //}
+//
+//    glEnable(GL_CULL_FACE);
+//    glCullFace(GL_BACK);
+//    glFrontFace(GL_CCW);
+//
+//    auto& resourceManager = ResourceManager::GetInstance();
+//    resourceManager.BindShader("debugLights");
+//
+//    // Bind the sphere mesh
+//    m_LightSphereMeshBuffer->Bind();
+//
+//    // Draw all instances in a single draw call
+//    GLCall(glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(m_LightSphereMeshBuffer->GetIndexCount()), GL_UNSIGNED_INT, 0, static_cast<GLsizei>(m_LightsData.size())));
+//}
 
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glFrontFace(GL_CCW);
-
-    auto& resourceManager = ResourceManager::GetInstance();
-    resourceManager.BindShader("debugLights");
-
-    // Bind the sphere mesh
-    m_LightSphereMeshBuffer->Bind();
-
-    // Draw all instances in a single draw call
-    GLCall(glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(m_LightSphereMeshBuffer->GetIndexCount()), GL_UNSIGNED_INT, 0, static_cast<GLsizei>(m_LightsData.size())));
-}
-
-void Renderer::ClearRenderObjects()
-{
-    m_BatchManager.Clear();
-}
+//void Renderer::ClearRenderObjects()
+//{
+//    m_BatchManager.Clear();
+//}
 
 void Renderer::Clear(float r, float g, float b, float a) const
 {

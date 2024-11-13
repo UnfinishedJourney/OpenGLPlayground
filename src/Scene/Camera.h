@@ -15,12 +15,13 @@ enum class CameraMovement {
 class Camera
 {
 public:
-    // Constructor without displayHeight and viewerDistance parameters
     Camera(const glm::vec3& position = glm::vec3(0.0f, 0.0f, 8.0f),
         const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f),
         float yaw = -90.0f, float pitch = 0.0f);
 
     glm::mat4 GetViewMatrix() const;
+    glm::mat4 GetProjectionMatrix() const;
+
     float GetFOV() const;
     void SetFOV(float fov);
 
@@ -28,12 +29,12 @@ public:
     void Rotate(float xOffset, float yOffset);
     void SetSpeed(float speed);
 
+    void UpdateFOV();
+    void UpdateProjectionMatrix(float aspectRatio);
+
     glm::vec3 GetPosition() const { return m_Position; }
     glm::vec3 GetFront() const { return m_Front; }
     glm::vec3 GetUp() const { return m_Up; }
-
-    // Update FOV based on current Screen's static parameters
-    void UpdateFOV();
 
 private:
     void UpdateCameraVectors();
@@ -49,4 +50,6 @@ private:
     float m_FOV;
     float m_Speed;
     float m_MouseSensitivity;
+
+    glm::mat4 m_ProjectionMatrix;
 };

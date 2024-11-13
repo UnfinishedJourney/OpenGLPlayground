@@ -40,6 +40,14 @@
             "binary_path": "../shaders/bin/ReflectSkybox.bin",
             "source_path": "../shaders/ReflectSkybox.shader"
         },
+        "presentTexture": {
+            "binary_path": "../shaders/bin/PresentTexture.bin",
+            "source_path": "../shaders/Postprocessing/PresentTexture.shader"
+        },
+        "edgeDetection": {
+            "binary_path": "../shaders/bin/EdgeDetection.bin",
+            "source_path": "../shaders/Postprocessing/EdgeDetection.shader"
+        },
         "brdf_compute": {
             "binary_path": "../shaders/bin/BRDFCompute.bin",
             "source_path": "../shaders/BRDFCompute.shader",

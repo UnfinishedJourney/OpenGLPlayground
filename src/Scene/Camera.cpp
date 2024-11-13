@@ -1,5 +1,5 @@
 #include "Camera.h"
-#include "FrameData.h"
+#include "Screen.h"
 #include <algorithm> // For std::clamp
 #include <cmath>     // For atan
 
@@ -14,29 +14,27 @@ Camera::Camera(
     m_Yaw(yaw),
     m_Pitch(pitch),
     m_Speed(10.0f),
-    m_MouseSensitivity(0.1f)
+    m_MouseSensitivity(0.1f),
+    m_FOV(45.0f)
 {
-    UpdateFOV();
     UpdateCameraVectors();
 
     // Initialize the projection matrix
     float aspectRatio = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
-    FrameData::s_Projection = glm::perspective(
+    m_ProjectionMatrix = glm::perspective(
         glm::radians(m_FOV),
         aspectRatio,
         0.1f,
         500.0f
     );
-
-    // Initialize the view matrix
-    FrameData::s_View = GetViewMatrix();
-
-    // Initialize the camera position in FrameData
-    FrameData::s_CameraPos = m_Position;
 }
 
 glm::mat4 Camera::GetViewMatrix() const {
     return glm::lookAt(m_Position, m_Position + m_Front, m_Up);
+}
+
+glm::mat4 Camera::GetProjectionMatrix() const {
+    return m_ProjectionMatrix;
 }
 
 float Camera::GetFOV() const {
@@ -46,15 +44,7 @@ float Camera::GetFOV() const {
 void Camera::SetFOV(float fov) {
     // Clamp the FOV to prevent extreme distortion
     m_FOV = glm::clamp(fov, 1.0f, 120.0f);
-
-    // Update the projection matrix with the new FOV
-    float aspectRatio = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
-    FrameData::s_Projection = glm::perspective(
-        glm::radians(m_FOV),
-        aspectRatio,
-        0.1f,
-        500.0f
-    );
+    UpdateProjectionMatrix(static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height));
 }
 
 void Camera::Move(CameraMovement direction, float deltaTime) {
@@ -71,9 +61,6 @@ void Camera::Move(CameraMovement direction, float deltaTime) {
         m_Position += m_WorldUp * velocity;
     if (direction == CameraMovement::Down)
         m_Position -= m_WorldUp * velocity;
-
-    // Update the camera position in FrameData
-    FrameData::s_CameraPos = m_Position;
 }
 
 void Camera::Rotate(float xOffset, float yOffset) {
@@ -105,9 +92,11 @@ void Camera::UpdateFOV()
     // Clamp the FOV to prevent extreme distortion
     m_FOV = glm::clamp(physicalFOV, 1.0f, 120.0f);
 
-    // Update the projection matrix with the new FOV
-    float aspectRatio = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
-    FrameData::s_Projection = glm::perspective(
+    UpdateProjectionMatrix(static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height));
+}
+
+void Camera::UpdateProjectionMatrix(float aspectRatio) {
+    m_ProjectionMatrix = glm::perspective(
         glm::radians(m_FOV),
         aspectRatio,
         0.1f,
@@ -126,8 +115,4 @@ void Camera::UpdateCameraVectors() {
     // Re-calculate the Right and Up vectors
     m_Right = glm::normalize(glm::cross(m_Front, m_WorldUp));  // Normalize the vectors
     m_Up = glm::normalize(glm::cross(m_Right, m_Front));
-
-    // Update the View matrix in FrameData
-    FrameData::s_View = GetViewMatrix();
-    FrameData::s_CameraPos = m_Position;
 }

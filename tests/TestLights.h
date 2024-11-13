@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Test.h"
-#include "Renderer/RenderObject.h"
+#include "Scene/Scene.h"
 #include <memory>
 
 namespace test {
@@ -18,7 +18,10 @@ namespace test {
         void OnRender() override;
         void OnImGuiRender() override;
 
+        std::shared_ptr<Scene> GetScene() const override { return m_Scene; }
+
     private:
+        std::shared_ptr<Scene> m_Scene;
     };
 
 }
