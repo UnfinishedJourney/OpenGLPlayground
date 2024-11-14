@@ -1,6 +1,7 @@
 ﻿#include "Renderer.h"
 #include "Renderer/Passes/GeometryPass.h"
 #include "Renderer/Passes/PostProcessingPass.h"
+#include "Renderer/Passes/DebugLightsPass.h"
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
 
@@ -94,6 +95,7 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
 
     // Initialize passes with the framebuffer and scene
     m_RenderPasses.push_back(std::make_unique<GeometryPass>(framebuffer, scene));
+    m_RenderPasses.push_back(std::make_unique<DebugLightsPass>(framebuffer, scene));
     m_RenderPasses.push_back(std::make_unique<PostProcessingPass>(m_FullscreenQuadVAO, framebuffer, scene));
 
     // Add additional passes as needed
