@@ -21,15 +21,13 @@ public:
     ~Scene();
 
     void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
-    //void AddLight(const std::shared_ptr<Light>& light);
-    void AddLight(LightData light);
+    void AddLight(const LightData& light);
     void SetCamera(const std::shared_ptr<Camera>& camera);
     void Clear();
 
-    // IRenderDataProvider implementations
     const std::vector<std::shared_ptr<Batch>>& GetBatches() const;
     void UpdateFrameDataUBO() const;
-    void UpdateLightsData() const;
+    void UpdateLightsData();
     void BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const;
 
     void BuildBatches() const;
@@ -56,15 +54,12 @@ public:
 private:
 
     const int MAX_LIGHTS = 8;
-    //std::vector<std::shared_ptr<RenderObject>> m_RenderObjects;
-    //std::vector<std::shared_ptr<Light>> m_Lights;
     std::vector<LightData> m_LightsData;
     std::shared_ptr<Camera> m_Camera;
 
     mutable BatchManager m_BatchManager;
     std::unique_ptr<UniformBuffer> m_FrameDataUBO;
-    //std::unique_ptr<ShaderStorageBuffer> m_LightsSSBO;
-    GLuint m_LightsSSBO;
+    std::unique_ptr<ShaderStorageBuffer> m_LightsSSBO;
+    ///GLuint m_LightsSSBO;
     std::string m_PostProcessingShaderName;
-    // Other necessary data and methods
 };

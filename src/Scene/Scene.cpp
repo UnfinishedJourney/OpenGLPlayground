@@ -11,25 +11,23 @@ Scene::Scene()
     auto logger = Logger::GetLogger();
     m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), 0, GL_DYNAMIC_DRAW);
     logger->info("Created FrameData UBO with binding point 0.");
-    //m_LightsSSBO = std::make_unique<ShaderStorageBuffer>(1, sizeof(LightData) * MAX_LIGHTS, GL_DYNAMIC_DRAW);
     m_LightsData = {
-        { glm::vec4(1.5f, 1.5f, 1.5f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) },
     };
 
-    GLsizeiptr bufferSize = sizeof(glm::vec4) + m_LightsData.size() * sizeof(LightData);
+    if (m_LightsData.size() > MAX_LIGHTS) {
+        throw std::runtime_error("Too many lights.");
+    }
 
-    // Create and bind the SSBO for lights
-    glGenBuffers(1, &m_LightsSSBO);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_LightsSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
-
-    // Initialize numLights and lightsData
+    GLuint bindingPoint = 1;
+    GLsizeiptr bufferSize = sizeof(glm::vec4) + MAX_LIGHTS * sizeof(LightData);
     uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(glm::vec4), &numLights);
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4), m_LightsData.size() * sizeof(LightData), m_LightsData.data());
 
-    // Bind the SSBO to binding point 1
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_LightsSSBO);
+    m_LightsSSBO = std::make_unique<ShaderStorageBuffer>(bindingPoint, bufferSize, GL_DYNAMIC_DRAW);
+    m_LightsSSBO->SetData(&numLights, sizeof(glm::vec4), 0);
+
+    m_LightsSSBO->SetData(m_LightsData.data(), m_LightsData.size() * sizeof(LightData), sizeof(glm::vec4));
+
+    m_LightsSSBO->BindBase();
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     logger->info("Initialized Lights SSBO with {} light(s).", m_LightsData.size());
@@ -37,26 +35,17 @@ Scene::Scene()
 
 Scene::~Scene()
 {
-    if (m_LightsSSBO)
-    {
-        glDeleteBuffers(1, &m_LightsSSBO);
-    }
 }
 
 void Scene::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)
 {
     m_BatchManager.AddRenderObject(renderObject);
-    //m_RenderObjects.push_back(renderObject);
 }
 
-//void Scene::AddLight(const std::shared_ptr<Light>& light)
-//{
-//    m_Lights.push_back(light);
-//}
-
-void Scene::AddLight(LightData light)
+void Scene::AddLight(const LightData& light)
 {
     m_LightsData.push_back(light);
+    UpdateLightsData(); 
 }
 
 void Scene::SetCamera(const std::shared_ptr<Camera>& camera)
@@ -66,9 +55,7 @@ void Scene::SetCamera(const std::shared_ptr<Camera>& camera)
 
 void Scene::Clear()
 {
-    //m_RenderObjects.clear();
     m_LightsData.clear();
-    //m_Lights.clear();
     m_BatchManager.Clear();
 }
 
@@ -99,28 +86,22 @@ void Scene::UpdateFrameDataUBO() const
     m_FrameDataUBO->SetData(&frameData, sizeof(FrameCommonData));
 }
 
-void Scene::UpdateLightsData() const
+void Scene::UpdateLightsData()
 {
-    std::vector<LightData> lightDataVec;
-    //for (const auto& light : m_Lights) {
-    //    LightData data;
-    //    data.position = glm::vec4(light->GetPosition(), 1.0f);
-    //    data.color = glm::vec4(light->GetColor(), 1.0f);
-    //    // Add other light properties if needed
-    //    lightDataVec.push_back(data);
-    //}
-
-    for (const auto& light : m_LightsData) {
-        lightDataVec.push_back(light);
+    if (m_LightsData.size() > MAX_LIGHTS) {
+        throw std::runtime_error("Too many lights.");
     }
-     
-    // Update the SSBO
-    //m_LightsSSBO->SetData(lightDataVec.data(), lightDataVec.size() * sizeof(LightData));
+
+    uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
+
+    m_LightsSSBO->SetData(&numLights, sizeof(glm::vec4), 0);
+
+    m_LightsSSBO->SetData(m_LightsData.data(), m_LightsData.size() * sizeof(LightData), sizeof(glm::vec4));
 }
 
 void Scene::BindLightSSBO() const
 {
-    ///m_LightsSSBO->Bind();
+    m_LightsSSBO->Bind();
 }
 
 void Scene::BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const

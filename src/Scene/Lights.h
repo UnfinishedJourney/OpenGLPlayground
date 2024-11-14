@@ -2,13 +2,6 @@
 
 #include "glm/glm.hpp"
 
-//struct Light
-//{
-//public:
-//	glm::vec4 position;
-//	glm::vec3 color;
-//};
-
 class Light {
 public:
     enum class Type {
@@ -26,7 +19,7 @@ public:
 
     Type GetType() const;
     const glm::vec3& GetPosition() const;
-    const glm::vec3& GetDirection() const;
+    //const glm::vec3& GetDirection() const;
     const glm::vec3& GetColor() const;
     float GetIntensity() const;
 
@@ -37,8 +30,7 @@ private:
     float m_Intensity;
 };
 
-//need to change light data
-struct LightData {
+struct alignas(16) LightData {
     glm::vec4 position; // w is padding or another parameter, for dir lights position is direction? don't have them yet
     glm::vec4 color;    // w is intensity
 };

@@ -70,3 +70,7 @@ void ShaderStorageBuffer::SetData(const void* data, GLsizeiptr size, GLintptr of
 
     Logger::GetLogger()->debug("Updated ShaderStorageBuffer ID {} with new data.", m_RendererID);
 }
+
+void ShaderStorageBuffer::BindBase() const {
+    GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, m_BindingPoint, m_RendererID));
+}

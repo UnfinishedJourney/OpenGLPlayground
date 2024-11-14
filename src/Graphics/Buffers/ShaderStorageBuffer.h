@@ -21,6 +21,12 @@ public:
     void Unbind() const;
 
     void SetData(const void* data, GLsizeiptr size, GLintptr offset = 0);
+    void BindBase() const; // Ensure the buffer is bound to the binding point
+
+    GLsizeiptr GetSize() const
+    {
+        return m_Size;
+    }
 
     [[nodiscard]] GLuint GetRendererID() const { return m_RendererID; }
     [[nodiscard]] GLuint GetBindingPoint() const { return m_BindingPoint; }
