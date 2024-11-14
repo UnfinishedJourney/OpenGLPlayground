@@ -78,14 +78,11 @@ void Application::Init()
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
 
-    // Initialize the Renderer singleton with window dimensions
-    Renderer::GetInstance().Initialize(width, height);
-
     currentTest = nullptr;
     testMenu = std::make_shared<test::TestMenu>(currentTest);
     currentTest = testMenu;
 
-    testMenu->RegisterTest<test::TestClearColor>("Clear Color");
+    //testMenu->RegisterTest<test::TestClearColor>("Clear Color");
     // testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
     // testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
     testMenu->RegisterTest<test::TestLights>("Lights");
@@ -102,6 +99,8 @@ void Application::Run()
 
     lastTime = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
+        glClearColor(0.3, 0.2, 0.8, 1.0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         showFPS(window);
 
         double currentTime = glfwGetTime();
@@ -116,20 +115,8 @@ void Application::Run()
         if (currentTest) {
             currentTest->OnUpdate(static_cast<float>(deltaTime));
 
-            // Get the scene from the current test
-            auto scene = currentTest->GetScene();
-
-            // Update CameraController's camera based on the current scene
-            cameraController.SetCamera(scene ? scene->GetCamera() : nullptr);
-
-            // Render the scene
-            if (scene) {
-                Renderer::GetInstance().RenderScene(scene);
-            }
-            else {
-                // Clear the screen if no scene is present
-                Renderer::GetInstance().Clear();
-            }
+            // Render
+            currentTest->OnRender();
 
             // Render ImGui
             ImGui_ImplOpenGL3_NewFrame();
@@ -223,17 +210,16 @@ void glfw_onWindowSize(GLFWwindow* window, int width, int height)
     // Update the viewport
     glViewport(0, 0, width, height);
 
-    // Update the Renderer with the new window size
-    Renderer::GetInstance().OnWindowResize(width, height);
-
-    // Retrieve current display parameters
-    float displayHeight = Screen::s_DisplayHeight;
-    float viewerDistance = Screen::s_ViewerDistance;
+    // Notify the current test
+    if (app->currentTest)
+    {
+        app->currentTest->OnWindowResize(width, height);
+    }
 
     // Update screen resolution and physical parameters
-    Screen::SetResolution(width, height, displayHeight, viewerDistance);
+    Screen::SetResolution(width, height);
 
-    app->cameraController.SetDisplayParameters(displayHeight, viewerDistance);
+    app->cameraController.UpdateFOV();
 }
 
 void showFPS(GLFWwindow* window)

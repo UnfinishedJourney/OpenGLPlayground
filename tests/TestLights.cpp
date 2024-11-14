@@ -3,6 +3,7 @@
 #include "Resources/ResourceManager.h"
 #include "Graphics/Meshes/Mesh.h"
 #include "Scene/Transform.h"
+#include "Scene/Screen.h"
 #include "Scene/Lights.h"
 
 namespace test {
@@ -13,9 +14,16 @@ namespace test {
 
     void TestLights::OnEnter()
     {
-        m_Scene = std::make_shared<Scene>();
 
         auto& resourceManager = ResourceManager::GetInstance();
+
+        m_Renderer = std::make_unique<Renderer>();
+        int width = Screen::s_Width;
+        int height = Screen::s_Height;
+        m_Renderer->Initialize(width, height);
+
+        m_Scene = std::make_shared<Scene>();
+        //m_Scene->SetDebugLightsEnabled(true); // Enable debug lights if needed
 
         // Create and set the camera
         auto camera = std::make_shared<Camera>();
@@ -60,6 +68,7 @@ namespace test {
 
     void TestLights::OnExit()
     {
+        m_Renderer.reset(); 
         m_Scene->Clear();
     }
 
@@ -70,7 +79,10 @@ namespace test {
 
     void TestLights::OnRender()
     {
-        Renderer::GetInstance().RenderScene(m_Scene);
+        if (m_Renderer && m_Scene)
+        {
+            m_Renderer->RenderScene(m_Scene);
+        }
     }
 
     void TestLights::OnImGuiRender()

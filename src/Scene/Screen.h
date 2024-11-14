@@ -12,10 +12,8 @@ public:
     static float s_ViewerDistance;     // in same units as display height
 
     // Method to set resolution and physical parameters
-    static void SetResolution(int width, int height, float displayHeight, float viewerDistance) {
+    static void SetResolution(int width, int height) {
         s_Width = width;
         s_Height = height;
-        s_DisplayHeight = displayHeight;
-        s_ViewerDistance = viewerDistance;
     }
 };

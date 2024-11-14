@@ -85,11 +85,9 @@ void CameraController::Reset() {
 }
 
 //need to add send to renderer fbo
-void CameraController::SetDisplayParameters(float displayHeight, float viewerDistance) {
+void CameraController::UpdateFOV() {
     if (!m_Camera)
         return;
-    Screen::s_DisplayHeight = displayHeight;
-    Screen::s_ViewerDistance = viewerDistance;
 
     m_Camera->UpdateFOV();
 }

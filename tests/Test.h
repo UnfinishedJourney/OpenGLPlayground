@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 #include "Scene/Scene.h"
+#include "Renderer/Renderer.h"
 
 namespace test {
 
@@ -19,8 +20,10 @@ namespace test {
         virtual void OnUpdate(float deltaTime) {}
         virtual void OnRender() {}
         virtual void OnImGuiRender() {}
+        virtual void OnWindowResize(int width, int height);
 
-        virtual std::shared_ptr<Scene> GetScene() const { return nullptr; }
+    protected:
+        std::unique_ptr<Renderer> m_Renderer;
     };
 
     class TestMenu : public Test

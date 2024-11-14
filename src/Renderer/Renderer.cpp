@@ -65,6 +65,7 @@ void Renderer::SetupFullscreenQuad()
 
 void Renderer::RenderScene(const std::shared_ptr<Scene>& scene)
 {
+    Clear();
     // If the scene has changed, reinitialize passes
     if (scene != m_CurrentScene)
     {

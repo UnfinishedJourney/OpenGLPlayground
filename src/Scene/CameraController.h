@@ -15,8 +15,7 @@ public:
     void SetSpeed(float speed);
     void Reset();
 
-    // Methods to set display parameters dynamically
-    void SetDisplayParameters(float displayHeight, float viewerDistance);
+    void UpdateFOV();
     void SetCamera(std::shared_ptr<Camera> camera) { m_Camera = camera; }
     bool HasCamera() const { return m_Camera != nullptr; }
 

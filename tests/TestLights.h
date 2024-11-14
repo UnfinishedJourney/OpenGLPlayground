@@ -18,8 +18,6 @@ namespace test {
         void OnRender() override;
         void OnImGuiRender() override;
 
-        std::shared_ptr<Scene> GetScene() const override { return m_Scene; }
-
     private:
         std::shared_ptr<Scene> m_Scene;
     };

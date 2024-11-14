@@ -3,6 +3,14 @@
 
 namespace test {
 
+	void Test::OnWindowResize(int width, int height)
+	{
+		if (m_Renderer)
+		{
+			m_Renderer->OnWindowResize(width, height);
+		}
+	}
+
 	TestMenu::TestMenu(std::shared_ptr<Test>& currentTest)
 		: m_CurrentTest(currentTest)
 	{
