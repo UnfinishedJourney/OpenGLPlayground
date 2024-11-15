@@ -17,9 +17,6 @@ namespace test {
         void OnUpdate(float deltaTime) override;
         void OnRender() override;
         void OnImGuiRender() override;
-
-    private:
-        std::shared_ptr<Scene> m_Scene;
     };
 
 }

@@ -18,8 +18,8 @@ out vec4 FragColor;
 in vec2 TexCoords;
 
 uniform sampler2D RenderTex;
-uniform float EdgeThreshold;
-uniform vec2 texelSize; // 1.0 / texture size
+uniform float EdgeThreshold = 0.05f;
+uniform vec2 texelSize = vec2(1.0/800, 1.0/600);
 
 void main()
 {

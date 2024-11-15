@@ -8,6 +8,7 @@
 Scene::Scene()
     : m_PostProcessingShaderName("presentTexture")
 {
+    m_Camera = std::make_shared<Camera>();
     auto logger = Logger::GetLogger();
     m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), 0, GL_DYNAMIC_DRAW);
     logger->info("Created FrameData UBO with binding point 0.");

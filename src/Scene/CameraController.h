@@ -16,11 +16,11 @@ public:
     void Reset();
 
     void UpdateFOV();
-    void SetCamera(std::shared_ptr<Camera> camera) { m_Camera = camera; }
+    void SetCamera(const std::shared_ptr<Camera>& camera) { m_Camera = camera; }
     bool HasCamera() const { return m_Camera != nullptr; }
 
 private:
-    std::shared_ptr<Camera> m_Camera;
+    std::shared_ptr<Camera> m_Camera; 
     InputManager& m_InputManager;
     float m_Sensitivity;
     float m_Speed;

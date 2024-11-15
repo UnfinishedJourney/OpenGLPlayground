@@ -64,6 +64,7 @@ namespace test {
 
         // Build batches
         m_Scene->BuildBatches();
+        m_Scene->SetPostProcessingShaderName("edgeDetection");
     }
 
     void TestLights::OnExit()

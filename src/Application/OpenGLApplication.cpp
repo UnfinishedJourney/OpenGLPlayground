@@ -42,6 +42,7 @@ public:
 
 private:
     void ProcessInput(double deltaTime);
+    void UpdateCameraController();
     std::shared_ptr<spdlog::logger> logger;
 };
 
@@ -114,7 +115,7 @@ void Application::Run()
         // Update current test
         if (currentTest) {
             currentTest->OnUpdate(static_cast<float>(deltaTime));
-
+            
             // Render
             currentTest->OnRender();
 
@@ -130,6 +131,7 @@ void Application::Run()
                 currentTest->OnEnter();
             }
             currentTest->OnImGuiRender();
+            UpdateCameraController();
             ImGui::End();
 
             ImGui::Render();
@@ -154,6 +156,25 @@ void Application::ProcessInput(double deltaTime)
     if (inputManager.WasKeyJustPressed(GLFW_KEY_R)) {
         logger->info("Reloading all shaders...");
         ResourceManager::GetInstance().ReloadAllShaders();
+    }
+}
+
+//need to get camera differently
+void Application::UpdateCameraController()
+{
+    if (currentTest) {
+        std::shared_ptr<Camera> camera = currentTest->GetCamera();
+        cameraController.SetCamera(camera);
+        if (camera) {
+            logger->debug("CameraController updated with new Camera from Test.");
+        }
+        else {
+            logger->debug("Current Test does not have a Camera.");
+        }
+    }
+    else {
+        cameraController.SetCamera(nullptr);
+        logger->debug("No active Test to retrieve Camera from.");
     }
 }
 

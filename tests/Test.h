@@ -21,9 +21,16 @@ namespace test {
         virtual void OnRender() {}
         virtual void OnImGuiRender() {}
         virtual void OnWindowResize(int width, int height);
+        std::shared_ptr<Camera> GetCamera() {
+            if (m_Scene)
+                return m_Scene->GetCamera();
+            else
+                return nullptr;
+        }
 
     protected:
         std::unique_ptr<Renderer> m_Renderer;
+        std::shared_ptr<Scene> m_Scene;
     };
 
     class TestMenu : public Test

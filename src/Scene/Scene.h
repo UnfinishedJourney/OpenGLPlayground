@@ -47,9 +47,8 @@ public:
     {
         return m_LightsData;
     }
-
-    // Accessors
-    const std::shared_ptr<Camera>& GetCamera() const { return m_Camera; }
+    
+    std::shared_ptr<Camera> GetCamera() { return m_Camera; }
 
 private:
 
