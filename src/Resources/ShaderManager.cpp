@@ -7,13 +7,22 @@
 #include <stdexcept>
 
 ShaderManager::ShaderManager(const std::filesystem::path& metadataPath, const std::filesystem::path& configPath)
-    : m_MetadataPath(metadataPath), m_ConfigPath(configPath)
-{
+    : m_MetadataPath(metadataPath), m_ConfigPath(configPath) {
+    // Initialize binding maps
+    m_UniformBlockBindings = {
+        {"FrameData", FRAME_DATA_BINDING_POINT},
+        // Add other uniform blocks as needed
+    };
+
+    m_ShaderStorageBlockBindings = {
+        {"LightsData", LIGHTS_DATA_BINDING_POINT},
+        // Add other storage blocks as needed
+    };
+
     Initialize();
 }
 
-void ShaderManager::Initialize()
-{
+void ShaderManager::Initialize() {
     auto logger = Logger::GetLogger();
     logger->info("Initializing ShaderManager with metadata path: '{}' and config path: '{}'.",
         m_MetadataPath.string(), m_ConfigPath.string());
@@ -37,20 +46,28 @@ void ShaderManager::Initialize()
     }
 }
 
-void ShaderManager::LoadShaders()
-{
+void ShaderManager::LoadShaders() {
     auto logger = Logger::GetLogger();
     logger->info("Loading shaders.");
 
     for (auto& [name, metadata] : m_ShadersMetadata) {
         try {
             std::shared_ptr<BaseShader> shader;
+
             if (metadata.isComputeShader) {
-                shader = std::make_shared<ComputeShader>(metadata.sourcePath, metadata.binaryPath);
+                // Compute Shader
+                auto computePathIt = metadata.shaderStages.find(GL_COMPUTE_SHADER);
+                if (computePathIt == metadata.shaderStages.end()) {
+                    logger->error("Compute shader '{}' does not have a compute shader stage specified.", name);
+                    continue;
+                }
+
+                shader = std::make_shared<ComputeShader>(computePathIt->second, metadata.binaryPath);
                 logger->info("Loaded ComputeShader '{}'.", name);
             }
             else {
-                shader = std::make_shared<Shader>(metadata.sourcePath, metadata.binaryPath);
+                // Regular Shader
+                shader = std::make_shared<Shader>(metadata.shaderStages, metadata.binaryPath);
                 logger->info("Loaded Shader '{}'.", name);
             }
 
@@ -59,6 +76,11 @@ void ShaderManager::LoadShaders()
             if (IsShaderOutdated(name)) {
                 shader->ReloadShader();
                 logger->info("Shader '{}' was outdated and has been reloaded.", name);
+            }
+            else if (!shader->LoadBinary()) {
+                // If binary loading failed, we need to reload the shader
+                shader->ReloadShader();
+                logger->info("Shader '{}' binary load failed; shader has been recompiled.", name);
             }
             else {
                 logger->debug("Shader '{}' is up-to-date.", name);
@@ -70,8 +92,7 @@ void ShaderManager::LoadShaders()
     }
 }
 
-void ShaderManager::ReloadAllShaders()
-{
+void ShaderManager::ReloadAllShaders() {
     auto logger = Logger::GetLogger();
     logger->info("Reloading all shaders.");
 
@@ -79,6 +100,10 @@ void ShaderManager::ReloadAllShaders()
         try {
             shader->ReloadShader();
             logger->info("Reloaded shader '{}'.", name);
+
+            // Rebind uniform and storage blocks
+            RebindUniformBlocks(name);
+            RebindShaderStorageBlocks(name);
         }
         catch (const std::exception& e) {
             logger->error("Error reloading shader '{}': {}", name, e.what());
@@ -86,8 +111,31 @@ void ShaderManager::ReloadAllShaders()
     }
 }
 
-void ShaderManager::BindShader(std::string_view shaderName)
-{
+void ShaderManager::RebindUniformBlocks(const std::string& shaderName) {
+    auto shader = GetShader(shaderName);
+    if (!shader) {
+        Logger::GetLogger()->error("Shader '{}' not found.", shaderName);
+        return;
+    }
+
+    for (const auto& [blockName, bindingPoint] : m_UniformBlockBindings) {
+        shader->BindUniformBlock(blockName, bindingPoint);
+    }
+}
+
+void ShaderManager::RebindShaderStorageBlocks(const std::string& shaderName) {
+    auto shader = GetShader(shaderName);
+    if (!shader) {
+        Logger::GetLogger()->error("Shader '{}' not found.", shaderName);
+        return;
+    }
+
+    for (const auto& [blockName, bindingPoint] : m_ShaderStorageBlockBindings) {
+        shader->BindShaderStorageBlock(blockName, bindingPoint);
+    }
+}
+
+void ShaderManager::BindShader(std::string_view shaderName) {
     auto logger = Logger::GetLogger();
 
     if (shaderName == m_CurrentlyBoundShader) {
@@ -113,8 +161,7 @@ void ShaderManager::BindShader(std::string_view shaderName)
     }
 }
 
-std::shared_ptr<Shader> ShaderManager::GetShader(std::string_view name)
-{
+std::shared_ptr<Shader> ShaderManager::GetShader(std::string_view name) {
     auto it = m_Shaders.find(std::string(name));
     if (it != m_Shaders.end()) {
         return std::dynamic_pointer_cast<Shader>(it->second);
@@ -123,8 +170,7 @@ std::shared_ptr<Shader> ShaderManager::GetShader(std::string_view name)
     return nullptr;
 }
 
-std::shared_ptr<ComputeShader> ShaderManager::GetComputeShader(std::string_view name)
-{
+std::shared_ptr<ComputeShader> ShaderManager::GetComputeShader(std::string_view name) {
     auto it = m_Shaders.find(std::string(name));
     if (it != m_Shaders.end()) {
         return std::dynamic_pointer_cast<ComputeShader>(it->second);
@@ -133,8 +179,7 @@ std::shared_ptr<ComputeShader> ShaderManager::GetComputeShader(std::string_view 
     return nullptr;
 }
 
-std::shared_ptr<BaseShader> ShaderManager::GetCurrentlyBoundShader() const
-{
+std::shared_ptr<BaseShader> ShaderManager::GetCurrentlyBoundShader() const {
     auto it = m_Shaders.find(m_CurrentlyBoundShader);
     if (it != m_Shaders.end()) {
         return it->second;
@@ -142,8 +187,7 @@ std::shared_ptr<BaseShader> ShaderManager::GetCurrentlyBoundShader() const
     return nullptr;
 }
 
-bool ShaderManager::LoadMetadata()
-{
+bool ShaderManager::LoadMetadata() {
     auto logger = Logger::GetLogger();
     logger->info("Loading metadata from '{}'.", m_MetadataPath.string());
 
@@ -168,8 +212,13 @@ bool ShaderManager::LoadMetadata()
         for (const auto& [name, shaderData] : jsonData["shaders"].items()) {
             ShaderMetadata metadata;
             metadata.isComputeShader = shaderData.value("is_compute_shader", false);
-            metadata.sourcePath = shaderData["source_path"].get<std::string>();
             metadata.binaryPath = shaderData["binary_path"].get<std::string>();
+
+            for (const auto& [stageName, pathStr] : shaderData["shader_stages"].items()) {
+                GLenum shaderType = GetShaderTypeFromString(stageName);
+                metadata.shaderStages[shaderType] = pathStr.get<std::string>();
+            }
+
             m_ShadersMetadata[name] = metadata;
         }
     }
@@ -182,8 +231,7 @@ bool ShaderManager::LoadMetadata()
     return true;
 }
 
-bool ShaderManager::SaveMetadata() const
-{
+bool ShaderManager::SaveMetadata() const {
     auto logger = Logger::GetLogger();
     logger->info("Saving metadata to '{}'.", m_MetadataPath.string());
 
@@ -194,8 +242,23 @@ bool ShaderManager::SaveMetadata() const
 
     for (const auto& [name, metadata] : m_ShadersMetadata) {
         jsonData["shaders"][name]["is_compute_shader"] = metadata.isComputeShader;
-        jsonData["shaders"][name]["source_path"] = metadata.sourcePath.string();
         jsonData["shaders"][name]["binary_path"] = metadata.binaryPath.string();
+
+        nlohmann::json stagesJson;
+        for (const auto& [shaderType, path] : metadata.shaderStages) {
+            std::string stageName;
+            switch (shaderType) {
+            case GL_VERTEX_SHADER: stageName = "vertex"; break;
+            case GL_FRAGMENT_SHADER: stageName = "fragment"; break;
+            case GL_GEOMETRY_SHADER: stageName = "geometry"; break;
+            case GL_TESS_CONTROL_SHADER: stageName = "tess_control"; break;
+            case GL_TESS_EVALUATION_SHADER: stageName = "tess_evaluation"; break;
+            case GL_COMPUTE_SHADER: stageName = "compute"; break;
+            default: stageName = "unknown"; break;
+            }
+            stagesJson[stageName] = path.string();
+        }
+        jsonData["shaders"][name]["shader_stages"] = stagesJson;
     }
 
     std::ofstream file(m_MetadataPath);
@@ -216,8 +279,7 @@ bool ShaderManager::SaveMetadata() const
     return true;
 }
 
-bool ShaderManager::LoadConfig()
-{
+bool ShaderManager::LoadConfig() {
     auto logger = Logger::GetLogger();
     logger->info("Loading config from '{}'.", m_ConfigPath.string());
 
@@ -239,8 +301,12 @@ bool ShaderManager::LoadConfig()
         for (const auto& [name, shaderData] : jsonData["shaders"].items()) {
             ShaderMetadata metadata;
             metadata.isComputeShader = shaderData.value("is_compute_shader", false);
-            metadata.sourcePath = shaderData["source_path"].get<std::string>();
             metadata.binaryPath = shaderData["binary_path"].get<std::string>();
+
+            for (const auto& [stageName, pathStr] : shaderData["shader_stages"].items()) {
+                GLenum shaderType = GetShaderTypeFromString(stageName);
+                metadata.shaderStages[shaderType] = pathStr.get<std::string>();
+            }
 
             m_ShadersMetadata[name] = metadata;
         }
@@ -254,8 +320,7 @@ bool ShaderManager::LoadConfig()
     return true;
 }
 
-bool ShaderManager::IsGlobalMetadataChanged() const
-{
+bool ShaderManager::IsGlobalMetadataChanged() const {
     auto currentDriverVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
     auto currentOpenGLProfile = "core"; // Adjust as necessary
 
@@ -263,8 +328,7 @@ bool ShaderManager::IsGlobalMetadataChanged() const
         m_GlobalMetadata.openGLProfile != currentOpenGLProfile;
 }
 
-bool ShaderManager::IsShaderOutdated(const std::string& shaderName) const
-{
+bool ShaderManager::IsShaderOutdated(const std::string& shaderName) const {
     auto it = m_ShadersMetadata.find(shaderName);
     if (it == m_ShadersMetadata.end()) {
         Logger::GetLogger()->error("Shader metadata not found for shader '{}'.", shaderName);
@@ -277,27 +341,36 @@ bool ShaderManager::IsShaderOutdated(const std::string& shaderName) const
         return true;
     }
 
-    // Get the latest modification time of the source file and included files
+    // Get the latest modification time of the source files and their includes
+    std::filesystem::file_time_type latestSourceTime = std::filesystem::file_time_type::min();
     std::unordered_set<std::string> processedFiles;
-    auto latestSourceTime = GetLatestShaderModificationTime(metadata.sourcePath, processedFiles);
 
+    for (const auto& [shaderType, sourcePath] : metadata.shaderStages) {
+        auto sourceTime = GetLatestShaderModificationTime(sourcePath, processedFiles);
+        if (sourceTime > latestSourceTime) {
+            latestSourceTime = sourceTime;
+        }
+    }
+
+    // Get the binary's last write time
     auto binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
 
+    // Compare times to determine if the shader is outdated
     return latestSourceTime > binaryLastModified;
 }
 
 std::filesystem::file_time_type ShaderManager::GetLatestShaderModificationTime(
     const std::filesystem::path& sourcePath,
-    std::unordered_set<std::string>& processedFiles) const
-{
+    std::unordered_set<std::string>& processedFiles) const {
+
     auto logger = Logger::GetLogger();
 
     // Normalize and check if the file has already been processed
-    auto sourcePathCanonical = std::filesystem::canonical(sourcePath).string();
-    if (processedFiles.find(sourcePathCanonical) != processedFiles.end()) {
+    auto canonicalPath = std::filesystem::weakly_canonical(sourcePath).string();
+    if (processedFiles.find(canonicalPath) != processedFiles.end()) {
         return std::filesystem::file_time_type::min();
     }
-    processedFiles.insert(sourcePathCanonical);
+    processedFiles.insert(canonicalPath);
 
     // Get the modification time of the current source file
     std::filesystem::file_time_type latestTime = std::filesystem::last_write_time(sourcePath);
@@ -382,4 +455,21 @@ std::filesystem::file_time_type ShaderManager::GetLatestShaderModificationTime(
     }
 
     return latestTime;
+}
+
+GLenum ShaderManager::GetShaderTypeFromString(const std::string& type) const {
+    if (type == "vertex")
+        return GL_VERTEX_SHADER;
+    else if (type == "fragment")
+        return GL_FRAGMENT_SHADER;
+    else if (type == "geometry")
+        return GL_GEOMETRY_SHADER;
+    else if (type == "tess_control")
+        return GL_TESS_CONTROL_SHADER;
+    else if (type == "tess_evaluation")
+        return GL_TESS_EVALUATION_SHADER;
+    else if (type == "compute")
+        return GL_COMPUTE_SHADER;
+    else
+        throw std::runtime_error("Unknown shader type: " + type);
 }

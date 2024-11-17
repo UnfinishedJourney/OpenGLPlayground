@@ -5,8 +5,8 @@
 #include <stdexcept>
 #include <glm/gtc/type_ptr.hpp>
 
-BaseShader::BaseShader(std::filesystem::path sourcePath, std::filesystem::path binaryPath)
-    : m_SourcePath(std::move(sourcePath)), m_BinaryPath(std::move(binaryPath)) {
+BaseShader::BaseShader(std::filesystem::path binaryPath)
+    : m_BinaryPath(std::move(binaryPath)) {
     // Constructor doesn't load shaders immediately
 }
 
@@ -39,9 +39,16 @@ GLint BaseShader::GetUniformLocation(std::string_view name) const {
 }
 
 GLuint BaseShader::CompileShader(GLenum shaderType, const std::string& source) const {
-    std::string shaderTypeStr = (shaderType == GL_VERTEX_SHADER) ? "vertex" :
-        (shaderType == GL_FRAGMENT_SHADER) ? "fragment" :
-        (shaderType == GL_COMPUTE_SHADER) ? "compute" : "unknown";
+    std::string shaderTypeStr;
+    switch (shaderType) {
+    case GL_VERTEX_SHADER: shaderTypeStr = "vertex"; break;
+    case GL_FRAGMENT_SHADER: shaderTypeStr = "fragment"; break;
+    case GL_GEOMETRY_SHADER: shaderTypeStr = "geometry"; break;
+    case GL_TESS_CONTROL_SHADER: shaderTypeStr = "tess_control"; break;
+    case GL_TESS_EVALUATION_SHADER: shaderTypeStr = "tess_evaluation"; break;
+    case GL_COMPUTE_SHADER: shaderTypeStr = "compute"; break;
+    default: shaderTypeStr = "unknown"; break;
+    }
 
     GLuint shader = glCreateShader(shaderType);
     const char* src = source.c_str();

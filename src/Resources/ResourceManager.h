@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <array>
 #include <string_view>
+#include <variant>
 
 #include "Graphics/Buffers/MeshBuffer.h"
 #include "Graphics/Meshes/Mesh.h"
@@ -18,6 +19,9 @@
 #include "Scene/Transform.h"
 #include "Utilities/Logger.h"
 #include "Graphics/Meshes/Model.h"
+
+// Uniform value types
+//using UniformValue = std::variant<int, float, unsigned int, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4>;
 
 struct MeshKey {
     std::string name;
@@ -85,6 +89,17 @@ public:
     void BindMaterial(std::string_view materialName);
     void SetUniform(std::string_view uniformName, const UniformValue& value);
 
+    // Uniform and Storage Block Binding
+    void RebindUniformBlocks(const std::string& shaderName);
+    void RebindShaderStorageBlocks(const std::string& shaderName);
+
+    // Access to the currently bound shader
+    std::shared_ptr<BaseShader> GetCurrentlyBoundShader() const;
+
+    // Binding Points Constants
+    static constexpr GLuint FRAME_DATA_BINDING_POINT = 0;
+    static constexpr GLuint LIGHTS_DATA_BINDING_POINT = 1;
+
 private:
     ResourceManager();
     ~ResourceManager() = default;
@@ -100,4 +115,8 @@ private:
 
     std::unordered_map<std::string, std::array<std::filesystem::path, 6>> m_TextureCubeMapPath;
     std::unordered_map<std::string, std::shared_ptr<CubeMapTexture>> m_TexturesCubeMap;
+
+    // Uniform Block and Shader Storage Block Binding Points
+    std::unordered_map<std::string, GLuint> m_UniformBlockBindings;
+    std::unordered_map<std::string, GLuint> m_ShaderStorageBlockBindings;
 };

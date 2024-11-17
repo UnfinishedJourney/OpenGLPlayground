@@ -4,28 +4,25 @@
 #include "Scene/Screen.h"
 #include <glad/glad.h>
 
-
 Scene::Scene()
     : m_PostProcessingShaderName("presentTexture")
 {
     m_Camera = std::make_shared<Camera>();
     auto logger = Logger::GetLogger();
-    m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), 0, GL_DYNAMIC_DRAW);
-    logger->info("Created FrameData UBO with binding point 0.");
-    m_LightsData = {
-    };
+    m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), ResourceManager::FRAME_DATA_BINDING_POINT, GL_DYNAMIC_DRAW);
+    logger->info("Created FrameData UBO with binding point {}.", ResourceManager::FRAME_DATA_BINDING_POINT);
+    m_LightsData = {};
 
     if (m_LightsData.size() > MAX_LIGHTS) {
         throw std::runtime_error("Too many lights.");
     }
 
-    GLuint bindingPoint = 1;
+    GLuint bindingPoint = ResourceManager::LIGHTS_DATA_BINDING_POINT;
     GLsizeiptr bufferSize = sizeof(glm::vec4) + MAX_LIGHTS * sizeof(LightData);
     uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
 
     m_LightsSSBO = std::make_unique<ShaderStorageBuffer>(bindingPoint, bufferSize, GL_DYNAMIC_DRAW);
     m_LightsSSBO->SetData(&numLights, sizeof(glm::vec4), 0);
-
     m_LightsSSBO->SetData(m_LightsData.data(), m_LightsData.size() * sizeof(LightData), sizeof(glm::vec4));
 
     m_LightsSSBO->BindBase();
@@ -46,7 +43,7 @@ void Scene::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)
 void Scene::AddLight(const LightData& light)
 {
     m_LightsData.push_back(light);
-    UpdateLightsData(); 
+    UpdateLightsData();
 }
 
 void Scene::SetCamera(const std::shared_ptr<Camera>& camera)
@@ -96,7 +93,6 @@ void Scene::UpdateLightsData()
     uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
 
     m_LightsSSBO->SetData(&numLights, sizeof(glm::vec4), 0);
-
     m_LightsSSBO->SetData(m_LightsData.data(), m_LightsData.size() * sizeof(LightData), sizeof(glm::vec4));
 }
 
@@ -105,8 +101,16 @@ void Scene::BindLightSSBO() const
     m_LightsSSBO->Bind();
 }
 
+void Scene::BindFrameDataUBO() const
+{
+    m_FrameDataUBO->Bind();
+}
+
 void Scene::BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const
 {
-    ResourceManager::GetInstance().BindShader(shaderName);
-    ResourceManager::GetInstance().BindMaterial(materialName);
+    auto& resourceManager = ResourceManager::GetInstance();
+    resourceManager.BindShader(shaderName);
+    resourceManager.BindMaterial(materialName);
+    resourceManager.RebindUniformBlocks(shaderName);
+    resourceManager.RebindShaderStorageBlocks(shaderName);
 }

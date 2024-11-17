@@ -32,6 +32,7 @@ public:
 
     void BuildBatches() const;
     void BindLightSSBO() const;
+    void BindFrameDataUBO() const;
 
     std::string GetPostProcessingShaderName() const
     {
@@ -47,7 +48,7 @@ public:
     {
         return m_LightsData;
     }
-    
+
     std::shared_ptr<Camera> GetCamera() { return m_Camera; }
 
 private:
@@ -59,6 +60,5 @@ private:
     mutable BatchManager m_BatchManager;
     std::unique_ptr<UniformBuffer> m_FrameDataUBO;
     std::unique_ptr<ShaderStorageBuffer> m_LightsSSBO;
-    ///GLuint m_LightsSSBO;
     std::string m_PostProcessingShaderName;
 };

@@ -24,6 +24,7 @@ public:
 
 private:
     std::string m_CurrentlyBoundMaterial;
+    GLuint currentShaderID = 0;
     std::unordered_map<std::string, std::shared_ptr<Material>> m_Materials;
     std::unordered_map<std::string, std::shared_ptr<TextureBase>> m_Textures;
 };

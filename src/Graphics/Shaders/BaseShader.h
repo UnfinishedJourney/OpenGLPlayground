@@ -6,13 +6,14 @@
 #include <memory>
 #include <string_view>
 #include <unordered_set>
+#include <vector>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
 class BaseShader {
 public:
-    BaseShader(std::filesystem::path sourcePath, std::filesystem::path binaryPath);
+    BaseShader(std::filesystem::path binaryPath);
     virtual ~BaseShader();
 
     virtual void ReloadShader() = 0;
@@ -29,10 +30,15 @@ public:
     void SetUniform(std::string_view name, const glm::vec4& value) const;
     void SetUniform(std::string_view name, const glm::mat3& value) const;
     void SetUniform(std::string_view name, const glm::mat4& value) const;
+    GLuint GetRendererID() const
+    {
+        return m_RendererID;
+    }
+
+    bool LoadBinary();
 
 protected:
     GLuint m_RendererID = 0;
-    std::filesystem::path m_SourcePath;
     std::filesystem::path m_BinaryPath;
 
     mutable std::unordered_map<std::string, GLint> m_UniformLocationCache;
@@ -45,8 +51,6 @@ protected:
     std::string ReadFile(const std::filesystem::path& filepath) const;
     std::string ResolveIncludes(const std::string& source, const std::filesystem::path& directory, std::unordered_set<std::string>& includedFiles) const;
 
-    // Binary handling
-    bool LoadBinary();
     void SaveBinary() const;
 
     GLint GetUniformLocation(std::string_view name) const;

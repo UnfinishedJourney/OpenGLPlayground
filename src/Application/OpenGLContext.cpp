@@ -74,7 +74,7 @@ GLFWwindow* GLContext::InitOpenGL(int width, int height, const std::string& titl
     logger->info("GLFW initialized successfully.");
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // Enable OpenGL Debug Context
@@ -116,7 +116,7 @@ GLFWwindow* GLContext::InitOpenGL(int width, int height, const std::string& titl
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    const char* glsl_version = "#version 450";
+    const char* glsl_version = "#version 460";
     ImGui_ImplOpenGL3_Init(glsl_version);
     ImGui::StyleColorsDark();
     logger->info("ImGui initialized successfully.");

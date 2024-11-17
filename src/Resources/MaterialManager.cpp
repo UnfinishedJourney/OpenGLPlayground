@@ -53,10 +53,13 @@ void MaterialManager::BindMaterial(std::string_view name, const std::shared_ptr<
     auto logger = Logger::GetLogger();
     std::string materialName(name);
 
-    if (materialName == m_CurrentlyBoundMaterial) {
-        logger->debug("Material '{}' is already bound. Skipping bind.", materialName);
-        return;
-    }
+    static GLuint lastShaderID = currentShaderID;
+    currentShaderID = shader->GetRendererID();
+
+    //if (materialName == m_CurrentlyBoundMaterial && currentShaderID == lastShaderID) {
+    //    logger->debug("Material '{}' is already bound to the current shader. Skipping bind.", materialName);
+    //    return;
+    //}
 
     auto materialIt = m_Materials.find(materialName);
     if (materialIt == m_Materials.end()) {
@@ -67,7 +70,8 @@ void MaterialManager::BindMaterial(std::string_view name, const std::shared_ptr<
     try {
         materialIt->second->Bind(shader);
         m_CurrentlyBoundMaterial = materialName;
-        logger->debug("Material '{}' bound successfully.", materialName);
+        lastShaderID = currentShaderID;
+        logger->debug("Material '{}' bound successfully to shader ID {}.", materialName, currentShaderID);
     }
     catch (const std::exception& e) {
         logger->error("Failed to bind material '{}': {}", materialName, e.what());

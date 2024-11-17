@@ -3,8 +3,8 @@
 #include <fstream>
 #include <sstream>
 
-ComputeShader::ComputeShader(std::filesystem::path sourcePath, std::filesystem::path binaryPath)
-    : BaseShader(std::move(sourcePath), std::move(binaryPath)) {
+ComputeShader::ComputeShader(const std::filesystem::path& shaderPath, std::filesystem::path binaryPath)
+    : BaseShader(std::move(binaryPath)), m_ShaderPath(shaderPath) {
     LoadShader();
 }
 
@@ -24,9 +24,9 @@ void ComputeShader::LoadShader(bool bReload) {
     }
 
     // Read shader source
-    std::string source = ReadFile(m_SourcePath);
+    std::string source = ReadFile(m_ShaderPath);
     std::unordered_set<std::string> includedFiles;
-    source = ResolveIncludes(source, m_SourcePath.parent_path(), includedFiles);
+    source = ResolveIncludes(source, m_ShaderPath.parent_path(), includedFiles);
 
     // Compile shader
     GLuint shader = CompileShader(GL_COMPUTE_SHADER, source);

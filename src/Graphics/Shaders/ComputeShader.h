@@ -4,7 +4,7 @@
 
 class ComputeShader : public BaseShader {
 public:
-    ComputeShader(std::filesystem::path sourcePath, std::filesystem::path binaryPath);
+    ComputeShader(const std::filesystem::path& shaderPath, std::filesystem::path binaryPath);
 
     void ReloadShader() override;
 
@@ -12,4 +12,7 @@ public:
 
 protected:
     void LoadShader(bool bReload = false);
+
+private:
+    std::filesystem::path m_ShaderPath;
 };
