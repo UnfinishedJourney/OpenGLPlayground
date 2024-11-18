@@ -36,8 +36,8 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
         resourceManager.BindMaterial(batch->GetMaterialName());
 
         // Rebind uniform and storage blocks
-        resourceManager.RebindUniformBlocks(batch->GetShaderName());
-        resourceManager.RebindShaderStorageBlocks(batch->GetShaderName());
+        //resourceManager.RebindUniformBlocks(batch->GetShaderName());
+        //resourceManager.RebindShaderStorageBlocks(batch->GetShaderName());
 
         glm::mat4 modelMatrix = renderObjects.front()->GetTransform()->GetModelMatrix();
         glm::mat3 normalMatrix = renderObjects.front()->GetTransform()->GetNormalMatrix();

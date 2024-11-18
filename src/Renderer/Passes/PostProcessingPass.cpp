@@ -3,10 +3,18 @@
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
 
-PostProcessingPass::PostProcessingPass(GLuint fullscreenQuadVAO, std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene>& scene)
-    : m_FullscreenQuadVAO(fullscreenQuadVAO), m_Framebuffer(framebuffer)
+PostProcessingPass::PostProcessingPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene>& scene)
+    : m_Framebuffer(framebuffer)
 {
-    // Initialize scene-specific resources if needed
+    SetupFullscreenQuad();
+}
+
+PostProcessingPass::~PostProcessingPass()
+{
+    if (m_FullscreenQuadVAO)
+        glDeleteVertexArrays(1, &m_FullscreenQuadVAO);
+    if (m_FullscreenQuadVBO)
+        glDeleteBuffers(1, &m_FullscreenQuadVBO);
 }
 
 void PostProcessingPass::Execute(const std::shared_ptr<Scene>& scene)
@@ -43,6 +51,38 @@ void PostProcessingPass::Execute(const std::shared_ptr<Scene>& scene)
     glEnable(GL_DEPTH_TEST);
 
     Logger::GetLogger()->debug("Post-processing pass executed.");
+}
+
+void PostProcessingPass::SetupFullscreenQuad()
+{
+    float quadVertices[] = {
+        // positions   // texCoords
+        -1.0f,  1.0f,   0.0f, 1.0f,
+        -1.0f, -1.0f,   0.0f, 0.0f,
+         1.0f, -1.0f,   1.0f, 0.0f,
+
+        -1.0f,  1.0f,   0.0f, 1.0f,
+         1.0f, -1.0f,   1.0f, 0.0f,
+         1.0f,  1.0f,   1.0f, 1.0f
+    };
+
+    glGenVertexArrays(1, &m_FullscreenQuadVAO);
+    glGenBuffers(1, &m_FullscreenQuadVBO);
+    glBindVertexArray(m_FullscreenQuadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_FullscreenQuadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+
+    // Position attribute
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+
+    // TexCoord attribute
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    glBindVertexArray(0);
+
+    Logger::GetLogger()->info("Fullscreen Quad VAO and VBO set up.");
 }
 
 void PostProcessingPass::UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer)

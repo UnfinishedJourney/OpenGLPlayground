@@ -20,5 +20,4 @@ void main()
     vec3 lighting = CalculateToonLighting(norm, viewDir, FragPos);
     
     color = vec4(lighting, 1.0);
-    color.r = 0.2;
 }

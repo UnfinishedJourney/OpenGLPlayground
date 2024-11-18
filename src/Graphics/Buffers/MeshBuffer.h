@@ -5,6 +5,7 @@
 #include "Graphics/Buffers/IndexBuffer.h"
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Meshes/MeshLayout.h"
+#include "Graphics/Buffers/VertexBufferLayout.h"
 #include <memory>
 
 class MeshBuffer {
@@ -13,20 +14,15 @@ public:
 
     void Bind() const;
     void Unbind() const;
+    void Render() const;
 
-    [[nodiscard]] size_t GetVertexCount() const { return m_VertexCount; }
-    [[nodiscard]] size_t GetIndexCount() const { return m_IndexCount; }
-    [[nodiscard]] const std::shared_ptr<VertexArray>& GetVertexArray() const { return m_VAO; }
-    [[nodiscard]] const VertexBufferLayout& GetLayout() const { return m_Layout; }
+    GLuint GetIndexCount() const { return m_IndexCount; } // Added getter for index count
 
 private:
-    std::shared_ptr<VertexArray> m_VAO;
-    std::shared_ptr<VertexBuffer> m_VB;
-    std::shared_ptr<IndexBuffer> m_IB;
-    size_t m_VertexCount = 0;
-    size_t m_IndexCount = 0;
-
-    VertexBufferLayout m_Layout;
-
-    void CreateBuffers(const Mesh& mesh, const MeshLayout& layout);
+    MeshLayout m_MeshLayout;
+    std::unique_ptr<VertexArray> m_VAO;
+    std::unique_ptr<VertexBuffer> m_VBO;
+    std::unique_ptr<IndexBuffer> m_IBO;
+    GLuint m_VertexCount;
+    GLuint m_IndexCount;
 };

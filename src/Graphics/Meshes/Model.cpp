@@ -41,7 +41,11 @@ void Model::ProcessNode(const aiScene* scene, const aiNode* node) {
 void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
     auto myMesh = std::make_shared<Mesh>();
 
-    myMesh->positions.reserve(aiMesh->mNumVertices);
+    // Initialize positions as vector of glm::vec3
+    myMesh->positions = std::vector<glm::vec3>{};
+    auto& positionsVec = std::get<std::vector<glm::vec3>>(myMesh->positions);
+    positionsVec.reserve(aiMesh->mNumVertices);
+
     if (aiMesh->HasNormals()) {
         myMesh->normals.reserve(aiMesh->mNumVertices);
     }
@@ -55,22 +59,41 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
 
     for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
         // Positions
-        myMesh->positions.emplace_back(aiMesh->mVertices[i].x, aiMesh->mVertices[i].y, aiMesh->mVertices[i].z);
+        positionsVec.emplace_back(
+            aiMesh->mVertices[i].x,
+            aiMesh->mVertices[i].y,
+            aiMesh->mVertices[i].z
+        );
 
         // Normals
         if (aiMesh->HasNormals()) {
-            myMesh->normals.emplace_back(aiMesh->mNormals[i].x, aiMesh->mNormals[i].y, aiMesh->mNormals[i].z);
-        }
-
-        // Tangents and Bitangents
-        if (aiMesh->HasTangentsAndBitangents()) {
-            myMesh->tangents.emplace_back(aiMesh->mTangents[i].x, aiMesh->mTangents[i].y, aiMesh->mTangents[i].z);
-            myMesh->bitangents.emplace_back(aiMesh->mBitangents[i].x, aiMesh->mBitangents[i].y, aiMesh->mBitangents[i].z);
+            myMesh->normals.emplace_back(
+                aiMesh->mNormals[i].x,
+                aiMesh->mNormals[i].y,
+                aiMesh->mNormals[i].z
+            );
         }
 
         // Texture Coordinates
         if (aiMesh->HasTextureCoords(0)) {
-            myMesh->uvs[TextureType::Albedo].emplace_back(aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y);
+            myMesh->uvs[TextureType::Albedo].emplace_back(
+                aiMesh->mTextureCoords[0][i].x,
+                aiMesh->mTextureCoords[0][i].y
+            );
+        }
+
+        // Tangents and Bitangents
+        if (aiMesh->HasTangentsAndBitangents()) {
+            myMesh->tangents.emplace_back(
+                aiMesh->mTangents[i].x,
+                aiMesh->mTangents[i].y,
+                aiMesh->mTangents[i].z
+            );
+            myMesh->bitangents.emplace_back(
+                aiMesh->mBitangents[i].x,
+                aiMesh->mBitangents[i].y,
+                aiMesh->mBitangents[i].z
+            );
         }
     }
 
@@ -132,10 +155,18 @@ glm::vec3 Model::CalculateModelCenter() const {
 
     for (const auto& meshInfo : m_MeshInfos) {
         const auto& mesh = meshInfo.mesh;
-        totalVertices += mesh->positions.size();
-        for (const auto& position : mesh->positions) {
-            center += position;
-        }
+
+        std::visit([&](const auto& positionsVec) {
+            totalVertices += positionsVec.size();
+            for (const auto& position : positionsVec) {
+                if constexpr (std::is_same_v<std::decay_t<decltype(position)>, glm::vec3>) {
+                    center += position;
+                }
+                else {
+                    center += glm::vec3(position, 0.0f);
+                }
+            }
+            }, mesh->positions);
     }
 
     if (totalVertices > 0) {
@@ -150,9 +181,17 @@ void Model::CenterModel() {
 
     for (auto& meshInfo : m_MeshInfos) {
         auto& mesh = meshInfo.mesh;
-        for (auto& position : mesh->positions) {
-            position -= center;
-        }
+
+        std::visit([&](auto& positionsVec) {
+            for (auto& position : positionsVec) {
+                if constexpr (std::is_same_v<std::decay_t<decltype(position)>, glm::vec3>) {
+                    position -= center;
+                }
+                else {
+                    position -= glm::vec2(center.x, center.y);
+                }
+            }
+            }, mesh->positions);
     }
 }
 
