@@ -2,6 +2,7 @@
 #include "Renderer/Passes/GeometryPass.h"
 #include "Renderer/Passes/PostProcessingPass.h"
 #include "Renderer/Passes/DebugLightsPass.h"
+#include "Graphics/Effects/PostProcessingEffects/EdgeDetectionEffect.h"
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
 
@@ -53,7 +54,13 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
 
     m_RenderPasses.push_back(std::make_unique<GeometryPass>(framebuffer, scene));
     m_RenderPasses.push_back(std::make_unique<DebugLightsPass>(framebuffer, scene));
-    m_RenderPasses.push_back(std::make_unique<PostProcessingPass>(framebuffer, scene));
+    auto PpPass = std::make_unique<PostProcessingPass>(framebuffer, scene);
+    auto edgeEffect = std::make_shared<EdgeDetectionEffect>();
+    edgeEffect->OnWindowResize(m_Width, m_Height);
+    PpPass->SetPostProcessingEffect(edgeEffect);
+    m_RenderPasses.push_back(std::move(PpPass));
+    // Assuming m_Renderer has a method to get the PostProcessingPass
+
 }
 
 std::shared_ptr<FrameBuffer> Renderer::CreateFramebufferForScene(const std::shared_ptr<Scene>& scene, int width, int height)
