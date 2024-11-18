@@ -24,6 +24,14 @@ void EdgeDetectionEffect::Initialize()
     m_TexelSize = glm::vec2(1.0f / m_Width, 1.0f / m_Height);
 }
 
+void EdgeDetectionEffect::SetParameters(const std::unordered_map<std::string, float>& params)
+{
+    auto it = params.find("EdgeThreshold");
+    if (it != params.end()) {
+        SetEdgeThreshold(it->second);
+    }
+}
+
 void EdgeDetectionEffect::Apply(GLuint inputTexture, GLuint outputFramebuffer)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, outputFramebuffer);

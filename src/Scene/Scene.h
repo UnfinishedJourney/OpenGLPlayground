@@ -8,6 +8,7 @@
 #include "Scene/Camera.h"
 #include "Graphics/Buffers/UniformBuffer.h"
 #include "Graphics/Buffers/ShaderStorageBuffer.h"
+#include "Graphics/Effects/PostProcessingEffects/PostProcessingEffect.h"
 
 struct FrameCommonData {
     glm::mat4 view;
@@ -34,15 +35,8 @@ public:
     void BindLightSSBO() const;
     void BindFrameDataUBO() const;
 
-    std::string GetPostProcessingShaderName() const
-    {
-        return m_PostProcessingShaderName;
-    }
-
-    void SetPostProcessingShaderName(std::string shaderName)
-    {
-        m_PostProcessingShaderName = shaderName;
-    }
+    void SetPostProcessingEffect(PostProcessingEffectType effect);
+    PostProcessingEffectType GetPostProcessingEffect() const;
 
     std::vector<LightData> GetLights() const
     {
@@ -60,5 +54,5 @@ private:
     mutable BatchManager m_BatchManager;
     std::unique_ptr<UniformBuffer> m_FrameDataUBO;
     std::unique_ptr<ShaderStorageBuffer> m_LightsSSBO;
-    std::string m_PostProcessingShaderName;
+    PostProcessingEffectType m_PostProcessingEffect;
 };

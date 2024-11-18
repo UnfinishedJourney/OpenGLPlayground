@@ -3,6 +3,7 @@
 #include "Renderer/Passes/PostProcessingPass.h"
 #include "Renderer/Passes/DebugLightsPass.h"
 #include "Graphics/Effects/PostProcessingEffects/EdgeDetectionEffect.h"
+#include "Graphics/Effects/EffectsManager.h"
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
 
@@ -17,17 +18,44 @@ Renderer::~Renderer()
 
 void Renderer::Initialize(int width, int height)
 {
-    auto logger = Logger::GetLogger();
-    logger->info("Initializing Renderer.");
-
     m_Width = width;
     m_Height = height;
+
+    // Initialize the EffectsManager
+    EffectsManager::GetInstance().Initialize(width, height);
 }
 
 void Renderer::RenderScene(const std::shared_ptr<Scene>& scene)
 {
     Clear();
-    // If the scene has changed, reinitialize passes
+
+    //// If the scene has changed, reinitialize passes
+    //if (scene != m_CurrentScene)
+    //{
+    //    m_CurrentScene = scene;
+    //    InitializePassesForScene(scene);
+    //}
+
+    //// Update the PostProcessingPass with the effect specified by the scene
+    //auto postProcessingPass = std::find_if(m_RenderPasses.begin(), m_RenderPasses.end(),
+    //    [](const std::unique_ptr<RenderPass>& pass) {
+    //        return dynamic_cast<PostProcessingPass*>(pass.get()) != nullptr;
+    //    });
+
+    //if (postProcessingPass != m_RenderPasses.end())
+    //{
+    //    auto ppPass = dynamic_cast<PostProcessingPass*>(postProcessingPass->get());
+    //    auto effectType = scene->GetPostProcessingEffect();
+    //    auto effect = EffectsManager::GetInstance().GetEffect(effectType);
+    //    ppPass->SetPostProcessingEffect(effect);
+    //}
+
+    //// Execute passes
+    //for (auto& pass : m_RenderPasses)
+    //{
+    //    pass->Execute(scene);
+    //}
+
     if (scene != m_CurrentScene)
     {
         m_CurrentScene = scene;
@@ -39,6 +67,7 @@ void Renderer::RenderScene(const std::shared_ptr<Scene>& scene)
         pass->Execute(scene);
     }
 }
+
 
 void Renderer::Clear(float r, float g, float b, float a) const
 {
@@ -59,8 +88,6 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
     edgeEffect->OnWindowResize(m_Width, m_Height);
     PpPass->SetPostProcessingEffect(edgeEffect);
     m_RenderPasses.push_back(std::move(PpPass));
-    // Assuming m_Renderer has a method to get the PostProcessingPass
-
 }
 
 std::shared_ptr<FrameBuffer> Renderer::CreateFramebufferForScene(const std::shared_ptr<Scene>& scene, int width, int height)

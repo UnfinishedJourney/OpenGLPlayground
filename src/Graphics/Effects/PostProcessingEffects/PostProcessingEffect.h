@@ -7,6 +7,11 @@
 #include "Graphics/Shaders/Shader.h"
 #include "Resources/ResourceManager.h"
 
+enum class PostProcessingEffectType {
+    None,
+    EdgeDetection,
+};
+
 class PostProcessingEffect {
 public:
     virtual ~PostProcessingEffect() = default;
@@ -14,6 +19,7 @@ public:
     virtual void Initialize() = 0;
     virtual void Apply(GLuint inputTexture, GLuint outputFramebuffer) = 0;
     virtual void OnWindowResize(int width, int height) = 0;
+    virtual void SetParameters(const std::unordered_map<std::string, float>& params) = 0;
 
 protected:
     // Fullscreen quad mesh buffer

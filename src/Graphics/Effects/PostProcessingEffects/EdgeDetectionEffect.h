@@ -11,7 +11,7 @@ public:
     void OnWindowResize(int width, int height) override;
 
     void SetEdgeThreshold(float threshold);
-
+    void SetParameters(const std::unordered_map<std::string, float>& params) override;
 private:
     float m_EdgeThreshold;
     int m_Width, m_Height;

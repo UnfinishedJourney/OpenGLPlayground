@@ -5,7 +5,7 @@
 #include <glad/glad.h>
 
 Scene::Scene()
-    : m_PostProcessingShaderName("presentTexture")
+    : m_PostProcessingEffect(PostProcessingEffectType::None)
 {
     m_Camera = std::make_shared<Camera>();
     auto logger = Logger::GetLogger();
@@ -104,6 +104,16 @@ void Scene::BindLightSSBO() const
 void Scene::BindFrameDataUBO() const
 {
     m_FrameDataUBO->Bind();
+}
+
+void Scene::SetPostProcessingEffect(PostProcessingEffectType effect)
+{
+    m_PostProcessingEffect = effect;
+}
+
+PostProcessingEffectType Scene::GetPostProcessingEffect() const
+{
+    return m_PostProcessingEffect;
 }
 
 void Scene::BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const
