@@ -7,6 +7,13 @@
                 "fragment": "../shaders/SimpleLights.frag"
             }
         },
+        "grid": {
+            "binary_path": "../shaders/bin/Grid.bin",
+            "shader_stages": {
+                "vertex": "../shaders/Grid.vert",
+                "fragment": "../shaders/Grid.frag"
+            }
+        },
         "debugLights": {
             "binary_path": "../shaders/bin/DebugLights.bin",
             "shader_stages": {

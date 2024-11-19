@@ -1,5 +1,6 @@
 ﻿#include "Renderer.h"
 #include "Renderer/Passes/GeometryPass.h"
+#include "Renderer/Passes/GridPass.h"
 #include "Renderer/Passes/PostProcessingPass.h"
 #include "Renderer/Passes/DebugLightsPass.h"
 #include "Graphics/Effects/PostProcessingEffects/EdgeDetectionEffect.h"
@@ -52,7 +53,13 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
     auto framebuffer = CreateFramebufferForScene(scene, m_Width, m_Height);
 
     m_RenderPasses.push_back(std::make_unique<GeometryPass>(framebuffer, scene));
-    m_RenderPasses.push_back(std::make_unique<DebugLightsPass>(framebuffer, scene));
+    m_RenderPasses.push_back(std::make_unique<GridPass>(framebuffer, scene));
+
+    if (scene->GetBDebugLights())
+    {
+        m_RenderPasses.push_back(std::make_unique<DebugLightsPass>(framebuffer, scene));
+    }
+
     auto ppPass = std::make_unique<PostProcessingPass>(framebuffer, scene);
     auto& effectManager = EffectsManager::GetInstance();
     auto edgeEffect = effectManager.GetEffect(scene->GetPostProcessingEffect());

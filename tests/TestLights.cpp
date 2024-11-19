@@ -50,6 +50,7 @@ namespace test {
         resourceManager.AddMaterial("pigMaterial", material);
 
         auto transform = std::make_shared<Transform>();
+        transform->SetPosition(glm::vec3(0.0, 0.5, 0.0));
 
         // Add render objects to the scene
         for (auto& [meshTextures, mesh] : meshInfos)
@@ -59,12 +60,13 @@ namespace test {
         }
 
         // Add lights to the scene
-        LightData light = { glm::vec4(1.5f, 1.5f, 1.5f, 0.0f) , glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) };
+        LightData light = { glm::vec4(1.5f, 2.0f, 1.5f, 0.0f) , glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) };
         m_Scene->AddLight(light);
 
         // Build batches
         m_Scene->BuildBatches();
-        //m_Scene->SetPostProcessingEffect(PostProcessingEffectType::EdgeDetection);
+        m_Scene->SetBDebugLights(true);
+        m_Scene->SetPostProcessingEffect(PostProcessingEffectType::EdgeDetection);
     }
 
     void TestLights::OnExit()

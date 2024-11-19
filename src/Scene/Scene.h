@@ -38,6 +38,16 @@ public:
     void SetPostProcessingEffect(PostProcessingEffectType effect);
     PostProcessingEffectType GetPostProcessingEffect() const;
 
+    void SetBDebugLights(bool bDebugLights)
+    {
+        m_BDebugLights = bDebugLights;
+    }
+
+    bool GetBDebugLights() const
+    {
+        return m_BDebugLights;
+    }
+
     std::vector<LightData> GetLights() const
     {
         return m_LightsData;
@@ -47,6 +57,7 @@ public:
 
 private:
 
+    bool m_BDebugLights = false;
     const int MAX_LIGHTS = 8;
     std::vector<LightData> m_LightsData;
     std::shared_ptr<Camera> m_Camera;
