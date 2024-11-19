@@ -10,15 +10,11 @@ PostProcessingPass::PostProcessingPass(std::shared_ptr<FrameBuffer> framebuffer,
 
 PostProcessingPass::~PostProcessingPass()
 {
-    // No resources to clean up
 }
 
 void PostProcessingPass::SetPostProcessingEffect(const std::shared_ptr<PostProcessingEffect>& effect)
 {
     m_Effect = effect;
-    if (m_Effect) {
-        m_Effect->Initialize();
-    }
 }
 
 void PostProcessingPass::Execute(const std::shared_ptr<Scene>& scene)

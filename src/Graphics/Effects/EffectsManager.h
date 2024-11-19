@@ -3,13 +3,11 @@
 #include <memory>
 #include <unordered_map>
 #include "Graphics/Effects/PostProcessingEffects/PostProcessingEffect.h"
-//#include "PostProcessingEffectType.h"
+#include "Graphics/Effects/PostProcessingEffects/PostProcessingEffectType.h"
 
 class EffectsManager {
 public:
     static EffectsManager& GetInstance();
-
-    void Initialize(int width, int height);
 
     std::shared_ptr<PostProcessingEffect> GetEffect(PostProcessingEffectType effectType);
 
@@ -21,11 +19,10 @@ private:
     EffectsManager();
     ~EffectsManager();
 
-    // Prevent copying
     EffectsManager(const EffectsManager&) = delete;
     EffectsManager& operator=(const EffectsManager&) = delete;
 
-    void CreateEffects();
-
     std::unordered_map<PostProcessingEffectType, std::shared_ptr<PostProcessingEffect>> m_Effects;
+    std::shared_ptr<MeshBuffer> m_FullscreenQuadMeshBuffer;
+    void SetupFullscreenQuad();
 };

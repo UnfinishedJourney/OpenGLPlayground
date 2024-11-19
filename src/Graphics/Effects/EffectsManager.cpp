@@ -1,6 +1,7 @@
 #include "EffectsManager.h"
+#include "Scene/Screen.h"
 #include "Graphics/Effects/PostProcessingEffects/EdgeDetectionEffect.h"
-// Include other effect headers as needed
+#include "Graphics/Effects/PostProcessingEffects/NoPostProcessingEffect.h"
 #include "Utilities/Logger.h"
 
 EffectsManager& EffectsManager::GetInstance()
@@ -11,26 +12,11 @@ EffectsManager& EffectsManager::GetInstance()
 
 EffectsManager::EffectsManager()
 {
-    CreateEffects();
+    SetupFullscreenQuad();
 }
 
 EffectsManager::~EffectsManager()
 {
-}
-
-void EffectsManager::CreateEffects()
-{
-    // Create and store instances of effects
-    m_Effects[PostProcessingEffectType::EdgeDetection] = std::make_shared<EdgeDetectionEffect>();
-    // Add other effects as needed
-}
-
-void EffectsManager::Initialize(int width, int height)
-{
-    for (auto& [type, effect] : m_Effects) {
-        effect->Initialize();
-        effect->OnWindowResize(width, height);
-    }
 }
 
 std::shared_ptr<PostProcessingEffect> EffectsManager::GetEffect(PostProcessingEffectType effectType)
@@ -39,6 +25,19 @@ std::shared_ptr<PostProcessingEffect> EffectsManager::GetEffect(PostProcessingEf
     if (it != m_Effects.end()) {
         return it->second;
     }
+    else {
+        if (effectType == PostProcessingEffectType::EdgeDetection)
+        {
+            m_Effects[PostProcessingEffectType::EdgeDetection] = std::make_shared<EdgeDetectionEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
+            return m_Effects[PostProcessingEffectType::EdgeDetection];
+        }
+        else if (effectType == PostProcessingEffectType::None)
+        {
+            m_Effects[PostProcessingEffectType::None] = std::make_shared<NoPostProcessingEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
+            return m_Effects[PostProcessingEffectType::None];
+        }
+    }
+
     return nullptr;
 }
 
@@ -46,7 +45,6 @@ void EffectsManager::SetEffectParameters(PostProcessingEffectType effectType, co
 {
     auto effect = GetEffect(effectType);
     if (effect) {
-        // Implement a method in PostProcessingEffect to set parameters
         effect->SetParameters(params);
     }
     else {
@@ -58,5 +56,30 @@ void EffectsManager::OnWindowResize(int width, int height)
 {
     for (auto& [type, effect] : m_Effects) {
         effect->OnWindowResize(width, height);
+    }
+}
+
+void EffectsManager::SetupFullscreenQuad()
+{
+    auto& resourceManager = ResourceManager::GetInstance();
+
+    auto quadMesh = resourceManager.GetMesh("quad");
+
+    MeshLayout quadMeshLayout = {
+        true,  // Positions (vec2)
+        false, // Normals
+        false, // Tangents
+        false, // Bitangents
+        { TextureType::Albedo } // Texture Coordinates
+    };
+
+    //maybe this should be handled through resource manager too
+    m_FullscreenQuadMeshBuffer = std::make_shared<MeshBuffer>(*quadMesh, quadMeshLayout);
+
+    if (!m_FullscreenQuadMeshBuffer) {
+        Logger::GetLogger()->error("Failed to set up fullscreen quad mesh buffer.");
+    }
+    else {
+        Logger::GetLogger()->info("Fullscreen quad mesh buffer set up successfully.");
     }
 }

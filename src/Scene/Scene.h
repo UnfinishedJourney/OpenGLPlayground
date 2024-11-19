@@ -8,7 +8,7 @@
 #include "Scene/Camera.h"
 #include "Graphics/Buffers/UniformBuffer.h"
 #include "Graphics/Buffers/ShaderStorageBuffer.h"
-#include "Graphics/Effects/PostProcessingEffects/PostProcessingEffect.h"
+#include "Graphics/Effects/PostProcessingEffects/PostProcessingEffectType.h"
 
 struct FrameCommonData {
     glm::mat4 view;

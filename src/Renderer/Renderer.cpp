@@ -20,41 +20,11 @@ void Renderer::Initialize(int width, int height)
 {
     m_Width = width;
     m_Height = height;
-
-    // Initialize the EffectsManager
-    EffectsManager::GetInstance().Initialize(width, height);
 }
 
 void Renderer::RenderScene(const std::shared_ptr<Scene>& scene)
 {
     Clear();
-
-    //// If the scene has changed, reinitialize passes
-    //if (scene != m_CurrentScene)
-    //{
-    //    m_CurrentScene = scene;
-    //    InitializePassesForScene(scene);
-    //}
-
-    //// Update the PostProcessingPass with the effect specified by the scene
-    //auto postProcessingPass = std::find_if(m_RenderPasses.begin(), m_RenderPasses.end(),
-    //    [](const std::unique_ptr<RenderPass>& pass) {
-    //        return dynamic_cast<PostProcessingPass*>(pass.get()) != nullptr;
-    //    });
-
-    //if (postProcessingPass != m_RenderPasses.end())
-    //{
-    //    auto ppPass = dynamic_cast<PostProcessingPass*>(postProcessingPass->get());
-    //    auto effectType = scene->GetPostProcessingEffect();
-    //    auto effect = EffectsManager::GetInstance().GetEffect(effectType);
-    //    ppPass->SetPostProcessingEffect(effect);
-    //}
-
-    //// Execute passes
-    //for (auto& pass : m_RenderPasses)
-    //{
-    //    pass->Execute(scene);
-    //}
 
     if (scene != m_CurrentScene)
     {
@@ -83,11 +53,11 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
 
     m_RenderPasses.push_back(std::make_unique<GeometryPass>(framebuffer, scene));
     m_RenderPasses.push_back(std::make_unique<DebugLightsPass>(framebuffer, scene));
-    auto PpPass = std::make_unique<PostProcessingPass>(framebuffer, scene);
-    auto edgeEffect = std::make_shared<EdgeDetectionEffect>();
-    edgeEffect->OnWindowResize(m_Width, m_Height);
-    PpPass->SetPostProcessingEffect(edgeEffect);
-    m_RenderPasses.push_back(std::move(PpPass));
+    auto ppPass = std::make_unique<PostProcessingPass>(framebuffer, scene);
+    auto& effectManager = EffectsManager::GetInstance();
+    auto edgeEffect = effectManager.GetEffect(scene->GetPostProcessingEffect());
+    ppPass->SetPostProcessingEffect(edgeEffect);
+    m_RenderPasses.push_back(std::move(ppPass));
 }
 
 std::shared_ptr<FrameBuffer> Renderer::CreateFramebufferForScene(const std::shared_ptr<Scene>& scene, int width, int height)
@@ -115,4 +85,7 @@ void Renderer::OnWindowResize(int width, int height)
             pass->UpdateFramebuffer(framebuffer);
         }
     }
+
+    auto& effectManager = EffectsManager::GetInstance();
+    effectManager.OnWindowResize(m_Width, m_Height);
 }
