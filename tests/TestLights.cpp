@@ -17,18 +17,6 @@ namespace test {
 
         auto& resourceManager = ResourceManager::GetInstance();
 
-        m_Renderer = std::make_unique<Renderer>();
-        int width = Screen::s_Width;
-        int height = Screen::s_Height;
-        m_Renderer->Initialize(width, height);
-
-        m_Scene = std::make_shared<Scene>();
-        //m_Scene->SetDebugLightsEnabled(true); // Enable debug lights if needed
-
-        // Create and set the camera
-        auto camera = std::make_shared<Camera>();
-        m_Scene->SetCamera(camera);
-
         // Load meshes and materials
         MeshLayout pigMeshLayout = {
             true,  // Positions

@@ -124,3 +124,13 @@ void Scene::BindShaderAndMaterial(const std::string& shaderName, const std::stri
     resourceManager.RebindUniformBlocks(shaderName);
     resourceManager.RebindShaderStorageBlocks(shaderName);
 }
+
+void Scene::SetTerrainHeightMap(const std::shared_ptr<Texture2D>& heightMap)
+{
+    m_TerrainHeightMap = heightMap;
+}
+
+std::shared_ptr<Texture2D> Scene::GetTerrainHeightMap() const
+{
+    return m_TerrainHeightMap;
+}

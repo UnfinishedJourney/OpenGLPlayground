@@ -3,6 +3,17 @@
 
 namespace test {
 
+	Test::Test()
+	{
+		m_Renderer = std::make_unique<Renderer>();
+		int width = Screen::s_Width;
+		int height = Screen::s_Height;
+		m_Renderer->Initialize(width, height);
+		m_Scene = std::make_shared<Scene>();
+		auto camera = std::make_shared<Camera>();
+		m_Scene->SetCamera(camera);
+	}
+
 	void Test::OnWindowResize(int width, int height)
 	{
 		if (m_Renderer)

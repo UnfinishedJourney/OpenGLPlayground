@@ -21,7 +21,7 @@
 #include "Graphics/Meshes/Model.h"
 
 // Uniform value types
-//using UniformValue = std::variant<int, float, unsigned int, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4>;
+using UniformValue = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4>;
 
 struct MeshKey {
     std::string name;
@@ -55,9 +55,8 @@ public:
     ResourceManager& operator=(const ResourceManager&) = delete;
 
     // Texture management
-    std::shared_ptr<TextureBase> GetTexture(std::string_view textureName);
+    std::shared_ptr<Texture2D> GetTexture2D(std::string_view textureName);
     std::shared_ptr<CubeMapTexture> GetCubeMapTexture(std::string_view textureName);
-    void BindCubeMapTexture(std::string_view name, GLuint slot) const;
 
     // Mesh management
     std::shared_ptr<Mesh> GetMesh(std::string_view meshName);
@@ -112,9 +111,6 @@ private:
     std::unordered_map<MeshKey, std::shared_ptr<MeshBuffer>> m_MeshBuffers;
     std::unordered_map<std::string, std::filesystem::path> m_ModelPath;
     std::unordered_map<std::string, std::shared_ptr<Model>> m_Models;
-
-    std::unordered_map<std::string, std::array<std::filesystem::path, 6>> m_TextureCubeMapPath;
-    std::unordered_map<std::string, std::shared_ptr<CubeMapTexture>> m_TexturesCubeMap;
 
     // Uniform Block and Shader Storage Block Binding Points
     std::unordered_map<std::string, GLuint> m_UniformBlockBindings;

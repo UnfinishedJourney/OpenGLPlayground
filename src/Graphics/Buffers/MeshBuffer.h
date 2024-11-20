@@ -17,8 +17,11 @@ public:
     void Render() const;
 
     GLuint GetIndexCount() const { return m_IndexCount; } // Added getter for index count
+    GLuint GetVertexCount() const { return m_VertexCount; }
+    bool HasIndices() const { return m_BHasIndices;  }
 
 private:
+    bool m_BHasIndices;
     MeshLayout m_MeshLayout;
     std::unique_ptr<VertexArray> m_VAO;
     std::unique_ptr<VertexBuffer> m_VBO;

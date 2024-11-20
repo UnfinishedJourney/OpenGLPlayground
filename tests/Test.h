@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 #include "Scene/Scene.h"
+#include "Scene/Screen.h"
 #include "Renderer/Renderer.h"
 
 namespace test {
@@ -12,7 +13,8 @@ namespace test {
     class Test
     {
     public:
-        Test() = default;
+        Test();
+
         virtual ~Test() = default;
 
         virtual void OnEnter() {}

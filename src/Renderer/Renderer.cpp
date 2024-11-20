@@ -53,7 +53,11 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
     auto framebuffer = CreateFramebufferForScene(scene, m_Width, m_Height);
 
     m_RenderPasses.push_back(std::make_unique<GeometryPass>(framebuffer, scene));
-    m_RenderPasses.push_back(std::make_unique<GridPass>(framebuffer, scene));
+
+    if (scene->GetBGrid())
+    {
+        m_RenderPasses.push_back(std::make_unique<GridPass>(framebuffer, scene));
+    }
 
     if (scene->GetBDebugLights())
     {

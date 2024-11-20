@@ -84,7 +84,7 @@ void Application::Init()
     currentTest = testMenu;
 
     //testMenu->RegisterTest<test::TestClearColor>("Clear Color");
-    // testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
+    testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
     // testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
     testMenu->RegisterTest<test::TestLights>("Lights");
     // testMenu->RegisterTest<test::TestSkyBoxReflection>("SkyboxReflection");

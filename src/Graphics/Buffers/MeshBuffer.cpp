@@ -157,9 +157,11 @@ MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout)
         std::span<const GLuint> indexSpan(indicesGL.data(), indicesGL.size());
 
         m_IBO = std::make_unique<IndexBuffer>(indexSpan);
+        m_BHasIndices = true;
     }
     else {
         m_IndexCount = m_VertexCount;
+        m_BHasIndices = false;
     }
 }
 

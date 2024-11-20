@@ -1,5 +1,12 @@
 {
     "shaders": {
+        "basic": {
+            "binary_path": "../shaders/bin/Basic.bin",
+            "shader_stages": {
+                "vertex": "../shaders/Basic.vert",
+                "fragment": "../shaders/Basic.frag"
+            }
+        },
         "simplelights": {
             "binary_path": "../shaders/bin/SimpleLights.bin",
             "shader_stages": {

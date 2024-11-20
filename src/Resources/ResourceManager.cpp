@@ -7,18 +7,6 @@ ResourceManager::ResourceManager()
     m_ShaderManager = std::make_unique<ShaderManager>("../shaders/metadata.json", "../shaders/config.json");
     m_MaterialManager = std::make_unique<MaterialManager>();
 
-    // Initialize CubeMap textures
-    m_TextureCubeMapPath = {
-        {"pisa", {
-            "../assets/cube/pisa/pisa_posx.png",
-            "../assets/cube/pisa/pisa_negx.png",
-            "../assets/cube/pisa/pisa_posy.png",
-            "../assets/cube/pisa/pisa_negy.png",
-            "../assets/cube/pisa/pisa_posz.png",
-            "../assets/cube/pisa/pisa_negz.png"
-        }}
-    };
-
     // Initialize model paths
     m_ModelPath = {
         {"pig", "../assets/pig_triangulated.obj"}
@@ -34,6 +22,15 @@ ResourceManager::ResourceManager()
         {"LightsData", LIGHTS_DATA_BINDING_POINT},
         // Add other storage blocks as needed
     };
+}
+
+// Texture methods
+std::shared_ptr<Texture2D> ResourceManager::GetTexture2D(std::string_view textureName) {
+    return m_MaterialManager->GetTexture2D(textureName);
+}
+
+std::shared_ptr<CubeMapTexture> ResourceManager::GetCubeMapTexture(std::string_view textureName) {
+    return m_MaterialManager->GetCubeMapTexture(textureName);
 }
 
 // Model methods
@@ -89,60 +86,6 @@ const std::vector<MeshInfo>& ResourceManager::GetModelMeshInfos(std::string_view
     return model->GetMeshesInfo();
 }
 
-std::shared_ptr<TextureBase> ResourceManager::GetTexture(std::string_view textureName) {
-    return m_MaterialManager->GetTexture(textureName);
-}
-
-std::shared_ptr<CubeMapTexture> ResourceManager::GetCubeMapTexture(std::string_view name) {
-    if (name.empty()) {
-        return nullptr;
-    }
-
-    auto it = m_TexturesCubeMap.find(std::string(name));
-    if (it != m_TexturesCubeMap.end()) {
-        return it->second;
-    }
-
-    auto texIt = m_TextureCubeMapPath.find(std::string(name));
-    if (texIt == m_TextureCubeMapPath.end()) {
-        Logger::GetLogger()->error("CubeMapTexture not found: '{}'", name);
-        return nullptr;
-    }
-
-    const auto& facePaths = texIt->second;
-
-    try {
-        auto cubeMapTexture = std::make_shared<CubeMapTexture>(facePaths);
-        m_TexturesCubeMap[std::string(name)] = cubeMapTexture;
-        return cubeMapTexture;
-    }
-    catch (const std::exception& e) {
-        Logger::GetLogger()->error("Failed to load CubeMapTexture '{}': {}", name, e.what());
-        return nullptr;
-    }
-}
-
-void ResourceManager::BindCubeMapTexture(std::string_view name, GLuint slot) const {
-    if (m_CurrentlyBoundCubeMap == name) {
-        return;
-    }
-
-    auto it = m_TexturesCubeMap.find(std::string(name));
-    if (it != m_TexturesCubeMap.end()) {
-        auto cubeMap = it->second;
-        if (cubeMap) {
-            cubeMap->Bind(slot);
-            m_CurrentlyBoundCubeMap = name;
-        }
-        else {
-            throw std::runtime_error("CubeMapTexture '" + std::string(name) + "' not found.");
-        }
-    }
-    else {
-        throw std::runtime_error("CubeMapTexture '" + std::string(name) + "' not found.");
-    }
-}
-
 void ResourceManager::SetUniform(std::string_view uniformName, const UniformValue& value) {
     auto shader = m_ShaderManager->GetCurrentlyBoundShader();
     if (shader) {
@@ -175,6 +118,9 @@ std::shared_ptr<Mesh> ResourceManager::GetMesh(std::string_view meshName) {
     }
     else if (meshName == "quad") {
         mesh = std::make_shared<Quad>();
+    }
+    else if (meshName == "terrain") {
+        mesh = std::make_shared<TerrainMesh>();
     }
     else {
         Logger::GetLogger()->warn("Mesh '{}' not found. Returning nullptr.", meshName);

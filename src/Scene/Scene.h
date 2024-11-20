@@ -9,6 +9,7 @@
 #include "Graphics/Buffers/UniformBuffer.h"
 #include "Graphics/Buffers/ShaderStorageBuffer.h"
 #include "Graphics/Effects/PostProcessingEffects/PostProcessingEffectType.h"
+#include "Graphics/Textures/Texture2D.h"
 
 struct FrameCommonData {
     glm::mat4 view;
@@ -48,6 +49,16 @@ public:
         return m_BDebugLights;
     }
 
+    void SetBGrid(bool bGrid)
+    {
+        m_BGrid = bGrid;
+    }
+
+    bool GetBGrid() const
+    {
+        return m_BGrid;
+    }
+
     std::vector<LightData> GetLights() const
     {
         return m_LightsData;
@@ -55,9 +66,13 @@ public:
 
     std::shared_ptr<Camera> GetCamera() { return m_Camera; }
 
+    void SetTerrainHeightMap(const std::shared_ptr<Texture2D>& heightMap);
+    std::shared_ptr<Texture2D> GetTerrainHeightMap() const;
+
 private:
 
     bool m_BDebugLights = false;
+    bool m_BGrid = false;
     const int MAX_LIGHTS = 8;
     std::vector<LightData> m_LightsData;
     std::shared_ptr<Camera> m_Camera;
@@ -66,4 +81,5 @@ private:
     std::unique_ptr<UniformBuffer> m_FrameDataUBO;
     std::unique_ptr<ShaderStorageBuffer> m_LightsSSBO;
     PostProcessingEffectType m_PostProcessingEffect;
+    std::shared_ptr<Texture2D> m_TerrainHeightMap;
 };
