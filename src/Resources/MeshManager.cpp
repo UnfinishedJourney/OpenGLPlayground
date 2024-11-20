@@ -21,6 +21,9 @@ std::shared_ptr<Mesh> MeshManager::GetMesh(std::string_view meshName) {
     else if (meshName == "sphere") {
         mesh = std::make_shared<Sphere>();
     }
+    else if (meshName == "lightsphere") {
+        mesh = std::make_shared<LightSphere>();
+    }
     else if (meshName == "quad") {
         mesh = std::make_shared<Quad>();
     }
