@@ -21,7 +21,8 @@ void DebugLightsPass::InitializeSceneResources(const std::shared_ptr<Scene>& sce
         {}
     };
 
-    m_LightSphereMeshBuffer = resourceManager.GetMeshBuffer("lightsphere", lightMeshLayout);
+    auto& meshManager = MeshManager::GetInstance();
+    m_LightSphereMeshBuffer = meshManager.GetMeshBuffer("lightsphere", lightMeshLayout);
 }
 
 void DebugLightsPass::Execute(const std::shared_ptr<Scene>& scene)
@@ -33,7 +34,15 @@ void DebugLightsPass::Execute(const std::shared_ptr<Scene>& scene)
 
     scene->BindLightSSBO();
     auto& resourceManager = ResourceManager::GetInstance();
-    resourceManager.BindShader("debugLights");
+    auto& shaderManager = ShaderManager::GetInstance();
+    auto shader = shaderManager.GetShader("debugLights");
+    if (shader) {
+        shader->Bind();
+    }
+    else {
+        Logger::GetLogger()->error("DebugLights shader not found.");
+        return;
+    }
     m_LightSphereMeshBuffer->Bind();
 
     GLCall(glDrawElementsInstanced(

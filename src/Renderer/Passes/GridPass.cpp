@@ -1,15 +1,13 @@
 #include "GridPass.h"
-#include "Resources/ResourceManager.h"
+#include "Resources/ShaderManager.h"
+#include "Resources/MeshManager.h"
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
 
 GridPass::GridPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
-    auto& resourceManager = ResourceManager::GetInstance();
-
-    // Create a quad mesh covering the entire grid area
-    auto gridMesh = resourceManager.GetMesh("quad");
+    auto& meshManager = MeshManager::GetInstance();
     MeshLayout gridMeshLayout = {
         true,  // Positions
         false, // Normals
@@ -17,12 +15,7 @@ GridPass::GridPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_p
         false, // Bitangents
         {}     // Texture Coordinates
     };
-
-    m_GridMeshBuffer = resourceManager.GetMeshBuffer("quad", gridMeshLayout);
-}
-
-GridPass::~GridPass()
-{
+    m_GridMeshBuffer = meshManager.GetMeshBuffer("quad", gridMeshLayout);
 }
 
 void GridPass::Execute(const std::shared_ptr<Scene>& scene)
@@ -38,21 +31,21 @@ void GridPass::Execute(const std::shared_ptr<Scene>& scene)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    auto& resourceManager = ResourceManager::GetInstance();
-    resourceManager.BindShader("grid");
-
-    auto shader = resourceManager.GetCurrentlyBoundShader();
-    if (!shader) {
-        Logger::GetLogger()->error("Grid shader not bound.");
+    auto& shaderManager = ShaderManager::GetInstance();
+    auto shader = shaderManager.GetShader("grid");
+    if (shader) {
+        shader->Bind();
+    }
+    else {
+        Logger::GetLogger()->error("Grid shader not found.");
         return;
     }
 
     scene->BindFrameDataUBO();
-    // Set additional uniforms if needed (e.g., grid parameters)
 
     // Render the grid mesh
     m_GridMeshBuffer->Bind();
-    glDrawArrays(GL_TRIANGLES, 0, m_GridMeshBuffer->GetIndexCount());
+    glDrawArrays(GL_TRIANGLES, 0, m_GridMeshBuffer->GetVertexCount());
     m_GridMeshBuffer->Unbind();
 
     // Reset render states
@@ -60,6 +53,10 @@ void GridPass::Execute(const std::shared_ptr<Scene>& scene)
     glDepthFunc(GL_LESS);
 
     m_Framebuffer->Unbind();
+}
+
+GridPass::~GridPass()
+{
 }
 
 void GridPass::UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer)

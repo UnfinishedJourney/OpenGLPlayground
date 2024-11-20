@@ -16,10 +16,8 @@ public:
     TextureBase(TextureBase&& other) noexcept;
     TextureBase& operator=(TextureBase&& other) noexcept;
 
-    virtual void Bind(GLuint slot = 0) const
-    {}
-    virtual void Unbind(GLuint slot = 0) const
-    {}
+    virtual void Bind(GLuint slot = 0) const = 0;
+    virtual void Unbind(GLuint slot = 0) const = 0;
 
     int GetWidth() const noexcept { return m_Width; }
     int GetHeight() const noexcept { return m_Height; }
@@ -33,5 +31,5 @@ protected:
     std::filesystem::path m_FilePath;
     int m_Width = 0;
     int m_Height = 0;
-    int m_BPP = 0; // Bits Per Pixel
+    int m_BPP = 0; 
 };

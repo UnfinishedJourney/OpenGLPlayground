@@ -4,20 +4,23 @@
 #include "Scene/Screen.h"
 #include <glad/glad.h>
 
+constexpr GLuint FRAME_DATA_BINDING_POINT = 0;
+constexpr GLuint LIGHTS_DATA_BINDING_POINT = 1;
+
 Scene::Scene()
     : m_PostProcessingEffect(PostProcessingEffectType::None)
 {
     m_Camera = std::make_shared<Camera>();
     auto logger = Logger::GetLogger();
-    m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), ResourceManager::FRAME_DATA_BINDING_POINT, GL_DYNAMIC_DRAW);
-    logger->info("Created FrameData UBO with binding point {}.", ResourceManager::FRAME_DATA_BINDING_POINT);
+    m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), FRAME_DATA_BINDING_POINT, GL_DYNAMIC_DRAW);
+    logger->info("Created FrameData UBO with binding point {}.", FRAME_DATA_BINDING_POINT);
     m_LightsData = {};
 
     if (m_LightsData.size() > MAX_LIGHTS) {
         throw std::runtime_error("Too many lights.");
     }
 
-    GLuint bindingPoint = ResourceManager::LIGHTS_DATA_BINDING_POINT;
+    GLuint bindingPoint = LIGHTS_DATA_BINDING_POINT;
     GLsizeiptr bufferSize = sizeof(glm::vec4) + MAX_LIGHTS * sizeof(LightData);
     uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
 
@@ -118,11 +121,30 @@ PostProcessingEffectType Scene::GetPostProcessingEffect() const
 
 void Scene::BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const
 {
-    auto& resourceManager = ResourceManager::GetInstance();
-    resourceManager.BindShader(shaderName);
-    resourceManager.BindMaterial(materialName);
-    resourceManager.RebindUniformBlocks(shaderName);
-    resourceManager.RebindShaderStorageBlocks(shaderName);
+    auto& shaderManager = ShaderManager::GetInstance();
+    auto& materialManager = MaterialManager::GetInstance();
+
+    auto shader = shaderManager.GetShader(shaderName);
+    if (shader) {
+        shader->Bind();
+    }
+    else {
+        Logger::GetLogger()->error("Shader '{}' not found.", shaderName);
+        return;
+    }
+
+    auto material = materialManager.GetMaterial(materialName);
+    if (material) {
+        materialManager.BindMaterial(materialName, shader);
+    }
+    else {
+        Logger::GetLogger()->error("Material '{}' not found.", materialName);
+        return;
+    }
+
+    // Bind frame data UBO and light SSBO
+    BindFrameDataUBO();
+    BindLightSSBO();
 }
 
 void Scene::SetTerrainHeightMap(const std::shared_ptr<Texture2D>& heightMap)

@@ -14,9 +14,17 @@ namespace test {
 
     void TestSimpleCube::OnEnter()
     {
-        auto& resourceManager = ResourceManager::GetInstance();
+        auto& meshManager = MeshManager::GetInstance();
+        auto& textureManager = TextureManager::GetInstance();
+        auto& materialManager = MaterialManager::GetInstance();
 
-        auto cubeMesh = resourceManager.GetMesh("cube");
+        // Get mesh
+        auto cubeMesh = meshManager.GetMesh("cube");
+        if (!cubeMesh) {
+            Logger::GetLogger()->error("Failed to get mesh 'cube'");
+            return;
+        }
+
         MeshLayout cubeMeshLayout = {
             true, // Positions
             false, // Normals
@@ -25,17 +33,27 @@ namespace test {
             {TextureType::Albedo}
         };
 
-        // Use the new GetTexture2D method
-        auto texture = resourceManager.GetTexture2D("cuteDog");
+        //auto cubeMeshBuffer = meshManager.GetMeshBuffer("cube", cubeMeshLayout);
 
+        // Get texture
+        auto texture = textureManager.GetTexture2D("cuteDog");
+        if (!texture) {
+            Logger::GetLogger()->error("Failed to load texture 'cuteDog'");
+            return;
+        }
+
+        // Create material
         auto material = std::make_shared<Material>();
-        material->AddTexture(texture);
-        resourceManager.AddMaterial("cubeMaterial", material);
+        material->AddTexture(texture); // Assuming your shader uses 'u_Texture' uniform
+        materialManager.AddMaterial("cubeMaterial", material);
 
         auto transform = std::make_shared<Transform>();
 
+        // Create render object
         auto m_Cube = std::make_shared<RenderObject>(cubeMesh, cubeMeshLayout, "cubeMaterial", "basic", transform);
         m_Scene->AddRenderObject(m_Cube);
+
+        // Build batches
         m_Scene->BuildBatches();
     }
 

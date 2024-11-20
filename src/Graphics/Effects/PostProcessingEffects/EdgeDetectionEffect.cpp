@@ -7,8 +7,8 @@ EdgeDetectionEffect::EdgeDetectionEffect(std::shared_ptr<MeshBuffer> quad, int w
     : PostProcessingEffect(quad, width, height), m_EdgeThreshold(0.05f)
 {
 
-    auto& resourceManager = ResourceManager::GetInstance();
-    m_Shader = resourceManager.GetShader("edgeDetection");
+    auto& shaderManager = ShaderManager::GetInstance();
+    m_Shader = shaderManager.GetShader("edgeDetection");
     if (!m_Shader) {
         Logger::GetLogger()->error("EdgeDetection shader not found!");
     }
@@ -36,9 +36,9 @@ void EdgeDetectionEffect::Apply(GLuint inputTexture, GLuint outputFramebuffer)
     }
 
     auto& resourceManager = ResourceManager::GetInstance();
-    resourceManager.BindShader("edgeDetection");
-    resourceManager.SetUniform("EdgeThreshold", m_EdgeThreshold);
-    resourceManager.SetUniform("texelSize", m_TexelSize);
+    m_Shader->Bind();
+    m_Shader->SetUniform("EdgeThreshold", m_EdgeThreshold);
+    m_Shader->SetUniform("texelSize", m_TexelSize);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, inputTexture);

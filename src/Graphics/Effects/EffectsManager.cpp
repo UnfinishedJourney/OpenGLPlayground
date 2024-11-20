@@ -63,7 +63,8 @@ void EffectsManager::SetupFullscreenQuad()
 {
     auto& resourceManager = ResourceManager::GetInstance();
 
-    auto quadMesh = resourceManager.GetMesh("quad");
+    auto& meshManager = MeshManager::GetInstance();
+    auto quadMesh = meshManager.GetMesh("quad");
 
     MeshLayout quadMeshLayout = {
         true,  // Positions (vec2)

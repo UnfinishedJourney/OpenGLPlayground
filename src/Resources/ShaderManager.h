@@ -24,9 +24,10 @@ struct ShaderMetadata {
 
 class ShaderManager {
 public:
-    ShaderManager(const std::filesystem::path& metadataPath, const std::filesystem::path& configPath);
+    ShaderManager(const std::filesystem::path& metadataPath = "../shaders/metadata.json", const std::filesystem::path& configPath = "../shaders/config.json");
     ~ShaderManager() = default;
 
+    static ShaderManager& GetInstance();
     void Initialize();
 
     std::shared_ptr<Shader> GetShader(std::string_view name);

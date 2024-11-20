@@ -1,228 +1,30 @@
 #include "Resources/ResourceManager.h"
-#include "Utilities/Logger.h"
-#include "Graphics/Meshes/AllMeshes.h"
 
-ResourceManager::ResourceManager()
-    : m_CurrentlyBoundCubeMap("") {
-    m_ShaderManager = std::make_unique<ShaderManager>("../shaders/metadata.json", "../shaders/config.json");
-    m_MaterialManager = std::make_unique<MaterialManager>();
-
-    // Initialize model paths
-    m_ModelPath = {
-        {"pig", "../assets/pig_triangulated.obj"}
-    };
-
-    // Initialize Uniform Block and Shader Storage Block Bindings
-    m_UniformBlockBindings = {
-        {"FrameData", FRAME_DATA_BINDING_POINT},
-        // Add other uniform blocks as needed
-    };
-
-    m_ShaderStorageBlockBindings = {
-        {"LightsData", LIGHTS_DATA_BINDING_POINT},
-        // Add other storage blocks as needed
-    };
+ResourceManager& ResourceManager::GetInstance() {
+    static ResourceManager instance;
+    return instance;
 }
 
-// Texture methods
-std::shared_ptr<Texture2D> ResourceManager::GetTexture2D(std::string_view textureName) {
-    return m_MaterialManager->GetTexture2D(textureName);
+ResourceManager::ResourceManager() {
+    // Initialization if needed
 }
 
-std::shared_ptr<CubeMapTexture> ResourceManager::GetCubeMapTexture(std::string_view textureName) {
-    return m_MaterialManager->GetCubeMapTexture(textureName);
+MeshManager& ResourceManager::GetMeshManager() {
+    return MeshManager::GetInstance();
 }
 
-// Model methods
-std::shared_ptr<Model> ResourceManager::GetModel(std::string_view modelName) {
-    auto it = m_Models.find(std::string(modelName));
-    if (it != m_Models.end()) {
-        return it->second;
-    }
-
-    // Load model if not found
-    std::shared_ptr<Model> model;
-
-    auto modelIt = m_ModelPath.find(std::string(modelName));
-    if (modelIt == m_ModelPath.end()) {
-        Logger::GetLogger()->error("Model not found: '{}'", modelName);
-        return nullptr;
-    }
-
-    auto modelPath = modelIt->second;
-    if (std::filesystem::exists(modelPath)) {
-        model = std::make_shared<Model>(modelPath.string());
-        m_Models[std::string(modelName)] = model;
-        return model;
-    }
-    else {
-        Logger::GetLogger()->warn("Model '{}' not found at path '{}'. Returning nullptr.", modelName, modelPath.string());
-        return nullptr;
-    }
+ModelManager& ResourceManager::GetModelManager() {
+    return ModelManager::GetInstance();
 }
 
-bool ResourceManager::DeleteModel(std::string_view modelName) {
-    return m_Models.erase(std::string(modelName)) > 0;
+TextureManager& ResourceManager::GetTextureManager() {
+    return TextureManager::GetInstance();
 }
 
-std::vector<std::shared_ptr<MeshBuffer>> ResourceManager::GetModelMeshBuffers(std::string_view modelName, const MeshLayout& layout) {
-    auto model = GetModel(modelName);
-    if (!model) {
-        Logger::GetLogger()->error("Model '{}' not found. Cannot create MeshBuffers.", modelName);
-        return {};
-    }
-
-    return model->GetMeshBuffers(layout);
+MaterialManager& ResourceManager::GetMaterialManager() {
+    return MaterialManager::GetInstance();
 }
 
-const std::vector<MeshInfo>& ResourceManager::GetModelMeshInfos(std::string_view modelName) {
-    auto model = GetModel(modelName);
-    if (!model) {
-        Logger::GetLogger()->error("Model '{}' not found. Cannot get MeshInfos.", modelName);
-        static const std::vector<MeshInfo> empty;
-        return empty;
-    }
-
-    return model->GetMeshesInfo();
-}
-
-void ResourceManager::SetUniform(std::string_view uniformName, const UniformValue& value) {
-    auto shader = m_ShaderManager->GetCurrentlyBoundShader();
-    if (shader) {
-        std::visit([&](auto&& arg) {
-            shader->SetUniform(uniformName, arg);
-            Logger::GetLogger()->debug("Set uniform '{}' with value.", uniformName);
-            }, value);
-    }
-    else {
-        Logger::GetLogger()->error("No shader is currently bound. Cannot set uniform '{}'.", uniformName);
-    }
-}
-
-std::shared_ptr<Mesh> ResourceManager::GetMesh(std::string_view meshName) {
-    auto it = m_Meshes.find(std::string(meshName));
-    if (it != m_Meshes.end()) {
-        return it->second;
-    }
-
-    // Create mesh if not found
-    std::shared_ptr<Mesh> mesh;
-    if (meshName == "cube") {
-        mesh = std::make_shared<Cube>();
-    }
-    else if (meshName == "sphere") {
-        mesh = std::make_shared<Sphere>();
-    }
-    else if (meshName == "lightsphere") {
-        mesh = std::make_shared<LightSphere>();
-    }
-    else if (meshName == "quad") {
-        mesh = std::make_shared<Quad>();
-    }
-    else if (meshName == "terrain") {
-        mesh = std::make_shared<TerrainMesh>();
-    }
-    else {
-        Logger::GetLogger()->warn("Mesh '{}' not found. Returning nullptr.", meshName);
-        return nullptr;
-    }
-
-    m_Meshes[std::string(meshName)] = mesh;
-    return mesh;
-}
-
-bool ResourceManager::DeleteMesh(std::string_view meshName) {
-    return m_Meshes.erase(std::string(meshName)) > 0;
-}
-
-void ResourceManager::AddMaterial(std::string_view name, std::shared_ptr<Material> material) {
-    m_MaterialManager->AddMaterial(name, std::move(material));
-}
-
-std::shared_ptr<Material> ResourceManager::GetMaterial(std::string_view materialName) {
-    return m_MaterialManager->GetMaterial(materialName);
-}
-
-std::shared_ptr<Shader> ResourceManager::GetShader(std::string_view shaderName) {
-    return m_ShaderManager->GetShader(shaderName);
-}
-
-std::shared_ptr<ComputeShader> ResourceManager::GetComputeShader(std::string_view shaderName) {
-    return m_ShaderManager->GetComputeShader(shaderName);
-}
-
-std::shared_ptr<MeshBuffer> ResourceManager::GetMeshBuffer(std::string_view meshName, const MeshLayout& mLayout) {
-    MeshKey key = { std::string(meshName), mLayout };
-
-    auto it = m_MeshBuffers.find(key);
-    if (it != m_MeshBuffers.end()) {
-        return it->second;
-    }
-
-    auto mesh = GetMesh(meshName);
-    if (!mesh) {
-        Logger::GetLogger()->error("Mesh '{}' not found. Cannot create MeshBuffer.", meshName);
-        return nullptr;
-    }
-
-    auto meshBuffer = std::make_shared<MeshBuffer>(*mesh, mLayout);
-    m_MeshBuffers[key] = meshBuffer;
-    return meshBuffer;
-}
-
-bool ResourceManager::DeleteMeshBuffer(std::string_view meshName, const MeshLayout& mLayout) {
-    MeshKey key = { std::string(meshName), mLayout };
-    return m_MeshBuffers.erase(key) > 0;
-}
-
-void ResourceManager::ReloadAllShaders() {
-    m_ShaderManager->ReloadAllShaders();
-
-    // After reloading, rebind uniform and storage blocks for all shaders
-    for (const auto& [shaderName, shader] : m_ShaderManager->GetShaders()) {
-        RebindUniformBlocks(shaderName);
-        RebindShaderStorageBlocks(shaderName);
-    }
-}
-
-void ResourceManager::BindShader(std::string_view shaderName) {
-    m_ShaderManager->BindShader(shaderName);
-}
-
-void ResourceManager::BindMaterial(std::string_view materialName) {
-    auto shader = m_ShaderManager->GetCurrentlyBoundShader();
-    if (shader) {
-        m_MaterialManager->BindMaterial(materialName, shader);
-    }
-    else {
-        Logger::GetLogger()->error("No shader is currently bound. Cannot bind material '{}'.", materialName);
-    }
-}
-
-void ResourceManager::RebindUniformBlocks(const std::string& shaderName) {
-    auto shader = GetShader(shaderName);
-    if (!shader) {
-        Logger::GetLogger()->error("Shader '{}' not found.", shaderName);
-        return;
-    }
-
-    for (const auto& [blockName, bindingPoint] : m_UniformBlockBindings) {
-        shader->BindUniformBlock(blockName, bindingPoint);
-    }
-}
-
-void ResourceManager::RebindShaderStorageBlocks(const std::string& shaderName) {
-    auto shader = GetShader(shaderName);
-    if (!shader) {
-        Logger::GetLogger()->error("Shader '{}' not found.", shaderName);
-        return;
-    }
-
-    for (const auto& [blockName, bindingPoint] : m_ShaderStorageBlockBindings) {
-        shader->BindShaderStorageBlock(blockName, bindingPoint);
-    }
-}
-
-std::shared_ptr<BaseShader> ResourceManager::GetCurrentlyBoundShader() const {
-    return m_ShaderManager->GetCurrentlyBoundShader();
+ShaderManager& ResourceManager::GetShaderManager() {
+    return ShaderManager::GetInstance();
 }

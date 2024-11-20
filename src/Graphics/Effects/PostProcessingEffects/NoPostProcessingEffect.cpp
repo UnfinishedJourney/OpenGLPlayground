@@ -7,8 +7,8 @@ NoPostProcessingEffect::NoPostProcessingEffect(std::shared_ptr<MeshBuffer> quad,
     : PostProcessingEffect(quad, width, height)
 {
 
-    auto& resourceManager = ResourceManager::GetInstance();
-    m_Shader = resourceManager.GetShader("presentTexture");
+    auto& shaderManager = ShaderManager::GetInstance();
+    m_Shader = shaderManager.GetShader("presentTexture");
     if (!m_Shader) {
         Logger::GetLogger()->error("Present texture shader not found!");
     }
@@ -31,7 +31,12 @@ void NoPostProcessingEffect::Apply(GLuint inputTexture, GLuint outputFramebuffer
     }
 
     auto& resourceManager = ResourceManager::GetInstance();
-    resourceManager.BindShader("presentTexture");
+    if (!m_Shader) {
+        Logger::GetLogger()->error("Present texture shader not found!");
+        return;
+    }
+
+    m_Shader->Bind();
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, inputTexture);

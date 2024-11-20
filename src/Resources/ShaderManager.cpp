@@ -22,6 +22,11 @@ ShaderManager::ShaderManager(const std::filesystem::path& metadataPath, const st
     Initialize();
 }
 
+ShaderManager& ShaderManager::GetInstance() {
+    static ShaderManager instance;
+    return instance;
+}
+
 void ShaderManager::Initialize() {
     auto logger = Logger::GetLogger();
     logger->info("Initializing ShaderManager with metadata path: '{}' and config path: '{}'.",
