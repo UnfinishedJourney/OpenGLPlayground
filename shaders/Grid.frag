@@ -1,7 +1,7 @@
 #version 460 core
 
-layout (location=0) in vec2 uv;
-layout (location=1) in vec2 camPos;
+in vec2 uv;
+in vec2 camPos;
 out vec4 FragColor;
 
 uniform vec4 gridColorThin = vec4(0.5, 0.5, 0.5, 1.0);

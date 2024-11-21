@@ -21,6 +21,15 @@
                 "fragment": "../shaders/Grid.frag"
             }
         },
+        "terrain": {
+            "binary_path": "../shaders/bin/Grid.bin",
+            "shader_stages": {
+                "vertex": "../shaders/Terrain.vert",
+                "tess_control": "../shaders/Terrain.tesc",
+                "tess_evaluation": "../shaders/Terrain.tese",
+                "fragment": "../shaders/Terrain.frag"
+            }
+        },
         "debugLights": {
             "binary_path": "../shaders/bin/DebugLights.bin",
             "shader_stages": {

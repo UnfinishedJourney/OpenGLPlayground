@@ -1,8 +1,9 @@
 #pragma once
 #include "TestClearColor.h"
 #include "TestSimpleCube.h"
-#include "TestSkyBox.h"
+#include "TestTerrain.h"
 #include "TestLights.h"
+#include "TestSkyBox.h"
 #include "TestSkyBoxReflection.h"
 //#include "TestAssimp.h"
 //#include "TestInstance.h"

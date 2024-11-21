@@ -87,6 +87,7 @@ void Application::Init()
     testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
     // testMenu->RegisterTest<test::TestSkyBox>("SkyBox");
     testMenu->RegisterTest<test::TestLights>("Lights");
+    testMenu->RegisterTest<test::TestTerrain>("Terrain");
     // testMenu->RegisterTest<test::TestSkyBoxReflection>("SkyboxReflection");
     // Add more tests as needed
 }

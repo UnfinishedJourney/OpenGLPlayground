@@ -58,6 +58,9 @@ void Scene::Clear()
 {
     m_LightsData.clear();
     m_BatchManager.Clear();
+    m_TerrainHeightMap = nullptr;
+    m_BGrid = false;
+    m_BDebugLights = false;
 }
 
 void Scene::BuildBatches() const

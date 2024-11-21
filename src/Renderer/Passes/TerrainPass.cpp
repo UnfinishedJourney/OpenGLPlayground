@@ -20,6 +20,7 @@ TerrainPass::TerrainPass(std::shared_ptr<FrameBuffer> framebuffer, const std::sh
 
 void TerrainPass::Execute(const std::shared_ptr<Scene>& scene)
 {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_Framebuffer->Bind();
 
     // Enable necessary OpenGL states
@@ -42,7 +43,7 @@ void TerrainPass::Execute(const std::shared_ptr<Scene>& scene)
         return;
     }
     heightMap->Bind(0);
-    shader->SetUniform("u_HeightMap", 0);
+    //shader->SetUniform("u_HeightMap", 0);
 
     // Bind frame data UBO
     scene->BindFrameDataUBO();

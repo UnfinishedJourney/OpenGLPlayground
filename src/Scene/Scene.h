@@ -81,5 +81,5 @@ private:
     std::unique_ptr<UniformBuffer> m_FrameDataUBO;
     std::unique_ptr<ShaderStorageBuffer> m_LightsSSBO;
     PostProcessingEffectType m_PostProcessingEffect;
-    std::shared_ptr<Texture2D> m_TerrainHeightMap;
+    std::shared_ptr<Texture2D> m_TerrainHeightMap = nullptr;
 };

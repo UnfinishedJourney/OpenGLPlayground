@@ -1,6 +1,7 @@
 ﻿#include "Renderer.h"
 #include "Renderer/Passes/GeometryPass.h"
 #include "Renderer/Passes/GridPass.h"
+#include "Renderer/Passes/TerrainPass.h"
 #include "Renderer/Passes/PostProcessingPass.h"
 #include "Renderer/Passes/DebugLightsPass.h"
 #include "Graphics/Effects/PostProcessingEffects/EdgeDetectionEffect.h"
@@ -57,6 +58,11 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
     if (scene->GetBGrid())
     {
         m_RenderPasses.push_back(std::make_unique<GridPass>(framebuffer, scene));
+    }
+
+    if (scene->GetTerrainHeightMap())
+    {
+        m_RenderPasses.push_back(std::make_unique<TerrainPass>(framebuffer, scene));
     }
 
     if (scene->GetBDebugLights())

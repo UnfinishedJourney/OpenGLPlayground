@@ -27,6 +27,9 @@ std::shared_ptr<Mesh> MeshManager::GetMesh(std::string_view meshName) {
     else if (meshName == "quad") {
         mesh = std::make_shared<Quad>();
     }
+    else if (meshName == "terrain") {
+        mesh = std::make_shared<TerrainMesh>();
+    }
     else {
         Logger::GetLogger()->warn("Mesh '{}' not found. Returning nullptr.", meshName);
         return nullptr;

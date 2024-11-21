@@ -4,8 +4,8 @@ layout (location = 0) in vec2 aPos;
 
 #include "Common/Common.shader"
 
-layout (location=0) out vec2 uv;
-layout (location=1) out vec2 camPos;
+out vec2 uv;
+out vec2 camPos;
 uniform float gridSize = 100.0;
 
 void main()
