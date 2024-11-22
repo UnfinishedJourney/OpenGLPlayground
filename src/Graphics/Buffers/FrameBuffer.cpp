@@ -4,46 +4,104 @@
 #include <stdexcept>
 
 FrameBuffer::FrameBuffer(int width, int height, const std::vector<FrameBufferTextureAttachment>& attachments, bool hasDepth)
-    : m_Width(width), m_Height(height), m_HasDepth(hasDepth) {
+    : m_Width(width), m_Height(height), m_HasDepth(hasDepth),
+    m_RendererIDPtr(new GLuint(0), FrameBufferDeleter()),
+    m_DepthRenderBufferPtr(hasDepth ? std::unique_ptr<GLuint, RenderBufferDeleter>(new GLuint(0), RenderBufferDeleter()) : nullptr),
+    m_Attachments(attachments) // Store the attachments
+{
     Initialize(width, height, attachments, hasDepth);
 }
 
-FrameBuffer::~FrameBuffer() {
-    Cleanup();
-}
+void FrameBuffer::Initialize(int width, int height, const std::vector<FrameBufferTextureAttachment>& attachments, bool hasDepth) {
+    // Create FrameBuffer Object
+    GLCall(glCreateFramebuffers(1, m_RendererIDPtr.get()));
+    GLCall(glBindFramebuffer(GL_FRAMEBUFFER, *m_RendererIDPtr));
 
-FrameBuffer::FrameBuffer(FrameBuffer&& other) noexcept
-    : m_RendererID(other.m_RendererID),
-    m_Width(other.m_Width),
-    m_Height(other.m_Height),
-    m_HasDepth(other.m_HasDepth),
-    m_Textures(std::move(other.m_Textures)),
-    m_DepthRenderBuffer(other.m_DepthRenderBuffer) {
-    other.m_RendererID = 0;
-    other.m_DepthRenderBuffer = 0;
-    Logger::GetLogger()->debug("Moved FrameBuffer with ID {}.", m_RendererID);
-}
+    std::vector<GLenum> drawBuffers;
 
-FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept {
-    if (this != &other) {
-        Cleanup();
+    // Create and attach textures
+    for (const auto& attachment : attachments) {
+        auto texturePtr = std::unique_ptr<GLuint, TextureDeleter>(new GLuint(0), TextureDeleter());
+        GLCall(glCreateTextures(GL_TEXTURE_2D, 1, texturePtr.get()));
+        GLCall(glBindTexture(GL_TEXTURE_2D, *texturePtr));
+        GLCall(glTexImage2D(GL_TEXTURE_2D, 0, attachment.internalFormat, width, height, 0, attachment.format, attachment.type, nullptr));
+        // Set texture parameters (adjust as needed)
+        GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+        GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+        GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
-        m_RendererID = other.m_RendererID;
-        m_Width = other.m_Width;
-        m_Height = other.m_Height;
-        m_HasDepth = other.m_HasDepth;
-        m_Textures = std::move(other.m_Textures);
-        m_DepthRenderBuffer = other.m_DepthRenderBuffer;
+        // Attach texture to framebuffer
+        GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER, attachment.attachmentType, GL_TEXTURE_2D, *texturePtr, 0));
+        m_Textures.emplace_back(std::move(texturePtr));
+        drawBuffers.push_back(attachment.attachmentType);
 
-        other.m_RendererID = 0;
-        other.m_DepthRenderBuffer = 0;
-        Logger::GetLogger()->debug("Assigned FrameBuffer with ID {}.", m_RendererID);
+        Logger::GetLogger()->info("Attached Texture ID {} to FrameBuffer ID {} as attachment {}.",
+            *m_Textures.back(), *m_RendererIDPtr, attachment.attachmentType);
     }
-    return *this;
+
+    // Specify the list of color buffers to draw to
+    if (!drawBuffers.empty()) {
+        GLCall(glDrawBuffers(static_cast<GLsizei>(drawBuffers.size()), drawBuffers.data()));
+    }
+    else {
+        // No color attachments, disable color buffer drawing
+        GLCall(glDrawBuffer(GL_NONE));
+        GLCall(glReadBuffer(GL_NONE));
+    }
+
+    // Create and attach RenderBuffer for depth if required
+    if (hasDepth && m_DepthRenderBufferPtr) {
+        GLCall(glCreateRenderbuffers(1, m_DepthRenderBufferPtr.get()));
+        GLCall(glBindRenderbuffer(GL_RENDERBUFFER, *m_DepthRenderBufferPtr));
+        GLCall(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height));
+        GLCall(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *m_DepthRenderBufferPtr));
+
+        Logger::GetLogger()->info("Attached Depth RenderBuffer ID {} to FrameBuffer ID {}.",
+            *m_DepthRenderBufferPtr, *m_RendererIDPtr);
+    }
+
+    // Check framebuffer completeness
+    GLenum status;
+    GLCall(status = glCheckFramebufferStatus(GL_FRAMEBUFFER));
+
+    if (status != GL_FRAMEBUFFER_COMPLETE) {
+        Logger::GetLogger()->error("FrameBuffer ID {} is incomplete! Status: {}", *m_RendererIDPtr, status);
+        throw std::runtime_error("Incomplete FrameBuffer.");
+    }
+
+    GLCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    Logger::GetLogger()->info("Initialized FrameBuffer with ID {}.", *m_RendererIDPtr);
+}
+
+void FrameBuffer::Cleanup() {
+    // Delete FrameBuffer Object
+    if (*m_RendererIDPtr != 0) {
+        GLCall(glDeleteFramebuffers(1, m_RendererIDPtr.get()));
+        Logger::GetLogger()->info("Deleted FrameBuffer with ID {}.", *m_RendererIDPtr);
+        *m_RendererIDPtr = 0;
+    }
+
+    // Delete Textures
+    for (auto& texturePtr : m_Textures) {
+        if (*texturePtr != 0) {
+            GLCall(glDeleteTextures(1, texturePtr.get()));
+            Logger::GetLogger()->info("Deleted Texture ID {}.", *texturePtr);
+            *texturePtr = 0;
+        }
+    }
+    m_Textures.clear();
+
+    // Delete RenderBuffer
+    if (m_DepthRenderBufferPtr && *m_DepthRenderBufferPtr != 0) {
+        GLCall(glDeleteRenderbuffers(1, m_DepthRenderBufferPtr.get()));
+        Logger::GetLogger()->info("Deleted Depth RenderBuffer ID {}.", *m_DepthRenderBufferPtr);
+        *m_DepthRenderBufferPtr = 0;
+    }
 }
 
 void FrameBuffer::Bind() const {
-    GLCall(glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID));
+    GLCall(glBindFramebuffer(GL_FRAMEBUFFER, *m_RendererIDPtr));
     GLCall(glViewport(0, 0, m_Width, m_Height));
 }
 
@@ -54,8 +112,8 @@ void FrameBuffer::Unbind() const {
 GLuint FrameBuffer::GetTexture(GLenum attachment) const {
     // attachment should be GL_COLOR_ATTACHMENT0 + n
     int index = attachment - GL_COLOR_ATTACHMENT0;
-    if (index >= 0 && index < static_cast<int>(m_Textures.size())) {
-        return m_Textures[index];
+    if (index >= 0 && static_cast<size_t>(index) < m_Textures.size()) {
+        return *m_Textures[index];
     }
     Logger::GetLogger()->error("Invalid attachment type queried: {}.", attachment);
     return 0;
@@ -69,80 +127,6 @@ void FrameBuffer::Resize(int newWidth, int newHeight) {
     m_Height = newHeight;
 
     Cleanup();
-    Initialize(newWidth, newHeight, /* Pass existing attachments */{}, m_HasDepth);
+    Initialize(newWidth, newHeight, m_Attachments, m_HasDepth); // Pass stored attachments
     Logger::GetLogger()->info("Resized FrameBuffer to {}x{}.", newWidth, newHeight);
-}
-
-void FrameBuffer::Initialize(int width, int height, const std::vector<FrameBufferTextureAttachment>& attachments, bool hasDepth) {
-    GLCall(glCreateFramebuffers(1, &m_RendererID));
-    GLCall(glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID));
-
-    std::vector<GLenum> drawBuffers;
-
-    for (const auto& attachment : attachments) {
-        GLuint texture;
-        GLCall(glCreateTextures(GL_TEXTURE_2D, 1, &texture));
-        GLCall(glBindTexture(GL_TEXTURE_2D, texture));
-        GLCall(glTexImage2D(GL_TEXTURE_2D, 0, attachment.internalFormat, width, height, 0, attachment.format, attachment.type, nullptr));
-        GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // Adjust as needed
-        GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-        GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)); // Adjust as needed
-        GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-
-        GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER, attachment.attachmentType, GL_TEXTURE_2D, texture, 0));
-        m_Textures.push_back(texture);
-        drawBuffers.push_back(attachment.attachmentType);
-        Logger::GetLogger()->info("Attached texture ID {} to FrameBuffer ID {} as {}.", texture, m_RendererID, attachment.attachmentType);
-    }
-
-    if (!drawBuffers.empty()) {
-        GLCall(glDrawBuffers(static_cast<GLsizei>(drawBuffers.size()), drawBuffers.data()));
-    }
-    else {
-        // No color attachments, disable drawing to color buffer
-        GLCall(glDrawBuffer(GL_NONE));
-        GLCall(glReadBuffer(GL_NONE));
-    }
-
-    if (hasDepth) {
-        GLCall(glCreateRenderbuffers(1, &m_DepthRenderBuffer));
-        GLCall(glBindRenderbuffer(GL_RENDERBUFFER, m_DepthRenderBuffer));
-        GLCall(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height));
-        GLCall(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_DepthRenderBuffer));
-        Logger::GetLogger()->info("Attached Depth RenderBuffer ID {} to FrameBuffer ID {}.", m_DepthRenderBuffer, m_RendererID);
-    }
-
-    // **Corrected Section Starts Here**
-    // Separate the GLCall from the function that returns a value
-    GLenum status;
-    GLCall(status = glCheckFramebufferStatus(GL_FRAMEBUFFER));
-    // **Corrected Section Ends Here**
-
-    if (status != GL_FRAMEBUFFER_COMPLETE) {
-        Logger::GetLogger()->error("FrameBuffer ID {} is not complete!", m_RendererID);
-        throw std::runtime_error("Incomplete FrameBuffer.");
-    }
-
-    GLCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-    Logger::GetLogger()->info("Initialized FrameBuffer with ID {}.", m_RendererID);
-}
-
-void FrameBuffer::Cleanup() {
-    if (m_RendererID != 0) {
-        GLCall(glDeleteFramebuffers(1, &m_RendererID));
-        Logger::GetLogger()->info("Deleted FrameBuffer with ID {}.", m_RendererID);
-        m_RendererID = 0;
-    }
-
-    for (auto texture : m_Textures) {
-        GLCall(glDeleteTextures(1, &texture));
-        Logger::GetLogger()->info("Deleted FrameBuffer texture ID {}.", texture);
-    }
-    m_Textures.clear();
-
-    if (m_DepthRenderBuffer != 0) {
-        GLCall(glDeleteRenderbuffers(1, &m_DepthRenderBuffer));
-        Logger::GetLogger()->info("Deleted Depth RenderBuffer ID {}.", m_DepthRenderBuffer);
-        m_DepthRenderBuffer = 0;
-    }
 }

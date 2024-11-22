@@ -7,10 +7,8 @@ ModelManager& ModelManager::GetInstance() {
 }
 
 ModelManager::ModelManager() {
-    // Initialize model paths
     m_ModelPaths = {
         {"pig", "../assets/pig_triangulated.obj"},
-        // Add other models as needed
     };
 }
 
@@ -61,4 +59,9 @@ const std::vector<MeshInfo>& ModelManager::GetModelMeshInfos(std::string_view mo
     }
 
     return model->GetMeshesInfo();
+}
+
+void ModelManager::Clear()
+{
+    m_Models.clear();
 }

@@ -20,6 +20,8 @@ public:
     std::vector<std::shared_ptr<MeshBuffer>> GetModelMeshBuffers(std::string_view modelName, const MeshLayout& layout);
     const std::vector<MeshInfo>& GetModelMeshInfos(std::string_view modelName);
 
+    void Clear();
+
 private:
     ModelManager();
     ~ModelManager() = default;

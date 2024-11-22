@@ -16,16 +16,16 @@ public:
     void Unbind() const;
     void Render() const;
 
-    GLuint GetIndexCount() const { return m_IndexCount; } // Added getter for index count
+    GLuint GetIndexCount() const { return m_IndexCount; }
     GLuint GetVertexCount() const { return m_VertexCount; }
-    bool HasIndices() const { return m_BHasIndices;  }
+    bool HasIndices() const { return m_BHasIndices; }
 
 private:
-    bool m_BHasIndices;
+    bool m_BHasIndices = false;
     MeshLayout m_MeshLayout;
     std::unique_ptr<VertexArray> m_VAO;
     std::unique_ptr<VertexBuffer> m_VBO;
     std::unique_ptr<IndexBuffer> m_IBO;
-    GLuint m_VertexCount;
-    GLuint m_IndexCount;
+    GLuint m_VertexCount = 0;
+    GLuint m_IndexCount = 0;
 };

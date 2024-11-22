@@ -2,8 +2,8 @@
 
 #include <glad/glad.h>
 #include <vector>
-#include <string>
-#include "Utilities/Logger.h"
+#include <memory>
+#include "BufferDeleter.h"
 
 struct FrameBufferTextureAttachment {
     GLenum attachmentType; // e.g., GL_COLOR_ATTACHMENT0
@@ -15,15 +15,13 @@ struct FrameBufferTextureAttachment {
 class FrameBuffer {
 public:
     FrameBuffer(int width, int height, const std::vector<FrameBufferTextureAttachment>& attachments, bool hasDepth = true);
-    ~FrameBuffer();
+    ~FrameBuffer() = default;
 
-    // Delete copy constructor and assignment operator
+    FrameBuffer(FrameBuffer&&) noexcept = default;
+    FrameBuffer& operator=(FrameBuffer&&) noexcept = default;
+
     FrameBuffer(const FrameBuffer&) = delete;
     FrameBuffer& operator=(const FrameBuffer&) = delete;
-
-    // Allow move semantics
-    FrameBuffer(FrameBuffer&& other) noexcept;
-    FrameBuffer& operator=(FrameBuffer&& other) noexcept;
 
     void Bind() const;
     void Unbind() const;
@@ -34,7 +32,7 @@ public:
     // Resize the framebuffer and its attachments
     void Resize(int newWidth, int newHeight);
 
-    [[nodiscard]] GLuint GetRendererID() const { return m_RendererID; }
+    [[nodiscard]] GLuint GetRendererID() const { return *m_RendererIDPtr; }
     [[nodiscard]] int GetWidth() const { return m_Width; }
     [[nodiscard]] int GetHeight() const { return m_Height; }
 
@@ -42,10 +40,14 @@ private:
     void Initialize(int width, int height, const std::vector<FrameBufferTextureAttachment>& attachments, bool hasDepth);
     void Cleanup();
 
-    GLuint m_RendererID = 0;
+    std::unique_ptr<GLuint, FrameBufferDeleter> m_RendererIDPtr;
+    std::vector<std::unique_ptr<GLuint, TextureDeleter>> m_Textures; // Stores texture IDs for color attachments
+    std::unique_ptr<GLuint, RenderBufferDeleter> m_DepthRenderBufferPtr;
+
+    // Store attachments for resizing
+    std::vector<FrameBufferTextureAttachment> m_Attachments;
+
     int m_Width = 0;
     int m_Height = 0;
     bool m_HasDepth = false;
-    std::vector<GLuint> m_Textures; // Stores texture IDs for color attachments
-    GLuint m_DepthRenderBuffer = 0;
 };

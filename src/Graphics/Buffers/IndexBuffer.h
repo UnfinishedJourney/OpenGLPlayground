@@ -1,18 +1,20 @@
 #pragma once
 
-#include <span>
 #include <glad/glad.h>
+#include <span>
+#include <memory>
+#include "BufferDeleter.h"
 
 class IndexBuffer {
 public:
     IndexBuffer(std::span<const GLuint> data, GLenum usage = GL_STATIC_DRAW);
-    ~IndexBuffer();
+    ~IndexBuffer() = default;
+
+    IndexBuffer(IndexBuffer&&) noexcept = default;
+    IndexBuffer& operator=(IndexBuffer&&) noexcept = default;
 
     IndexBuffer(const IndexBuffer&) = delete;
     IndexBuffer& operator=(const IndexBuffer&) = delete;
-
-    IndexBuffer(IndexBuffer&& other) noexcept;
-    IndexBuffer& operator=(IndexBuffer&& other) noexcept;
 
     void Bind() const;
     void Unbind() const;
@@ -26,4 +28,6 @@ private:
     GLuint m_RendererID = 0;
     GLsizei m_Count = 0;
     GLenum m_Usage = GL_STATIC_DRAW;
+
+    std::unique_ptr<GLuint, BufferDeleter> m_RendererIDPtr;
 };

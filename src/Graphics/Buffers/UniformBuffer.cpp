@@ -1,56 +1,24 @@
 #include "UniformBuffer.h"
-#include "Utilities/Utility.h"
+#include "Utilities/Logger.h"
 #include <stdexcept>
 
 UniformBuffer::UniformBuffer(GLsizeiptr size, GLuint bindingPoint, GLenum usage)
-    : m_BindingPoint(bindingPoint), m_Usage(usage), m_Size(size) {
-    GLCall(glCreateBuffers(1, &m_RendererID));
-    if (m_RendererID == 0) {
+    : m_BindingPoint(bindingPoint), m_Usage(usage), m_Size(size), m_RendererIDPtr(new GLuint(0), BufferDeleter()) {
+    GLCall(glCreateBuffers(1, m_RendererIDPtr.get()));
+    if (*m_RendererIDPtr == 0) {
         Logger::GetLogger()->error("Failed to create Uniform Buffer Object.");
         throw std::runtime_error("Failed to create Uniform Buffer Object.");
     }
 
-    GLCall(glNamedBufferData(m_RendererID, m_Size, nullptr, m_Usage));
-    GLCall(glBindBufferBase(GL_UNIFORM_BUFFER, m_BindingPoint, m_RendererID));
+    GLCall(glNamedBufferData(*m_RendererIDPtr, m_Size, nullptr, m_Usage));
+    GLCall(glBindBufferBase(GL_UNIFORM_BUFFER, m_BindingPoint, *m_RendererIDPtr));
 
-    Logger::GetLogger()->info("Created UniformBuffer ID: {} with binding point: {} and size: {}", m_RendererID, m_BindingPoint, m_Size);
-}
-
-UniformBuffer::~UniformBuffer() {
-    if (m_RendererID != 0) {
-        GLCall(glDeleteBuffers(1, &m_RendererID));
-        Logger::GetLogger()->info("Deleted UniformBuffer ID: {}", m_RendererID);
-    }
-}
-
-UniformBuffer::UniformBuffer(UniformBuffer&& other) noexcept
-    : m_RendererID(other.m_RendererID), m_BindingPoint(other.m_BindingPoint), m_Usage(other.m_Usage), m_Size(other.m_Size) {
-    other.m_RendererID = 0;
-    Logger::GetLogger()->debug("Moved UniformBuffer. New ID: {}", m_RendererID);
-}
-
-UniformBuffer& UniformBuffer::operator=(UniformBuffer&& other) noexcept {
-    if (this != &other) {
-        if (m_RendererID != 0) {
-            GLCall(glDeleteBuffers(1, &m_RendererID));
-            Logger::GetLogger()->info("Deleted UniformBuffer ID: {}", m_RendererID);
-        }
-
-        m_RendererID = other.m_RendererID;
-        m_BindingPoint = other.m_BindingPoint;
-        m_Usage = other.m_Usage;
-        m_Size = other.m_Size;
-
-        other.m_RendererID = 0;
-
-        Logger::GetLogger()->debug("Assigned UniformBuffer. New ID: {}", m_RendererID);
-    }
-    return *this;
+    Logger::GetLogger()->info("Created UniformBuffer ID: {} with binding point: {} and size: {}", *m_RendererIDPtr, m_BindingPoint, m_Size);
 }
 
 void UniformBuffer::Bind() const {
-    GLCall(glBindBufferBase(GL_UNIFORM_BUFFER, m_BindingPoint, m_RendererID));
-    Logger::GetLogger()->debug("Bound UniformBuffer ID: {} to binding point: {}", m_RendererID, m_BindingPoint);
+    GLCall(glBindBufferBase(GL_UNIFORM_BUFFER, m_BindingPoint, *m_RendererIDPtr));
+    Logger::GetLogger()->debug("Bound UniformBuffer ID: {} to binding point: {}", *m_RendererIDPtr, m_BindingPoint);
 }
 
 void UniformBuffer::Unbind() const {
@@ -68,18 +36,19 @@ void UniformBuffer::SetData(const void* data, GLsizeiptr size, GLintptr offset) 
         Logger::GetLogger()->error("SetData out of range: offset ({}) + size ({}) > buffer size ({})", offset, size, m_Size);
         throw std::out_of_range("UniformBuffer::SetData out of range");
     }
-    GLCall(glNamedBufferSubData(m_RendererID, offset, size, data));
-    Logger::GetLogger()->debug("Updated UniformBuffer ID: {} at offset: {} with size: {}", m_RendererID, offset, size);
+    GLCall(glNamedBufferSubData(*m_RendererIDPtr, offset, size, data));
+    Logger::GetLogger()->debug("Updated UniformBuffer ID: {} at offset: {} with size: {}", *m_RendererIDPtr, offset, size);
 }
 
 void* UniformBuffer::MapBuffer(GLenum access) const {
-    void* ptr = glMapNamedBuffer(m_RendererID, access);
+    void* ptr = glMapNamedBuffer(*m_RendererIDPtr, access);
     if (!ptr) {
-        Logger::GetLogger()->error("Failed to map UniformBuffer ID: {}", m_RendererID);
+        Logger::GetLogger()->error("Failed to map UniformBuffer ID: {}", *m_RendererIDPtr);
     }
     return ptr;
 }
 
 void UniformBuffer::UnmapBuffer() const {
-    GLCall(glUnmapNamedBuffer(m_RendererID));
+    GLCall(glUnmapNamedBuffer(*m_RendererIDPtr));
+    Logger::GetLogger()->debug("Unmapped UniformBuffer ID: {}", *m_RendererIDPtr);
 }

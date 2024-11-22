@@ -1,6 +1,7 @@
 #include "VertexBufferLayout.h"
 
-template<typename T>
+// Implement the Push method
+template<SupportedVertexType T>
 void VertexBufferLayout::Push(GLuint count, GLuint attributeIndex) {
     if constexpr (std::is_same_v<T, float>) {
         m_Elements.push_back({ attributeIndex, count, GL_FLOAT, GL_FALSE, m_Offset });
@@ -17,11 +18,9 @@ void VertexBufferLayout::Push(GLuint count, GLuint attributeIndex) {
         m_Offset += count * sizeof(GLubyte);
         m_Stride += count * sizeof(GLubyte);
     }
-    else {
-        static_assert(false, "Unsupported type for VertexBufferLayout::Push");
-    }
 }
 
+// Explicit template instantiation for supported types
 template void VertexBufferLayout::Push<float>(GLuint count, GLuint attributeIndex);
 template void VertexBufferLayout::Push<GLuint>(GLuint count, GLuint attributeIndex);
 template void VertexBufferLayout::Push<GLubyte>(GLuint count, GLuint attributeIndex);

@@ -14,6 +14,7 @@ std::shared_ptr<Mesh> MeshManager::GetMesh(std::string_view meshName) {
     }
 
     // Create mesh if not found
+    //need config?
     std::shared_ptr<Mesh> mesh;
     if (meshName == "cube") {
         mesh = std::make_shared<Cube>();
@@ -65,4 +66,10 @@ std::shared_ptr<MeshBuffer> MeshManager::GetMeshBuffer(std::string_view meshName
 bool MeshManager::DeleteMeshBuffer(std::string_view meshName, const MeshLayout& layout) {
     MeshKey key = { std::string(meshName), layout };
     return m_MeshBuffers.erase(key) > 0;
+}
+
+void MeshManager::Clear()
+{
+    m_MeshBuffers.clear();
+    m_Meshes.clear(); //maybe don't need to clean meshes
 }

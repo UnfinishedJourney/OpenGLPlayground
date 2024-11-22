@@ -80,7 +80,7 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
 std::shared_ptr<FrameBuffer> Renderer::CreateFramebufferForScene(const std::shared_ptr<Scene>& scene, int width, int height)
 {
     std::vector<FrameBufferTextureAttachment> colorAttachments = {
-        { GL_COLOR_ATTACHMENT0, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE }       //will need more attachments when needed
+        { GL_COLOR_ATTACHMENT0, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE }       //will need more attachments later
     };
 
     auto framebuffer = std::make_shared<FrameBuffer>(width, height, colorAttachments, true);

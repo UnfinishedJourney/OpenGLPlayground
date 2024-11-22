@@ -9,6 +9,8 @@
 #include "Graphics/Buffers/MeshBuffer.h"
 #include "Graphics/Meshes/MeshLayout.h"
 
+//currently handles simple meshes and model handles models.maybe needs to be changed
+
 class MeshManager {
 public:
     static MeshManager& GetInstance();
@@ -18,6 +20,8 @@ public:
 
     std::shared_ptr<MeshBuffer> GetMeshBuffer(std::string_view meshName, const MeshLayout& layout);
     bool DeleteMeshBuffer(std::string_view meshName, const MeshLayout& layout);
+
+    void Clear();
 
 private:
     MeshManager() = default;

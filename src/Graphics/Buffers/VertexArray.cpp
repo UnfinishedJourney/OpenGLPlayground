@@ -2,62 +2,45 @@
 #include "Utilities/Logger.h"
 #include "Utilities/Utility.h"
 #include <stdexcept>
+#include <algorithm>
 
-VertexArray::VertexArray() {
-    GLCall(glCreateVertexArrays(1, &m_RendererID));
-    if (m_RendererID == 0) {
+VertexArray::VertexArray()
+    : m_RendererIDPtr(new GLuint(0), VertexArrayDeleter()) {
+    GLCall(glCreateVertexArrays(1, m_RendererIDPtr.get()));
+    if (*m_RendererIDPtr == 0) {
         Logger::GetLogger()->error("Failed to create Vertex Array Object.");
         throw std::runtime_error("Failed to create Vertex Array Object.");
     }
-    Logger::GetLogger()->info("Created VertexArray with ID {}.", m_RendererID);
-}
-
-VertexArray::~VertexArray() {
-    if (m_RendererID != 0) {
-        GLCall(glDeleteVertexArrays(1, &m_RendererID));
-        Logger::GetLogger()->info("Deleted VertexArray with ID {}.", m_RendererID);
-    }
-}
-
-VertexArray::VertexArray(VertexArray&& other) noexcept
-    : m_RendererID(other.m_RendererID) {
-    other.m_RendererID = 0;
-    Logger::GetLogger()->debug("Moved VertexArray with ID {}.", m_RendererID);
-}
-
-VertexArray& VertexArray::operator=(VertexArray&& other) noexcept {
-    if (this != &other) {
-        if (m_RendererID != 0) {
-            GLCall(glDeleteVertexArrays(1, &m_RendererID));
-            Logger::GetLogger()->info("Deleted VertexArray with ID {}.", m_RendererID);
-        }
-        m_RendererID = other.m_RendererID;
-        other.m_RendererID = 0;
-        Logger::GetLogger()->debug("Assigned VertexArray with ID {}.", m_RendererID);
-    }
-    return *this;
+    Logger::GetLogger()->info("Created VertexArray with ID {}.", *m_RendererIDPtr);
 }
 
 void VertexArray::AddBuffer(const VertexBuffer& vertexBuffer, const VertexBufferLayout& layout, GLuint bindingIndex) {
-    GLCall(glVertexArrayVertexBuffer(m_RendererID, bindingIndex, vertexBuffer.GetRendererID(), 0, layout.GetStride()));
+    if (std::find(m_BindingIndices.begin(), m_BindingIndices.end(), bindingIndex) != m_BindingIndices.end()) {
+        Logger::GetLogger()->error("Binding index {} is already used in VertexArray ID {}.", bindingIndex, *m_RendererIDPtr);
+        throw std::invalid_argument("Duplicate binding index in VertexArray::AddBuffer");
+    }
+
+    GLCall(glVertexArrayVertexBuffer(*m_RendererIDPtr, bindingIndex, vertexBuffer.GetRendererID(), 0, layout.GetStride()));
 
     const auto& elements = layout.GetElements();
     for (const auto& element : elements) {
         GLuint attribIndex = element.attributeIndex;
-        GLCall(glEnableVertexArrayAttrib(m_RendererID, attribIndex));
-        GLCall(glVertexArrayAttribFormat(m_RendererID, attribIndex, element.count, element.type, element.normalized, element.offset));
-        GLCall(glVertexArrayAttribBinding(m_RendererID, attribIndex, bindingIndex));
+        GLCall(glEnableVertexArrayAttrib(*m_RendererIDPtr, attribIndex));
+        GLCall(glVertexArrayAttribFormat(*m_RendererIDPtr, attribIndex, element.count, element.type, element.normalized, element.offset));
+        GLCall(glVertexArrayAttribBinding(*m_RendererIDPtr, attribIndex, bindingIndex));
     }
-    Logger::GetLogger()->info("Added buffer to VertexArray ID {} with binding index {}.", m_RendererID, bindingIndex);
+
+    m_BindingIndices.push_back(bindingIndex);
+    Logger::GetLogger()->info("Added buffer to VertexArray ID {} with binding index {}.", *m_RendererIDPtr, bindingIndex);
 }
 
 void VertexArray::SetIndexBuffer(const IndexBuffer& indexBuffer) {
-    GLCall(glVertexArrayElementBuffer(m_RendererID, indexBuffer.GetRendererID()));
-    Logger::GetLogger()->info("Set IndexBuffer ID {} to VertexArray ID {}.", indexBuffer.GetRendererID(), m_RendererID);
+    GLCall(glVertexArrayElementBuffer(*m_RendererIDPtr, indexBuffer.GetRendererID()));
+    Logger::GetLogger()->info("Set IndexBuffer ID {} to VertexArray ID {}.", indexBuffer.GetRendererID(), *m_RendererIDPtr);
 }
 
 void VertexArray::Bind() const {
-    GLCall(glBindVertexArray(m_RendererID));
+    GLCall(glBindVertexArray(*m_RendererIDPtr));
 }
 
 void VertexArray::Unbind() const {

@@ -1,29 +1,31 @@
 //#pragma once
 //
-//#include "Graphics/Meshes/Mesh.h"
+//#include <glad/glad.h>
+//#include <vector>
+//#include <memory>
+//#include "VertexArray.h"
+//#include "VertexBuffer.h"
+//#include "MeshBuffer.h"
 //
 //class InstanceBuffer {
 //public:
-//    InstanceBuffer(std::shared_ptr<MeshBuffer> meshBuffer, size_t instanceCount)
-//        : m_MeshBuffer(meshBuffer), m_InstanceCount(instanceCount)
-//    {
-//        InitInstanceBuffer();
-//    }
+//    InstanceBuffer(std::shared_ptr<MeshBuffer> meshBuffer, size_t instanceCount);
+//    ~InstanceBuffer() = default;
 //
-//    void RenderInstances() {
-//        m_MeshBuffer->Bind();
-//        //m_InstanceBuffer->Bind();
+//    // Move semantics
+//    InstanceBuffer(InstanceBuffer&&) noexcept = default;
+//    InstanceBuffer& operator=(InstanceBuffer&&) noexcept = default;
 //
-//        GLCall(glDrawElementsInstanced(GL_TRIANGLES, m_MeshBuffer->GetNVerts(), GL_UNSIGNED_INT, 0, m_InstanceCount));
+//    // Deleted copy constructor and assignment operator
+//    InstanceBuffer(const InstanceBuffer&) = delete;
+//    InstanceBuffer& operator=(const InstanceBuffer&) = delete;
 //
-//        //m_MeshBuffer->Unbind();
-//        //m_InstanceBuffer->Unbind();
-//    }
+//    void RenderInstances() const;
 //
 //private:
 //    std::shared_ptr<MeshBuffer> m_MeshBuffer;
 //    size_t m_InstanceCount;
-//    std::unique_ptr<VertexArray> m_InstanceBuffer;
+//    VertexBuffer m_InstanceVBO; 
 //
 //    void InitInstanceBuffer();
 //};
