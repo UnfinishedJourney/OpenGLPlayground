@@ -1,19 +1,27 @@
 #include "TerrainMesh.h"
 
 TerrainMesh::TerrainMesh() {
+    // Initialize positions as std::vector<glm::vec3>
     positions = std::vector<glm::vec3>{
-        glm::vec3(-1.0f, 0.0f, -1.0f),
-        glm::vec3(1.0f, 0.0f, -1.0f),
-        glm::vec3(1.0f, 0.0f,  1.0f),
-        glm::vec3(-1.0f, 0.0f,  1.0f)
+        { -1.0f, 0.0f, -1.0f },
+        {  1.0f, 0.0f, -1.0f },
+        {  1.0f, 0.0f,  1.0f },
+        { -1.0f, 0.0f,  1.0f }
     };
 
+    // Initialize UVs for Albedo texture
     uvs[TextureType::Albedo] = {
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(1.0f, 0.0f),
-        glm::vec2(1.0f, 1.0f),
-        glm::vec2(0.0f, 1.0f)
+        { 0.0f, 0.0f },
+        { 1.0f, 0.0f },
+        { 1.0f, 1.0f },
+        { 0.0f, 1.0f }
     };
 
+    // Initialize indices for terrain quad
     indices = { 0, 1, 2, 2, 3, 0 };
+
+    // Optionally, initialize normals (all pointing up)
+    normals.resize(std::get<std::vector<glm::vec3>>(positions).size(), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    // Tangents and bitangents can be calculated if needed
 }

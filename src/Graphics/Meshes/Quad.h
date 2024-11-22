@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Graphics/Meshes/Mesh.h"
+#include "Mesh.h"
+#include <glm/glm.hpp>
 
-struct Quad : Mesh {
+struct Quad : public Mesh {
 public:
     Quad();
 };

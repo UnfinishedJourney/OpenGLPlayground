@@ -1,8 +1,9 @@
 #pragma once
-#include "Graphics/Meshes/Mesh.h"
 
-struct Cube: Mesh {
+#include "Mesh.h"
+#include <glm/glm.hpp>
+
+struct Cube : public Mesh {
 public:
-	Cube();
-protected:
+    Cube();
 };

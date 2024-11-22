@@ -1,4 +1,4 @@
-#include "Graphics/Meshes/Model.h"
+#include "Model.h"
 #include "Utilities/Logger.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -41,49 +41,72 @@ void Model::ProcessNode(const aiScene* scene, const aiNode* node) {
 void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
     auto myMesh = std::make_shared<Mesh>();
 
-    // Initialize positions as vector of glm::vec3
-    myMesh->positions = std::vector<glm::vec3>{};
-    auto& positionsVec = std::get<std::vector<glm::vec3>>(myMesh->positions);
-    positionsVec.reserve(aiMesh->mNumVertices);
+    // Initialize positions based on aiMesh's data
+    if (aiMesh->mNumVertices > 0) {
+        // Determine if the mesh is 2D or 3D based on positions
+        bool is2D = true;
+        for (unsigned int i = 0; i < aiMesh->mNumVertices; ++i) {
+            if (aiMesh->mVertices[i].z != 0.0f) {
+                is2D = false;
+                break;
+            }
+        }
 
+        if (is2D) {
+            // Initialize positions as glm::vec2
+            std::vector<glm::vec2> positionsVec;
+            positionsVec.reserve(aiMesh->mNumVertices);
+            for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
+                positionsVec.emplace_back(
+                    aiMesh->mVertices[i].x,
+                    aiMesh->mVertices[i].y
+                );
+            }
+            myMesh->positions = std::move(positionsVec);
+        }
+        else {
+            // Initialize positions as glm::vec3
+            std::vector<glm::vec3> positionsVec;
+            positionsVec.reserve(aiMesh->mNumVertices);
+            for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
+                positionsVec.emplace_back(
+                    aiMesh->mVertices[i].x,
+                    aiMesh->mVertices[i].y,
+                    aiMesh->mVertices[i].z
+                );
+            }
+            myMesh->positions = std::move(positionsVec);
+        }
+    }
+
+    // Process normals
     if (aiMesh->HasNormals()) {
         myMesh->normals.reserve(aiMesh->mNumVertices);
-    }
-    if (aiMesh->HasTextureCoords(0)) {
-        myMesh->uvs[TextureType::Albedo].reserve(aiMesh->mNumVertices);
-    }
-    if (aiMesh->HasTangentsAndBitangents()) {
-        myMesh->tangents.reserve(aiMesh->mNumVertices);
-        myMesh->bitangents.reserve(aiMesh->mNumVertices);
-    }
-
-    for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
-        // Positions
-        positionsVec.emplace_back(
-            aiMesh->mVertices[i].x,
-            aiMesh->mVertices[i].y,
-            aiMesh->mVertices[i].z
-        );
-
-        // Normals
-        if (aiMesh->HasNormals()) {
+        for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
             myMesh->normals.emplace_back(
                 aiMesh->mNormals[i].x,
                 aiMesh->mNormals[i].y,
                 aiMesh->mNormals[i].z
             );
         }
+    }
 
-        // Texture Coordinates
-        if (aiMesh->HasTextureCoords(0)) {
+    // Process UVs (only first set)
+    if (aiMesh->HasTextureCoords(0)) {
+        myMesh->uvs[TextureType::Albedo].reserve(aiMesh->mNumVertices);
+        for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
             myMesh->uvs[TextureType::Albedo].emplace_back(
                 aiMesh->mTextureCoords[0][i].x,
                 aiMesh->mTextureCoords[0][i].y
             );
         }
+    }
 
-        // Tangents and Bitangents
-        if (aiMesh->HasTangentsAndBitangents()) {
+    // Process tangents and bitangents
+    if (aiMesh->HasTangentsAndBitangents()) {
+        myMesh->tangents.reserve(aiMesh->mNumVertices);
+        myMesh->bitangents.reserve(aiMesh->mNumVertices);
+        for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
             myMesh->tangents.emplace_back(
                 aiMesh->mTangents[i].x,
                 aiMesh->mTangents[i].y,
@@ -113,16 +136,17 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
         meshTextures = LoadTextures(material, directory.string());
     }
 
-    m_MeshInfos.push_back({ std::move(meshTextures), std::move(myMesh) });
+    m_MeshInfos.emplace_back(MeshInfo{ std::move(meshTextures), std::move(myMesh) });
 }
 
 MeshTextures Model::LoadTextures(aiMaterial* material, const std::string& directory) {
     MeshTextures result;
 
+    // Mapping from Assimp texture types to your TextureType
     std::unordered_map<aiTextureType, TextureType> aiToMyTextureType = {
         { aiTextureType_DIFFUSE, TextureType::Albedo },
         { aiTextureType_NORMALS, TextureType::Normal },
-        { aiTextureType_LIGHTMAP, TextureType::Occlusion },
+        { aiTextureType_HEIGHT, TextureType::Occlusion }, // Typically used for height maps or occlusion
         { aiTextureType_EMISSIVE, TextureType::Emissive },
         // Add more mappings as needed
     };
@@ -163,7 +187,7 @@ glm::vec3 Model::CalculateModelCenter() const {
                     center += position;
                 }
                 else {
-                    center += glm::vec3(position, 0.0f);
+                    center += glm::vec3(position, 0.0f); // Assuming z = 0 for 2D
                 }
             }
             }, mesh->positions);

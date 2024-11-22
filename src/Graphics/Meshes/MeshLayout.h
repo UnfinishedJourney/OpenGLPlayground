@@ -1,8 +1,9 @@
 #pragma once
 
 #include <unordered_set>
+#include "Graphics/Textures/Texture2D.h" 
 
-enum class TextureType; // Forward declaration
+enum class TextureType;
 
 struct MeshLayout {
     bool hasPositions = true;
@@ -26,6 +27,7 @@ namespace std {
     struct hash<MeshLayout> {
         std::size_t operator()(const MeshLayout& layout) const noexcept {
             size_t seed = 0;
+
             auto hash_combine = [](size_t& seed, size_t value) {
                 seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
                 };
@@ -34,9 +36,11 @@ namespace std {
             hash_combine(seed, std::hash<bool>{}(layout.hasNormals));
             hash_combine(seed, std::hash<bool>{}(layout.hasTangents));
             hash_combine(seed, std::hash<bool>{}(layout.hasBitangents));
+
             for (const auto& texType : layout.textureTypes) {
                 hash_combine(seed, std::hash<int>{}(static_cast<int>(texType)));
             }
+
             return seed;
         }
     };

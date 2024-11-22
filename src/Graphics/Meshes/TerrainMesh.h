@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Graphics/Meshes/Mesh.h"
+#include "Mesh.h"
+#include <glm/glm.hpp>
 
 class TerrainMesh : public Mesh {
 public:

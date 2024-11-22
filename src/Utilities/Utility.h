@@ -12,20 +12,3 @@
 void GLClearError();
 
 bool GlLogCall(const char* function, const char* file, int line);
-
-enum class TextureType {
-	Albedo,
-	Normal,
-	Occlusion,
-	RoughnessMetallic,
-	Emissive,
-};
-
-namespace std {
-	template <>
-	struct hash<TextureType> {
-		std::size_t operator()(const TextureType& type) const {
-			return std::hash<int>()(static_cast<int>(type));
-		}
-	};
-}
