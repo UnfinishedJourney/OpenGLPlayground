@@ -12,11 +12,9 @@ public:
     ShaderStorageBuffer(GLuint bindingPoint, GLsizeiptr size, GLenum usage = GL_DYNAMIC_DRAW);
     ~ShaderStorageBuffer() = default;
 
-    // Move semantics
     ShaderStorageBuffer(ShaderStorageBuffer&&) noexcept = default;
     ShaderStorageBuffer& operator=(ShaderStorageBuffer&&) noexcept = default;
 
-    // Deleted copy constructor and assignment operator
     ShaderStorageBuffer(const ShaderStorageBuffer&) = delete;
     ShaderStorageBuffer& operator=(const ShaderStorageBuffer&) = delete;
 
@@ -36,6 +34,5 @@ private:
     GLsizeiptr m_Size = 0;
     GLenum m_Usage = GL_DYNAMIC_DRAW;
 
-    // Unique pointer managing the SSBO ID with custom deleter
     std::unique_ptr<GLuint, BufferDeleter> m_RendererIDPtr;
 };

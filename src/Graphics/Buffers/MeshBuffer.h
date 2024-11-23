@@ -8,6 +8,7 @@
 #include "Graphics/Buffers/VertexBufferLayout.h"
 #include <memory>
 
+//maybe need to remove smart pointers
 class MeshBuffer {
 public:
     MeshBuffer(const Mesh& mesh, const MeshLayout& layout);

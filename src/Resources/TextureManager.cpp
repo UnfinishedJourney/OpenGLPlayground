@@ -1,13 +1,14 @@
 #include "Resources/TextureManager.h"
 #include "Utilities/Logger.h"
 
+#include <stdexcept>
+
 TextureManager& TextureManager::GetInstance() {
     static TextureManager instance;
     return instance;
 }
 
 TextureManager::TextureManager() {
-    // Initialize your custom texture paths
     m_TexturePaths = {
         {"cuteDog", "../assets/cute_dog.png"},
         {"heightmap", "../assets/heightmap.png"},
@@ -29,8 +30,8 @@ TextureManager::TextureManager() {
     };
 }
 
-std::filesystem::path TextureManager::GetTexturePath(std::string_view textureName) {
-    auto it = m_TexturePaths.find(std::string(textureName));
+std::filesystem::path TextureManager::GetTexturePath(const std::string& textureName) const {
+    auto it = m_TexturePaths.find(textureName);
     if (it != m_TexturePaths.end()) {
         return it->second;
     }
@@ -40,8 +41,8 @@ std::filesystem::path TextureManager::GetTexturePath(std::string_view textureNam
     }
 }
 
-std::array<std::filesystem::path, 6> TextureManager::GetCubeMapPaths(std::string_view cubeMapName) {
-    auto it = m_CubeMapTexturePaths.find(std::string(cubeMapName));
+std::array<std::filesystem::path, 6> TextureManager::GetCubeMapPaths(const std::string& cubeMapName) const {
+    auto it = m_CubeMapTexturePaths.find(cubeMapName);
     if (it != m_CubeMapTexturePaths.end()) {
         return it->second;
     }
@@ -51,8 +52,10 @@ std::array<std::filesystem::path, 6> TextureManager::GetCubeMapPaths(std::string
     }
 }
 
-std::shared_ptr<Texture2D> TextureManager::GetTexture2D(std::string_view textureName) {
-    auto it = m_Texture2Ds.find(std::string(textureName));
+std::shared_ptr<Texture2D> TextureManager::GetTexture2D(const std::string& textureName) {
+    std::lock_guard<std::mutex> lock(m_Mutex); // Ensure thread-safe access
+
+    auto it = m_Texture2Ds.find(textureName);
     if (it != m_Texture2Ds.end()) {
         return it->second;
     }
@@ -63,24 +66,31 @@ std::shared_ptr<Texture2D> TextureManager::GetTexture2D(std::string_view texture
         return nullptr;
     }
 
-    auto texture = std::make_shared<Texture2D>(texturePath);
-    m_Texture2Ds[std::string(textureName)] = texture;
-    return texture;
+    try {
+        auto texture = std::make_shared<Texture2D>(texturePath);
+        m_Texture2Ds.emplace(textureName, texture);
+        return texture;
+    }
+    catch (const std::exception& e) {
+        Logger::GetLogger()->error("Exception while loading Texture2D '{}': {}", textureName, e.what());
+        return nullptr;
+    }
 }
 
-std::shared_ptr<CubeMapTexture> TextureManager::GetCubeMapTexture(std::string_view textureName) {
-    auto it = m_CubeMapTextures.find(std::string(textureName));
+std::shared_ptr<CubeMapTexture> TextureManager::GetCubeMapTexture(const std::string& cubeMapName) {
+    std::lock_guard<std::mutex> lock(m_Mutex); 
+
+    auto it = m_CubeMapTextures.find(cubeMapName);
     if (it != m_CubeMapTextures.end()) {
         return it->second;
     }
 
-    auto facePaths = GetCubeMapPaths(textureName);
+    auto facePaths = GetCubeMapPaths(cubeMapName);
     if (facePaths.empty()) {
-        Logger::GetLogger()->error("Cube map face paths for '{}' are empty.", textureName);
+        Logger::GetLogger()->error("Cube map face paths for '{}' are empty.", cubeMapName);
         return nullptr;
     }
 
-    // Check if all face paths exist
     for (const auto& path : facePaths) {
         if (!std::filesystem::exists(path)) {
             Logger::GetLogger()->error("Cube map face file '{}' does not exist.", path.string());
@@ -88,30 +98,48 @@ std::shared_ptr<CubeMapTexture> TextureManager::GetCubeMapTexture(std::string_vi
         }
     }
 
-    auto cubeMap = std::make_shared<CubeMapTexture>(facePaths);
-    m_CubeMapTextures[std::string(textureName)] = cubeMap;
-    return cubeMap;
+    try {
+        auto cubeMap = std::make_shared<CubeMapTexture>(facePaths);
+        m_CubeMapTextures.emplace(cubeMapName, cubeMap);
+        return cubeMap;
+    }
+    catch (const std::exception& e) {
+        Logger::GetLogger()->error("Exception while loading CubeMapTexture '{}': {}", cubeMapName, e.what());
+        return nullptr;
+    }
 }
 
-std::shared_ptr<Texture2D> TextureManager::GetHeightMap(std::string_view textureName) {
-    auto it = m_HeightMaps.find(std::string(textureName));
+std::shared_ptr<Texture2D> TextureManager::GetHeightMap(const std::string& heightMapName) {
+    std::lock_guard<std::mutex> lock(m_Mutex); // Ensure thread-safe access
+
+    auto it = m_HeightMaps.find(heightMapName);
     if (it != m_HeightMaps.end()) {
         return it->second;
     }
 
-    auto texturePath = GetTexturePath(textureName);
+    auto texturePath = GetTexturePath(heightMapName);
     if (texturePath.empty() || !std::filesystem::exists(texturePath)) {
         Logger::GetLogger()->error("Heightmap file '{}' does not exist.", texturePath.string());
         return nullptr;
     }
 
-    auto heightMap = std::make_shared<Texture2D>(texturePath);
-    m_HeightMaps[std::string(textureName)] = heightMap;
-    return heightMap;
+    try {
+        auto heightMap = std::make_shared<Texture2D>(texturePath);
+        m_HeightMaps.emplace(heightMapName, heightMap);
+        return heightMap;
+    }
+    catch (const std::exception& e) {
+        Logger::GetLogger()->error("Exception while loading HeightMap '{}': {}", heightMapName, e.what());
+        return nullptr;
+    }
 }
 
 void TextureManager::Clear() {
+    std::lock_guard<std::mutex> lock(m_Mutex); 
+
     m_Texture2Ds.clear();
     m_CubeMapTextures.clear();
     m_HeightMaps.clear();
+
+    Logger::GetLogger()->info("Cleared all textures from TextureManager.");
 }
