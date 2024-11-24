@@ -7,9 +7,9 @@ public:
     void SetKey(int key, bool isPressed);
     bool IsKeyPressed(int key) const;
     bool WasKeyJustPressed(int key) const;
-    void Update(); // Call this at the end of each frame
+    void Update(); 
 
 private:
-    std::unordered_map<int, bool> m_KeysCurrent;
-    std::unordered_map<int, bool> m_KeysPrevious;
+    std::unordered_map<int, bool> keysCurrent;
+    std::unordered_map<int, bool> keysPrevious;
 };

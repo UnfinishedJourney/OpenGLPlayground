@@ -1,6 +1,4 @@
 #pragma once
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
 
 #include <string>
 #include <glad/glad.h>
@@ -9,11 +7,7 @@
 class GLContext
 {
 public:
-    static GLFWwindow* InitOpenGL(int width, int height, const std::string& title,
-        GLFWkeyfun keyfun = nullptr,
-        GLFWscrollfun scrollfun = nullptr,
-        GLFWcursorposfun cursorposfun = nullptr,
-        GLFWwindowsizefun windowsizefun = nullptr);
+    static GLFWwindow* InitOpenGL(int width, int height, const std::string& title);
     static void Cleanup(GLFWwindow* window);
 
 private:

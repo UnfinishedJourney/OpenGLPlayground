@@ -1,9 +1,5 @@
 #include "Application/OpenGLContext.h"
 #include "Utilities/Logger.h"
-#include <glad/glad.h>
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
 
 void GLAPIENTRY GLContext::OpenGLMessageCallback(GLenum source, GLenum type, GLuint id,
     GLenum severity, GLsizei length,
@@ -44,12 +40,14 @@ void GLAPIENTRY GLContext::OpenGLMessageCallback(GLenum source, GLenum type, GLu
 
     if (severity == GL_DEBUG_SEVERITY_HIGH)
         logger->error("OpenGL [{} - {} - {}] (ID: {}): {}", sourceStr, typeStr, severityStr, id, message);
-    if (severity == GL_DEBUG_SEVERITY_MEDIUM)
+    else if (severity == GL_DEBUG_SEVERITY_MEDIUM)
         logger->warn("OpenGL [{} - {} - {}] (ID: {}): {}", sourceStr, typeStr, severityStr, id, message);
-
+    else
+        logger->debug("OpenGL [{} - {} - {}] (ID: {}): {}", sourceStr, typeStr, severityStr, id, message);
 }
 
-void GLContext::InitOpenGLDebug() {
+void GLContext::InitOpenGLDebug()
+{
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(OpenGLMessageCallback, nullptr);
@@ -57,11 +55,7 @@ void GLContext::InitOpenGLDebug() {
         0, nullptr, GL_TRUE); // Enable all messages
 }
 
-GLFWwindow* GLContext::InitOpenGL(int width, int height, const std::string& title,
-    GLFWkeyfun keyfun,
-    GLFWscrollfun scrollfun,
-    GLFWcursorposfun cursorposfun,
-    GLFWwindowsizefun windowsizefun)
+GLFWwindow* GLContext::InitOpenGL(int width, int height, const std::string& title)
 {
     auto logger = Logger::GetLogger();
     logger->info("Initializing GLFW...");
@@ -101,25 +95,9 @@ GLFWwindow* GLContext::InitOpenGL(int width, int height, const std::string& titl
     logger->info("GLAD initialized successfully.");
 
     glViewport(0, 0, width, height);
-
-    // Set callbacks if provided
-    if (keyfun) glfwSetKeyCallback(window, keyfun);
-    if (scrollfun) glfwSetScrollCallback(window, scrollfun);
-    if (cursorposfun) glfwSetCursorPosCallback(window, cursorposfun);
-    if (windowsizefun) glfwSetWindowSizeCallback(window, windowsizefun);
-
     glfwSwapInterval(1); // Enable VSync
 
     glEnable(GL_DEPTH_TEST);
-
-    logger->info("Initializing ImGui...");
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    const char* glsl_version = "#version 460";
-    ImGui_ImplOpenGL3_Init(glsl_version);
-    ImGui::StyleColorsDark();
-    logger->info("ImGui initialized successfully.");
 
     // Initialize OpenGL Debugging
     InitOpenGLDebug();
@@ -134,11 +112,6 @@ void GLContext::Cleanup(GLFWwindow* window)
 {
     auto logger = Logger::GetLogger();
     logger->info("Starting cleanup of OpenGL context.");
-
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-    logger->debug("ImGui context shutdown successfully.");
 
     glfwDestroyWindow(window);
     logger->debug("Destroyed GLFW window.");

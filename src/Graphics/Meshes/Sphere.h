@@ -10,5 +10,5 @@ public:
 
 struct LightSphere : public Sphere {
 public:
-    LightSphere() : Sphere(0.2f, 20, 10) {}
+    LightSphere() : Sphere(0.1f, 20, 10) {}
 };
