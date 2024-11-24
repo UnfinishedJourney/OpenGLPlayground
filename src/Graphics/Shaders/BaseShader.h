@@ -10,18 +10,25 @@
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include "ShaderDeleter.h"
 
 class BaseShader {
 public:
-    BaseShader(std::filesystem::path binaryPath);
-    virtual ~BaseShader();
+    explicit BaseShader(const std::filesystem::path& binaryPath = "");
+
+    virtual ~BaseShader() = default;
+
+    BaseShader(const BaseShader&) = delete;
+    BaseShader& operator=(const BaseShader&) = delete;
+
+    BaseShader(BaseShader&& other) noexcept = default;
+    BaseShader& operator=(BaseShader&& other) noexcept = default;
 
     virtual void ReloadShader() = 0;
 
     void Bind() const;
     void Unbind() const;
 
-    // Uniform setters
     void SetUniform(std::string_view name, float value) const;
     void SetUniform(std::string_view name, int value) const;
     void SetUniform(std::string_view name, unsigned int value) const;
@@ -30,24 +37,19 @@ public:
     void SetUniform(std::string_view name, const glm::vec4& value) const;
     void SetUniform(std::string_view name, const glm::mat3& value) const;
     void SetUniform(std::string_view name, const glm::mat4& value) const;
-    GLuint GetRendererID() const
-    {
-        return m_RendererID;
-    }
 
     bool LoadBinary();
 
 protected:
-    GLuint m_RendererID = 0;
+    std::unique_ptr<GLuint, ShaderDeleter> m_RendererIDPtr = nullptr;
+    GLenum m_Usage = GL_STATIC_DRAW;
     std::filesystem::path m_BinaryPath;
 
     mutable std::unordered_map<std::string, GLint> m_UniformLocationCache;
 
-    // Compilation and linking
     GLuint CompileShader(GLenum shaderType, const std::string& source) const;
     GLuint LinkProgram(const std::vector<GLuint>& shaders) const;
 
-    // Utility methods
     std::string ReadFile(const std::filesystem::path& filepath) const;
     std::string ResolveIncludes(const std::string& source, const std::filesystem::path& directory, std::unordered_set<std::string>& includedFiles) const;
 

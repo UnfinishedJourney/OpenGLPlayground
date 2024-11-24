@@ -1,59 +1,71 @@
 #include "Shader.h"
 #include "Utilities/Logger.h"
-#include <fstream>
-#include <sstream>
+#include <stdexcept>
 
-Shader::Shader(const std::unordered_map<GLenum, std::filesystem::path>& shaderPaths, std::filesystem::path binaryPath)
-    : BaseShader(std::move(binaryPath)), m_ShaderPaths(shaderPaths) {
-    LoadShader();
+Shader::Shader(const std::unordered_map<GLenum, std::filesystem::path>& shaderStages, const std::filesystem::path& binaryPath)
+    : BaseShader(binaryPath), m_ShaderStages(shaderStages) {
+    LoadShaders();
 }
 
 void Shader::ReloadShader() {
-    if (m_RendererID) {
-        glDeleteProgram(m_RendererID);
-        m_RendererID = 0;
+    if (*m_RendererIDPtr != 0) {
+        glDeleteProgram(*m_RendererIDPtr);
+        *m_RendererIDPtr = 0;
     }
     m_UniformLocationCache.clear();
-    LoadShader(true);
+    LoadShaders(true);
 }
 
-void Shader::LoadShader(bool bReload) {
-    if (!bReload && !m_BinaryPath.empty() && LoadBinary()) {
+void Shader::LoadShaders(bool reload) {
+    if (!reload && !m_BinaryPath.empty() && LoadBinary()) {
         Logger::GetLogger()->info("Loaded shader binary from '{}'.", m_BinaryPath.string());
         return;
     }
 
-    std::vector<GLuint> shaders;
-    for (const auto& [shaderType, shaderPath] : m_ShaderPaths) {
-        std::string source = ReadFile(shaderPath);
-        std::unordered_set<std::string> includedFiles;
-        source = ResolveIncludes(source, shaderPath.parent_path(), includedFiles);
-        shaders.push_back(CompileShader(shaderType, source));
+    std::vector<GLuint> compiledShaders;
+    try {
+        for (const auto& [shaderType, shaderPath] : m_ShaderStages) {
+            std::string source = ReadFile(shaderPath);
+            std::unordered_set<std::string> includedFiles;
+            source = ResolveIncludes(source, shaderPath.parent_path(), includedFiles);
+            compiledShaders.push_back(CompileShader(shaderType, source));
+        }
+
+        *m_RendererIDPtr = LinkProgram(compiledShaders);
+    }
+    catch (const std::exception& e) {
+        Logger::GetLogger()->error("Error loading shaders: {}", e.what());
+        throw; // Re-throw exception after logging
     }
 
-    m_RendererID = LinkProgram(shaders);
-
     if (!m_BinaryPath.empty()) {
-        SaveBinary();
+        try {
+            SaveBinary();
+        }
+        catch (const std::exception& e) {
+            Logger::GetLogger()->error("Failed to save shader binary: {}", e.what());
+        }
     }
 }
 
 void Shader::BindUniformBlock(const std::string& blockName, GLuint bindingPoint) {
-    GLuint blockIndex = glGetUniformBlockIndex(m_RendererID, blockName.c_str());
+    GLuint blockIndex = glGetUniformBlockIndex(*m_RendererIDPtr, blockName.c_str());
     if (blockIndex != GL_INVALID_INDEX) {
-        glUniformBlockBinding(m_RendererID, blockIndex, bindingPoint);
+        glUniformBlockBinding(*m_RendererIDPtr, blockIndex, bindingPoint);
+        Logger::GetLogger()->debug("Bound uniform block '{}' to binding point {} in shader ID {}.", blockName, bindingPoint, *m_RendererIDPtr);
     }
     else {
-        Logger::GetLogger()->warn("Uniform block '{}' not found in shader program ID {}.", blockName, m_RendererID);
+        Logger::GetLogger()->warn("Uniform block '{}' not found in shader program ID {}.", blockName, *m_RendererIDPtr);
     }
 }
 
 void Shader::BindShaderStorageBlock(const std::string& blockName, GLuint bindingPoint) {
-    GLuint blockIndex = glGetProgramResourceIndex(m_RendererID, GL_SHADER_STORAGE_BLOCK, blockName.c_str());
+    GLuint blockIndex = glGetProgramResourceIndex(*m_RendererIDPtr, GL_SHADER_STORAGE_BLOCK, blockName.c_str());
     if (blockIndex != GL_INVALID_INDEX) {
-        glShaderStorageBlockBinding(m_RendererID, blockIndex, bindingPoint);
+        glShaderStorageBlockBinding(*m_RendererIDPtr, blockIndex, bindingPoint);
+        Logger::GetLogger()->debug("Bound shader storage block '{}' to binding point {} in shader ID {}.", blockName, bindingPoint, *m_RendererIDPtr);
     }
     else {
-        Logger::GetLogger()->warn("Shader storage block '{}' not found in shader program ID {}.", blockName, m_RendererID);
+        Logger::GetLogger()->warn("Shader storage block '{}' not found in shader program ID {}.", blockName, *m_RendererIDPtr);
     }
 }

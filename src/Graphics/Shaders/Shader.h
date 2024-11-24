@@ -2,20 +2,20 @@
 
 #include "BaseShader.h"
 #include <unordered_map>
+#include <filesystem>
 
 class Shader : public BaseShader {
 public:
-    Shader(const std::unordered_map<GLenum, std::filesystem::path>& shaderPaths, std::filesystem::path binaryPath);
+    Shader(const std::unordered_map<GLenum, std::filesystem::path>& shaderStages, const std::filesystem::path& binaryPath = "");
 
     void ReloadShader() override;
 
-    // New methods for binding blocks
     void BindUniformBlock(const std::string& blockName, GLuint bindingPoint);
     void BindShaderStorageBlock(const std::string& blockName, GLuint bindingPoint);
 
 protected:
-    void LoadShader(bool bReload = false);
+    void LoadShaders(bool reload = false);
 
 private:
-    std::unordered_map<GLenum, std::filesystem::path> m_ShaderPaths;
+    std::unordered_map<GLenum, std::filesystem::path> m_ShaderStages;
 };

@@ -1,24 +1,17 @@
 #include "BaseShader.h"
-#include "Utilities/Logger.h"
+#include "Utilities/Logger.h" 
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
 #include <glm/gtc/type_ptr.hpp>
 
-BaseShader::BaseShader(std::filesystem::path binaryPath)
-    : m_BinaryPath(std::move(binaryPath)) {
-    // Constructor doesn't load shaders immediately
-}
-
-BaseShader::~BaseShader() {
-    if (m_RendererID) {
-        glDeleteProgram(m_RendererID);
-        Logger::GetLogger()->info("Deleted shader program with ID: {}", m_RendererID);
-    }
+BaseShader::BaseShader(const std::filesystem::path& binaryPath)
+    : m_BinaryPath(binaryPath) {
+    m_RendererIDPtr = std::unique_ptr<GLuint, ShaderDeleter>(new GLuint(0), ShaderDeleter());
 }
 
 void BaseShader::Bind() const {
-    glUseProgram(m_RendererID);
+    glUseProgram(*m_RendererIDPtr);
 }
 
 void BaseShader::Unbind() const {
@@ -30,9 +23,9 @@ GLint BaseShader::GetUniformLocation(std::string_view name) const {
     if (auto it = m_UniformLocationCache.find(nameStr); it != m_UniformLocationCache.end()) {
         return it->second;
     }
-    GLint location = glGetUniformLocation(m_RendererID, nameStr.c_str());
+    GLint location = glGetUniformLocation(*m_RendererIDPtr, nameStr.c_str());
     if (location == -1) {
-        Logger::GetLogger()->warn("Uniform '{}' not found in shader program ID {}.", nameStr, m_RendererID);
+        Logger::GetLogger()->warn("Uniform '{}' not found in shader program ID {}.", nameStr, *m_RendererIDPtr);
     }
     m_UniformLocationCache[nameStr] = location;
     return location;
@@ -143,7 +136,7 @@ std::string BaseShader::ResolveIncludes(const std::string& source, const std::fi
                 trimmedLine = trimmedLine.substr(endComment + 2);
             }
             else {
-                continue; // Skip line inside block comment
+                continue; 
             }
         }
 
@@ -230,19 +223,19 @@ bool BaseShader::LoadBinary() {
         return false;
     }
 
-    m_RendererID = glCreateProgram();
-    glProgramBinary(m_RendererID, binaryFormat, binaryData.data(), static_cast<GLsizei>(binaryData.size()));
+    *m_RendererIDPtr = glCreateProgram();
+    glProgramBinary(*m_RendererIDPtr, binaryFormat, binaryData.data(), static_cast<GLsizei>(binaryData.size()));
 
     GLint success = GL_FALSE;
-    glGetProgramiv(m_RendererID, GL_LINK_STATUS, &success);
+    glGetProgramiv(*m_RendererIDPtr, GL_LINK_STATUS, &success);
     if (success == GL_FALSE) {
         GLint maxLength = 0;
-        glGetProgramiv(m_RendererID, GL_INFO_LOG_LENGTH, &maxLength);
+        glGetProgramiv(*m_RendererIDPtr, GL_INFO_LOG_LENGTH, &maxLength);
         std::string infoLog(static_cast<size_t>(maxLength), '\0');
-        glGetProgramInfoLog(m_RendererID, maxLength, &maxLength, infoLog.data());
+        glGetProgramInfoLog(*m_RendererIDPtr, maxLength, &maxLength, infoLog.data());
 
-        glDeleteProgram(m_RendererID);
-        m_RendererID = 0;
+        glDeleteProgram(*m_RendererIDPtr);
+        *m_RendererIDPtr = 0;
         Logger::GetLogger()->error("Failed to load shader binary from '{}':\n{}", m_BinaryPath.string(), infoLog);
         return false;
     }
@@ -264,11 +257,11 @@ void BaseShader::SaveBinary() const {
     }
 
     GLint binaryLength = 0;
-    glGetProgramiv(m_RendererID, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
+    glGetProgramiv(*m_RendererIDPtr, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
     std::vector<GLubyte> binary(static_cast<size_t>(binaryLength));
     GLenum binaryFormat = 0;
 
-    glGetProgramBinary(m_RendererID, binaryLength, nullptr, &binaryFormat, binary.data());
+    glGetProgramBinary(*m_RendererIDPtr, binaryLength, nullptr, &binaryFormat, binary.data());
 
     std::ofstream outStream(m_BinaryPath, std::ios::binary);
     if (!outStream) {
@@ -283,33 +276,33 @@ void BaseShader::SaveBinary() const {
 }
 
 void BaseShader::SetUniform(std::string_view name, float value) const {
-    glProgramUniform1f(m_RendererID, GetUniformLocation(name), value);
+    glProgramUniform1f(*m_RendererIDPtr, GetUniformLocation(name), value);
 }
 
 void BaseShader::SetUniform(std::string_view name, int value) const {
-    glProgramUniform1i(m_RendererID, GetUniformLocation(name), value);
+    glProgramUniform1i(*m_RendererIDPtr, GetUniformLocation(name), value);
 }
 
 void BaseShader::SetUniform(std::string_view name, unsigned int value) const {
-    glProgramUniform1ui(m_RendererID, GetUniformLocation(name), value);
+    glProgramUniform1ui(*m_RendererIDPtr, GetUniformLocation(name), value);
 }
 
 void BaseShader::SetUniform(std::string_view name, const glm::vec2& value) const {
-    glProgramUniform2fv(m_RendererID, GetUniformLocation(name), 1, glm::value_ptr(value));
+    glProgramUniform2fv(*m_RendererIDPtr, GetUniformLocation(name), 1, glm::value_ptr(value));
 }
 
 void BaseShader::SetUniform(std::string_view name, const glm::vec3& value) const {
-    glProgramUniform3fv(m_RendererID, GetUniformLocation(name), 1, glm::value_ptr(value));
+    glProgramUniform3fv(*m_RendererIDPtr, GetUniformLocation(name), 1, glm::value_ptr(value));
 }
 
 void BaseShader::SetUniform(std::string_view name, const glm::vec4& value) const {
-    glProgramUniform4fv(m_RendererID, GetUniformLocation(name), 1, glm::value_ptr(value));
+    glProgramUniform4fv(*m_RendererIDPtr, GetUniformLocation(name), 1, glm::value_ptr(value));
 }
 
 void BaseShader::SetUniform(std::string_view name, const glm::mat3& value) const {
-    glProgramUniformMatrix3fv(m_RendererID, GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+    glProgramUniformMatrix3fv(*m_RendererIDPtr, GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
 }
 
 void BaseShader::SetUniform(std::string_view name, const glm::mat4& value) const {
-    glProgramUniformMatrix4fv(m_RendererID, GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+    glProgramUniformMatrix4fv(*m_RendererIDPtr, GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
 }
