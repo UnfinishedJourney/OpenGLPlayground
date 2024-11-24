@@ -1,23 +1,21 @@
 #include "Application.h"
+#include "Utilities/Logger.h"
+#include <sstream>
 #include <easy/profiler.h>
+#include "AllTests.h"
 
 Application::Application()
-    : cameraController(inputManager)
-{
+    : cameraController(inputManager) {
     Logger::Init();
     logger = Logger::GetLogger();
     logger->info("Application started.");
 }
 
-Application::~Application()
-{
-    Cleanup();
+Application::~Application() {
+    logger->info("Application terminated gracefully.");
 }
 
-void Application::Init()
-{
-    EASY_FUNCTION();
-
+void Application::Init() {
     window = GLContext::InitOpenGL(Screen::s_Width, Screen::s_Height, "OpenGL Application");
 
     if (!window) {
@@ -40,19 +38,23 @@ void Application::Init()
     ImGui::StyleColorsDark();
     logger->info("ImGui initialized successfully.");
 
-    currentTest = nullptr;
-    testMenu = std::make_shared<test::TestMenu>(currentTest);
-    currentTest = testMenu;
-
-    // Register tests
-    testMenu->RegisterTest<test::TestSimpleCube>("Simple Cube");
-    testMenu->RegisterTest<test::TestLights>("Lights");
-    testMenu->RegisterTest<test::TestTerrain>("Terrain");
+    // Initialize TestMenu and register tests
+    testMenu = std::make_unique<TestMenu>(testManager);
+    //testMenu->RegisterTest("Simple Cube", []() { return std::make_shared<TestSimpleCube>(); });
+    testMenu->RegisterTest("Lights", []() { return std::make_shared<TestLights>(); });
+    //testMenu->RegisterTest("Terrain", []() { return std::make_shared<TestTerrain>(); });
     // Add more tests as needed
+
+    // Register the TestMenuTest
+    testManager.RegisterTest("Test Menu", [this]() {
+        return std::make_shared<TestMenuTest>(*testMenu);
+        });
+
+    // Start with the TestMenu
+    testManager.SwitchTest("Test Menu");
 }
 
-void showFPS(GLFWwindow* window)
-{
+void showFPS(GLFWwindow* window) {
     static double previousSeconds = 0.0;
     static int frameCount = 0;
     double currentSeconds = glfwGetTime();
@@ -76,8 +78,7 @@ void showFPS(GLFWwindow* window)
     frameCount++;
 }
 
-void Application::Run()
-{
+void Application::Run() {
     if (!window) {
         logger->error("Cannot run application without a valid window.");
         return;
@@ -96,49 +97,32 @@ void Application::Run()
         glfwPollEvents();
         ProcessInput(deltaTime);
 
-        if (currentTest) {
-            currentTest->OnUpdate(static_cast<float>(deltaTime));
-            currentTest->OnRender();
+        testManager.UpdateCurrentTest(static_cast<float>(deltaTime));
+        testManager.RenderCurrentTest();
+        UpdateCameraController();
+        // ImGui Rendering
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 
-            ImGui_ImplOpenGL3_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
+        testManager.RenderCurrentTestImGui();
 
-            ImGui::Begin("Test");
-            if (currentTest != testMenu && ImGui::Button("<- Back")) {
-                currentTest->OnExit();
-                currentTest = testMenu;
-                currentTest->OnEnter();
-            }
-            currentTest->OnImGuiRender();
-            UpdateCameraController();
-            ImGui::End();
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-            ImGui::Render();
-            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-            glfwSwapBuffers(window);
-            inputManager.Update(); // Update key states at the end of the frame
-        }
+        // Swap buffers
+        glfwSwapBuffers(window);
+        inputManager.Update(); // Update key states at the end of the frame
     }
-}
 
-void Application::Cleanup()
-{
-    logger->info("Starting application cleanup.");
-
-    logger->info("Shutting down ImGui...");
+    // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-    logger->debug("ImGui shutdown successfully.");
-
     GLContext::Cleanup(window);
-    logger->info("We are finished.");
 }
 
-void Application::ProcessInput(double deltaTime)
-{
+void Application::ProcessInput(double deltaTime) {
     cameraController.Update(deltaTime);
     if (inputManager.WasKeyJustPressed(GLFW_KEY_R)) {
         logger->info("Reloading all shaders...");
@@ -146,26 +130,18 @@ void Application::ProcessInput(double deltaTime)
     }
 }
 
-void Application::UpdateCameraController()
-{
-    if (currentTest) {
-        auto camera = currentTest->GetCamera();
-        cameraController.SetCamera(camera);
-        if (camera) {
-            logger->debug("CameraController updated with new Camera from Test.");
-        }
-        else {
-            logger->debug("Current Test does not have a Camera.");
-        }
+void Application::UpdateCameraController() {
+    auto camera = testManager.GetCurrentCamera();
+    cameraController.SetCamera(camera);
+    if (camera) {
+        logger->debug("CameraController updated with new Camera from current Test.");
     }
     else {
-        cameraController.SetCamera(nullptr);
-        logger->debug("No active Test to retrieve Camera from.");
+        logger->debug("Current Test does not have a Camera.");
     }
 }
 
-void Application::SetupCallbacks()
-{
+void Application::SetupCallbacks() {
     glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
         auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -198,11 +174,10 @@ void Application::SetupCallbacks()
             height = 1;
 
         glViewport(0, 0, width, height);
-
-        if (app->currentTest)
-            app->currentTest->OnWindowResize(width, height);
-
         Screen::SetResolution(width, height);
+
+        app->testManager.HandleWindowResize(width, height);
         app->cameraController.UpdateFOV();
         });
 }
+

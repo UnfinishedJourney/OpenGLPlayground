@@ -1,54 +1,59 @@
 #pragma once
 
-#include <vector>
-#include <functional>
-#include <string>
 #include <memory>
+#include "Scene/Camera.h"
+#include "Renderer/Renderer.h"
 #include "Scene/Scene.h"
 #include "Scene/Screen.h"
-#include "Renderer/Renderer.h"
 
-namespace test {
-
-    class Test
+class Test {
+public:
+    Test() 
     {
-    public:
-        Test();
+        m_Renderer = std::make_unique<Renderer>();
+        m_Scene = std::make_shared<Scene>();
 
-        virtual ~Test() = default;
+        int width = Screen::s_Width;
+        int height = Screen::s_Height;
+        m_Renderer->Initialize(width, height);
 
-        virtual void OnEnter() {}
-        virtual void OnExit() {}
-        virtual void OnUpdate(float deltaTime) {}
-        virtual void OnRender() {}
-        virtual void OnImGuiRender() {}
-        virtual void OnWindowResize(int width, int height);
-        std::shared_ptr<Camera> GetCamera() {
-            if (m_Scene)
-                return m_Scene->GetCamera();
-            else
-                return nullptr;
+        auto camera = std::make_shared<Camera>();
+        m_Scene->SetCamera(camera);
+    }
+
+    virtual ~Test() = default;
+
+    virtual void OnEnter() {
+    }
+
+    virtual void OnExit() {
+        // Default implementation
+        m_Renderer.reset();
+        if (m_Scene) {
+            m_Scene->Clear();
         }
+    }
 
-    protected:
-        std::unique_ptr<Renderer> m_Renderer;
-        std::shared_ptr<Scene> m_Scene;
-    };
-
-    class TestMenu : public Test
-    {
-    public:
-        TestMenu(std::shared_ptr<Test>& currentTest);
-        void OnImGuiRender() override;
-
-        template<typename T>
-        void RegisterTest(const std::string& name)
-        {
-            m_Tests.push_back({ name, []() { return std::make_shared<T>(); } });
+    virtual void OnUpdate(float deltaTime) {}
+    virtual void OnRender() {
+        if (m_Renderer && m_Scene) {
+            m_Renderer->RenderScene(m_Scene);
         }
+    }
+    virtual void OnImGuiRender() {}
+    virtual void OnWindowResize(int width, int height) {
+        if (m_Renderer) {
+            m_Renderer->OnWindowResize(width, height);
+        }
+    }
+    virtual std::shared_ptr<Camera> GetCamera() const {
+        if (m_Scene) {
+            return m_Scene->GetCamera();
+        }
+        return nullptr;
+    }
 
-    private:
-        std::shared_ptr<Test>& m_CurrentTest;
-        std::vector<std::pair<std::string, std::function<std::shared_ptr<Test>()>>> m_Tests;
-    };
-}
+protected:
+    std::unique_ptr<Renderer> m_Renderer;
+    std::shared_ptr<Scene> m_Scene;
+};
