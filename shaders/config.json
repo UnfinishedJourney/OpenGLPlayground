@@ -17,24 +17,24 @@
         "grid": {
             "binary_path": "../shaders/bin/Grid.bin",
             "shader_stages": {
-                "vertex": "../shaders/Grid.vert",
-                "fragment": "../shaders/Grid.frag"
+                "vertex": "../shaders/Terrain/Grid.vert",
+                "fragment": "../shaders/Terrain/Grid.frag"
             }
         },
         "terrain": {
             "binary_path": "../shaders/bin/Grid.bin",
             "shader_stages": {
-                "vertex": "../shaders/Terrain.vert",
-                "tess_control": "../shaders/Terrain.tesc",
-                "tess_evaluation": "../shaders/Terrain.tese",
-                "fragment": "../shaders/Terrain.frag"
+                "vertex": "../shaders/Terrain/Terrain.vert",
+                "tess_control": "../shaders/Terrain/Terrain.tesc",
+                "tess_evaluation": "../shaders/Terrain/Terrain.tese",
+                "fragment": "../shaders/Terrain/Terrain.frag"
             }
         },
         "debugLights": {
             "binary_path": "../shaders/bin/DebugLights.bin",
             "shader_stages": {
-                "vertex": "../shaders/DebugLights.vert",
-                "fragment": "../shaders/DebugLights.frag"
+                "vertex": "../shaders/DebugGeo/DebugLights.vert",
+                "fragment": "../shaders/DebugGeo/DebugLights.frag"
             }
         },
         "presentTexture": {
@@ -49,6 +49,14 @@
             "shader_stages": {
                 "vertex": "../shaders/Postprocessing/EdgeDetection.vert",
                 "fragment": "../shaders/Postprocessing/EdgeDetection.frag"
+            }
+        },
+        "wireframe": {
+            "binary_path": "../shaders/bin/Wireframe.bin",
+            "shader_stages": {
+                "vertex": "../shaders/Wireframe.vert",
+                "geometry": "../shaders/Wireframe.geos",
+                "fragment": "../shaders/Wireframe.frag"
             }
         }
     }

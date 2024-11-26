@@ -2,6 +2,9 @@
 #define NOMINMAX
 
 #include "Application/Application.h"
+
+//add macro to cmake
+#define USING_EASY_PROFILER
 #include <easy/profiler.h>
 
 //rename file to main?

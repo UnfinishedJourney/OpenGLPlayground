@@ -2,6 +2,7 @@
 #include "TestClearColor.h"
 #include "TestSimpleCube.h"
 #include "TestTerrain.h"
+#include "TestBistro.h"
 #include "TestLights.h"
 #include "TestSkyBox.h"
 #include "TestSkyBoxReflection.h"

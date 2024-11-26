@@ -11,6 +11,7 @@
 
 enum class TextureType {
     Albedo,
+    Specular,
     Normal,
     Occlusion,
     RoughnessMetallic,

@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec2 aPos;
 
-#include "Common/Common.shader"
+#include "../Common/Common.shader"
 
 out vec2 uv;
 out vec2 camPos;

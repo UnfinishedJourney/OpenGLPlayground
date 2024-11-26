@@ -4,6 +4,9 @@
 #include <assimp/postprocess.h>
 #include <stdexcept>
 
+#define USING_EASY_PROFILER
+#include <easy/profiler.h>
+
 Model::Model(const std::string& pathToModel, bool centerModel)
     : m_FilePath(pathToModel) {
     LoadModel();
@@ -15,8 +18,15 @@ Model::Model(const std::string& pathToModel, bool centerModel)
 }
 
 void Model::LoadModel() {
+    EASY_FUNCTION(profiler::colors::Amber50);
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(m_FilePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace);
+    EASY_BLOCK("Read Scene");
+    //slow, need to think about whether or not i can optimize it
+    //aiProcess_FindDegenerates bug       aiProcess_FindInstances need to understand
+    const aiScene* scene = importer.ReadFile(m_FilePath, aiProcess_JoinIdenticalVertices | aiProcess_Triangulate |
+        aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_PreTransformVertices | aiProcess_RemoveRedundantMaterials | aiProcess_FindInvalidData | aiProcess_OptimizeMeshes);
+
+    EASY_END_BLOCK;
 
     if (!scene || !scene->HasMeshes()) {
         throw std::runtime_error("Unable to load model: " + m_FilePath);
@@ -26,13 +36,13 @@ void Model::LoadModel() {
 }
 
 void Model::ProcessNode(const aiScene* scene, const aiNode* node) {
-    // Process each mesh at the current node
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
+        EASY_BLOCK("Process Mesh");
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         ProcessMesh(scene, mesh);
+        EASY_END_BLOCK;
     }
 
-    // Recursively process each child node
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
         ProcessNode(scene, node->mChildren[i]);
     }
@@ -41,7 +51,6 @@ void Model::ProcessNode(const aiScene* scene, const aiNode* node) {
 void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
     auto myMesh = std::make_shared<Mesh>();
 
-    // Initialize positions based on aiMesh's data
     if (aiMesh->mNumVertices > 0) {
         // Determine if the mesh is 2D or 3D based on positions
         bool is2D = true;
@@ -79,7 +88,6 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
         }
     }
 
-    // Process normals
     if (aiMesh->HasNormals()) {
         myMesh->normals.reserve(aiMesh->mNumVertices);
         for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
@@ -120,7 +128,7 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
         }
     }
 
-    // Process indices
+    myMesh->indices.reserve(aiMesh->mNumFaces * 3);
     for (unsigned int i = 0; i < aiMesh->mNumFaces; i++) {
         aiFace face = aiMesh->mFaces[i];
         for (unsigned int j = 0; j < face.mNumIndices; j++) {
@@ -128,7 +136,6 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
         }
     }
 
-    // Load textures
     MeshTextures meshTextures;
     std::filesystem::path directory = std::filesystem::path(m_FilePath).parent_path();
     if (aiMesh->mMaterialIndex >= 0) {

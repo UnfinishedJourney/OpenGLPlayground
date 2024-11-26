@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "Utilities/Logger.h"
 #include <sstream>
+#define USING_EASY_PROFILER
 #include <easy/profiler.h>
 #include "AllTests.h"
 
@@ -16,6 +17,8 @@ Application::~Application() {
 }
 
 void Application::Init() {
+    EASY_FUNCTION(profiler::colors::Magenta);
+    EASY_BLOCK("App Init");
     window = GLContext::InitOpenGL(Screen::s_Width, Screen::s_Height, "OpenGL Application");
 
     if (!window) {
@@ -42,6 +45,7 @@ void Application::Init() {
     testMenu = std::make_unique<TestMenu>(testManager);
     //testMenu->RegisterTest("Simple Cube", []() { return std::make_shared<TestSimpleCube>(); });
     testMenu->RegisterTest("Lights", []() { return std::make_shared<TestLights>(); });
+    testMenu->RegisterTest("Bistro", []() { return std::make_shared<TestBistro>(); });
     //testMenu->RegisterTest("Terrain", []() { return std::make_shared<TestTerrain>(); });
     // Add more tests as needed
 
@@ -52,6 +56,7 @@ void Application::Init() {
 
     // Start with the TestMenu
     testManager.SwitchTest("Test Menu");
+    EASY_END_BLOCK;
 }
 
 void showFPS(GLFWwindow* window) {

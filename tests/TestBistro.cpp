@@ -1,4 +1,4 @@
-#include "TestLights.h"
+#include "TestBistro.h"
 #include "Resources/ModelManager.h"
 #include "Resources/MaterialManager.h"
 #include "Resources/ShaderManager.h"
@@ -8,11 +8,11 @@
 #include "Utilities/Logger.h"
 #include <imgui.h>
 
-TestLights::TestLights() {
+TestBistro::TestBistro() {
     // Initialization if needed
 }
 
-void TestLights::OnEnter() {
+void TestBistro::OnEnter() {
 
     auto& modelManager = ModelManager::GetInstance();
     auto& materialManager = MaterialManager::GetInstance();
@@ -21,7 +21,7 @@ void TestLights::OnEnter() {
     // Define mesh layout
     MeshLayout objMeshLayout = {
         true,  // Positions
-        true,  // Normals
+        false,  // Normals
         false, // Tangents
         false, // Bitangents
         {}     // Texture Coordinates
@@ -37,12 +37,6 @@ void TestLights::OnEnter() {
     // Create material
     auto material = std::make_shared<Material>();
 
-    // Gold material properties
-    material->AddParam<glm::vec3>("material.Ka", glm::vec3(0.24725f, 0.1995f, 0.0745f));
-    material->AddParam<glm::vec3>("material.Kd", glm::vec3(0.75164f, 0.60648f, 0.22648f));
-    material->AddParam<glm::vec3>("material.Ks", glm::vec3(0.628281f, 0.555802f, 0.366065f));
-    material->AddParam<float>("material.shininess", 51.2f);
-
     materialManager.AddMaterial("objMaterial", material);
 
     auto transform = std::make_shared<Transform>();
@@ -57,36 +51,27 @@ void TestLights::OnEnter() {
             minfo.mesh,
             objMeshLayout,
             "objMaterial",
-            "simplelights",
+            "wireframe",
             transform
         );
         m_Scene->AddRenderObject(renderObject);
     }
 
-    // Add light to the scene
-    LightData light = { glm::vec4(1.5f, 2.0f, 1.5f, 0.0f) , glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) };
-    m_Scene->AddLight(light);
-
-    light = { glm::vec4(-1.5f, 2.0f, -1.5f, 0.0f) , glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) };
-    m_Scene->AddLight(light);
-
     m_Scene->BuildBatches();
-    m_Scene->SetBDebugLights(true);
-    m_Scene->SetBGrid(true);
     //m_Scene->SetPostProcessingEffect(PostProcessingEffectType::EdgeDetection);
 }
 
-void TestLights::OnExit() {
+void TestBistro::OnExit() {
     m_Renderer.reset();
     m_Scene->Clear();
 }
 
-void TestLights::OnUpdate(float deltaTime) {
+void TestBistro::OnUpdate(float deltaTime) {
     // Update objects or animations if needed
 }
 
 
-void TestLights::OnImGuiRender() {
-    ImGui::Begin("TestLights Controls");
+void TestBistro::OnImGuiRender() {
+    ImGui::Begin("TestBistro Controls");
     ImGui::End();
 }

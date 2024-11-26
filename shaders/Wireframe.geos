@@ -1,0 +1,29 @@
+#version 460 core
+
+layout(triangles) in;
+layout(line_strip, max_vertices = 6) out;
+
+uniform vec4 wireColor = vec4(1.0, 1.0, 1.0, 1.0); // Default white color
+
+out vec4 fragColor;
+
+void EmitLine(int idx1, int idx2)
+{
+    fragColor = wireColor;
+    gl_Position = gl_in[idx1].gl_Position;
+    EmitVertex();
+
+    fragColor = wireColor;
+    gl_Position = gl_in[idx2].gl_Position;
+    EmitVertex();
+
+    EndPrimitive();
+}
+
+void main()
+{
+    // Emit lines for each edge of the triangle
+    EmitLine(0, 1);
+    EmitLine(1, 2);
+    EmitLine(2, 0);
+}

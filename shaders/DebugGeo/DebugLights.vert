@@ -1,6 +1,6 @@
 #version 460 core
-#include "Common/Common.shader"
-#include "Common/Lights.shader"
+#include "../Common/Common.shader"
+#include "../Common/Lights.shader"
 
 layout(location = 0) in vec3 position;
 out vec3 LightColor;
