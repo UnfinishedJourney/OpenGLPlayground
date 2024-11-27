@@ -11,4 +11,6 @@ public:
     void OnExit() override;
     void OnUpdate(float deltaTime) override;
     void OnImGuiRender() override;
+private:
+    std::shared_ptr<Camera> m_Camera;
 };

@@ -33,6 +33,7 @@ public:
     void UpdateProjectionMatrix(float aspectRatio);
 
     glm::vec3 GetPosition() const { return m_Position; }
+    glm::vec3& GetPositionRef() { return m_Position; }
     glm::vec3 GetFront() const { return m_Front; }
     glm::vec3 GetUp() const { return m_Up; }
 
@@ -43,6 +44,8 @@ public:
     float GetFarPlane() const;
 
     void SetFarPlane(float farPlane);
+
+    void SetPosition(glm::vec3 pos) { m_Position = pos; }
 
 private:
     void UpdateCameraVectors();

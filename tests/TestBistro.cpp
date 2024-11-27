@@ -14,16 +14,15 @@ TestBistro::TestBistro() {
 
 void TestBistro::OnEnter() {
 
-    auto bistroCamera = std::make_shared<Camera>(
+    m_Camera = std::make_shared<Camera>(
         glm::vec3(10.0f, 5.0f, 15.0f), // Position: further away for a large scene
         glm::vec3(0.0f, 1.0f, 0.0f),   // Up vector
-        -135.0f,                        // Yaw: facing towards the origin
-        -20.0f                          // Pitch: looking slightly downward
+        -135.0f,                       // Yaw: facing towards the origin
+        -20.0f                         // Pitch: looking slightly downward
     );
-
-    bistroCamera->SetSpeed(100.0);
-    bistroCamera->SetFarPlane(10000.0);
-    m_Scene->SetCamera(bistroCamera);
+    m_Camera->SetSpeed(200.0f);
+    m_Camera->SetFarPlane(10000.0f);
+    m_Scene->SetCamera(m_Camera);
 
     auto& modelManager = ModelManager::GetInstance();
     auto& materialManager = MaterialManager::GetInstance();
@@ -62,7 +61,7 @@ void TestBistro::OnEnter() {
             minfo.mesh,
             objMeshLayout,
             "objMaterial",
-            "wireframe",
+            "wireframeGL",
             transform
         );
         m_Scene->AddRenderObject(renderObject);
@@ -84,5 +83,7 @@ void TestBistro::OnUpdate(float deltaTime) {
 
 void TestBistro::OnImGuiRender() {
     ImGui::Begin("TestBistro Controls");
+    glm::vec3& position = m_Camera->GetPositionRef();
+    ImGui::SliderFloat3("Camera Position", &position.x, 0.0f, 2000.0f);
     ImGui::End();
 }

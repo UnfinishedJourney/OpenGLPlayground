@@ -51,11 +51,18 @@
                 "fragment": "../shaders/Postprocessing/EdgeDetection.frag"
             }
         },
-        "wireframe": {
-            "binary_path": "../shaders/bin/Wireframe.bin",
+        "wireframeGS": {
+            "binary_path": "../shaders/bin/WireframeGS.bin",
             "shader_stages": {
                 "vertex": "../shaders/Wireframe.vert",
                 "geometry": "../shaders/Wireframe.geos",
+                "fragment": "../shaders/Wireframe.frag"
+            }
+        },
+        "wireframeGL": {
+            "binary_path": "../shaders/bin/WireframeGL.bin",
+            "shader_stages": {
+                "vertex": "../shaders/Wireframe.vert",
                 "fragment": "../shaders/Wireframe.frag"
             }
         }
