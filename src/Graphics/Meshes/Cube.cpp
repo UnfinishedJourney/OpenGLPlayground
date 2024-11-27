@@ -79,4 +79,11 @@ Cube::Cube() {
     for (auto& normal : normals) {
         normal = glm::normalize(normal);
     }
+
+    if (lods.empty()) {
+        MeshLOD defaultLOD;
+        defaultLOD.indexOffset = 0;
+        defaultLOD.indexCount = static_cast<uint32_t>(indices.size());
+        lods.push_back(defaultLOD);
+    }
 }

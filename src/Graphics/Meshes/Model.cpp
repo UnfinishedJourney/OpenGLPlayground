@@ -136,6 +136,13 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
         }
     }
 
+    if (myMesh->lods.empty()) {
+        MeshLOD defaultLOD;
+        defaultLOD.indexOffset = 0;
+        defaultLOD.indexCount = static_cast<uint32_t>(myMesh->indices.size());
+        myMesh->lods.push_back(defaultLOD);
+    }
+
     MeshTextures meshTextures;
     std::filesystem::path directory = std::filesystem::path(m_FilePath).parent_path();
     if (aiMesh->mMaterialIndex >= 0) {

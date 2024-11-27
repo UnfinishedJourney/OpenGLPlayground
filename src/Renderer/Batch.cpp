@@ -1,37 +1,33 @@
 ﻿#include "Renderer/Batch.h"
 #include "Utilities/Logger.h"
-#include <glad/glad.h>
 #include <variant>
+#include <numeric>
+#include <algorithm>
 
 Batch::Batch(const std::string& shaderName, const std::string& materialName, const MeshLayout& meshLayout)
     : m_ShaderName(shaderName),
     m_MaterialName(materialName),
     m_MeshLayout(meshLayout),
-    m_VAO(std::make_unique<VertexArray>())
-{
+    m_VAO(std::make_unique<VertexArray>()) {
 }
 
-Batch::~Batch()
-{
+Batch::~Batch() {
     // Resources are automatically cleaned up
 }
 
-void Batch::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)
-{
+void Batch::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject) {
     m_RenderObjects.push_back(renderObject);
     m_IsDirty = true;
 }
 
-void Batch::Update()
-{
+void Batch::Update() {
     if (!m_IsDirty) return;
 
     BuildBatch();
     m_IsDirty = false;
 }
 
-void Batch::BuildBatch()
-{
+void Batch::BuildBatch() {
     if (m_RenderObjects.empty()) {
         Logger::GetLogger()->warn("No RenderObjects to batch.");
         return;
@@ -40,15 +36,18 @@ void Batch::BuildBatch()
     // Build VertexBufferLayout from MeshLayout
     VertexBufferLayout vertexBufferLayout;
     GLuint attributeIndex = 0;
+
+    // Determine position component count (vec2 or vec3)
+    size_t positionComponentCount = 3; // Default to vec3
+    const auto& firstMesh = m_RenderObjects.front()->GetMesh();
+    std::visit([&](const auto& positionsVec) {
+        using VecType = typename std::decay_t<decltype(positionsVec)>::value_type;
+        if constexpr (std::is_same_v<VecType, glm::vec2>) {
+            positionComponentCount = 2;
+        }
+        }, firstMesh->positions);
+
     if (m_MeshLayout.hasPositions) {
-        size_t positionComponentCount = 3; // Default to vec3
-        const auto& firstMesh = m_RenderObjects.front()->GetMesh();
-        std::visit([&](const auto& positionsVec) {
-            using VecType = typename std::decay_t<decltype(positionsVec)>::value_type;
-            if constexpr (std::is_same_v<VecType, glm::vec2>) {
-                positionComponentCount = 2;
-            }
-            }, firstMesh->positions);
         vertexBufferLayout.Push<float>(static_cast<GLuint>(positionComponentCount), attributeIndex++);
     }
     if (m_MeshLayout.hasNormals) {
@@ -64,24 +63,16 @@ void Batch::BuildBatch()
         vertexBufferLayout.Push<float>(2, attributeIndex++);
     }
 
-    // Combine vertex data
+    // Combine vertex data and index data
     std::vector<float> combinedVertexData;
     std::vector<GLuint> combinedIndices;
-    GLuint vertexOffset = 0;
-    size_t totalVertexCount = 0;
-    size_t totalIndexCount = 0;
 
-    // Pre-calculate total sizes to reserve memory
-    for (const auto& ro : m_RenderObjects) {
-        size_t vertexCount = std::visit([](const auto& positionsVec) {
-            return positionsVec.size();
-            }, ro->GetMesh()->positions);
-        totalVertexCount += vertexCount;
-        totalIndexCount += ro->GetMesh()->indices.size();
-    }
+    // Offset tracking
+    GLuint baseVertex = 0;
+    GLuint firstIndex = 0;
 
-    combinedVertexData.reserve(totalVertexCount * (vertexBufferLayout.GetStride() / sizeof(float)));
-    combinedIndices.reserve(totalIndexCount);
+    // Build draw commands
+    m_DrawCommands.clear();
 
     for (const auto& ro : m_RenderObjects) {
         const auto& mesh = ro->GetMesh();
@@ -90,6 +81,7 @@ void Batch::BuildBatch()
             return positionsVec.size();
             }, mesh->positions);
 
+        // Copy vertex data
         for (size_t i = 0; i < vertexCount; ++i) {
             // Positions
             if (m_MeshLayout.hasPositions) {
@@ -136,15 +128,30 @@ void Batch::BuildBatch()
             }
         }
 
-        // Indices
-        for (const auto& index : mesh->indices) {
-            combinedIndices.push_back(index + vertexOffset);
+        // Copy index data for the selected LOD
+        size_t lodIndex = 0; // Default LOD, could be determined based on distance
+        lodIndex = std::min(lodIndex, mesh->lods.size() - 1);
+
+        const MeshLOD& lod = mesh->lods[lodIndex];
+
+        // Adjust indices and copy
+        for (size_t i = 0; i < lod.indexCount; ++i) {
+            GLuint index = mesh->indices[lod.indexOffset + i];
+            combinedIndices.push_back(index + baseVertex);
         }
 
-        vertexOffset += static_cast<GLuint>(vertexCount);
-    }
+        DrawElementsIndirectCommand cmd = {};
+        cmd.count = lod.indexCount;
+        cmd.instanceCount = 1; // For now, could be more if instanced
+        cmd.firstIndex = firstIndex;
+        cmd.baseVertex = 0; // Since we adjust indices, baseVertex can be 0
+        cmd.baseInstance = 0; // Not using instancing yet
 
-    m_IndexCount = static_cast<GLsizei>(combinedIndices.size());
+        m_DrawCommands.push_back(cmd);
+
+        baseVertex += static_cast<GLuint>(vertexCount);
+        firstIndex += lod.indexCount;
+    }
 
     // Create or update VertexBuffer
     std::span<const std::byte> vertexSpan{
@@ -152,7 +159,7 @@ void Batch::BuildBatch()
         combinedVertexData.size() * sizeof(float)
     };
     if (!m_VBO) {
-        m_VBO = std::make_unique<VertexBuffer>(vertexSpan, GL_DYNAMIC_DRAW);
+        m_VBO = std::make_shared<VertexBuffer>(vertexSpan, GL_STATIC_DRAW);
     }
     else {
         m_VBO->UpdateData(vertexSpan);
@@ -161,10 +168,23 @@ void Batch::BuildBatch()
     // Create or update IndexBuffer
     std::span<const GLuint> indexSpan(combinedIndices.data(), combinedIndices.size());
     if (!m_IBO) {
-        m_IBO = std::make_unique<IndexBuffer>(indexSpan, GL_DYNAMIC_DRAW);
+        m_IBO = std::make_shared<IndexBuffer>(indexSpan, GL_STATIC_DRAW);
     }
     else {
         m_IBO->UpdateData(indexSpan);
+    }
+
+    // Create or update DrawCommand buffer
+    std::span<const std::byte> drawCommandSpan{
+        reinterpret_cast<const std::byte*>(m_DrawCommands.data()),
+        m_DrawCommands.size() * sizeof(DrawElementsIndirectCommand)
+    };
+
+    if (!m_DrawCommandBuffer) {
+        m_DrawCommandBuffer = std::make_unique<VertexBuffer>(drawCommandSpan, GL_DYNAMIC_DRAW);
+    }
+    else {
+        m_DrawCommandBuffer->UpdateData(drawCommandSpan);
     }
 
     // Set up VertexArray
@@ -174,9 +194,41 @@ void Batch::BuildBatch()
     m_VAO->Unbind();
 }
 
-void Batch::Render() const
-{
+void Batch::UpdateLOD(size_t objectIndex, size_t newLOD) {
+    if (objectIndex >= m_RenderObjects.size()) {
+        Logger::GetLogger()->error("Invalid object index in UpdateLOD.");
+        return;
+    }
+    auto& ro = m_RenderObjects[objectIndex];
+    auto& mesh = ro->GetMesh();
+    if (newLOD >= mesh->lods.size()) {
+        Logger::GetLogger()->error("Invalid LOD index in UpdateLOD.");
+        return;
+    }
+    const MeshLOD& lod = mesh->lods[newLOD];
+
+    auto& cmd = m_DrawCommands[objectIndex];
+    cmd.count = lod.indexCount;
+    cmd.firstIndex = lod.indexOffset;
+
+    // Update the draw command buffer for this object
+    std::span<const std::byte> cmdSpan{
+        reinterpret_cast<const std::byte*>(&cmd),
+        sizeof(DrawElementsIndirectCommand)
+    };
+    GLintptr offset = objectIndex * sizeof(DrawElementsIndirectCommand);
+    m_DrawCommandBuffer->UpdateData(cmdSpan, offset);
+}
+
+void Batch::Render() const {
     m_VAO->Bind();
-    GLCall(glDrawElements(GL_TRIANGLES, m_IndexCount, GL_UNSIGNED_INT, nullptr));
+
+    // Bind the indirect draw command buffer
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_DrawCommandBuffer->GetRendererID());
+
+    // Issue the indirect draw call
+    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(m_DrawCommands.size()), 0);
+
+    // Unbind the VAO
     m_VAO->Unbind();
 }

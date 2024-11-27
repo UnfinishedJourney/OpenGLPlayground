@@ -3,10 +3,21 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <glad/glad.h>
 #include "Renderer/RenderObject.h"
 #include "Graphics/Buffers/VertexArray.h"
 #include "Graphics/Buffers/VertexBuffer.h"
 #include "Graphics/Buffers/IndexBuffer.h"
+#include "Graphics/Buffers/VertexBufferLayout.h"
+#include "Graphics/Meshes/MeshLayout.h"
+
+struct DrawElementsIndirectCommand {
+    GLuint count;          // Number of indices
+    GLuint instanceCount;  // Number of instances (1 for now)
+    GLuint firstIndex;     // Offset into the index buffer
+    GLint baseVertex;      // Offset into the vertex buffer
+    GLuint baseInstance;   // First instance ID (0 for now)
+};
 
 class Batch {
 public:
@@ -14,7 +25,7 @@ public:
     ~Batch();
 
     void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
-    void Update(); // Update the batch if needed
+    void Update(); // Build or rebuild the batch if needed
     void Render() const;
 
     // Accessors
@@ -23,8 +34,12 @@ public:
     const MeshLayout& GetMeshLayout() const { return m_MeshLayout; }
     const std::vector<std::shared_ptr<RenderObject>>& GetRenderObjects() const { return m_RenderObjects; }
 
+    // LOD management
+    void UpdateLOD(size_t objectIndex, size_t newLOD);
+
 private:
-    void BuildBatch(); // Build or rebuild the batch
+    void BuildBatch();        // Build or rebuild the batch
+    void UpdateDrawCommands(); // Update draw command buffer if needed
 
     std::string m_ShaderName;
     std::string m_MaterialName;
@@ -32,10 +47,11 @@ private:
     std::vector<std::shared_ptr<RenderObject>> m_RenderObjects;
 
     std::unique_ptr<VertexArray> m_VAO;
-    std::unique_ptr<VertexBuffer> m_VBO;
-    std::unique_ptr<IndexBuffer> m_IBO;
+    std::shared_ptr<VertexBuffer> m_VBO;
+    std::shared_ptr<IndexBuffer> m_IBO;
 
-    GLsizei m_IndexCount = 0;
+    std::unique_ptr<VertexBuffer> m_DrawCommandBuffer;
+    std::vector<DrawElementsIndirectCommand> m_DrawCommands;
 
     bool m_IsDirty = true;
 };

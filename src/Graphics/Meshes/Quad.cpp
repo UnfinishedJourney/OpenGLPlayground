@@ -27,5 +27,12 @@ Quad::Quad() {
         3, 4, 5
     };
 
+    if (lods.empty()) {
+        MeshLOD defaultLOD;
+        defaultLOD.indexOffset = 0;
+        defaultLOD.indexCount = static_cast<uint32_t>(indices.size());
+        lods.push_back(defaultLOD);
+    }
+
     // For 2D meshes, normals, tangents, bitangents might not be necessary
 }

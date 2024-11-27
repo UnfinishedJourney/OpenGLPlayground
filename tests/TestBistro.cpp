@@ -14,6 +14,17 @@ TestBistro::TestBistro() {
 
 void TestBistro::OnEnter() {
 
+    auto bistroCamera = std::make_shared<Camera>(
+        glm::vec3(10.0f, 5.0f, 15.0f), // Position: further away for a large scene
+        glm::vec3(0.0f, 1.0f, 0.0f),   // Up vector
+        -135.0f,                        // Yaw: facing towards the origin
+        -20.0f                          // Pitch: looking slightly downward
+    );
+
+    bistroCamera->SetSpeed(100.0);
+    bistroCamera->SetFarPlane(10000.0);
+    m_Scene->SetCamera(bistroCamera);
+
     auto& modelManager = ModelManager::GetInstance();
     auto& materialManager = MaterialManager::GetInstance();
     auto& shaderManager = ShaderManager::GetInstance();
@@ -28,9 +39,9 @@ void TestBistro::OnEnter() {
     };
 
     // Get model
-    auto model = modelManager.GetModel("pig");
+    auto model = modelManager.GetModel("bistro");
     if (!model) {
-        Logger::GetLogger()->error("Failed to load model 'pig'");
+        Logger::GetLogger()->error("Failed to load model 'bistro'");
         return;
     }
 

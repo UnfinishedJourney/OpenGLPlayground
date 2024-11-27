@@ -27,6 +27,7 @@ void DebugLightsPass::InitializeSceneResources(const std::shared_ptr<Scene>& sce
 
 void DebugLightsPass::Execute(const std::shared_ptr<Scene>& scene)
 {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     m_Framebuffer->Bind();
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -55,6 +56,7 @@ void DebugLightsPass::Execute(const std::shared_ptr<Scene>& scene)
 
     m_LightSphereMeshBuffer->Unbind();
     m_Framebuffer->Unbind();
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void DebugLightsPass::UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer)

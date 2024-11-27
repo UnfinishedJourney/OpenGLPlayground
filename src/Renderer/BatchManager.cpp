@@ -1,13 +1,12 @@
 ﻿#include "Renderer/BatchManager.h"
+#include "Utilities/Logger.h"
 
-void BatchManager::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)
-{
+void BatchManager::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject) {
     m_RenderObjects.push_back(renderObject);
     b_wasBuilt = false;
 }
 
-void BatchManager::Clear()
-{
+void BatchManager::Clear() {
     m_RenderObjects.clear();
     m_StaticBatches.clear();
     m_DynamicBatches.clear();
@@ -15,10 +14,8 @@ void BatchManager::Clear()
     b_wasBuilt = false;
 }
 
-void BatchManager::BuildBatches()
-{
-    if (b_wasBuilt == true)
-        return;
+void BatchManager::BuildBatches() {
+    if (b_wasBuilt) return;
 
     // Clear existing batches
     m_StaticBatches.clear();
@@ -36,12 +33,12 @@ void BatchManager::BuildBatches()
     m_AllBatches.reserve(m_StaticBatches.size() + m_DynamicBatches.size());
     m_AllBatches.insert(m_AllBatches.end(), m_StaticBatches.begin(), m_StaticBatches.end());
     m_AllBatches.insert(m_AllBatches.end(), m_DynamicBatches.begin(), m_DynamicBatches.end());
+
     b_wasBuilt = true;
 }
 
 std::vector<std::shared_ptr<Batch>> BatchManager::BuildBatchesFromRenderObjects(
-    const std::vector<std::shared_ptr<RenderObject>>& renderObjects)
-{
+    const std::vector<std::shared_ptr<RenderObject>>& renderObjects) {
     std::vector<std::shared_ptr<Batch>> batches;
 
     // Group RenderObjects by shader, material, and MeshLayout
@@ -79,7 +76,19 @@ std::vector<std::shared_ptr<Batch>> BatchManager::BuildBatchesFromRenderObjects(
     return batches;
 }
 
-const std::vector<std::shared_ptr<Batch>>& BatchManager::GetBatches() const
-{
+void BatchManager::UpdateLOD(const std::shared_ptr<RenderObject>& renderObject, size_t newLOD) {
+    // Find the batch containing this render object
+    for (const auto& batch : m_AllBatches) {
+        const auto& ros = batch->GetRenderObjects();
+        auto it = std::find(ros.begin(), ros.end(), renderObject);
+        if (it != ros.end()) {
+            size_t index = std::distance(ros.begin(), it);
+            batch->UpdateLOD(index, newLOD);
+            break;
+        }
+    }
+}
+
+const std::vector<std::shared_ptr<Batch>>& BatchManager::GetBatches() const {
     return m_AllBatches;
 }

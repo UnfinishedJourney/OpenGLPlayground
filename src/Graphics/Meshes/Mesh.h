@@ -1,8 +1,8 @@
 #pragma once
 
+#include <variant>
 #include <vector>
 #include <unordered_map>
-#include <variant>
 #include <glm/glm.hpp>
 #include <cstdint>
 #include <type_traits>
@@ -18,14 +18,10 @@ enum class TextureType {
     Emissive,
 };
 
-namespace std {
-    template <>
-    struct hash<TextureType> {
-        std::size_t operator()(const TextureType& type) const {
-            return std::hash<int>()(static_cast<int>(type));
-        }
-    };
-}
+struct MeshLOD {
+    uint32_t indexOffset; // Offset into the combined index buffer
+    uint32_t indexCount;  // Number of indices for this LOD
+};
 
 struct Mesh {
     using PositionsType = std::variant<std::vector<glm::vec2>, std::vector<glm::vec3>>;
@@ -35,14 +31,16 @@ struct Mesh {
     std::vector<glm::vec3> tangents;
     std::vector<glm::vec3> bitangents;
     std::unordered_map<TextureType, std::vector<glm::vec2>> uvs;
-    std::vector<uint32_t> indices;
+    std::vector<uint32_t> indices; // All indices for all LODs combined
+
+    std::vector<MeshLOD> lods; // LODs with index offsets and counts
 
     // Utility methods
     size_t GetVertexCount() const {
         return std::visit([](auto&& arg) -> size_t { return arg.size(); }, positions);
     }
 
-    size_t GetIndexCount() const { return indices.size(); }
+    size_t GetLODCount() const { return lods.size(); }
 
     bool HasNormals() const { return !normals.empty(); }
     bool HasTangents() const { return !tangents.empty(); }
@@ -62,7 +60,8 @@ struct Mesh {
         tangents(std::move(other.tangents)),
         bitangents(std::move(other.bitangents)),
         uvs(std::move(other.uvs)),
-        indices(std::move(other.indices)) {}
+        indices(std::move(other.indices)),
+        lods(std::move(other.lods)) {}
 
     Mesh& operator=(Mesh&& other) noexcept {
         if (this != &other) {
@@ -72,6 +71,7 @@ struct Mesh {
             bitangents = std::move(other.bitangents);
             uvs = std::move(other.uvs);
             indices = std::move(other.indices);
+            lods = std::move(other.lods);
         }
         return *this;
     }

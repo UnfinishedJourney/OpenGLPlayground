@@ -15,7 +15,9 @@ Camera::Camera(
     m_Pitch(pitch),
     m_Speed(10.0f),
     m_MouseSensitivity(0.1f),
-    m_FOV(45.0f)
+    m_FOV(45.0f),
+    m_NearPlane(0.01),
+    m_FarPlane(500.0)
 {
     UpdateCameraVectors();
 
@@ -24,8 +26,8 @@ Camera::Camera(
     m_ProjectionMatrix = glm::perspective(
         glm::radians(m_FOV),
         aspectRatio,
-        0.1f,
-        500.0f
+        m_NearPlane,
+        m_FarPlane
     );
 }
 
@@ -80,6 +82,24 @@ void Camera::SetSpeed(float speed) {
     m_Speed = speed;
 }
 
+float Camera::GetNearPlane() const {
+    return m_NearPlane;
+}
+
+void Camera::SetNearPlane(float nearPlane) {
+    m_NearPlane = std::max(nearPlane, 0.01f); // Prevent invalid near plane
+    UpdateProjectionMatrix(static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height));
+}
+
+float Camera::GetFarPlane() const {
+    return m_FarPlane;
+}
+
+void Camera::SetFarPlane(float farPlane) {
+    m_FarPlane = std::max(farPlane, m_NearPlane + 0.1f); // Ensure far > near
+    UpdateProjectionMatrix(static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height));
+}
+
 void Camera::UpdateFOV()
 {
     // Access static members from Screen class
@@ -99,8 +119,8 @@ void Camera::UpdateProjectionMatrix(float aspectRatio) {
     m_ProjectionMatrix = glm::perspective(
         glm::radians(m_FOV),
         aspectRatio,
-        0.1f,
-        500.0f
+        m_NearPlane,
+        m_FarPlane
     );
 }
 

@@ -36,6 +36,14 @@ public:
     glm::vec3 GetFront() const { return m_Front; }
     glm::vec3 GetUp() const { return m_Up; }
 
+    float GetNearPlane() const;
+
+    void SetNearPlane(float nearPlane);
+
+    float GetFarPlane() const;
+
+    void SetFarPlane(float farPlane);
+
 private:
     void UpdateCameraVectors();
 
@@ -50,6 +58,7 @@ private:
     float m_FOV;
     float m_Speed;
     float m_MouseSensitivity;
-
+    float m_NearPlane;
+    float m_FarPlane;
     glm::mat4 m_ProjectionMatrix;
 };
