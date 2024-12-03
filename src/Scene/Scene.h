@@ -35,6 +35,10 @@ public:
     void BuildBatches() const;
     void BindLightSSBO() const;
     void BindFrameDataUBO() const;
+    void UpdateLOD(size_t newLOD)
+    {
+        m_BatchManager.UpdateLOD(newLOD);
+    }
 
     void SetPostProcessingEffect(PostProcessingEffectType effect);
     PostProcessingEffectType GetPostProcessingEffect() const;

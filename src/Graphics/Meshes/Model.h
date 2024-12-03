@@ -43,6 +43,8 @@ private:
     glm::vec3 CalculateModelCenter() const;
     MeshTextures LoadTextures(aiMaterial* material, const std::string& directory);
 
+    void processLods(std::vector<uint32_t>& indices, const std::vector<float>& vertices, std::vector<std::vector<uint32_t>>& outLods);
+
     std::string m_FilePath;
     std::vector<MeshInfo> m_MeshInfos;
     std::vector<std::unordered_map<MeshLayout, std::shared_ptr<MeshBuffer>>> m_MeshBuffersCache;

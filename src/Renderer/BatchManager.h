@@ -14,6 +14,7 @@ public:
     const std::vector<std::shared_ptr<Batch>>& GetBatches() const;
 
     void UpdateLOD(const std::shared_ptr<RenderObject>& renderObject, size_t newLOD);
+    void UpdateLOD(size_t newLOD);
 
 private:
     bool b_wasBuilt = false;

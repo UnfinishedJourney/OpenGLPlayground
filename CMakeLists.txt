@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.25)
 
 # =====================================================================
 # Опции для выбора компилятора и включения clang-tidy
@@ -35,6 +35,7 @@ endif()
 
 # Установка директорий
 set(DEPS_DIR ${CMAKE_SOURCE_DIR}/Dependencies)
+set(DEPS_DEPS_DIR ${CMAKE_SOURCE_DIR}/deps/src)  # Add this line
 set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/assets)
 
@@ -109,11 +110,15 @@ target_include_directories(OpenGLApplication PRIVATE
     ${DEPS_DIR}/spdlog/include
     ${DEPS_DIR}/GLM
     ${DEPS_DIR}/assimp_related/include
+    ${DEPS_DEPS_DIR}/meshoptimizer/src   # Include meshoptimizer
     ${CMAKE_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/vendor/stb_image
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/tests
 )
+
+# Добавляем поддиректорию для meshoptimizer
+add_subdirectory(${DEPS_DEPS_DIR}/meshoptimizer)
 
 # Линковка библиотек для 32-битных и 64-битных конфигураций
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)  # 64-бит
@@ -125,6 +130,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)  # 64-бит
         Shell32
         ${DEPS_DIR}/assimp_related/lib/assimp-vc143-mt.lib
         ${DEPS_DIR}/spdlog/lib/spdlog.lib
+        meshoptimizer  # Link meshoptimizer
     )
 else()  # 32-бит
     target_link_libraries(OpenGLApplication PRIVATE 
@@ -133,6 +139,7 @@ else()  # 32-бит
         User32
         Gdi32
         Shell32
+        meshoptimizer  # Link meshoptimizer
     )
 endif()
 

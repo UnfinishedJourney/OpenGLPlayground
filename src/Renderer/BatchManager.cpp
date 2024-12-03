@@ -89,6 +89,18 @@ void BatchManager::UpdateLOD(const std::shared_ptr<RenderObject>& renderObject, 
     }
 }
 
+void BatchManager::UpdateLOD(size_t newLOD) {
+    
+    for (const auto& batch : m_AllBatches)
+    {
+        int i = 0;
+        for (auto& ros : batch->GetRenderObjects())
+        {
+            batch->UpdateLOD(i++, newLOD);
+        }
+    }
+}
+
 const std::vector<std::shared_ptr<Batch>>& BatchManager::GetBatches() const {
     return m_AllBatches;
 }

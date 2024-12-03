@@ -19,6 +19,11 @@ struct DrawElementsIndirectCommand {
     GLuint baseInstance;   // First instance ID (0 for now)
 };
 
+struct LODInfo {
+    size_t indexOffsetInCombinedBuffer; // Offset into the combined index buffer
+    size_t indexCount;                  // Number of indices for this LOD
+};
+
 class Batch {
 public:
     Batch(const std::string& shaderName, const std::string& materialName, const MeshLayout& meshLayout);
@@ -39,7 +44,6 @@ public:
 
 private:
     void BuildBatch();        // Build or rebuild the batch
-    void UpdateDrawCommands(); // Update draw command buffer if needed
 
     std::string m_ShaderName;
     std::string m_MaterialName;
@@ -52,6 +56,9 @@ private:
 
     std::unique_ptr<VertexBuffer> m_DrawCommandBuffer;
     std::vector<DrawElementsIndirectCommand> m_DrawCommands;
+
+    // New member to store LOD offsets
+    std::vector<std::vector<LODInfo>> m_LODInfos;
 
     bool m_IsDirty = true;
 };

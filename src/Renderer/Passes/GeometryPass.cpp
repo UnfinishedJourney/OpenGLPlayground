@@ -18,6 +18,10 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
 {
     m_Framebuffer->Bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    // Update LODs based on camera distance
+    scene->UpdateLOD(3);
 
     scene->UpdateFrameDataUBO();
     scene->BuildBatches();
@@ -46,7 +50,7 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
 
         materialManager.BindMaterial(batch->GetMaterialName(), shader);
 
-
+        // Assuming all render objects in the batch have the same model matrix
         glm::mat4 modelMatrix = renderObjects.front()->GetTransform()->GetModelMatrix();
         glm::mat3 normalMatrix = renderObjects.front()->GetTransform()->GetNormalMatrix();
 
@@ -57,6 +61,7 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
     }
 
     m_Framebuffer->Unbind();
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void GeometryPass::UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer)

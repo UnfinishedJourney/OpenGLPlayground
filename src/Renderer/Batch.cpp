@@ -67,15 +67,18 @@ void Batch::BuildBatch() {
     std::vector<float> combinedVertexData;
     std::vector<GLuint> combinedIndices;
 
+    // Clear previous LODInfos
+    m_LODInfos.clear();
+    m_DrawCommands.clear();
+
     // Offset tracking
     GLuint baseVertex = 0;
-    GLuint firstIndex = 0;
-
-    // Build draw commands
-    m_DrawCommands.clear();
 
     for (const auto& ro : m_RenderObjects) {
         const auto& mesh = ro->GetMesh();
+
+        // Store LODInfos for this RenderObject
+        std::vector<LODInfo> lodInfos;
 
         size_t vertexCount = std::visit([](const auto& positionsVec) {
             return positionsVec.size();
@@ -128,29 +131,35 @@ void Batch::BuildBatch() {
             }
         }
 
-        // Copy index data for the selected LOD
-        size_t lodIndex = 0; // Default LOD, could be determined based on distance
-        lodIndex = std::min(lodIndex, mesh->lods.size() - 1);
+        // For each LOD of the mesh
+        for (const auto& lod : mesh->lods) {
+            LODInfo lodInfo;
+            lodInfo.indexOffsetInCombinedBuffer = combinedIndices.size(); // Current size is the offset
+            lodInfo.indexCount = lod.indexCount;
 
-        const MeshLOD& lod = mesh->lods[lodIndex];
+            // Adjust indices and copy
+            for (size_t i = 0; i < lod.indexCount; ++i) {
+                GLuint index = mesh->indices[lod.indexOffset + i];
+                combinedIndices.push_back(index + baseVertex);
+            }
 
-        // Adjust indices and copy
-        for (size_t i = 0; i < lod.indexCount; ++i) {
-            GLuint index = mesh->indices[lod.indexOffset + i];
-            combinedIndices.push_back(index + baseVertex);
+            lodInfos.push_back(lodInfo);
         }
 
+        m_LODInfos.push_back(lodInfos);
+
+        // Create Draw Command for default LOD (e.g., LOD 0)
         DrawElementsIndirectCommand cmd = {};
-        cmd.count = lod.indexCount;
+        const auto& defaultLODInfo = lodInfos[0];
+        cmd.count = static_cast<GLuint>(defaultLODInfo.indexCount);
         cmd.instanceCount = 1; // For now, could be more if instanced
-        cmd.firstIndex = firstIndex;
+        cmd.firstIndex = static_cast<GLuint>(defaultLODInfo.indexOffsetInCombinedBuffer);
         cmd.baseVertex = 0; // Since we adjust indices, baseVertex can be 0
         cmd.baseInstance = 0; // Not using instancing yet
 
         m_DrawCommands.push_back(cmd);
 
         baseVertex += static_cast<GLuint>(vertexCount);
-        firstIndex += lod.indexCount;
     }
 
     // Create or update VertexBuffer
@@ -199,17 +208,19 @@ void Batch::UpdateLOD(size_t objectIndex, size_t newLOD) {
         Logger::GetLogger()->error("Invalid object index in UpdateLOD.");
         return;
     }
-    auto& ro = m_RenderObjects[objectIndex];
-    auto& mesh = ro->GetMesh();
-    if (newLOD >= mesh->lods.size()) {
+
+    if (newLOD >= m_LODInfos[objectIndex].size()) {
         Logger::GetLogger()->error("Invalid LOD index in UpdateLOD.");
         return;
     }
-    const MeshLOD& lod = mesh->lods[newLOD];
+
+    const LODInfo& lodInfo = m_LODInfos[objectIndex][newLOD];
 
     auto& cmd = m_DrawCommands[objectIndex];
-    cmd.count = lod.indexCount;
-    cmd.firstIndex = lod.indexOffset;
+    cmd.count = static_cast<GLuint>(lodInfo.indexCount);
+    cmd.firstIndex = static_cast<GLuint>(lodInfo.indexOffsetInCombinedBuffer);
+    // cmd.baseVertex remains the same
+    // cmd.instanceCount and cmd.baseInstance remain the same
 
     // Update the draw command buffer for this object
     std::span<const std::byte> cmdSpan{
