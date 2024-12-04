@@ -1,49 +1,61 @@
 cmake_minimum_required(VERSION 3.25)
 
 # =====================================================================
-# Опции для выбора компилятора и включения clang-tidy
+# Compiler Options and Clang-Tidy Configuration
 # =====================================================================
-option(USE_CLANG "Использовать компилятор Clang вместо текущего компилятора" OFF)
-option(USE_CLANG_TIDY "Включить clang-tidy для анализа кода" OFF)
+option(USE_CLANG "Use Clang compiler instead of the default compiler" OFF)
+option(USE_CLANG_TIDY "Enable clang-tidy for code analysis" OFF)
 
 if(USE_CLANG)
-    # Устанавливаем Clang как компилятор C и C++
+    # Set Clang as the C and C++ compiler
     set(CMAKE_C_COMPILER "clang")
     set(CMAKE_CXX_COMPILER "clang++")
 endif()
 
 # =====================================================================
-# Основная конфигурация проекта
+# Project Configuration
 # =====================================================================
 
-# Название проекта и версия
+# Project name and version
 project(OpenGLApplication VERSION 1.0)
 
-# Установка стандарта C++
+# Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Включение clang-tidy, если опция активирована
+# Enable clang-tidy if the option is activated
 if(USE_CLANG_TIDY)
     find_program(CLANG_TIDY_EXE NAMES clang-tidy clang-tidy.exe)
     if(CLANG_TIDY_EXE)
         set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE};-checks=*")
     else()
-        message(WARNING "clang-tidy не найден. Пропуск анализа кода.")
+        message(WARNING "clang-tidy not found. Skipping code analysis.")
     endif()
 endif()
 
-# Установка директорий
+# =====================================================================
+# Directory Settings
+# =====================================================================
+
+# Dependencies folder contains GLAD, GLM, GLFW, etc.
 set(DEPS_DIR ${CMAKE_SOURCE_DIR}/Dependencies)
+
+# deps/src folder contains assimp and other dependencies you've moved
 set(DEPS_SRC_DIR ${CMAKE_SOURCE_DIR}/deps/src)
+
 set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/assets)
 
-# Поиск всех .cpp и .h файлов в структуре
-file(GLOB_RECURSE SRC_FILES ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/src/*.h)
-file(GLOB_RECURSE TEST_FILES ${CMAKE_SOURCE_DIR}/tests/*.cpp ${CMAKE_SOURCE_DIR}/tests/*.h)
+# =====================================================================
+# Source Files
+# =====================================================================
 
-# Файлы сторонних библиотек
+# Recursively find all .cpp and .h files in src and tests directories
+file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/src/*.h)
+file(GLOB_RECURSE TEST_FILES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/*.cpp ${CMAKE_SOURCE_DIR}/tests/*.h)
+
+# Vendor library files
 set(VENDOR_FILES
     ${CMAKE_SOURCE_DIR}/vendor/stb_image/stb_image.cpp
     ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui.cpp
@@ -53,10 +65,13 @@ set(VENDOR_FILES
     ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_widgets.cpp
     ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_impl_glfw.cpp
     ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_impl_opengl3.cpp
-    ${DEPS_DIR}/GLAD/src/glad.c
+    ${DEPS_DIR}/GLAD/src/glad.c  # GLAD source file
 )
 
-# Функция для группировки исходников по директориям
+# =====================================================================
+# Function to Group Sources by Directory
+# =====================================================================
+
 function(group_sources base_dir)
     foreach(file IN ITEMS ${ARGN})
         get_filename_component(abs_file ${file} ABSOLUTE)
@@ -64,7 +79,7 @@ function(group_sources base_dir)
         string(REPLACE "/" "\\" group_name ${relative_file})
         get_filename_component(group_name "${group_name}" PATH)
 
-        # Если group_name пустой, устанавливаем имя базовой директории
+        # If group_name is empty, set it to the base directory name
         if(group_name STREQUAL "")
             get_filename_component(dir_name ${base_dir} NAME)
             set(group_name ${dir_name})
@@ -78,92 +93,117 @@ group_sources(${CMAKE_SOURCE_DIR}/src ${SRC_FILES})
 group_sources(${CMAKE_SOURCE_DIR}/tests ${TEST_FILES})
 group_sources(${CMAKE_SOURCE_DIR}/vendor ${VENDOR_FILES})
 
-# Указание исполняемого файла
+# =====================================================================
+# Executable Target
+# =====================================================================
+
 add_executable(OpenGLApplication ${SRC_FILES} ${TEST_FILES} ${VENDOR_FILES})
 
 # =====================================================================
-# Ручное подключение easy_profiler
+# EasyProfiler Integration
 # =====================================================================
 
-# Укажите пути к easy_profiler
+# Specify paths to EasyProfiler
 set(EASY_PROFILER_INCLUDE_DIR "C:/Program Files (x86)/easy_profiler/include")
 set(EASY_PROFILER_LIB_DIR "C:/Program Files (x86)/easy_profiler/lib")
 set(EASY_PROFILER_DLL "C:/Program Files (x86)/easy_profiler/bin/easy_profiler.dll")
 
-# Добавление include директории
+# Add include directory for EasyProfiler
 target_include_directories(OpenGLApplication PRIVATE ${EASY_PROFILER_INCLUDE_DIR})
 
-# Линковка с библиотекой easy_profiler
+# Link with EasyProfiler library
 target_link_libraries(OpenGLApplication PRIVATE "${EASY_PROFILER_LIB_DIR}/easy_profiler.lib")
 
-# Автоматическое копирование easy_profiler.dll в директорию сборки
+# Automatically copy EasyProfiler DLL to the build directory
 add_custom_command(TARGET OpenGLApplication POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${EASY_PROFILER_DLL}"
     $<TARGET_FILE_DIR:OpenGLApplication>)
 
-# Дополнительные include директории
+# =====================================================================
+# Include Directories
+# =====================================================================
+
 target_include_directories(OpenGLApplication PRIVATE 
     ${DEPS_DIR}/GLFW/include
     ${DEPS_DIR}/GLAD/include
-    ${DEPS_DIR}/spdlog/include
     ${DEPS_DIR}/GLM
-    ${DEPS_DIR}/assimp_related/include
-    ${DEPS_SRC_DIR}/meshoptimizer/src        # Include meshoptimizer
     ${CMAKE_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/vendor/stb_image
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/tests
 )
 
-# Создание импортированного целевого объекта для nlohmann/json
+# =====================================================================
+# spdlog Integration
+# =====================================================================
+
+# Assuming spdlog is still in Dependencies
+target_include_directories(OpenGLApplication PRIVATE ${DEPS_DIR}/spdlog/include)
+
+# =====================================================================
+# nlohmann/json Integration
+# =====================================================================
+
+# Create an interface library for nlohmann/json
 add_library(nlohmann_json INTERFACE)
 target_include_directories(nlohmann_json INTERFACE ${DEPS_SRC_DIR}/json/include)
 
 # =====================================================================
-# Настройка Assimp для включения только OBJ и GLTF импортёров
+# meshoptimizer Integration
 # =====================================================================
-set(ASSIMP_NO_EXPORT ON CACHE BOOL "Disable export functionality in Assimp" FORCE)
-set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "Disable Assimp tools" FORCE)
-set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "Disable Assimp tests" FORCE)
-set(ASSIMP_INSTALL_PDB OFF CACHE BOOL "Disable installation of PDB files" FORCE)
-set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "Disable building all importers by default" FORCE)
-set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "Enable OBJ importer in Assimp" FORCE)
-set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "Enable GLTF importer in Assimp" FORCE)
 
-# Добавляем поддиректорию для meshoptimizer
+# Add subdirectory for meshoptimizer (if it's in deps/src)
 add_subdirectory(${DEPS_SRC_DIR}/meshoptimizer)
 
-# Добавляем поддиректорию для Assimp
+# =====================================================================
+# Assimp Integration
+# =====================================================================
+
+# Assimp configuration options
+set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL_PDB OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)
+
+# Add subdirectory for Assimp
 add_subdirectory(${DEPS_SRC_DIR}/assimp)
 
-# Линковка библиотек для 32-битных и 64-битных конфигураций
-# Link header-only libraries outside the conditional
+# =====================================================================
+# Linking Libraries
+# =====================================================================
+
+# Header-only libraries
 target_link_libraries(OpenGLApplication PRIVATE 
     nlohmann_json
-    assimp            # Link Assimp via CMake target
+    meshoptimizer
+    assimp
 )
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)  # 64-bit
-    target_link_libraries(OpenGLApplication PRIVATE 
-        ${DEPS_DIR}/GLFW/lib-vc2015/glfw3.lib
-        opengl32
-        User32
-        Gdi32
-        Shell32
-        ${DEPS_DIR}/spdlog/lib/spdlog.lib
-        meshoptimizer      # Link meshoptimizer
-    )
-else()  # 32-bit
-    target_link_libraries(OpenGLApplication PRIVATE 
-        ${DEPS_DIR}/GLFW/lib-vc2015/glfw3.lib
-        opengl32
-        User32
-        Gdi32
-        Shell32
-        meshoptimizer      # Link meshoptimizer
+# Link other libraries
+target_link_libraries(OpenGLApplication PRIVATE 
+    ${DEPS_DIR}/GLFW/lib-vc2015/glfw3.lib
+    opengl32
+)
+
+# Platform-specific libraries
+if(MSVC)
+    target_link_libraries(OpenGLApplication PRIVATE
+        user32.lib
+        gdi32.lib
+        shell32.lib
     )
 endif()
 
-# Установка правильного стартап-проекта в Visual Studio
+# =====================================================================
+# Visual Studio Startup Project
+# =====================================================================
+
+# Set the startup project in Visual Studio
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT OpenGLApplication)
