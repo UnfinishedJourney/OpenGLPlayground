@@ -35,7 +35,7 @@ endif()
 
 # Установка директорий
 set(DEPS_DIR ${CMAKE_SOURCE_DIR}/Dependencies)
-set(DEPS_DEPS_DIR ${CMAKE_SOURCE_DIR}/deps/src)  # Add this line
+set(DEPS_SRC_DIR ${CMAKE_SOURCE_DIR}/deps/src)
 set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/assets)
 
@@ -106,40 +106,62 @@ add_custom_command(TARGET OpenGLApplication POST_BUILD
 target_include_directories(OpenGLApplication PRIVATE 
     ${DEPS_DIR}/GLFW/include
     ${DEPS_DIR}/GLAD/include
-    ${DEPS_DIR}/json/include
     ${DEPS_DIR}/spdlog/include
     ${DEPS_DIR}/GLM
     ${DEPS_DIR}/assimp_related/include
-    ${DEPS_DEPS_DIR}/meshoptimizer/src   # Include meshoptimizer
+    ${DEPS_SRC_DIR}/meshoptimizer/src        # Include meshoptimizer
     ${CMAKE_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/vendor/stb_image
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/tests
 )
 
+# Создание импортированного целевого объекта для nlohmann/json
+add_library(nlohmann_json INTERFACE)
+target_include_directories(nlohmann_json INTERFACE ${DEPS_SRC_DIR}/json/include)
+
+# =====================================================================
+# Настройка Assimp для включения только OBJ и GLTF импортёров
+# =====================================================================
+set(ASSIMP_NO_EXPORT ON CACHE BOOL "Disable export functionality in Assimp" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "Disable Assimp tools" FORCE)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "Disable Assimp tests" FORCE)
+set(ASSIMP_INSTALL_PDB OFF CACHE BOOL "Disable installation of PDB files" FORCE)
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "Disable building all importers by default" FORCE)
+set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "Enable OBJ importer in Assimp" FORCE)
+set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "Enable GLTF importer in Assimp" FORCE)
+
 # Добавляем поддиректорию для meshoptimizer
-add_subdirectory(${DEPS_DEPS_DIR}/meshoptimizer)
+add_subdirectory(${DEPS_SRC_DIR}/meshoptimizer)
+
+# Добавляем поддиректорию для Assimp
+add_subdirectory(${DEPS_SRC_DIR}/assimp)
 
 # Линковка библиотек для 32-битных и 64-битных конфигураций
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)  # 64-бит
+# Link header-only libraries outside the conditional
+target_link_libraries(OpenGLApplication PRIVATE 
+    nlohmann_json
+    assimp            # Link Assimp via CMake target
+)
+
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)  # 64-bit
     target_link_libraries(OpenGLApplication PRIVATE 
         ${DEPS_DIR}/GLFW/lib-vc2015/glfw3.lib
         opengl32
         User32
         Gdi32
         Shell32
-        ${DEPS_DIR}/assimp_related/lib/assimp-vc143-mt.lib
         ${DEPS_DIR}/spdlog/lib/spdlog.lib
-        meshoptimizer  # Link meshoptimizer
+        meshoptimizer      # Link meshoptimizer
     )
-else()  # 32-бит
+else()  # 32-bit
     target_link_libraries(OpenGLApplication PRIVATE 
         ${DEPS_DIR}/GLFW/lib-vc2015/glfw3.lib
         opengl32
         User32
         Gdi32
         Shell32
-        meshoptimizer  # Link meshoptimizer
+        meshoptimizer      # Link meshoptimizer
     )
 endif()
 
