@@ -21,7 +21,8 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // Update LODs based on camera distance
-    scene->UpdateLOD(3);
+    //scene->SetLOD(3);
+    scene->UpdateLODs();
 
     scene->UpdateFrameDataUBO();
     scene->BuildBatches();

@@ -4,6 +4,7 @@
 #include <memory>
 #include "Renderer/Batch.h"
 #include "Renderer/RenderObject.h"
+#include "Scene/Camera.h"
 #include <unordered_map>
 
 class BatchManager {
@@ -14,7 +15,8 @@ public:
     const std::vector<std::shared_ptr<Batch>>& GetBatches() const;
 
     void UpdateLOD(const std::shared_ptr<RenderObject>& renderObject, size_t newLOD);
-    void UpdateLOD(size_t newLOD);
+    void UpdateLODs(std::shared_ptr<Camera>& camera);
+    void SetLOD(size_t newLOD);
 
 private:
     bool b_wasBuilt = false;

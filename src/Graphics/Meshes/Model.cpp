@@ -46,42 +46,32 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
     auto myMesh = std::make_shared<Mesh>();
 
     // Process positions
+    myMesh->minBounds = glm::vec3(FLT_MAX);
+    myMesh->maxBounds = glm::vec3(-FLT_MAX);
     if (aiMesh->mNumVertices > 0) {
-        // Determine if the mesh is 2D or 3D based on positions
-        bool is2D = true;
-        for (unsigned int i = 0; i < aiMesh->mNumVertices; ++i) {
-            if (aiMesh->mVertices[i].z != 0.0f) {
-                is2D = false;
-                break;
-            }
-        }
+        // Initialize positions as glm::vec3
+        std::vector<glm::vec3> positionsVec;
+        positionsVec.reserve(aiMesh->mNumVertices);
+        for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
+            positionsVec.emplace_back(
+                aiMesh->mVertices[i].x,
+                aiMesh->mVertices[i].y,
+                aiMesh->mVertices[i].z
+            );
 
-        if (is2D) {
-            // Initialize positions as glm::vec2
-            std::vector<glm::vec2> positionsVec;
-            positionsVec.reserve(aiMesh->mNumVertices);
-            for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
-                positionsVec.emplace_back(
-                    aiMesh->mVertices[i].x,
-                    aiMesh->mVertices[i].y
-                );
-            }
-            myMesh->positions = std::move(positionsVec);
+            glm::vec3 tempPos = glm::vec3(aiMesh->mVertices[i].x, aiMesh->mVertices[i].y, aiMesh->mVertices[i].z);
+            myMesh->minBounds = glm::min(myMesh->minBounds, tempPos);
+            myMesh->maxBounds = glm::max(myMesh->maxBounds, tempPos);
         }
-        else {
-            // Initialize positions as glm::vec3
-            std::vector<glm::vec3> positionsVec;
-            positionsVec.reserve(aiMesh->mNumVertices);
-            for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
-                positionsVec.emplace_back(
-                    aiMesh->mVertices[i].x,
-                    aiMesh->mVertices[i].y,
-                    aiMesh->mVertices[i].z
-                );
-            }
-            myMesh->positions = std::move(positionsVec);
-        }
+        myMesh->positions = std::move(positionsVec);
+        myMesh->boundingSphereRadius = glm::length(myMesh->maxBounds - myMesh->localCenter);
     }
+
+
+
+    // Compute localCenter and boundingSphereRadius as before
+    myMesh->localCenter = (myMesh->minBounds + myMesh->maxBounds) * 0.5f;
+    //myMesh->boundingSphereRadius = glm::length(myMesh->maxBounds - myMesh->localCenter);
 
     // Process normals
     if (aiMesh->HasNormals()) {
@@ -322,6 +312,10 @@ void Model::CenterModel() {
                 }
             }
             }, mesh->positions);
+
+        mesh->maxBounds -= center;
+        mesh->minBounds -= center;
+        mesh->localCenter -= center;
     }
 }
 

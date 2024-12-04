@@ -26,6 +26,12 @@ public:
 
     virtual void Update(float deltaTime);
 
+    glm::vec3 GetWorldCenter() const;
+
+    float GetBoundingSphereRadius() const;
+
+    float ComputeDistanceTo(const glm::vec3& pos) const;
+
     bool IsStatic() const { return m_IsStatic; }
 
 protected:

@@ -2,6 +2,7 @@
 
 #include "glm/glm.hpp"
 #include "glm/gtc/quaternion.hpp"
+#include <algorithm> 
 
 class Transform {
 public:
@@ -16,6 +17,10 @@ public:
 
     glm::quat GetRotation() {
         return m_Rotation;
+    }
+
+    float GetScale() {
+        return std::max(std::max(m_Scale.x, m_Scale.y), m_Scale.z); //need to think about it
     }
 
     void SetRotation(const glm::vec3& eulerAngles) {

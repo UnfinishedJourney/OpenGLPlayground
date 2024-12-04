@@ -1,6 +1,13 @@
 ﻿#include "Renderer/BatchManager.h"
 #include "Utilities/Logger.h"
 
+//need more lods
+struct LODThresholds {
+    float distances[4]; // Adjust the number of LODs as needed
+} g_LODThresholds = { { 50.0f, 100.0f, 200.0f, 400.0f } };
+
+
+
 void BatchManager::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject) {
     m_RenderObjects.push_back(renderObject);
     b_wasBuilt = false;
@@ -89,7 +96,42 @@ void BatchManager::UpdateLOD(const std::shared_ptr<RenderObject>& renderObject, 
     }
 }
 
-void BatchManager::UpdateLOD(size_t newLOD) {
+void BatchManager::UpdateLODs(std::shared_ptr<Camera>& camera)
+{
+    glm::vec3 cameraPosition = camera->GetPosition();
+
+    for (const auto& batch : m_AllBatches) {
+        const auto& renderObjects = batch->GetRenderObjects();
+        for (size_t objectIndex = 0; objectIndex < renderObjects.size(); ++objectIndex) {
+            const auto& ro = renderObjects[objectIndex];
+            glm::vec3 worldCenter = ro->GetWorldCenter();
+            float radius = ro->GetBoundingSphereRadius();
+
+            // Compute distance from camera to mesh bounding sphere
+            float distance = glm::distance(cameraPosition, worldCenter) - radius;
+
+            // Determine LOD level based on distance
+            size_t lodLevel = 0;
+            for (size_t i = 0; i < std::size(g_LODThresholds.distances); ++i) {
+                if (distance > g_LODThresholds.distances[i]) {
+                    lodLevel = i + 1;
+                }
+                else {
+                    break;
+                }
+            }
+
+            // Clamp LOD level to available LODs
+            size_t maxLOD = ro->GetMesh()->GetLODCount() - 1;
+            lodLevel = std::min(lodLevel, maxLOD);
+
+            // Update LOD in batch
+            batch->UpdateLOD(objectIndex, lodLevel);
+        }
+    }
+}
+
+void BatchManager::SetLOD(size_t newLOD) {
     
     for (const auto& batch : m_AllBatches)
     {

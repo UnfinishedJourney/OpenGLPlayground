@@ -35,9 +35,14 @@ public:
     void BuildBatches() const;
     void BindLightSSBO() const;
     void BindFrameDataUBO() const;
-    void UpdateLOD(size_t newLOD)
+    void SetLOD(size_t newLOD)
     {
-        m_BatchManager.UpdateLOD(newLOD);
+        m_BatchManager.SetLOD(newLOD);
+    }
+
+    void UpdateLODs()
+    {
+        m_BatchManager.UpdateLODs(m_Camera);
     }
 
     void SetPostProcessingEffect(PostProcessingEffectType effect);

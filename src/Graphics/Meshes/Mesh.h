@@ -35,6 +35,12 @@ struct Mesh {
 
     std::vector<MeshLOD> lods; // LODs with index offsets and counts
 
+    glm::vec3 localCenter = glm::vec3(0.0); // Center in local space
+    float boundingSphereRadius = 1.0; // Optional
+
+    glm::vec3 minBounds = glm::vec3(FLT_MAX);
+    glm::vec3 maxBounds = glm::vec3(-FLT_MAX); //need to do that variant too?
+
     // Utility methods
     size_t GetVertexCount() const {
         return std::visit([](auto&& arg) -> size_t { return arg.size(); }, positions);

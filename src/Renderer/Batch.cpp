@@ -203,6 +203,7 @@ void Batch::BuildBatch() {
     m_VAO->Unbind();
 }
 
+//need to not update lod if it is not needed (my english is great)
 void Batch::UpdateLOD(size_t objectIndex, size_t newLOD) {
     if (objectIndex >= m_RenderObjects.size()) {
         Logger::GetLogger()->error("Invalid object index in UpdateLOD.");
