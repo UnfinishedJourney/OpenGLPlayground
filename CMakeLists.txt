@@ -38,10 +38,10 @@ endif()
 # Directory Settings
 # =====================================================================
 
-# Dependencies folder contains GLAD, GLM, etc.
+# Dependencies folder contains GLAD, etc.
 set(DEPS_DIR ${CMAKE_SOURCE_DIR}/Dependencies)
 
-# deps/src folder contains assimp and other dependencies you've moved
+# deps/src folder contains dependencies fetched via bootstrap
 set(DEPS_SRC_DIR ${CMAKE_SOURCE_DIR}/deps/src)
 
 set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
@@ -126,8 +126,6 @@ add_custom_command(TARGET OpenGLApplication POST_BUILD
 
 target_include_directories(OpenGLApplication PRIVATE 
     ${DEPS_DIR}/GLAD/include
-    ${DEPS_DIR}/GLM
-    ${DEPS_DIR}/spdlog/include
     ${CMAKE_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/vendor/stb_image
     ${CMAKE_SOURCE_DIR}/src
@@ -141,6 +139,22 @@ target_include_directories(OpenGLApplication PRIVATE
 # Create an interface library for nlohmann_json
 add_library(nlohmann_json INTERFACE)
 target_include_directories(nlohmann_json INTERFACE ${DEPS_SRC_DIR}/json/include)
+
+# =====================================================================
+# spdlog Integration
+# =====================================================================
+
+# Create an interface library for spdlog
+add_library(spdlog INTERFACE)
+target_include_directories(spdlog INTERFACE ${DEPS_SRC_DIR}/spdlog/include)
+
+# =====================================================================
+# glm Integration
+# =====================================================================
+
+# Create an interface library for glm
+add_library(glm INTERFACE)
+target_include_directories(glm INTERFACE ${DEPS_SRC_DIR}/glm)
 
 # =====================================================================
 # GLFW Integration
@@ -224,6 +238,8 @@ target_link_libraries(OpenGLApplication PRIVATE meshoptimizer)
 # Header-only libraries
 target_link_libraries(OpenGLApplication PRIVATE 
     nlohmann_json
+    spdlog
+    glm
 )
 
 # Link other libraries
@@ -267,6 +283,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Group external libraries under 'ThirdPartyLibraries'
 set_property(TARGET nlohmann_json PROPERTY FOLDER "ThirdPartyLibraries")
+set_property(TARGET spdlog PROPERTY FOLDER "ThirdPartyLibraries")
+set_property(TARGET glm PROPERTY FOLDER "ThirdPartyLibraries")
 set_property(TARGET assimp PROPERTY FOLDER "ThirdPartyLibraries")
 set_property(TARGET meshoptimizer PROPERTY FOLDER "ThirdPartyLibraries")
 set_property(TARGET glfw PROPERTY FOLDER "ThirdPartyLibraries")
@@ -294,4 +312,6 @@ if(MSVC)
     target_compile_options(meshoptimizer PRIVATE /w)
     # Suppress CRT security warnings
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    target_compile_options(OpenGLApplication PRIVATE /utf-8)  # Enable UTF-8 encoding
+    target_compile_options(OpenGLApplication PRIVATE /wd4005) # Suppress 'APIENTRY' macro redefinition warning
 endif()
