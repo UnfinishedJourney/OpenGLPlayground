@@ -128,6 +128,7 @@ target_include_directories(OpenGLApplication PRIVATE
     ${DEPS_DIR}/GLFW/include
     ${DEPS_DIR}/GLAD/include
     ${DEPS_DIR}/GLM
+    ${DEPS_DIR}/spdlog/include
     ${CMAKE_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/vendor/stb_image
     ${CMAKE_SOURCE_DIR}/src
@@ -135,45 +136,61 @@ target_include_directories(OpenGLApplication PRIVATE
 )
 
 # =====================================================================
-# spdlog Integration
-# =====================================================================
-
-# Assuming spdlog is still in Dependencies
-target_include_directories(OpenGLApplication PRIVATE ${DEPS_DIR}/spdlog/include)
-
-# =====================================================================
 # nlohmann/json Integration
 # =====================================================================
 
-# Create an interface library for nlohmann/json
+# Create an interface library for nlohmann_json
 add_library(nlohmann_json INTERFACE)
 target_include_directories(nlohmann_json INTERFACE ${DEPS_SRC_DIR}/json/include)
-
-# =====================================================================
-# meshoptimizer Integration
-# =====================================================================
-
-# Add subdirectory for meshoptimizer (if it's in deps/src)
-add_subdirectory(${DEPS_SRC_DIR}/meshoptimizer)
 
 # =====================================================================
 # Assimp Integration
 # =====================================================================
 
 # Assimp configuration options
+set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)          # Build Zlib internally
 set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(ASSIMP_INSTALL_PDB OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "" FORCE)
-set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)         # Build Assimp as a static library
 
 # Add subdirectory for Assimp
 add_subdirectory(${DEPS_SRC_DIR}/assimp)
+
+# Group Assimp under 'ThirdPartyLibraries' folder in Visual Studio
+set_property(TARGET assimp PROPERTY FOLDER "ThirdPartyLibraries")
+
+# Include Assimp headers
+target_include_directories(OpenGLApplication PRIVATE ${DEPS_SRC_DIR}/assimp/include)
+
+# Link against Assimp
+target_link_libraries(OpenGLApplication PRIVATE assimp)
+
+# =====================================================================
+# Meshoptimizer Integration
+# =====================================================================
+
+# Meshoptimizer configuration options
+set(MESHOPT_BUILD_DEMO OFF CACHE BOOL "" FORCE)
+set(MESHOPT_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(MESHOPT_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+# Add subdirectory for Meshoptimizer
+add_subdirectory(${DEPS_SRC_DIR}/meshoptimizer)
+
+# Group Meshoptimizer under 'ThirdPartyLibraries' folder in Visual Studio
+set_property(TARGET meshoptimizer PROPERTY FOLDER "ThirdPartyLibraries")
+
+# Include Meshoptimizer headers
+target_include_directories(OpenGLApplication PRIVATE ${DEPS_SRC_DIR}/meshoptimizer/src)
+
+# Link against Meshoptimizer
+target_link_libraries(OpenGLApplication PRIVATE meshoptimizer)
 
 # =====================================================================
 # Linking Libraries
@@ -182,14 +199,13 @@ add_subdirectory(${DEPS_SRC_DIR}/assimp)
 # Header-only libraries
 target_link_libraries(OpenGLApplication PRIVATE 
     nlohmann_json
-    meshoptimizer
-    assimp
 )
 
 # Link other libraries
 target_link_libraries(OpenGLApplication PRIVATE 
     ${DEPS_DIR}/GLFW/lib-vc2015/glfw3.lib
     opengl32
+    "${EASY_PROFILER_LIB_DIR}/easy_profiler.lib"
 )
 
 # Platform-specific libraries
@@ -202,8 +218,42 @@ if(MSVC)
 endif()
 
 # =====================================================================
+# Set Output Directories
+# =====================================================================
+
+# Set the output directory for your executable
+set_target_properties(OpenGLApplication PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# =====================================================================
 # Visual Studio Startup Project
 # =====================================================================
 
 # Set the startup project in Visual Studio
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT OpenGLApplication)
+
+# =====================================================================
+# Organize External Libraries in Visual Studio Solution
+# =====================================================================
+
+# Enable folder grouping in Visual Studio
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# Group external libraries under 'ThirdPartyLibraries'
+set_property(TARGET nlohmann_json PROPERTY FOLDER "ThirdPartyLibraries")
+set_property(TARGET assimp PROPERTY FOLDER "ThirdPartyLibraries")
+set_property(TARGET meshoptimizer PROPERTY FOLDER "ThirdPartyLibraries")
+
+# =====================================================================
+# Additional Configurations
+# =====================================================================
+
+# Suppress warnings from third-party libraries
+if(MSVC)
+    # Suppress warnings from Assimp and Meshoptimizer
+    target_compile_options(assimp PRIVATE /w)
+    target_compile_options(meshoptimizer PRIVATE /w)
+    # Suppress CRT security warnings
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()
