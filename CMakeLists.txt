@@ -16,7 +16,6 @@ endif()
 # Project Configuration
 # =====================================================================
 
-# Project name and version
 project(OpenGLApplication VERSION 1.0)
 
 # Set C++ standard
@@ -38,12 +37,7 @@ endif()
 # Directory Settings
 # =====================================================================
 
-# Dependencies folder contains GLAD, etc.
-set(DEPS_DIR ${CMAKE_SOURCE_DIR}/Dependencies)
-
-# deps/src folder contains dependencies fetched via bootstrap
-set(DEPS_SRC_DIR ${CMAKE_SOURCE_DIR}/deps/src)
-
+set(DEPS_DIR ${CMAKE_SOURCE_DIR}/deps/src)
 set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/assets)
 
@@ -52,20 +46,32 @@ set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/assets)
 # =====================================================================
 
 # Recursively find all .cpp and .h files in src and tests directories
-file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/src/*.h)
-file(GLOB_RECURSE TEST_FILES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/*.cpp ${CMAKE_SOURCE_DIR}/tests/*.h)
+file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/*.h
+)
+file(GLOB_RECURSE TEST_FILES CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/tests/*.cpp
+    ${CMAKE_SOURCE_DIR}/tests/*.h
+)
 
 # Vendor library files
+# Include stb_image.cpp here to implement stb_image functions
 set(VENDOR_FILES
-    ${CMAKE_SOURCE_DIR}/vendor/stb_image/stb_image.cpp
-    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui.cpp
-    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_draw.cpp
-    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_demo.cpp
-    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_tables.cpp
-    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_widgets.cpp
-    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_impl_glfw.cpp
-    ${CMAKE_SOURCE_DIR}/vendor/imgui/imgui_impl_opengl3.cpp
-    ${DEPS_DIR}/GLAD/src/glad.c  # GLAD source file
+    # ImGui source files
+    ${DEPS_DIR}/imgui/imgui.cpp
+    ${DEPS_DIR}/imgui/imgui_draw.cpp
+    ${DEPS_DIR}/imgui/imgui_demo.cpp
+    ${DEPS_DIR}/imgui/imgui_tables.cpp
+    ${DEPS_DIR}/imgui/imgui_widgets.cpp
+    ${DEPS_DIR}/imgui/backends/imgui_impl_glfw.cpp
+    ${DEPS_DIR}/imgui/backends/imgui_impl_opengl3.cpp
+
+    # GLAD source file (handled manually)
+    ${CMAKE_SOURCE_DIR}/Dependencies/GLAD/src/glad.c
+
+    # stb_image files
+    ${DEPS_DIR}/stb_image/stb_image.cpp
 )
 
 # =====================================================================
@@ -91,13 +97,17 @@ endfunction()
 
 group_sources(${CMAKE_SOURCE_DIR}/src ${SRC_FILES})
 group_sources(${CMAKE_SOURCE_DIR}/tests ${TEST_FILES})
-group_sources(${CMAKE_SOURCE_DIR}/vendor ${VENDOR_FILES})
+group_sources(${DEPS_DIR} ${VENDOR_FILES})
 
 # =====================================================================
 # Executable Target
 # =====================================================================
 
-add_executable(OpenGLApplication ${SRC_FILES} ${TEST_FILES} ${VENDOR_FILES})
+add_executable(OpenGLApplication
+    ${SRC_FILES}
+    ${TEST_FILES}
+    ${VENDOR_FILES}
+)
 
 # =====================================================================
 # EasyProfiler Integration
@@ -118,16 +128,18 @@ target_link_libraries(OpenGLApplication PRIVATE "${EASY_PROFILER_LIB_DIR}/easy_p
 add_custom_command(TARGET OpenGLApplication POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${EASY_PROFILER_DLL}"
-    $<TARGET_FILE_DIR:OpenGLApplication>)
+    $<TARGET_FILE_DIR:OpenGLApplication>
+)
 
 # =====================================================================
 # Include Directories
 # =====================================================================
 
-target_include_directories(OpenGLApplication PRIVATE 
-    ${DEPS_DIR}/GLAD/include
-    ${CMAKE_SOURCE_DIR}/vendor/imgui
-    ${CMAKE_SOURCE_DIR}/vendor/stb_image
+target_include_directories(OpenGLApplication PRIVATE
+    ${CMAKE_SOURCE_DIR}/Dependencies/GLAD/include
+    ${DEPS_DIR}/imgui
+    ${DEPS_DIR}/imgui/backends
+    ${DEPS_DIR}/stb_image    # Include stb_image directory
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/tests
 )
@@ -136,25 +148,22 @@ target_include_directories(OpenGLApplication PRIVATE
 # nlohmann/json Integration
 # =====================================================================
 
-# Create an interface library for nlohmann_json
 add_library(nlohmann_json INTERFACE)
-target_include_directories(nlohmann_json INTERFACE ${DEPS_SRC_DIR}/json/include)
+target_include_directories(nlohmann_json INTERFACE ${DEPS_DIR}/json/include)
 
 # =====================================================================
 # spdlog Integration
 # =====================================================================
 
-# Create an interface library for spdlog
 add_library(spdlog INTERFACE)
-target_include_directories(spdlog INTERFACE ${DEPS_SRC_DIR}/spdlog/include)
+target_include_directories(spdlog INTERFACE ${DEPS_DIR}/spdlog/include)
 
 # =====================================================================
 # glm Integration
 # =====================================================================
 
-# Create an interface library for glm
 add_library(glm INTERFACE)
-target_include_directories(glm INTERFACE ${DEPS_SRC_DIR}/glm)
+target_include_directories(glm INTERFACE ${DEPS_DIR}/glm)
 
 # =====================================================================
 # GLFW Integration
@@ -171,13 +180,13 @@ if(WIN32)
 endif()
 
 # Add subdirectory for GLFW
-add_subdirectory(${DEPS_SRC_DIR}/glfw)
+add_subdirectory(${DEPS_DIR}/glfw)
 
 # Group GLFW under 'ThirdPartyLibraries' folder in Visual Studio
 set_property(TARGET glfw PROPERTY FOLDER "ThirdPartyLibraries")
 
 # Include GLFW headers
-target_include_directories(OpenGLApplication PRIVATE ${DEPS_SRC_DIR}/glfw/include)
+target_include_directories(OpenGLApplication PRIVATE ${DEPS_DIR}/glfw/include)
 
 # Link against GLFW
 target_link_libraries(OpenGLApplication PRIVATE glfw)
@@ -187,7 +196,7 @@ target_link_libraries(OpenGLApplication PRIVATE glfw)
 # =====================================================================
 
 # Assimp configuration options
-set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)          # Build Zlib internally
+set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)
 set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
@@ -196,16 +205,16 @@ set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "" FORCE)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)         # Build Assimp as a static library
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 # Add subdirectory for Assimp
-add_subdirectory(${DEPS_SRC_DIR}/assimp)
+add_subdirectory(${DEPS_DIR}/assimp)
 
 # Group Assimp under 'ThirdPartyLibraries' folder in Visual Studio
 set_property(TARGET assimp PROPERTY FOLDER "ThirdPartyLibraries")
 
 # Include Assimp headers
-target_include_directories(OpenGLApplication PRIVATE ${DEPS_SRC_DIR}/assimp/include)
+target_include_directories(OpenGLApplication PRIVATE ${DEPS_DIR}/assimp/include)
 
 # Link against Assimp
 target_link_libraries(OpenGLApplication PRIVATE assimp)
@@ -220,13 +229,13 @@ set(MESHOPT_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 set(MESHOPT_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 # Add subdirectory for Meshoptimizer
-add_subdirectory(${DEPS_SRC_DIR}/meshoptimizer)
+add_subdirectory(${DEPS_DIR}/meshoptimizer)
 
 # Group Meshoptimizer under 'ThirdPartyLibraries' folder in Visual Studio
 set_property(TARGET meshoptimizer PROPERTY FOLDER "ThirdPartyLibraries")
 
 # Include Meshoptimizer headers
-target_include_directories(OpenGLApplication PRIVATE ${DEPS_SRC_DIR}/meshoptimizer/src)
+target_include_directories(OpenGLApplication PRIVATE ${DEPS_DIR}/meshoptimizer/src)
 
 # Link against Meshoptimizer
 target_link_libraries(OpenGLApplication PRIVATE meshoptimizer)
@@ -236,14 +245,14 @@ target_link_libraries(OpenGLApplication PRIVATE meshoptimizer)
 # =====================================================================
 
 # Header-only libraries
-target_link_libraries(OpenGLApplication PRIVATE 
+target_link_libraries(OpenGLApplication PRIVATE
     nlohmann_json
     spdlog
     glm
 )
 
 # Link other libraries
-target_link_libraries(OpenGLApplication PRIVATE 
+target_link_libraries(OpenGLApplication PRIVATE
     glfw
     opengl32
     "${EASY_PROFILER_LIB_DIR}/easy_profiler.lib"
@@ -259,53 +268,13 @@ if(MSVC)
 endif()
 
 # =====================================================================
-# Set Output Directories
+# Additional Definitions and Compiler Options
 # =====================================================================
 
-# Set the output directory for your executable
-set_target_properties(OpenGLApplication PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
+# Define IMGUI_IMPL_OPENGL_LOADER_GLAD for ImGui
+target_compile_definitions(OpenGLApplication PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD)
 
-# =====================================================================
-# Visual Studio Startup Project
-# =====================================================================
-
-# Set the startup project in Visual Studio
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT OpenGLApplication)
-
-# =====================================================================
-# Organize External Libraries in Visual Studio Solution
-# =====================================================================
-
-# Enable folder grouping in Visual Studio
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-# Group external libraries under 'ThirdPartyLibraries'
-set_property(TARGET nlohmann_json PROPERTY FOLDER "ThirdPartyLibraries")
-set_property(TARGET spdlog PROPERTY FOLDER "ThirdPartyLibraries")
-set_property(TARGET glm PROPERTY FOLDER "ThirdPartyLibraries")
-set_property(TARGET assimp PROPERTY FOLDER "ThirdPartyLibraries")
-set_property(TARGET meshoptimizer PROPERTY FOLDER "ThirdPartyLibraries")
-set_property(TARGET glfw PROPERTY FOLDER "ThirdPartyLibraries")
-
-# Handle additional targets generated by Assimp and Zlib
-if(TARGET zlibstatic)
-    set_property(TARGET zlibstatic PROPERTY FOLDER "ThirdPartyLibraries")
-endif()
-
-if(TARGET UpdateAssimpLibsDebugSymbolsAndDLLs)
-    set_property(TARGET UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTY FOLDER "ThirdPartyLibraries")
-endif()
-
-# Group CMake predefined targets under a separate folder
-set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMakePredefinedTargets")
-
-# =====================================================================
-# Additional Configurations
-# =====================================================================
-
-# Suppress warnings from third-party libraries
+# Suppress warnings and set compiler options
 if(MSVC)
     # Suppress warnings from Assimp and Meshoptimizer
     target_compile_options(assimp PRIVATE /w)
@@ -315,3 +284,40 @@ if(MSVC)
     target_compile_options(OpenGLApplication PRIVATE /utf-8)  # Enable UTF-8 encoding
     target_compile_options(OpenGLApplication PRIVATE /wd4005) # Suppress 'APIENTRY' macro redefinition warning
 endif()
+
+# =====================================================================
+# Set Output Directories
+# =====================================================================
+
+set_target_properties(OpenGLApplication PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# =====================================================================
+# Visual Studio Startup Project
+# =====================================================================
+
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT OpenGLApplication)
+
+# =====================================================================
+# Organize External Libraries in Visual Studio Solution
+# =====================================================================
+
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+set_property(TARGET nlohmann_json PROPERTY FOLDER "ThirdPartyLibraries")
+set_property(TARGET spdlog PROPERTY FOLDER "ThirdPartyLibraries")
+set_property(TARGET glm PROPERTY FOLDER "ThirdPartyLibraries")
+set_property(TARGET assimp PROPERTY FOLDER "ThirdPartyLibraries")
+set_property(TARGET meshoptimizer PROPERTY FOLDER "ThirdPartyLibraries")
+set_property(TARGET glfw PROPERTY FOLDER "ThirdPartyLibraries")
+
+if(TARGET zlibstatic)
+    set_property(TARGET zlibstatic PROPERTY FOLDER "ThirdPartyLibraries")
+endif()
+
+if(TARGET UpdateAssimpLibsDebugSymbolsAndDLLs)
+    set_property(TARGET UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTY FOLDER "ThirdPartyLibraries")
+endif()
+
+set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMakePredefinedTargets")
