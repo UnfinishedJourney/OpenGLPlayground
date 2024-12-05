@@ -33,5 +33,14 @@
             "url": "https://github.com/gabime/spdlog.git",
             "revision": "v1.15.0"
         }
+    },
+
+    {
+        "name": "glfw",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/glfw/glfw.git",
+            "revision": "3.3.4"
+        }
     }
 ]
