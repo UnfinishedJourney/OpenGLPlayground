@@ -2,7 +2,8 @@
 #include "Utilities/Logger.h"
 #include <stdexcept>
 
-Shader::Shader(const std::unordered_map<GLenum, std::filesystem::path>& shaderStages, const std::filesystem::path& binaryPath)
+Shader::Shader(const std::unordered_map<GLenum, std::filesystem::path>& shaderStages,
+    const std::filesystem::path& binaryPath)
     : BaseShader(binaryPath), m_ShaderStages(shaderStages) {
     LoadShaders();
 }
@@ -35,7 +36,7 @@ void Shader::LoadShaders(bool reload) {
     }
     catch (const std::exception& e) {
         Logger::GetLogger()->error("Error loading shaders: {}", e.what());
-        throw; // Re-throw exception after logging
+        throw;
     }
 
     if (!m_BinaryPath.empty()) {
@@ -52,10 +53,12 @@ void Shader::BindUniformBlock(const std::string& blockName, GLuint bindingPoint)
     GLuint blockIndex = glGetUniformBlockIndex(*m_RendererIDPtr, blockName.c_str());
     if (blockIndex != GL_INVALID_INDEX) {
         glUniformBlockBinding(*m_RendererIDPtr, blockIndex, bindingPoint);
-        Logger::GetLogger()->debug("Bound uniform block '{}' to binding point {} in shader ID {}.", blockName, bindingPoint, *m_RendererIDPtr);
+        Logger::GetLogger()->debug("Bound uniform block '{}' to binding point {} in shader ID {}.",
+            blockName, bindingPoint, *m_RendererIDPtr);
     }
     else {
-        Logger::GetLogger()->warn("Uniform block '{}' not found in shader program ID {}.", blockName, *m_RendererIDPtr);
+        Logger::GetLogger()->warn("Uniform block '{}' not found in shader program ID {}.",
+            blockName, *m_RendererIDPtr);
     }
 }
 
@@ -63,9 +66,11 @@ void Shader::BindShaderStorageBlock(const std::string& blockName, GLuint binding
     GLuint blockIndex = glGetProgramResourceIndex(*m_RendererIDPtr, GL_SHADER_STORAGE_BLOCK, blockName.c_str());
     if (blockIndex != GL_INVALID_INDEX) {
         glShaderStorageBlockBinding(*m_RendererIDPtr, blockIndex, bindingPoint);
-        Logger::GetLogger()->debug("Bound shader storage block '{}' to binding point {} in shader ID {}.", blockName, bindingPoint, *m_RendererIDPtr);
+        Logger::GetLogger()->debug("Bound shader storage block '{}' to binding point {} in shader ID {}.",
+            blockName, bindingPoint, *m_RendererIDPtr);
     }
     else {
-        Logger::GetLogger()->warn("Shader storage block '{}' not found in shader program ID {}.", blockName, *m_RendererIDPtr);
+        Logger::GetLogger()->warn("Shader storage block '{}' not found in shader program ID {}.",
+            blockName, *m_RendererIDPtr);
     }
 }

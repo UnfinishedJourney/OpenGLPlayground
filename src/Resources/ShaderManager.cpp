@@ -6,9 +6,9 @@
 #include <chrono>
 #include <stdexcept>
 
-ShaderManager::ShaderManager(const std::filesystem::path& metadataPath, const std::filesystem::path& configPath)
+ShaderManager::ShaderManager(const std::filesystem::path& metadataPath,
+    const std::filesystem::path& configPath)
     : m_MetadataPath(metadataPath), m_ConfigPath(configPath) {
-    // Initialize binding maps
     m_UniformBlockBindings = {
         {"FrameData", FRAME_DATA_BINDING_POINT},
         // Add other uniform blocks as needed
@@ -29,31 +29,31 @@ ShaderManager& ShaderManager::GetInstance() {
 
 void ShaderManager::Initialize() {
     auto logger = Logger::GetLogger();
-    logger->info("Initializing ShaderManager with metadata path: '{}' and config path: '{}'.",
+    logger->info("Initializing ShaderManager with metadata: '{}' and config: '{}'.",
         m_MetadataPath.string(), m_ConfigPath.string());
 
     if (!LoadMetadata()) {
-        logger->warn("Failed to load metadata. Initializing with default values.");
+        logger->warn("Failed to load metadata. Proceeding with default values.");
     }
     if (!LoadConfig()) {
-        logger->error("Failed to load config. Exiting initialization.");
+        logger->error("Failed to load config. Initialization aborted.");
         return;
     }
 
     LoadShaders();
 
     if (IsGlobalMetadataChanged()) {
-        logger->info("Global metadata has changed. Recompiling and reloading all shaders.");
+        logger->info("Global metadata changed. Recompiling and reloading all shaders.");
         ReloadAllShaders();
         m_GlobalMetadata.driverVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
-        m_GlobalMetadata.openGLProfile = "core"; // Adjust as necessary
+        m_GlobalMetadata.openGLProfile = "core";
         SaveMetadata();
     }
 }
 
 void ShaderManager::LoadShaders() {
     auto logger = Logger::GetLogger();
-    logger->info("Loading shaders.");
+    logger->info("Loading all shaders.");
 
     for (auto& [name, metadata] : m_ShadersMetadata) {
         try {
@@ -63,7 +63,7 @@ void ShaderManager::LoadShaders() {
                 // Compute Shader
                 auto computePathIt = metadata.shaderStages.find(GL_COMPUTE_SHADER);
                 if (computePathIt == metadata.shaderStages.end()) {
-                    logger->error("Compute shader '{}' does not have a compute shader stage specified.", name);
+                    logger->error("Compute shader '{}' has no compute stage defined.", name);
                     continue;
                 }
 
@@ -83,9 +83,9 @@ void ShaderManager::LoadShaders() {
                 logger->info("Shader '{}' was outdated and has been reloaded.", name);
             }
             else if (!shader->LoadBinary()) {
-                // If binary loading failed, we need to reload the shader
+                // If binary loading failed, recompile
                 shader->ReloadShader();
-                logger->info("Shader '{}' binary load failed; shader has been recompiled.", name);
+                logger->info("Shader '{}' binary load failed; recompiled.", name);
             }
             else {
                 logger->debug("Shader '{}' is up-to-date.", name);
@@ -142,20 +142,18 @@ void ShaderManager::RebindShaderStorageBlocks(const std::string& shaderName) {
 
 void ShaderManager::BindShader(std::string_view shaderName) {
     auto logger = Logger::GetLogger();
-
     if (shaderName == m_CurrentlyBoundShader) {
         logger->debug("Shader '{}' is already bound.", shaderName);
         return;
     }
 
-    std::shared_ptr<BaseShader> shader;
     auto it = m_Shaders.find(std::string(shaderName));
     if (it == m_Shaders.end()) {
         logger->error("Shader '{}' not found.", shaderName);
         return;
     }
-    shader = it->second;
 
+    auto shader = it->second;
     try {
         shader->Bind();
         m_CurrentlyBoundShader = std::string(shaderName);
@@ -197,7 +195,7 @@ bool ShaderManager::LoadMetadata() {
     logger->info("Loading metadata from '{}'.", m_MetadataPath.string());
 
     if (!std::filesystem::exists(m_MetadataPath)) {
-        logger->warn("Metadata file '{}' does not exist.", m_MetadataPath.string());
+        logger->warn("Metadata file '{}' not found.", m_MetadataPath.string());
         return false;
     }
 
@@ -327,8 +325,7 @@ bool ShaderManager::LoadConfig() {
 
 bool ShaderManager::IsGlobalMetadataChanged() const {
     auto currentDriverVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
-    auto currentOpenGLProfile = "core"; // Adjust as necessary
-
+    auto currentOpenGLProfile = "core";
     return m_GlobalMetadata.driverVersion != currentDriverVersion ||
         m_GlobalMetadata.openGLProfile != currentOpenGLProfile;
 }
@@ -341,12 +338,10 @@ bool ShaderManager::IsShaderOutdated(const std::string& shaderName) const {
     }
 
     const auto& metadata = it->second;
-
     if (!std::filesystem::exists(metadata.binaryPath)) {
         return true;
     }
 
-    // Get the latest modification time of the source files and their includes
     std::filesystem::file_time_type latestSourceTime = std::filesystem::file_time_type::min();
     std::unordered_set<std::string> processedFiles;
 
@@ -357,10 +352,7 @@ bool ShaderManager::IsShaderOutdated(const std::string& shaderName) const {
         }
     }
 
-    // Get the binary's last write time
     auto binaryLastModified = std::filesystem::last_write_time(metadata.binaryPath);
-
-    // Compare times to determine if the shader is outdated
     return latestSourceTime > binaryLastModified;
 }
 
@@ -369,18 +361,14 @@ std::filesystem::file_time_type ShaderManager::GetLatestShaderModificationTime(
     std::unordered_set<std::string>& processedFiles) const {
 
     auto logger = Logger::GetLogger();
-
-    // Normalize and check if the file has already been processed
     auto canonicalPath = std::filesystem::weakly_canonical(sourcePath).string();
     if (processedFiles.find(canonicalPath) != processedFiles.end()) {
         return std::filesystem::file_time_type::min();
     }
     processedFiles.insert(canonicalPath);
 
-    // Get the modification time of the current source file
     std::filesystem::file_time_type latestTime = std::filesystem::last_write_time(sourcePath);
 
-    // Read the shader source file
     std::ifstream file(sourcePath);
     if (!file) {
         logger->error("Failed to open shader file: {}", sourcePath.string());
@@ -389,13 +377,10 @@ std::filesystem::file_time_type ShaderManager::GetLatestShaderModificationTime(
 
     std::string line;
     bool inBlockComment = false;
-
     while (std::getline(file, line)) {
         std::string trimmedLine = line;
-        // Remove leading whitespace
         trimmedLine.erase(0, trimmedLine.find_first_not_of(" \t"));
 
-        // Handle block comments
         if (inBlockComment) {
             size_t endComment = trimmedLine.find("*/");
             if (endComment != std::string::npos) {
@@ -403,33 +388,30 @@ std::filesystem::file_time_type ShaderManager::GetLatestShaderModificationTime(
                 trimmedLine = trimmedLine.substr(endComment + 2);
             }
             else {
-                continue; // Skip line inside block comment
+                continue;
             }
         }
 
-        // Check for start of block comment
         size_t startBlockComment = trimmedLine.find("/*");
         if (startBlockComment != std::string::npos) {
             inBlockComment = true;
             trimmedLine = trimmedLine.substr(0, startBlockComment);
         }
 
-        // Remove single-line comments
         size_t singleLineComment = trimmedLine.find("//");
         if (singleLineComment != std::string::npos) {
             trimmedLine = trimmedLine.substr(0, singleLineComment);
         }
 
-        // Trim whitespace again
         trimmedLine.erase(0, trimmedLine.find_first_not_of(" \t"));
-        trimmedLine.erase(trimmedLine.find_last_not_of(" \t\r\n") + 1);
+        if (!trimmedLine.empty()) {
+            trimmedLine.erase(trimmedLine.find_last_not_of(" \t\r\n") + 1);
+        }
 
-        // Skip empty lines
         if (trimmedLine.empty()) {
             continue;
         }
 
-        // Process includes
         if (trimmedLine.find("#include") == 0) {
             size_t start = trimmedLine.find_first_of("\"<");
             size_t end = trimmedLine.find_first_of("\">", start + 1);
@@ -440,19 +422,14 @@ std::filesystem::file_time_type ShaderManager::GetLatestShaderModificationTime(
 
             std::string includePathStr = trimmedLine.substr(start + 1, end - start - 1);
             std::filesystem::path includePath = sourcePath.parent_path() / includePathStr;
-
-            // Normalize the path
             includePath = std::filesystem::weakly_canonical(includePath);
 
-            // Check if the file exists
             if (!std::filesystem::exists(includePath)) {
                 logger->warn("Included file does not exist: {}", includePath.string());
                 continue;
             }
 
-            // Recursively get the latest modification time
             auto includeLatestTime = GetLatestShaderModificationTime(includePath, processedFiles);
-
             if (includeLatestTime > latestTime) {
                 latestTime = includeLatestTime;
             }
@@ -463,18 +440,12 @@ std::filesystem::file_time_type ShaderManager::GetLatestShaderModificationTime(
 }
 
 GLenum ShaderManager::GetShaderTypeFromString(const std::string& type) const {
-    if (type == "vertex")
-        return GL_VERTEX_SHADER;
-    else if (type == "fragment")
-        return GL_FRAGMENT_SHADER;
-    else if (type == "geometry")
-        return GL_GEOMETRY_SHADER;
-    else if (type == "tess_control")
-        return GL_TESS_CONTROL_SHADER;
-    else if (type == "tess_evaluation")
-        return GL_TESS_EVALUATION_SHADER;
-    else if (type == "compute")
-        return GL_COMPUTE_SHADER;
-    else
-        throw std::runtime_error("Unknown shader type: " + type);
+    if (type == "vertex") return GL_VERTEX_SHADER;
+    if (type == "fragment") return GL_FRAGMENT_SHADER;
+    if (type == "geometry") return GL_GEOMETRY_SHADER;
+    if (type == "tess_control") return GL_TESS_CONTROL_SHADER;
+    if (type == "tess_evaluation") return GL_TESS_EVALUATION_SHADER;
+    if (type == "compute") return GL_COMPUTE_SHADER;
+
+    throw std::runtime_error("Unknown shader type: " + type);
 }

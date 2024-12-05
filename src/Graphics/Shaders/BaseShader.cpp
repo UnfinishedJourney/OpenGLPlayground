@@ -1,5 +1,5 @@
 #include "BaseShader.h"
-#include "Utilities/Logger.h" 
+#include "Utilities/Logger.h"
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -23,10 +23,12 @@ GLint BaseShader::GetUniformLocation(std::string_view name) const {
     if (auto it = m_UniformLocationCache.find(nameStr); it != m_UniformLocationCache.end()) {
         return it->second;
     }
+
     GLint location = glGetUniformLocation(*m_RendererIDPtr, nameStr.c_str());
     if (location == -1) {
         Logger::GetLogger()->warn("Uniform '{}' not found in shader program ID {}.", nameStr, *m_RendererIDPtr);
     }
+
     m_UniformLocationCache[nameStr] = location;
     return location;
 }
@@ -62,7 +64,6 @@ GLuint BaseShader::CompileShader(GLenum shaderType, const std::string& source) c
     }
 
     Logger::GetLogger()->info("{} shader compiled successfully.", shaderTypeStr);
-
     return shader;
 }
 
@@ -116,7 +117,9 @@ std::string BaseShader::ReadFile(const std::filesystem::path& filepath) const {
     return contents.str();
 }
 
-std::string BaseShader::ResolveIncludes(const std::string& source, const std::filesystem::path& directory, std::unordered_set<std::string>& includedFiles) const {
+std::string BaseShader::ResolveIncludes(const std::string& source,
+    const std::filesystem::path& directory,
+    std::unordered_set<std::string>& includedFiles) const {
     std::istringstream stream(source);
     std::ostringstream processedSource;
     std::string line;
@@ -125,6 +128,7 @@ std::string BaseShader::ResolveIncludes(const std::string& source, const std::fi
     while (std::getline(stream, line)) {
         std::string originalLine = line;
         std::string trimmedLine = line;
+
         // Remove leading whitespace
         trimmedLine.erase(0, trimmedLine.find_first_not_of(" \t"));
 
@@ -136,11 +140,11 @@ std::string BaseShader::ResolveIncludes(const std::string& source, const std::fi
                 trimmedLine = trimmedLine.substr(endComment + 2);
             }
             else {
-                continue; 
+                continue;
             }
         }
 
-        // Check for start of block comment
+        // Check for block comment start
         size_t startBlockComment = trimmedLine.find("/*");
         if (startBlockComment != std::string::npos) {
             inBlockComment = true;
@@ -155,12 +159,8 @@ std::string BaseShader::ResolveIncludes(const std::string& source, const std::fi
 
         // Trim again after removing comments
         trimmedLine.erase(0, trimmedLine.find_first_not_of(" \t"));
-        trimmedLine.erase(trimmedLine.find_last_not_of(" \t\r\n") + 1);
-
-        // Skip empty lines
-        if (trimmedLine.empty()) {
-            processedSource << originalLine << '\n'; // Preserve original line formatting
-            continue;
+        if (!trimmedLine.empty()) {
+            trimmedLine.erase(trimmedLine.find_last_not_of(" \t\r\n") + 1);
         }
 
         // Process includes
@@ -175,12 +175,11 @@ std::string BaseShader::ResolveIncludes(const std::string& source, const std::fi
             std::string includePathStr = trimmedLine.substr(start + 1, end - start - 1);
             std::filesystem::path includePath = directory / includePathStr;
 
-            // Normalize the path
             includePath = std::filesystem::weakly_canonical(includePath);
 
             // Check if the file has already been included
             if (includedFiles.find(includePath.string()) != includedFiles.end()) {
-                continue; // Skip including again
+                continue;
             }
             includedFiles.insert(includePath.string());
 
@@ -271,7 +270,6 @@ void BaseShader::SaveBinary() const {
 
     outStream.write(reinterpret_cast<const char*>(&binaryFormat), sizeof(GLenum));
     outStream.write(reinterpret_cast<const char*>(binary.data()), binary.size());
-
     Logger::GetLogger()->info("Shader binary saved to '{}'.", m_BinaryPath.string());
 }
 

@@ -24,7 +24,8 @@ struct ShaderMetadata {
 
 class ShaderManager {
 public:
-    ShaderManager(const std::filesystem::path& metadataPath = "../shaders/metadata.json", const std::filesystem::path& configPath = "../shaders/config.json");
+    ShaderManager(const std::filesystem::path& metadataPath = "../shaders/metadata.json",
+        const std::filesystem::path& configPath = "../shaders/config.json");
     ~ShaderManager() = default;
 
     static ShaderManager& GetInstance();
@@ -37,11 +38,9 @@ public:
 
     std::shared_ptr<BaseShader> GetCurrentlyBoundShader() const;
 
-    // New methods for rebinding
     void RebindUniformBlocks(const std::string& shaderName);
     void RebindShaderStorageBlocks(const std::string& shaderName);
 
-    // Access to all shaders
     const std::unordered_map<std::string, std::shared_ptr<BaseShader>>& GetShaders() const {
         return m_Shaders;
     }
@@ -55,11 +54,9 @@ private:
     std::unordered_map<std::string, ShaderMetadata> m_ShadersMetadata;
     std::unordered_map<std::string, std::shared_ptr<BaseShader>> m_Shaders;
 
-    // Uniform Block and Shader Storage Block Binding Points
     std::unordered_map<std::string, GLuint> m_UniformBlockBindings;
     std::unordered_map<std::string, GLuint> m_ShaderStorageBlockBindings;
 
-    // Binding Points Constants
     static constexpr GLuint FRAME_DATA_BINDING_POINT = 0;
     static constexpr GLuint LIGHTS_DATA_BINDING_POINT = 1;
 
@@ -70,10 +67,8 @@ private:
 
     bool IsGlobalMetadataChanged() const;
     bool IsShaderOutdated(const std::string& shaderName) const;
-
     GLenum GetShaderTypeFromString(const std::string& type) const;
 
-    // Utility function to get the latest modification time of shader and its includes
     std::filesystem::file_time_type GetLatestShaderModificationTime(
         const std::filesystem::path& sourcePath,
         std::unordered_set<std::string>& processedFiles) const;

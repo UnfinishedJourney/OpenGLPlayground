@@ -27,7 +27,6 @@ void ComputeShader::LoadShader(bool reload) {
     source = ResolveIncludes(source, m_ShaderPath.parent_path(), includedFiles);
 
     GLuint shader = CompileShader(GL_COMPUTE_SHADER, source);
-
     *m_RendererIDPtr = LinkProgram({ shader });
 
     if (!m_BinaryPath.empty()) {

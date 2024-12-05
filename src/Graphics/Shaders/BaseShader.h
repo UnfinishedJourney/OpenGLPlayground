@@ -15,12 +15,10 @@
 class BaseShader {
 public:
     explicit BaseShader(const std::filesystem::path& binaryPath = "");
-
     virtual ~BaseShader() = default;
 
     BaseShader(const BaseShader&) = delete;
     BaseShader& operator=(const BaseShader&) = delete;
-
     BaseShader(BaseShader&& other) noexcept = default;
     BaseShader& operator=(BaseShader&& other) noexcept = default;
 
@@ -51,9 +49,10 @@ protected:
     GLuint LinkProgram(const std::vector<GLuint>& shaders) const;
 
     std::string ReadFile(const std::filesystem::path& filepath) const;
-    std::string ResolveIncludes(const std::string& source, const std::filesystem::path& directory, std::unordered_set<std::string>& includedFiles) const;
+    std::string ResolveIncludes(const std::string& source,
+        const std::filesystem::path& directory,
+        std::unordered_set<std::string>& includedFiles) const;
 
     void SaveBinary() const;
-
     GLint GetUniformLocation(std::string_view name) const;
 };
