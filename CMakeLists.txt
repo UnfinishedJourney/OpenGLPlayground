@@ -68,7 +68,7 @@ set(VENDOR_FILES
     ${DEPS_DIR}/imgui/backends/imgui_impl_opengl3.cpp
 
     # GLAD source file (handled manually)
-    ${CMAKE_SOURCE_DIR}/Dependencies/GLAD/src/glad.c
+    ${DEPS_DIR}/GLAD/src/glad.c
 
     # stb_image files
     ${DEPS_DIR}/stb_image/stb_image.cpp
@@ -136,7 +136,7 @@ add_custom_command(TARGET OpenGLApplication POST_BUILD
 # =====================================================================
 
 target_include_directories(OpenGLApplication PRIVATE
-    ${CMAKE_SOURCE_DIR}/Dependencies/GLAD/include
+    ${DEPS_DIR}/GLAD/include
     ${DEPS_DIR}/imgui
     ${DEPS_DIR}/imgui/backends
     ${DEPS_DIR}/stb_image    # Include stb_image directory

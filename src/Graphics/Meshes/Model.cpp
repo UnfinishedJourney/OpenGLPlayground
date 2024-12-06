@@ -1,12 +1,11 @@
 #include "Model.h"
 #include "Utilities/Logger.h"
 #include <assimp/Importer.hpp>
+#include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <stdexcept>
 #include <meshoptimizer.h>
-
-// Include necessary headers for your project
-// ...
+#include <cfloat>
 
 Model::Model(const std::string& pathToModel, bool centerModel)
     : m_FilePath(pathToModel) {
@@ -20,9 +19,11 @@ Model::Model(const std::string& pathToModel, bool centerModel)
 
 void Model::LoadModel() {
     Assimp::Importer importer;
-
-    const aiScene* scene = importer.ReadFile(m_FilePath, aiProcess_JoinIdenticalVertices | aiProcess_Triangulate |
-        aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_PreTransformVertices | aiProcess_RemoveRedundantMaterials | aiProcess_FindInvalidData | aiProcess_OptimizeMeshes);
+    const aiScene* scene = importer.ReadFile(m_FilePath,
+        aiProcess_JoinIdenticalVertices | aiProcess_Triangulate |
+        aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace |
+        aiProcess_PreTransformVertices | aiProcess_RemoveRedundantMaterials |
+        aiProcess_FindInvalidData | aiProcess_OptimizeMeshes);
 
     if (!scene || !scene->HasMeshes()) {
         throw std::runtime_error("Unable to load model: " + m_FilePath);
@@ -33,8 +34,8 @@ void Model::LoadModel() {
 
 void Model::ProcessNode(const aiScene* scene, const aiNode* node) {
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        ProcessMesh(scene, mesh);
+        aiMesh* aiMesh = scene->mMeshes[node->mMeshes[i]];
+        ProcessMesh(scene, aiMesh);
     }
 
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
@@ -45,33 +46,25 @@ void Model::ProcessNode(const aiScene* scene, const aiNode* node) {
 void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
     auto myMesh = std::make_shared<Mesh>();
 
-    // Process positions
     myMesh->minBounds = glm::vec3(FLT_MAX);
     myMesh->maxBounds = glm::vec3(-FLT_MAX);
+
+    // Process positions
     if (aiMesh->mNumVertices > 0) {
-        // Initialize positions as glm::vec3
         std::vector<glm::vec3> positionsVec;
         positionsVec.reserve(aiMesh->mNumVertices);
         for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
-            positionsVec.emplace_back(
-                aiMesh->mVertices[i].x,
-                aiMesh->mVertices[i].y,
-                aiMesh->mVertices[i].z
-            );
-
-            glm::vec3 tempPos = glm::vec3(aiMesh->mVertices[i].x, aiMesh->mVertices[i].y, aiMesh->mVertices[i].z);
-            myMesh->minBounds = glm::min(myMesh->minBounds, tempPos);
-            myMesh->maxBounds = glm::max(myMesh->maxBounds, tempPos);
+            glm::vec3 pos(aiMesh->mVertices[i].x, aiMesh->mVertices[i].y, aiMesh->mVertices[i].z);
+            positionsVec.push_back(pos);
+            myMesh->minBounds = glm::min(myMesh->minBounds, pos);
+            myMesh->maxBounds = glm::max(myMesh->maxBounds, pos);
         }
         myMesh->positions = std::move(positionsVec);
-        myMesh->boundingSphereRadius = glm::length(myMesh->maxBounds - myMesh->localCenter);
     }
 
-
-
-    // Compute localCenter and boundingSphereRadius as before
+    // Local center & bounding radius
     myMesh->localCenter = (myMesh->minBounds + myMesh->maxBounds) * 0.5f;
-    //myMesh->boundingSphereRadius = glm::length(myMesh->maxBounds - myMesh->localCenter);
+    myMesh->boundingSphereRadius = glm::length(myMesh->maxBounds - myMesh->localCenter);
 
     // Process normals
     if (aiMesh->HasNormals()) {
@@ -85,7 +78,7 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
         }
     }
 
-    // Process UVs (only first set)
+    // Process UVs (only first UV set)
     if (aiMesh->HasTextureCoords(0)) {
         myMesh->uvs[TextureType::Albedo].reserve(aiMesh->mNumVertices);
         for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
@@ -114,20 +107,21 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
         }
     }
 
-    // Collect indices
+    // Process faces into indices
     std::vector<uint32_t> srcIndices;
     srcIndices.reserve(aiMesh->mNumFaces * 3);
     for (unsigned int i = 0; i < aiMesh->mNumFaces; i++) {
-        aiFace face = aiMesh->mFaces[i];
+        const aiFace& face = aiMesh->mFaces[i];
         for (unsigned int j = 0; j < face.mNumIndices; j++) {
             srcIndices.push_back(face.mIndices[j]);
         }
     }
 
-    // Collect vertex positions into a flat std::vector<float> srcVertices
+    // Flatten positions to a float array for LOD generation
     std::vector<float> srcVertices;
     std::visit([&](const auto& positionsVec) {
         for (const auto& position : positionsVec) {
+            // Ensure always 3D coords
             if constexpr (std::is_same_v<std::decay_t<decltype(position)>, glm::vec3>) {
                 srcVertices.push_back(position.x);
                 srcVertices.push_back(position.y);
@@ -136,33 +130,24 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
             else {
                 srcVertices.push_back(position.x);
                 srcVertices.push_back(position.y);
-                // For 2D positions, add zero for z
                 srcVertices.push_back(0.0f);
             }
         }
         }, myMesh->positions);
 
-    // Prepare to store LODs
     std::vector<std::vector<uint32_t>> outLods;
+    // Generate LODs
+    ProcessLODs(srcIndices, srcVertices, outLods);
 
-    // Copy srcIndices to indices for processing
-    std::vector<uint32_t> indices = srcIndices;
-
-    // Call processLods to generate LODs
-    processLods(indices, srcVertices, outLods);
-
-    // Now, store the LODs in myMesh
+    // Store LODs in myMesh
     myMesh->indices.clear();
     myMesh->lods.clear();
-
     for (const auto& lodIndices : outLods) {
         MeshLOD lod;
         lod.indexOffset = static_cast<uint32_t>(myMesh->indices.size());
         lod.indexCount = static_cast<uint32_t>(lodIndices.size());
 
-        // Append the indices of this LOD to myMesh->indices
         myMesh->indices.insert(myMesh->indices.end(), lodIndices.begin(), lodIndices.end());
-
         myMesh->lods.push_back(lod);
     }
 
@@ -174,62 +159,56 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
         meshTextures = LoadTextures(material, directory.string());
     }
 
-    // Store the mesh info
-    m_MeshInfos.emplace_back(MeshInfo{ std::move(meshTextures), std::move(myMesh) });
+    m_MeshInfos.push_back(MeshInfo{ std::move(meshTextures), std::move(myMesh) });
 }
 
-void Model::processLods(std::vector<uint32_t>& indices, const std::vector<float>& vertices, std::vector<std::vector<uint32_t>>& outLods) {
-    size_t verticesCountIn = vertices.size() / 3;
+void Model::ProcessLODs(std::vector<uint32_t>& indices, const std::vector<float>& vertices, std::vector<std::vector<uint32_t>>& outLods) {
+    size_t vertexCount = vertices.size() / 3;
     size_t targetIndicesCount = indices.size();
+    uint8_t lodLevel = 1;
 
-    uint8_t LOD = 1;
-
-    printf("\n   LOD0: %i indices", int(indices.size()));
-
+    Logger::GetLogger()->info("LOD0: {} indices", indices.size());
     outLods.push_back(indices);
 
-    while (targetIndicesCount > 1024 && LOD < 8) {
+    // Try to generate up to 8 LOD levels or until indices count is small
+    while (targetIndicesCount > 1024 && lodLevel < 8) {
         targetIndicesCount = indices.size() / 2;
-
         bool sloppy = false;
 
         size_t numOptIndices = meshopt_simplify(
-            indices.data(),
-            indices.data(), (uint32_t)indices.size(),
-            vertices.data(), verticesCountIn,
-            sizeof(float) * 3,
+            indices.data(), indices.data(), (uint32_t)indices.size(),
+            vertices.data(), vertexCount, sizeof(float) * 3,
             targetIndicesCount, 0.02f);
 
-        // Cannot simplify further
+        // If not much reduction, try sloppy simplification
         if (static_cast<size_t>(numOptIndices * 1.1f) > indices.size()) {
-            if (LOD > 1) {
-                // Try harder with meshopt_simplifySloppy
+            if (lodLevel > 1) {
                 numOptIndices = meshopt_simplifySloppy(
-                    indices.data(),           // destination_indices
-                    indices.data(),           // source_indices
-                    indices.size(),           // index_count
-                    vertices.data(),          // vertices
-                    verticesCountIn,          // vertex_count
-                    sizeof(float) * 3,        // vertex_size
-                    targetIndicesCount,       // target_index_count
-                    FLT_MAX,                  // max_error
-                    nullptr                   // vertex_errors
+                    indices.data(),
+                    indices.data(),
+                    indices.size(),
+                    vertices.data(),
+                    vertexCount,
+                    sizeof(float) * 3,
+                    targetIndicesCount,
+                    FLT_MAX,
+                    nullptr
                 );
-               
                 sloppy = true;
-                if (numOptIndices == indices.size()) break;
+                if (numOptIndices == indices.size()) {
+                    break;
+                }
             }
-            else
+            else {
                 break;
+            }
         }
 
         indices.resize(numOptIndices);
+        meshopt_optimizeVertexCache(indices.data(), indices.data(), indices.size(), vertexCount);
 
-        meshopt_optimizeVertexCache(indices.data(), indices.data(), indices.size(), verticesCountIn);
-
-        printf("\n   LOD%i: %i indices %s", int(LOD), int(numOptIndices), sloppy ? "[sloppy]" : "");
-
-        LOD++;
+        Logger::GetLogger()->info("LOD{}: {} indices {}", lodLevel, numOptIndices, sloppy ? "[sloppy]" : "");
+        lodLevel++;
 
         outLods.push_back(indices);
     }
@@ -238,13 +217,12 @@ void Model::processLods(std::vector<uint32_t>& indices, const std::vector<float>
 MeshTextures Model::LoadTextures(aiMaterial* material, const std::string& directory) {
     MeshTextures result;
 
-    // Mapping from Assimp texture types to your TextureType
     std::unordered_map<aiTextureType, TextureType> aiToMyTextureType = {
         { aiTextureType_DIFFUSE, TextureType::Albedo },
         { aiTextureType_NORMALS, TextureType::Normal },
         { aiTextureType_HEIGHT, TextureType::Occlusion },
         { aiTextureType_EMISSIVE, TextureType::Emissive },
-        // Add more mappings as needed
+        // Extend as needed
     };
 
     for (const auto& [aiType, myType] : aiToMyTextureType) {
@@ -252,9 +230,7 @@ MeshTextures Model::LoadTextures(aiMaterial* material, const std::string& direct
         for (unsigned int i = 0; i < textureCount; ++i) {
             aiString str;
             if (material->GetTexture(aiType, i, &str) == AI_SUCCESS) {
-                std::string texturePath = str.C_Str();
-                std::filesystem::path fullPath = std::filesystem::path(directory) / texturePath;
-
+                std::filesystem::path fullPath = std::filesystem::path(directory) / str.C_Str();
                 try {
                     auto texture = std::make_shared<Texture2D>(fullPath.string());
                     result.textures[myType] = std::move(texture);
@@ -274,19 +250,19 @@ glm::vec3 Model::CalculateModelCenter() const {
     size_t totalVertices = 0;
 
     for (const auto& meshInfo : m_MeshInfos) {
-        const auto& mesh = meshInfo.mesh;
-
         std::visit([&](const auto& positionsVec) {
             totalVertices += positionsVec.size();
             for (const auto& position : positionsVec) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(position)>, glm::vec3>) {
+                    // position is glm::vec3
                     center += position;
                 }
                 else {
-                    center += glm::vec3(position, 0.0f); // Assuming z = 0 for 2D
+                    // position is glm::vec2
+                    center += glm::vec3(position.x, position.y, 0.0f);
                 }
             }
-            }, mesh->positions);
+            }, meshInfo.mesh->positions);
     }
 
     if (totalVertices > 0) {
@@ -301,7 +277,6 @@ void Model::CenterModel() {
 
     for (auto& meshInfo : m_MeshInfos) {
         auto& mesh = meshInfo.mesh;
-
         std::visit([&](auto& positionsVec) {
             for (auto& position : positionsVec) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(position)>, glm::vec3>) {
@@ -329,11 +304,10 @@ std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLay
     if (it != cache.end()) {
         return it->second;
     }
-    else {
-        auto meshBuffer = std::make_shared<MeshBuffer>(*m_MeshInfos[meshIndex].mesh, layout);
-        cache[layout] = meshBuffer;
-        return meshBuffer;
-    }
+
+    auto meshBuffer = std::make_shared<MeshBuffer>(*m_MeshInfos[meshIndex].mesh, layout);
+    cache[layout] = meshBuffer;
+    return meshBuffer;
 }
 
 std::vector<std::shared_ptr<MeshBuffer>> Model::GetMeshBuffers(const MeshLayout& layout) {
@@ -359,8 +333,10 @@ std::shared_ptr<Texture2D> Model::GetTexture(size_t meshIndex, TextureType type)
     if (meshIndex >= m_MeshInfos.size()) {
         throw std::out_of_range("Invalid mesh index: " + std::to_string(meshIndex));
     }
-    auto it = m_MeshInfos[meshIndex].meshTextures.textures.find(type);
-    if (it != m_MeshInfos[meshIndex].meshTextures.textures.end()) {
+
+    const auto& textures = m_MeshInfos[meshIndex].meshTextures.textures;
+    auto it = textures.find(type);
+    if (it != textures.end()) {
         return it->second;
     }
     return nullptr;

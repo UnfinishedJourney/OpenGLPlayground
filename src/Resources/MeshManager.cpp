@@ -8,13 +8,13 @@ MeshManager& MeshManager::GetInstance() {
 }
 
 std::shared_ptr<Mesh> MeshManager::GetMesh(std::string_view meshName) {
-    auto it = m_Meshes.find(std::string(meshName));
+    std::string meshNameStr(meshName);
+    auto it = m_Meshes.find(meshNameStr);
     if (it != m_Meshes.end()) {
         return it->second;
     }
 
-    // Create mesh if not found
-    //need config?
+    // If not found, create mesh based on known mesh names
     std::shared_ptr<Mesh> mesh;
     if (meshName == "cube") {
         mesh = std::make_shared<Cube>();
@@ -32,11 +32,11 @@ std::shared_ptr<Mesh> MeshManager::GetMesh(std::string_view meshName) {
         mesh = std::make_shared<TerrainMesh>();
     }
     else {
-        Logger::GetLogger()->warn("Mesh '{}' not found. Returning nullptr.", meshName);
+        Logger::GetLogger()->warn("Mesh '{}' not recognized. Returning nullptr.", meshNameStr);
         return nullptr;
     }
 
-    m_Meshes[std::string(meshName)] = mesh;
+    m_Meshes[meshNameStr] = mesh;
     return mesh;
 }
 
@@ -68,8 +68,8 @@ bool MeshManager::DeleteMeshBuffer(std::string_view meshName, const MeshLayout& 
     return m_MeshBuffers.erase(key) > 0;
 }
 
-void MeshManager::Clear()
-{
+void MeshManager::Clear() {
     m_MeshBuffers.clear();
-    m_Meshes.clear(); //maybe don't need to clean meshes
+    m_Meshes.clear();
+    Logger::GetLogger()->info("MeshManager cleared all meshes and buffers.");
 }

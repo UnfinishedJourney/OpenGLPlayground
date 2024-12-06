@@ -4,16 +4,11 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include <glm/glm.hpp>
 #include <filesystem>
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Meshes/MeshLayout.h"
 #include "Graphics/Buffers/MeshBuffer.h"
 #include "Graphics/Textures/Texture2D.h"
-#include "Utilities/Utility.h"
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/Importer.hpp>
 
 struct MeshTextures {
     std::unordered_map<TextureType, std::shared_ptr<Texture2D>> textures;
@@ -37,13 +32,14 @@ public:
 
 private:
     void LoadModel();
-    void ProcessNode(const aiScene* scene, const aiNode* node);
-    void ProcessMesh(const aiScene* scene, const aiMesh* mesh);
+    void ProcessNode(const struct aiScene* scene, const struct aiNode* node);
+    void ProcessMesh(const struct aiScene* scene, const struct aiMesh* mesh);
     void CenterModel();
     glm::vec3 CalculateModelCenter() const;
-    MeshTextures LoadTextures(aiMaterial* material, const std::string& directory);
+    MeshTextures LoadTextures(struct aiMaterial* material, const std::string& directory);
 
-    void processLods(std::vector<uint32_t>& indices, const std::vector<float>& vertices, std::vector<std::vector<uint32_t>>& outLods);
+    // Generates LOD levels for the mesh indices
+    void ProcessLODs(std::vector<uint32_t>& indices, const std::vector<float>& vertices, std::vector<std::vector<uint32_t>>& outLods);
 
     std::string m_FilePath;
     std::vector<MeshInfo> m_MeshInfos;

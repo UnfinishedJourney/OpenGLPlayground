@@ -1,9 +1,9 @@
 #pragma once
 
 #include <unordered_set>
-#include "Graphics/Textures/Texture2D.h" 
-
-enum class TextureType;
+#include <functional>
+#include "Graphics/Textures/Texture2D.h"
+#include "Graphics/Meshes/Mesh.h"
 
 struct MeshLayout {
     bool hasPositions = true;
@@ -27,7 +27,6 @@ namespace std {
     struct hash<MeshLayout> {
         std::size_t operator()(const MeshLayout& layout) const noexcept {
             size_t seed = 0;
-
             auto hash_combine = [](size_t& seed, size_t value) {
                 seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
                 };

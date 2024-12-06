@@ -4,12 +4,9 @@
 #include <unordered_map>
 #include <memory>
 #include <string_view>
-
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Buffers/MeshBuffer.h"
 #include "Graphics/Meshes/MeshLayout.h"
-
-//currently handles simple meshes and model handles models.maybe needs to be changed
 
 class MeshManager {
 public:
