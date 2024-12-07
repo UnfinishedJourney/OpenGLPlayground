@@ -10,6 +10,7 @@
 #include "Graphics/Buffers/IndexBuffer.h"
 #include "Graphics/Buffers/VertexBufferLayout.h"
 #include "Graphics/Meshes/MeshLayout.h"
+#include "Graphics/Buffers/IndirectBuffer.h"
 
 struct DrawElementsIndirectCommand {
     GLuint count;          // Number of indices
@@ -30,10 +31,9 @@ public:
     ~Batch();
 
     void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
-    void Update(); // Build or rebuild the batch if needed
+    void Update();
     void Render() const;
 
-    // Accessors
     const std::string& GetShaderName() const { return m_ShaderName; }
     const std::string& GetMaterialName() const { return m_MaterialName; }
     const MeshLayout& GetMeshLayout() const { return m_MeshLayout; }
@@ -43,7 +43,7 @@ public:
     void UpdateLOD(size_t objectIndex, size_t newLOD);
 
 private:
-    void BuildBatch();        // Build or rebuild the batch
+    void BuildBatch();
 
     std::string m_ShaderName;
     std::string m_MaterialName;
@@ -54,10 +54,8 @@ private:
     std::shared_ptr<VertexBuffer> m_VBO;
     std::shared_ptr<IndexBuffer> m_IBO;
 
-    std::unique_ptr<VertexBuffer> m_DrawCommandBuffer;
+    std::unique_ptr<IndirectBuffer> m_DrawCommandBuffer;  // Use IndirectBuffer now
     std::vector<DrawElementsIndirectCommand> m_DrawCommands;
-
-    // New member to store LOD offsets
     std::vector<std::vector<LODInfo>> m_LODInfos;
 
     bool m_IsDirty = true;

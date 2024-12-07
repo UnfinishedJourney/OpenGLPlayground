@@ -5,7 +5,8 @@
 #include "Renderer/Batch.h"
 #include "Renderer/RenderObject.h"
 #include "Scene/Camera.h"
-#include <unordered_map>
+
+class LODEvaluator;
 
 class BatchManager {
 public:
@@ -15,7 +16,10 @@ public:
     const std::vector<std::shared_ptr<Batch>>& GetBatches() const;
 
     void UpdateLOD(const std::shared_ptr<RenderObject>& renderObject, size_t newLOD);
-    void UpdateLODs(std::shared_ptr<Camera>& camera);
+
+    // Now uses LODEvaluator to determine LOD changes
+    void UpdateLODs(std::shared_ptr<Camera>& camera, LODEvaluator& lodEvaluator);
+
     void SetLOD(size_t newLOD);
 
 private:

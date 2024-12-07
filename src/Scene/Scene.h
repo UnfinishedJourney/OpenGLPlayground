@@ -6,6 +6,7 @@
 #include "Renderer/BatchManager.h"
 #include "Scene/Lights.h"
 #include "Scene/Camera.h"
+#include "Scene/LODEvaluator.h"
 #include "Graphics/Buffers/UniformBuffer.h"
 #include "Graphics/Buffers/ShaderStorageBuffer.h"
 #include "Graphics/Effects/PostProcessingEffects/PostProcessingEffectType.h"
@@ -42,7 +43,7 @@ public:
 
     void UpdateLODs()
     {
-        m_BatchManager.UpdateLODs(m_Camera);
+        m_BatchManager.UpdateLODs(m_Camera, m_LODEvaluator);
     }
 
     void SetPostProcessingEffect(PostProcessingEffectType effect);
@@ -85,7 +86,7 @@ private:
     const int MAX_LIGHTS = 8;
     std::vector<LightData> m_LightsData;
     std::shared_ptr<Camera> m_Camera;
-
+    LODEvaluator m_LODEvaluator;
     mutable BatchManager m_BatchManager;
     std::unique_ptr<UniformBuffer> m_FrameDataUBO;
     std::unique_ptr<ShaderStorageBuffer> m_LightsSSBO;
