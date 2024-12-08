@@ -7,6 +7,13 @@
                 "fragment": "../shaders/Basic.frag"
             }
         },
+        "basicTextured": {
+            "binary_path": "../shaders/bin/BasicTextured.bin",
+            "shader_stages": {
+                "vertex": "../shaders/BasicTextured.vert",
+                "fragment": "../shaders/BasicTextured.frag"
+            }
+        },
         "simplelights": {
             "binary_path": "../shaders/bin/SimpleLights.bin",
             "shader_stages": {
@@ -22,7 +29,7 @@
             }
         },
         "terrain": {
-            "binary_path": "../shaders/bin/Grid.bin",
+            "binary_path": "../shaders/bin/Terrain.bin",
             "shader_stages": {
                 "vertex": "../shaders/Terrain/Terrain.vert",
                 "tess_control": "../shaders/Terrain/Terrain.tesc",
@@ -42,6 +49,13 @@
             "shader_stages": {
                 "vertex": "../shaders/Postprocessing/PresentTexture.vert",
                 "fragment": "../shaders/Postprocessing/PresentTexture.frag"
+            }
+        },
+        "noPostProcessing": {
+            "binary_path": "../shaders/bin/NoEffect.bin",
+            "shader_stages": {
+                "vertex": "../shaders/Postprocessing/NoEffect.vert",
+                "fragment": "../shaders/Postprocessing/NoEffect.frag"
             }
         },
         "edgeDetection": {

@@ -2,6 +2,7 @@
 #include "Scene/Screen.h"
 #include "Graphics/Effects/PostProcessingEffects/EdgeDetectionEffect.h"
 #include "Graphics/Effects/PostProcessingEffects/NoPostProcessingEffect.h"
+#include "Graphics/Effects/PostProcessingEffects/PresentTextureEffect.h"
 #include "Utilities/Logger.h"
 
 EffectsManager& EffectsManager::GetInstance()
@@ -31,6 +32,11 @@ std::shared_ptr<PostProcessingEffect> EffectsManager::GetEffect(PostProcessingEf
             m_Effects[PostProcessingEffectType::EdgeDetection] = std::make_shared<EdgeDetectionEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
             return m_Effects[PostProcessingEffectType::EdgeDetection];
         }
+        else if (effectType == PostProcessingEffectType::PresentTexture)
+        {
+            m_Effects[PostProcessingEffectType::PresentTexture] = std::make_shared<PresentTextureEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
+            return m_Effects[PostProcessingEffectType::PresentTexture];
+        }
         else if (effectType == PostProcessingEffectType::None)
         {
             m_Effects[PostProcessingEffectType::None] = std::make_shared<NoPostProcessingEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
@@ -41,7 +47,7 @@ std::shared_ptr<PostProcessingEffect> EffectsManager::GetEffect(PostProcessingEf
     return nullptr;
 }
 
-void EffectsManager::SetEffectParameters(PostProcessingEffectType effectType, const std::unordered_map<std::string, float>& params)
+void EffectsManager::SetEffectParameters(PostProcessingEffectType effectType, const std::unordered_map<std::string, EffectParameter>& params)
 {
     auto effect = GetEffect(effectType);
     if (effect) {

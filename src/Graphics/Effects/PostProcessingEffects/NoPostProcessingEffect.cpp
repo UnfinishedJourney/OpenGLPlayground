@@ -8,16 +8,13 @@ NoPostProcessingEffect::NoPostProcessingEffect(std::shared_ptr<MeshBuffer> quad,
 {
 
     auto& shaderManager = ShaderManager::GetInstance();
-    m_Shader = shaderManager.GetShader("presentTexture");
+    m_Shader = shaderManager.GetShader("noPostProcessing");
     if (!m_Shader) {
-        Logger::GetLogger()->error("Present texture shader not found!");
+        Logger::GetLogger()->error("No postprocessing shader not found!");
     }
 
 }
 
-void NoPostProcessingEffect::SetParameters(const std::unordered_map<std::string, float>& params)
-{
-}
 
 void NoPostProcessingEffect::Apply(GLuint inputTexture, GLuint outputFramebuffer)
 {
@@ -32,7 +29,7 @@ void NoPostProcessingEffect::Apply(GLuint inputTexture, GLuint outputFramebuffer
 
     auto& resourceManager = ResourceManager::GetInstance();
     if (!m_Shader) {
-        Logger::GetLogger()->error("Present texture shader not found!");
+        Logger::GetLogger()->error("No postprocessing shader not found!");
         return;
     }
 

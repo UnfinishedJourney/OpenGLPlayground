@@ -14,7 +14,8 @@ ModelManager::ModelManager() {
         {"pig", "../assets/Objs/pig_triangulated.obj"},
         {"bunny", "../assets/Objs/bunny.obj"},
         {"dragon", "../assets/Objs/dragon.obj"},
-        {"bistro", "../assets/AmazonBistro/Exterior/exterior.obj"}
+        {"bistro", "../assets/AmazonBistro/Exterior/exterior.obj"},
+        {"helmet", "../assets/DamagedHelmet/glTF/DamagedHelmet.gltf" }
     };
 }
 

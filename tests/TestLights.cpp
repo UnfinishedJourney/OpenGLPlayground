@@ -73,7 +73,7 @@ void TestLights::OnEnter() {
     m_Scene->BuildBatches();
     m_Scene->SetBDebugLights(true);
     m_Scene->SetBGrid(true);
-    //m_Scene->SetPostProcessingEffect(PostProcessingEffectType::EdgeDetection);
+    m_Scene->SetPostProcessingEffect(PostProcessingEffectType::EdgeDetection);
 }
 
 void TestLights::OnExit() {

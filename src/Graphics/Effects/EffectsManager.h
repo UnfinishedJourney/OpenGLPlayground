@@ -11,7 +11,7 @@ public:
 
     std::shared_ptr<PostProcessingEffect> GetEffect(PostProcessingEffectType effectType);
 
-    void SetEffectParameters(PostProcessingEffectType effectType, const std::unordered_map<std::string, float>& params);
+    void SetEffectParameters(PostProcessingEffectType effectType, const std::unordered_map<std::string, EffectParameter>& params);
 
     void OnWindowResize(int width, int height);
 

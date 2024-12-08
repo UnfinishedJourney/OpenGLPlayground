@@ -61,7 +61,7 @@ void TestBistro::OnEnter() {
             minfo.mesh,
             objMeshLayout,
             "objMaterial",
-            "wireframeGL",
+            "basic",
             transform
         );
         m_Scene->AddRenderObject(renderObject);

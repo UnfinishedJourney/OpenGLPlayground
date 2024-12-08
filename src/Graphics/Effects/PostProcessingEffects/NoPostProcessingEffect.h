@@ -8,6 +8,5 @@ public:
     NoPostProcessingEffect(std::shared_ptr<MeshBuffer> quad, int width = 800, int height = 600);
     void Apply(GLuint inputTexture, GLuint outputFramebuffer) override;
     void OnWindowResize(int width, int height) override;
-    void SetParameters(const std::unordered_map<std::string, float>& params) override;
 private:
 };
