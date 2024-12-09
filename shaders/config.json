@@ -80,6 +80,13 @@
                 "fragment": "../shaders/Wireframe.frag"
             }
         },
+        "HelmetPBR": {
+            "binary_path": "../shaders/bin/HelmetPBR.bin",
+            "shader_stages": {
+                "vertex": "../shaders/HelmetPBR.vert",
+                "fragment": "../shaders/HelmetPBR.frag"
+            }
+        },
         "brdfCompute": {
             "binary_path": "../shaders/bin/BRDFCompute.bin",
             "is_compute_shader": true,

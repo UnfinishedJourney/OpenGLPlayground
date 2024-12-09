@@ -1,6 +1,7 @@
 #include "Lights.shader"
 #include "Material.shader"
 
+
 vec3 CalculatePhongLighting(vec3 normal, vec3 viewDir, vec3 fragPos) {
     vec3 result = vec3(0.0);
     for (uint i = 0; i < numLights; ++i) { // Use numLights from LightsBuffer

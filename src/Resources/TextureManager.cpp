@@ -3,6 +3,7 @@
 #include "Graphics/Shaders/ComputeShader.h"
 #include "Resources/ShaderManager.h"
 #include "Graphics/Textures/Texture2D.h"
+#include "Graphics/Buffers/ShaderStorageBuffer.h"
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <stdexcept>
@@ -153,6 +154,7 @@ void TextureManager::RegisterTexture2D(const std::string& name, std::shared_ptr<
 void TextureManager::InitializeBRDFLUT(int width, int height, unsigned int numSamples) {
     Logger::GetLogger()->info("Initializing BRDF LUT with size {}x{} and {} samples.", width, height, numSamples);
 
+    // Retrieve the compute shader responsible for generating the BRDF LUT
     auto& shaderManager = ShaderManager::GetInstance();
     auto computeShader = shaderManager.GetComputeShader("brdfCompute");
     if (!computeShader) {
@@ -160,25 +162,39 @@ void TextureManager::InitializeBRDFLUT(int width, int height, unsigned int numSa
         return;
     }
 
-    GLuint ssbo;
-    glGenBuffers(1, &ssbo);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, width * height * sizeof(glm::vec2), nullptr, GL_DYNAMIC_COPY);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo); // binding = 1
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    // Create a Shader Storage Buffer Object (SSBO) using your custom ShaderStorageBuffer class
+    std::unique_ptr<ShaderStorageBuffer> ssbo;
+    try {
+        ssbo = std::make_unique<ShaderStorageBuffer>(1, width * height * sizeof(glm::vec2), GL_DYNAMIC_COPY);
+    }
+    catch (const std::exception& e) {
+        Logger::GetLogger()->error("Failed to create ShaderStorageBuffer: {}", e.what());
+        return;
+    }
 
+    // Bind the compute shader and set the required uniform
     computeShader->Bind();
     computeShader->SetUniform("NUM_SAMPLES", numSamples);
 
+    // Calculate the number of workgroups based on the local workgroup size (16x16)
     GLuint groupX = (width + 15) / 16;
     GLuint groupY = (height + 15) / 16;
 
+    Logger::GetLogger()->info("Dispatching compute shader with group sizes: ({}, {})", groupX, groupY);
     computeShader->Dispatch(groupX, groupY, 1);
 
+    // Ensure memory coherence before reading from the buffer
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     computeShader->Unbind();
 
+    // Generate and configure the BRDF LUT texture
     GLuint brdfLUTTextureID;
     glGenTextures(1, &brdfLUTTextureID);
+    if (brdfLUTTextureID == 0) {
+        Logger::GetLogger()->error("Failed to create BRDF LUT texture.");
+        return;
+    }
+
     glBindTexture(GL_TEXTURE_2D, brdfLUTTextureID);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, width, height, 0, GL_RG, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -187,22 +203,50 @@ void TextureManager::InitializeBRDFLUT(int width, int height, unsigned int numSa
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-    glm::vec2* ptr = (glm::vec2*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, width * height * sizeof(glm::vec2), GL_MAP_READ_BIT);
+    // Bind the SSBO before mapping
+    ssbo->Bind();
+
+    // Map the SSBO to read the computed BRDF data
+    glm::vec2* ptr = static_cast<glm::vec2*>(glMapBufferRange(
+        GL_SHADER_STORAGE_BUFFER,
+        0,
+        width * height * sizeof(glm::vec2),
+        GL_MAP_READ_BIT
+    ));
+
     if (ptr) {
+        // Optional: Log the first few values for debugging
+        for (int i = 0; i < 10 && i < width * height; ++i) {
+            Logger::GetLogger()->info("BRDF LUT [{}]: ({}, {})", i, ptr[i].x, ptr[i].y);
+        }
+
+        // Upload the data from the SSBO to the texture
         glBindTexture(GL_TEXTURE_2D, brdfLUTTextureID);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RG, GL_FLOAT, ptr);
         glBindTexture(GL_TEXTURE_2D, 0);
+
+        // Unmap the buffer after reading
         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
     }
     else {
-        Logger::GetLogger()->error("Failed to map BRDF SSBO buffer.");
+        Logger::GetLogger()->error("Failed to map the BRDF SSBO buffer.");
     }
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-    glDeleteBuffers(1, &ssbo);
+    // Unbind the SSBO
+    ssbo->Unbind();
 
-    auto brdfLUTTexture = std::make_shared<Texture2D>(brdfLUTTextureID, width, height, GL_RG32F);
+    // Wrap the BRDF LUT texture using your Texture2D class
+    std::shared_ptr<Texture2D> brdfLUTTexture;
+    try {
+        brdfLUTTexture = std::make_shared<Texture2D>(brdfLUTTextureID, width, height, GL_RG32F);
+    }
+    catch (const std::exception& e) {
+        Logger::GetLogger()->error("Failed to create Texture2D for BRDF LUT: {}", e.what());
+        glDeleteTextures(1, &brdfLUTTextureID);
+        return;
+    }
+
+    // Register the texture for later use
     RegisterTexture2D("brdfLUT", brdfLUTTexture);
 
     Logger::GetLogger()->info("BRDF LUT initialized and registered as 'brdfLUT'.");

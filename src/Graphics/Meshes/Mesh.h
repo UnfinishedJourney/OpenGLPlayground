@@ -12,11 +12,18 @@
 
 enum class TextureType {
     Albedo,
-    Specular,
+    Specular,           // Added to handle SPECULAR maps
+    Ambient,            // Added to handle AMBIENT maps
     Normal,
-    Occlusion,
     RoughnessMetallic,
+    Occlusion,
     Emissive,
+    Shininess,
+    Opacity,
+    Displacement,
+    Lightmap,
+    Reflection,
+    // Add more types as needed
 };
 
 struct MeshLOD {

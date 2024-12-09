@@ -6,6 +6,43 @@
 #include <stdexcept>
 #include <meshoptimizer.h>
 #include <cfloat>
+#include <filesystem>
+
+// Helper function to convert aiTextureType to string
+inline std::string AiTextureTypeToString(aiTextureType type)
+{
+    switch (type)
+    {
+    case aiTextureType_NONE:
+        return "NONE";
+    case aiTextureType_DIFFUSE:
+        return "DIFFUSE";
+    case aiTextureType_SPECULAR:
+        return "SPECULAR";
+    case aiTextureType_AMBIENT:
+        return "AMBIENT";
+    case aiTextureType_EMISSIVE:
+        return "EMISSIVE";
+    case aiTextureType_HEIGHT:
+        return "HEIGHT";
+    case aiTextureType_NORMALS:
+        return "NORMALS";
+    case aiTextureType_SHININESS:
+        return "SHININESS";
+    case aiTextureType_OPACITY:
+        return "OPACITY";
+    case aiTextureType_DISPLACEMENT:
+        return "DISPLACEMENT";
+    case aiTextureType_LIGHTMAP:
+        return "LIGHTMAP";
+    case aiTextureType_REFLECTION:
+        return "REFLECTION";
+    case aiTextureType_UNKNOWN:
+        return "UNKNOWN";
+    default:
+        return "UNKNOWN";
+    }
+}
 
 Model::Model(const std::string& pathToModel, bool centerModel)
     : m_FilePath(pathToModel) {
@@ -26,13 +63,17 @@ void Model::LoadModel() {
         aiProcess_FindInvalidData | aiProcess_OptimizeMeshes);
 
     if (!scene || !scene->HasMeshes()) {
+        Logger::GetLogger()->error("Unable to load model: {}", m_FilePath);
         throw std::runtime_error("Unable to load model: " + m_FilePath);
     }
 
+    Logger::GetLogger()->info("Successfully loaded model: {}", m_FilePath);
     ProcessNode(scene, scene->mRootNode);
 }
 
 void Model::ProcessNode(const aiScene* scene, const aiNode* node) {
+    Logger::GetLogger()->debug("Processing node: {}", node->mName.C_Str());
+
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh* aiMesh = scene->mMeshes[node->mMeshes[i]];
         ProcessMesh(scene, aiMesh);
@@ -44,6 +85,8 @@ void Model::ProcessNode(const aiScene* scene, const aiNode* node) {
 }
 
 void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
+    Logger::GetLogger()->debug("Processing mesh: {}", aiMesh->mName.C_Str());
+
     auto myMesh = std::make_shared<Mesh>();
 
     myMesh->minBounds = glm::vec3(FLT_MAX);
@@ -119,7 +162,9 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
 
     // Flatten positions to a float array for LOD generation
     std::vector<float> srcVertices;
+    //srcVertices.reserve(myMesh->posit * 3);
     std::visit([&](const auto& positionsVec) {
+        srcVertices.reserve(positionsVec.size() * 3);
         for (const auto& position : positionsVec) {
             // Ensure always 3D coords
             if constexpr (std::is_same_v<std::decay_t<decltype(position)>, glm::vec3>) {
@@ -160,6 +205,9 @@ void Model::ProcessMesh(const aiScene* scene, const aiMesh* aiMesh) {
     }
 
     m_MeshInfos.push_back(MeshInfo{ std::move(meshTextures), std::move(myMesh) });
+
+    //myMesh->meshTextures = std::move(meshTextures);
+    //m_MeshInfos.push_back(MeshInfo{ std::move(myMesh->meshTextures), std::move(myMesh) });
 }
 
 void Model::ProcessLODs(std::vector<uint32_t>& indices, const std::vector<float>& vertices, std::vector<std::vector<uint32_t>>& outLods) {
@@ -176,9 +224,9 @@ void Model::ProcessLODs(std::vector<uint32_t>& indices, const std::vector<float>
         bool sloppy = false;
 
         size_t numOptIndices = meshopt_simplify(
-            indices.data(), indices.data(), (uint32_t)indices.size(),
-            vertices.data(), vertexCount, sizeof(float) * 3,
-            targetIndicesCount, 0.02f);
+            indices.data(), indices.data(), static_cast<uint32_t>(indices.size()),
+            vertices.data(), static_cast<size_t>(vertexCount), sizeof(float) * 3,
+            static_cast<size_t>(targetIndicesCount), 0.02f);
 
         // If not much reduction, try sloppy simplification
         if (static_cast<size_t>(numOptIndices * 1.1f) > indices.size()) {
@@ -186,26 +234,28 @@ void Model::ProcessLODs(std::vector<uint32_t>& indices, const std::vector<float>
                 numOptIndices = meshopt_simplifySloppy(
                     indices.data(),
                     indices.data(),
-                    indices.size(),
+                    static_cast<uint32_t>(indices.size()),
                     vertices.data(),
-                    vertexCount,
+                    static_cast<size_t>(vertexCount),
                     sizeof(float) * 3,
-                    targetIndicesCount,
+                    static_cast<size_t>(targetIndicesCount),
                     FLT_MAX,
                     nullptr
                 );
                 sloppy = true;
                 if (numOptIndices == indices.size()) {
+                    Logger::GetLogger()->warn("LOD{}: No further simplification possible.", lodLevel);
                     break;
                 }
             }
             else {
+                Logger::GetLogger()->warn("LOD{}: Simplification did not reduce indices sufficiently.", lodLevel);
                 break;
             }
         }
 
         indices.resize(numOptIndices);
-        meshopt_optimizeVertexCache(indices.data(), indices.data(), indices.size(), vertexCount);
+        meshopt_optimizeVertexCache(indices.data(), indices.data(), static_cast<uint32_t>(indices.size()), vertexCount);
 
         Logger::GetLogger()->info("LOD{}: {} indices {}", lodLevel, numOptIndices, sloppy ? "[sloppy]" : "");
         lodLevel++;
@@ -214,31 +264,98 @@ void Model::ProcessLODs(std::vector<uint32_t>& indices, const std::vector<float>
     }
 }
 
-MeshTextures Model::LoadTextures(aiMaterial* material, const std::string& directory) {
+MeshTextures Model::LoadTextures(aiMaterial* material, const std::string& directory)
+{
     MeshTextures result;
 
     std::unordered_map<aiTextureType, TextureType> aiToMyTextureType = {
         { aiTextureType_DIFFUSE, TextureType::Albedo },
-        { aiTextureType_NORMALS, TextureType::Normal },
-        { aiTextureType_HEIGHT, TextureType::Occlusion },
+        { aiTextureType_SPECULAR, TextureType::Specular },
+        { aiTextureType_AMBIENT, TextureType::Ambient },
         { aiTextureType_EMISSIVE, TextureType::Emissive },
-        // Extend as needed
+        { aiTextureType_HEIGHT, TextureType::Occlusion },
+        { aiTextureType_NORMALS, TextureType::Normal },
+        { aiTextureType_SHININESS, TextureType::Shininess },
+        { aiTextureType_OPACITY, TextureType::Opacity },
+        { aiTextureType_DISPLACEMENT, TextureType::Displacement },
+        { aiTextureType_LIGHTMAP, TextureType::Lightmap },
+        { aiTextureType_REFLECTION, TextureType::Reflection },
+        // Add more mappings as needed
     };
 
-    for (const auto& [aiType, myType] : aiToMyTextureType) {
+    // Log available texture types and counts
+    Logger::GetLogger()->debug("Texture counts per type:");
+    for (int i = aiTextureType_NONE; i <= aiTextureType_UNKNOWN; ++i)
+    {
+        aiTextureType type = static_cast<aiTextureType>(i);
+        unsigned int count = material->GetTextureCount(type);
+        Logger::GetLogger()->debug("{}: {}", AiTextureTypeToString(type), count);
+    }
+
+    // Iterate through the mapping and load textures
+    for (const auto& [aiType, myType] : aiToMyTextureType)
+    {
         unsigned int textureCount = material->GetTextureCount(aiType);
-        for (unsigned int i = 0; i < textureCount; ++i) {
+        for (unsigned int i = 0; i < textureCount; ++i)
+        {
             aiString str;
-            if (material->GetTexture(aiType, i, &str) == AI_SUCCESS) {
-                std::filesystem::path fullPath = std::filesystem::path(directory) / str.C_Str();
+            if (material->GetTexture(aiType, i, &str) == AI_SUCCESS)
+            {
+                std::string texturePath = std::string(str.C_Str());
+                std::filesystem::path fullPath = std::filesystem::path(directory) / texturePath;
+
                 try {
                     auto texture = std::make_shared<Texture2D>(fullPath.string());
-                    result.textures[myType] = std::move(texture);
+                    if (texture)
+                    {
+                        result.textures[myType] = texture;
+                        Logger::GetLogger()->info("Loaded texture [{}]: {}", AiTextureTypeToString(aiType), fullPath.string());
+                    }
+                    else
+                    {
+                        Logger::GetLogger()->error("Failed to load texture: {}", fullPath.string());
+                    }
                 }
                 catch (const std::exception& e) {
-                    Logger::GetLogger()->warn("Couldn't load texture '{}': {}", fullPath.string(), e.what());
+                    Logger::GetLogger()->error("Exception while loading texture '{}': {}", fullPath.string(), e.what());
                 }
             }
+            else
+            {
+                Logger::GetLogger()->warn("Failed to get texture of type {} at index {}", AiTextureTypeToString(aiType), i);
+            }
+        }
+    }
+
+    // Handle aiTextureType_UNKNOWN specifically if needed
+    unsigned int unknownCount = material->GetTextureCount(aiTextureType_UNKNOWN);
+    for (unsigned int i = 0; i < unknownCount; ++i)
+    {
+        aiString str;
+        if (material->GetTexture(aiTextureType_UNKNOWN, i, &str) == AI_SUCCESS)
+        {
+            std::string texturePath = std::string(str.C_Str());
+            std::filesystem::path fullPath = std::filesystem::path(directory) / texturePath;
+
+            try {
+                auto texture = std::make_shared<Texture2D>(fullPath.string());
+                if (texture)
+                {
+                    result.textures[TextureType::RoughnessMetallic] = texture;
+                    Logger::GetLogger()->info("Loaded RoughnessMetallic texture: {}", fullPath.string());
+                }
+                else
+                {
+                    Logger::GetLogger()->error("Failed to load RoughnessMetallic texture: {}", fullPath.string());
+                }
+            }
+            catch (const std::exception& e) {
+                Logger::GetLogger()->error("Exception while loading RoughnessMetallic texture '{}': {}", fullPath.string(), e.what());
+            }
+        }
+        else
+        {
+            Logger::GetLogger()->warn("Failed to get UNKNOWN texture at index {}", i);
         }
     }
 
@@ -267,6 +384,10 @@ glm::vec3 Model::CalculateModelCenter() const {
 
     if (totalVertices > 0) {
         center /= static_cast<float>(totalVertices);
+        Logger::GetLogger()->info("Calculated model center: ({}, {}, {})", center.x, center.y, center.z);
+    }
+    else {
+        Logger::GetLogger()->warn("No vertices found to calculate model center.");
     }
 
     return center;
@@ -292,10 +413,13 @@ void Model::CenterModel() {
         mesh->minBounds -= center;
         mesh->localCenter -= center;
     }
+
+    Logger::GetLogger()->info("Model centered by subtracting ({}, {}, {})", center.x, center.y, center.z);
 }
 
 std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLayout& layout) {
     if (meshIndex >= m_MeshInfos.size()) {
+        Logger::GetLogger()->error("Invalid mesh index: {}", meshIndex);
         throw std::out_of_range("Invalid mesh index: " + std::to_string(meshIndex));
     }
 
@@ -307,22 +431,25 @@ std::shared_ptr<MeshBuffer> Model::GetMeshBuffer(size_t meshIndex, const MeshLay
 
     auto meshBuffer = std::make_shared<MeshBuffer>(*m_MeshInfos[meshIndex].mesh, layout);
     cache[layout] = meshBuffer;
+    Logger::GetLogger()->debug("Created new MeshBuffer for meshIndex: {}, layout: {}", meshIndex, "");
     return meshBuffer;
 }
 
 std::vector<std::shared_ptr<MeshBuffer>> Model::GetMeshBuffers(const MeshLayout& layout) {
-    std::vector<std::shared_ptr<MeshBuffer>> result(m_MeshInfos.size());
+    std::vector<std::shared_ptr<MeshBuffer>> result;
+    result.reserve(m_MeshInfos.size());
 
     for (size_t i = 0; i < m_MeshInfos.size(); i++) {
         auto& cache = m_MeshBuffersCache[i];
         auto it = cache.find(layout);
         if (it != cache.end()) {
-            result[i] = it->second;
+            result.push_back(it->second);
         }
         else {
             auto meshBuffer = std::make_shared<MeshBuffer>(*m_MeshInfos[i].mesh, layout);
             cache[layout] = meshBuffer;
-            result[i] = meshBuffer;
+            result.push_back(meshBuffer);
+            Logger::GetLogger()->debug("Created new MeshBuffer for meshIndex: {}, layout: {}", i, "");
         }
     }
 
@@ -331,6 +458,7 @@ std::vector<std::shared_ptr<MeshBuffer>> Model::GetMeshBuffers(const MeshLayout&
 
 std::shared_ptr<Texture2D> Model::GetTexture(size_t meshIndex, TextureType type) const {
     if (meshIndex >= m_MeshInfos.size()) {
+        Logger::GetLogger()->error("Invalid mesh index: {}", meshIndex);
         throw std::out_of_range("Invalid mesh index: " + std::to_string(meshIndex));
     }
 
@@ -339,5 +467,7 @@ std::shared_ptr<Texture2D> Model::GetTexture(size_t meshIndex, TextureType type)
     if (it != textures.end()) {
         return it->second;
     }
+
+    Logger::GetLogger()->warn("Texture of type {} not found for meshIndex: {}", static_cast<int>(type), meshIndex);
     return nullptr;
 }
