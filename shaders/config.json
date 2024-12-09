@@ -79,6 +79,13 @@
                 "vertex": "../shaders/Wireframe.vert",
                 "fragment": "../shaders/Wireframe.frag"
             }
+        },
+        "brdfCompute": {
+            "binary_path": "../shaders/bin/BRDFCompute.bin",
+            "is_compute_shader": true,
+            "shader_stages": {
+                "compute": "../shaders/BRDFCompute.comp"
+            }
         }
     }
 }

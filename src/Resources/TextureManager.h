@@ -1,14 +1,10 @@
 #pragma once
 
 #include <string>
+#include <filesystem>
 #include <unordered_map>
 #include <memory>
-#include <filesystem>
-#include <string_view>
-#include <array>
-#include <mutex> 
-
-#include "Graphics/Textures/TextureBase.h"
+#include <mutex>
 #include "Graphics/Textures/Texture2D.h"
 #include "Graphics/Textures/CubeMapTexture.h"
 
@@ -17,10 +13,11 @@ public:
     static TextureManager& GetInstance();
 
     std::shared_ptr<Texture2D> GetTexture2D(const std::string& textureName);
-
     std::shared_ptr<CubeMapTexture> GetCubeMapTexture(const std::string& cubeMapName);
-
     std::shared_ptr<Texture2D> GetHeightMap(const std::string& heightMapName);
+
+    void RegisterTexture2D(const std::string& name, std::shared_ptr<Texture2D> texture);
+    void InitializeBRDFLUT(int width = 256, int height = 256, unsigned int numSamples = 1024);
 
     void Clear();
 

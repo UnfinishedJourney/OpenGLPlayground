@@ -15,7 +15,8 @@ PresentTextureEffect::PresentTextureEffect(std::shared_ptr<MeshBuffer> quad, int
 
     auto& textureManager = TextureManager::GetInstance();
 
-    m_Texture = textureManager.GetTexture2D("cuteDog");
+    m_Texture = textureManager.GetTexture2D("brdfLUT");
+    //m_Texture = textureManager.GetTexture2D("cuteDog");
 }
 
 void PresentTextureEffect::SetParameters(const std::unordered_map<std::string, EffectParameter>& params)

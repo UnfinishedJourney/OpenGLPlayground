@@ -27,11 +27,22 @@ void ComputeShader::LoadShader(bool reload) {
     source = ResolveIncludes(source, m_ShaderPath.parent_path(), includedFiles);
 
     GLuint shader = CompileShader(GL_COMPUTE_SHADER, source);
+    if (shader == 0) {
+        Logger::GetLogger()->error("Failed to compile compute shader '{}'.", m_ShaderPath.string());
+        return;
+    }
+
     *m_RendererIDPtr = LinkProgram({ shader });
+    if (*m_RendererIDPtr == 0) {
+        Logger::GetLogger()->error("Failed to link compute shader program '{}'.", m_ShaderPath.string());
+        return;
+    }
 
     if (!m_BinaryPath.empty()) {
         SaveBinary();
     }
+
+    Logger::GetLogger()->info("Compute shader '{}' compiled and linked successfully.", m_ShaderPath.string());
 }
 
 void ComputeShader::Dispatch(GLuint numGroupsX, GLuint numGroupsY, GLuint numGroupsZ) const {

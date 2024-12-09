@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Test.h"
+#include "Graphics/Shaders/ComputeShader.h"
 
 class TestComputeShader : public Test {
 public:
@@ -11,5 +12,9 @@ public:
     void OnExit() override;
     void OnUpdate(float deltaTime) override;
     void OnImGuiRender() override;
+
+private:
+    std::unique_ptr<ComputeShader> m_ComputeShader;
+    std::shared_ptr<Texture2D> m_ComputedTexture;
     // OnRender, OnWindowResize, and GetCamera inherited from Test
 };

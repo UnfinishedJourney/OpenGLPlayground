@@ -20,18 +20,11 @@ void TestComputeShader::OnEnter() {
     auto& shaderManager = ShaderManager::GetInstance();
     auto& textureManager = TextureManager::GetInstance();
 
-    // Add light to the scene
-    LightData light = { glm::vec4(1.5f, 2.0f, 1.5f, 0.0f) , glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) };
-    m_Scene->AddLight(light);
-
-    light = { glm::vec4(-1.5f, 2.0f, -1.5f, 0.0f) , glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) };
-    m_Scene->AddLight(light);
-
     m_Scene->SetPostProcessingEffect(PostProcessingEffectType::PresentTexture);
 
     auto tex = textureManager.GetTexture2D("heightmap");
     std::unordered_map<std::string, EffectParameter> params;
-    params.insert({ "texture", tex });
+    //params.insert({ "texture", tex });
     auto& effectsManager = EffectsManager::GetInstance();
     effectsManager.SetEffectParameters(PostProcessingEffectType::PresentTexture, params);
 }
