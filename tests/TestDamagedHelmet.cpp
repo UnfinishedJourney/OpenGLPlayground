@@ -77,7 +77,7 @@ void TestDamagedHelmet::OnEnter() {
     }
 
     // Add light to the scene
-    LightData light = { glm::vec4(1.5f, 2.0f, 1.5f, 0.0f) , glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) };
+    LightData light = { glm::vec4(10.0f, 10.0f, 10.0f, 0.0f) , glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) };
     m_Scene->AddLight(light);
 
     m_Scene->BuildBatches();

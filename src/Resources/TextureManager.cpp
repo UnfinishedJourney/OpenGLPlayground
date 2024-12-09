@@ -165,7 +165,8 @@ void TextureManager::InitializeBRDFLUT(int width, int height, unsigned int numSa
     // Create a Shader Storage Buffer Object (SSBO) using your custom ShaderStorageBuffer class
     std::unique_ptr<ShaderStorageBuffer> ssbo;
     try {
-        ssbo = std::make_unique<ShaderStorageBuffer>(1, width * height * sizeof(glm::vec2), GL_DYNAMIC_COPY);
+        ssbo = std::make_unique<ShaderStorageBuffer>(10, width * height * sizeof(glm::vec2), GL_DYNAMIC_COPY);
+        //one was conflicting with my lights binding point....
     }
     catch (const std::exception& e) {
         Logger::GetLogger()->error("Failed to create ShaderStorageBuffer: {}", e.what());

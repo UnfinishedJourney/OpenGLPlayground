@@ -2,6 +2,7 @@
 
 #include "Common/Common.shader"
 #include "Common/LightsFunctions.shader"
+
 layout(location = 0) out vec4 color;
 in vec3 FragPos;
 in vec3 Normal;
