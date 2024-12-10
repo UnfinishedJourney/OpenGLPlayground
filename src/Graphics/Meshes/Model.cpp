@@ -268,28 +268,21 @@ MeshTextures Model::LoadTextures(aiMaterial* material, const std::string& direct
 {
     MeshTextures result;
 
+    // Mapping from aiTextureType to your TextureType enum
     std::unordered_map<aiTextureType, TextureType> aiToMyTextureType = {
         { aiTextureType_DIFFUSE, TextureType::Albedo },
-        { aiTextureType_SPECULAR, TextureType::Specular },
-        { aiTextureType_AMBIENT, TextureType::Ambient },
-        { aiTextureType_EMISSIVE, TextureType::Emissive },
-        { aiTextureType_HEIGHT, TextureType::Occlusion },
         { aiTextureType_NORMALS, TextureType::Normal },
-        { aiTextureType_SHININESS, TextureType::Shininess },
-        { aiTextureType_OPACITY, TextureType::Opacity },
-        { aiTextureType_DISPLACEMENT, TextureType::Displacement },
-        { aiTextureType_LIGHTMAP, TextureType::Lightmap },
-        { aiTextureType_REFLECTION, TextureType::Reflection },
-        // Add more mappings as needed
+        { aiTextureType_UNKNOWN, TextureType::MetalRoughness },   // Assuming UNKNOWN is used for MetalRoughness
+        { aiTextureType_LIGHTMAP, TextureType::AO },             // Assuming LIGHTMAP is used for Ambient Occlusion
+        { aiTextureType_EMISSIVE, TextureType::Emissive }
     };
 
     // Log available texture types and counts
     Logger::GetLogger()->debug("Texture counts per type:");
-    for (int i = aiTextureType_NONE; i <= aiTextureType_UNKNOWN; ++i)
+    for (const auto& [aiType, myType] : aiToMyTextureType)
     {
-        aiTextureType type = static_cast<aiTextureType>(i);
-        unsigned int count = material->GetTextureCount(type);
-        Logger::GetLogger()->debug("{}: {}", AiTextureTypeToString(type), count);
+        unsigned int count = material->GetTextureCount(aiType);
+        Logger::GetLogger()->debug("{}: {}", AiTextureTypeToString(aiType), count);
     }
 
     // Iterate through the mapping and load textures
@@ -324,38 +317,6 @@ MeshTextures Model::LoadTextures(aiMaterial* material, const std::string& direct
             {
                 Logger::GetLogger()->warn("Failed to get texture of type {} at index {}", AiTextureTypeToString(aiType), i);
             }
-        }
-    }
-
-    // Handle aiTextureType_UNKNOWN specifically if needed
-    unsigned int unknownCount = material->GetTextureCount(aiTextureType_UNKNOWN);
-    for (unsigned int i = 0; i < unknownCount; ++i)
-    {
-        aiString str;
-        if (material->GetTexture(aiTextureType_UNKNOWN, i, &str) == AI_SUCCESS)
-        {
-            std::string texturePath = std::string(str.C_Str());
-            std::filesystem::path fullPath = std::filesystem::path(directory) / texturePath;
-
-            try {
-                auto texture = std::make_shared<Texture2D>(fullPath.string());
-                if (texture)
-                {
-                    result.textures[TextureType::RoughnessMetallic] = texture;
-                    Logger::GetLogger()->info("Loaded RoughnessMetallic texture: {}", fullPath.string());
-                }
-                else
-                {
-                    Logger::GetLogger()->error("Failed to load RoughnessMetallic texture: {}", fullPath.string());
-                }
-            }
-            catch (const std::exception& e) {
-                Logger::GetLogger()->error("Exception while loading RoughnessMetallic texture '{}': {}", fullPath.string(), e.what());
-            }
-        }
-        else
-        {
-            Logger::GetLogger()->warn("Failed to get UNKNOWN texture at index {}", i);
         }
     }
 

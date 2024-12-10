@@ -44,8 +44,8 @@ void TestDamagedHelmet::OnEnter() {
 
     std::shared_ptr<Texture2D> albedoTexture = model->GetTexture(0, TextureType::Albedo);
     std::shared_ptr<Texture2D> normalTexture = model->GetTexture(0, TextureType::Normal);
-    std::shared_ptr<Texture2D> occlusionTexture = model->GetTexture(0, TextureType::Occlusion);
-    std::shared_ptr<Texture2D> roughmetTexture = model->GetTexture(0, TextureType::RoughnessMetallic);
+    std::shared_ptr<Texture2D> occlusionTexture = model->GetTexture(0, TextureType::AO);
+    std::shared_ptr<Texture2D> roughmetTexture = model->GetTexture(0, TextureType::MetalRoughness);
     std::shared_ptr<Texture2D> emissiveTexture = model->GetTexture(0, TextureType::Emissive);
 
 
@@ -82,7 +82,6 @@ void TestDamagedHelmet::OnEnter() {
 
     m_Scene->BuildBatches();
     m_Scene->SetBDebugLights(true);
-    m_Scene->SetBGrid(true);
 }
 
 void TestDamagedHelmet::OnExit() {

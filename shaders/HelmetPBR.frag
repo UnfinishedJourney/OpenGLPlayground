@@ -113,7 +113,7 @@ void main()
     
     // **Step 6: Applying Ambient Occlusion and Emissive Color**
     
-    //color *= ao;        // Apply Ambient Occlusion
+    color *= ao;        // Apply Ambient Occlusion
     color += emissive;  // Add emissive color
     
     // **Step 7: Gamma Correction**
