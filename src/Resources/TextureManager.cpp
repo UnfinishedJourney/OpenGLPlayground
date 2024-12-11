@@ -1,202 +1,170 @@
-#include "Resources/TextureManager.h"
+#include "TextureManager.h"
+#include "Graphics/Textures/OpenGLTexture.h"
+#include "Graphics/Textures/OpenGLCubeMapTexture.h"
+#include "Graphics/Textures/OpenGLTextureArray.h"
 #include "Utilities/Logger.h"
-#include "Graphics/Shaders/ComputeShader.h"
 #include "Resources/ShaderManager.h"
-#include "Graphics/Textures/Texture2D.h"
+#include "Graphics/Shaders/ComputeShader.h"
 #include "Graphics/Buffers/ShaderStorageBuffer.h"
-#include <glad/glad.h>
-#include <glm/glm.hpp>
+#include "Graphics/Textures/TextureData.h"
+#include <fstream>
 #include <stdexcept>
+#include <glm/glm.hpp>
+#include <glad/glad.h>
 
 TextureManager& TextureManager::GetInstance() {
     static TextureManager instance;
     return instance;
 }
 
-TextureManager::TextureManager() {
-    m_TexturePaths = {
-        {"cuteDog", "../assets/cute_dog.png"},
-        {"heightmap", "../assets/heightmap.png"},
-        {"duckDiffuse", "../assets/rubber_duck/textures/Duck_baseColor.png"},
-        {"damagedHelmet1", "../assets/DamagedHelmet/glTF/Default_albedo.jpg"},
-        {"damagedHelmet2", "../assets/DamagedHelmet/glTF/Default_AO.jpg"},
-        {"damagedHelmet3", "../assets/DamagedHelmet/glTF/Default_emissive.jpg"}
-    };
-
-    m_CubeMapTexturePaths = {
-        {"pisa", {
-            "../assets/cube/pisa/pisa_posx.png",
-            "../assets/cube/pisa/pisa_negx.png",
-            "../assets/cube/pisa/pisa_posy.png",
-            "../assets/cube/pisa/pisa_negy.png",
-            "../assets/cube/pisa/pisa_posz.png",
-            "../assets/cube/pisa/pisa_negz.png"
-        }}
-    };
-
-    InitializeBRDFLUT();
-}
-
-std::filesystem::path TextureManager::GetTexturePath(const std::string& textureName) const {
-    auto it = m_TexturePaths.find(textureName);
-    if (it != m_TexturePaths.end()) {
-        return it->second;
-    }
-    else {
-        Logger::GetLogger()->error("Texture name '{}' not found in texture path mappings.", textureName);
-        return {};
-    }
-}
-
-std::array<std::filesystem::path, 6> TextureManager::GetCubeMapPaths(const std::string& cubeMapName) const {
-    auto it = m_CubeMapTexturePaths.find(cubeMapName);
-    if (it != m_CubeMapTexturePaths.end()) {
-        return it->second;
-    }
-    else {
-        Logger::GetLogger()->error("CubeMap name '{}' not found in cube map texture path mappings.", cubeMapName);
-        return {};
-    }
-}
-
-std::shared_ptr<Texture2D> TextureManager::GetTexture2D(const std::string& textureName) {
-    std::lock_guard<std::mutex> lock(m_Mutex); 
-
-    auto it = m_Texture2Ds.find(textureName);
-    if (it != m_Texture2Ds.end()) {
-        return it->second;
-    }
-
-    auto texturePath = GetTexturePath(textureName);
-    if (texturePath.empty() || !std::filesystem::exists(texturePath)) {
-        Logger::GetLogger()->error("Texture file '{}' does not exist.", texturePath.string());
-        return nullptr;
-    }
-
-    try {
-        auto texture = std::make_shared<Texture2D>(texturePath);
-        m_Texture2Ds.emplace(textureName, texture);
-        return texture;
-    }
-    catch (const std::exception& e) {
-        Logger::GetLogger()->error("Exception while loading Texture2D '{}': {}", textureName, e.what());
-        return nullptr;
-    }
-}
-
-std::shared_ptr<CubeMapTexture> TextureManager::GetCubeMapTexture(const std::string& cubeMapName) {
+bool TextureManager::LoadConfig(const std::filesystem::path& configPath) {
     std::lock_guard<std::mutex> lock(m_Mutex);
 
-    auto it = m_CubeMapTextures.find(cubeMapName);
-    if (it != m_CubeMapTextures.end()) {
-        return it->second;
+    if (!std::filesystem::exists(configPath)) {
+        Logger::GetLogger()->error("Texture config file '{}' does not exist.", configPath.string());
+        return false;
     }
 
-    auto facePaths = GetCubeMapPaths(cubeMapName);
-    if (facePaths.empty()) {
-        Logger::GetLogger()->error("Cube map face paths for '{}' are empty.", cubeMapName);
-        return nullptr;
+    std::ifstream file(configPath);
+    if (!file) {
+        Logger::GetLogger()->error("Failed to open texture config file '{}'.", configPath.string());
+        return false;
     }
 
-    for (const auto& path : facePaths) {
-        if (!std::filesystem::exists(path)) {
-            Logger::GetLogger()->error("Cube map face file '{}' does not exist.", path.string());
-            return nullptr;
+    nlohmann::json jsonData;
+    try {
+        file >> jsonData;
+    }
+    catch (const std::exception& e) {
+        Logger::GetLogger()->error("Error parsing texture config '{}': {}", configPath.string(), e.what());
+        return false;
+    }
+
+    const auto& texturesJson = jsonData["textures"];
+    if (texturesJson.contains("2d") && !Load2DTextures(texturesJson["2d"])) return false;
+    if (texturesJson.contains("cubeMaps") && !LoadCubeMaps(texturesJson["cubeMaps"])) return false;
+    if (texturesJson.contains("arrays") && !LoadTextureArrays(texturesJson["arrays"])) return false;
+    if (texturesJson.contains("computed") && !LoadComputedTextures(texturesJson["computed"])) return false;
+
+    return true;
+}
+
+bool TextureManager::Load2DTextures(const nlohmann::json& json) {
+    for (auto& [name, pathVal] : json.items()) {
+        std::string path = pathVal.get<std::string>();
+        TextureData data;
+        if (!data.LoadFromFile(path)) {
+            Logger::GetLogger()->error("Failed to load 2D texture '{}': {}", name, path);
+            continue;
+        }
+
+        TextureConfig config;
+        try {
+            auto tex = std::make_shared<OpenGLTexture>(data, config);
+            m_Textures[name] = tex;
+            Logger::GetLogger()->info("Loaded 2D texture '{}'.", name);
+        }
+        catch (const std::exception& e) {
+            Logger::GetLogger()->error("Exception loading 2D texture '{}': {}", name, e.what());
         }
     }
-
-    try {
-        auto cubeMap = std::make_shared<CubeMapTexture>(facePaths);
-        m_CubeMapTextures.emplace(cubeMapName, cubeMap);
-        return cubeMap;
-    }
-    catch (const std::exception& e) {
-        Logger::GetLogger()->error("Exception while loading CubeMapTexture '{}': {}", cubeMapName, e.what());
-        return nullptr;
-    }
+    return true;
 }
 
-std::shared_ptr<Texture2D> TextureManager::GetHeightMap(const std::string& heightMapName) {
-    std::lock_guard<std::mutex> lock(m_Mutex); 
+bool TextureManager::LoadCubeMaps(const nlohmann::json& json) {
+    for (auto& [name, arrVal] : json.items()) {
+        auto arr = arrVal.get<std::vector<std::string>>();
+        if (arr.size() != 6) {
+            Logger::GetLogger()->error("Cube map '{}' must have exactly 6 faces.", name);
+            continue;
+        }
+        std::array<std::filesystem::path, 6> faces;
+        for (size_t i = 0; i < 6; i++) faces[i] = arr[i];
 
-    auto it = m_HeightMaps.find(heightMapName);
-    if (it != m_HeightMaps.end()) {
-        return it->second;
+        TextureConfig config;
+        try {
+            auto cubeMap = std::make_shared<OpenGLCubeMapTexture>(faces, config);
+            m_Textures[name] = cubeMap;
+            Logger::GetLogger()->info("Loaded cube map '{}'.", name);
+        }
+        catch (const std::exception& e) {
+            Logger::GetLogger()->error("Exception loading cube map '{}': {}", name, e.what());
+        }
     }
-
-    auto texturePath = GetTexturePath(heightMapName);
-    if (texturePath.empty() || !std::filesystem::exists(texturePath)) {
-        Logger::GetLogger()->error("Heightmap file '{}' does not exist.", texturePath.string());
-        return nullptr;
-    }
-
-    try {
-        auto heightMap = std::make_shared<Texture2D>(texturePath);
-        m_HeightMaps.emplace(heightMapName, heightMap);
-        return heightMap;
-    }
-    catch (const std::exception& e) {
-        Logger::GetLogger()->error("Exception while loading HeightMap '{}': {}", heightMapName, e.what());
-        return nullptr;
-    }
+    return true;
 }
 
-void TextureManager::RegisterTexture2D(const std::string& name, std::shared_ptr<Texture2D> texture) {
-    std::lock_guard<std::mutex> lock(m_Mutex);
+bool TextureManager::LoadTextureArrays(const nlohmann::json& json) {
+    for (auto& [name, arrVal] : json.items()) {
+        auto arr = arrVal.get<std::vector<std::string>>();
+        if (arr.empty()) {
+            Logger::GetLogger()->error("Texture array '{}' is empty.", name);
+            continue;
+        }
 
-    if (m_Texture2Ds.find(name) != m_Texture2Ds.end()) {
-        Logger::GetLogger()->warn("Texture2D with name '{}' already exists. Overwriting.", name);
+        TextureConfig config;
+        try {
+            auto texArray = std::make_shared<OpenGLTextureArray>(arr, config);
+            m_Textures[name] = texArray;
+            Logger::GetLogger()->info("Loaded texture array '{}'.", name);
+        }
+        catch (const std::exception& e) {
+            Logger::GetLogger()->error("Exception loading texture array '{}': {}", name, e.what());
+        }
     }
-    m_Texture2Ds[name] = texture;
-    Logger::GetLogger()->info("Texture2D '{}' registered.", name);
+    return true;
 }
 
-void TextureManager::InitializeBRDFLUT(int width, int height, unsigned int numSamples) {
-    Logger::GetLogger()->info("Initializing BRDF LUT with size {}x{} and {} samples.", width, height, numSamples);
+bool TextureManager::LoadComputedTextures(const nlohmann::json& json) {
+    for (auto& [name, info] : json.items()) {
+        std::string type = info.value("type", "");
+        if (type == "compute") {
+            int width = info.value("width", 256);
+            int height = info.value("height", 256);
+            unsigned int samples = info.value("numSamples", 1024);
+            auto tex = CreateBRDFLUT(width, height, samples);
+            if (tex) {
+                m_Textures[name] = tex;
+                Logger::GetLogger()->info("Computed texture '{}' created.", name);
+            }
+        }
+        else {
+            Logger::GetLogger()->error("Unknown computed texture type '{}' for '{}'.", type, name);
+        }
+    }
+    return true;
+}
 
-    // Retrieve the compute shader responsible for generating the BRDF LUT
+std::shared_ptr<ITexture> TextureManager::CreateBRDFLUT(int width, int height, unsigned int numSamples) {
     auto& shaderManager = ShaderManager::GetInstance();
     auto computeShader = shaderManager.GetComputeShader("brdfCompute");
     if (!computeShader) {
         Logger::GetLogger()->error("Compute shader 'brdfCompute' not found!");
-        return;
+        return nullptr;
     }
 
-    // Create a Shader Storage Buffer Object (SSBO) using your custom ShaderStorageBuffer class
     std::unique_ptr<ShaderStorageBuffer> ssbo;
     try {
         ssbo = std::make_unique<ShaderStorageBuffer>(10, width * height * sizeof(glm::vec2), GL_DYNAMIC_COPY);
-        //one was conflicting with my lights binding point....
     }
     catch (const std::exception& e) {
-        Logger::GetLogger()->error("Failed to create ShaderStorageBuffer: {}", e.what());
-        return;
+        Logger::GetLogger()->error("Failed to create SSBO: {}", e.what());
+        return nullptr;
     }
 
-    // Bind the compute shader and set the required uniform
     computeShader->Bind();
     computeShader->SetUniform("NUM_SAMPLES", numSamples);
 
-    // Calculate the number of workgroups based on the local workgroup size (16x16)
     GLuint groupX = (width + 15) / 16;
     GLuint groupY = (height + 15) / 16;
-
-    Logger::GetLogger()->info("Dispatching compute shader with group sizes: ({}, {})", groupX, groupY);
     computeShader->Dispatch(groupX, groupY, 1);
 
-    // Ensure memory coherence before reading from the buffer
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     computeShader->Unbind();
 
-    // Generate and configure the BRDF LUT texture
-    GLuint brdfLUTTextureID;
-    glGenTextures(1, &brdfLUTTextureID);
-    if (brdfLUTTextureID == 0) {
-        Logger::GetLogger()->error("Failed to create BRDF LUT texture.");
-        return;
-    }
-
-    glBindTexture(GL_TEXTURE_2D, brdfLUTTextureID);
+    GLuint brdfLUTID;
+    glGenTextures(1, &brdfLUTID);
+    glBindTexture(GL_TEXTURE_2D, brdfLUTID);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, width, height, 0, GL_RG, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -204,61 +172,55 @@ void TextureManager::InitializeBRDFLUT(int width, int height, unsigned int numSa
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    // Bind the SSBO before mapping
     ssbo->Bind();
-
-    // Map the SSBO to read the computed BRDF data
-    glm::vec2* ptr = static_cast<glm::vec2*>(glMapBufferRange(
-        GL_SHADER_STORAGE_BUFFER,
-        0,
-        width * height * sizeof(glm::vec2),
-        GL_MAP_READ_BIT
-    ));
-
-    if (ptr) {
-        // Optional: Log the first few values for debugging
-        for (int i = 0; i < 10 && i < width * height; ++i) {
-            Logger::GetLogger()->info("BRDF LUT [{}]: ({}, {})", i, ptr[i].x, ptr[i].y);
-        }
-
-        // Upload the data from the SSBO to the texture
-        glBindTexture(GL_TEXTURE_2D, brdfLUTTextureID);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RG, GL_FLOAT, ptr);
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        // Unmap the buffer after reading
-        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-    }
-    else {
-        Logger::GetLogger()->error("Failed to map the BRDF SSBO buffer.");
+    glm::vec2* ptr = (glm::vec2*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, width * height * sizeof(glm::vec2), GL_MAP_READ_BIT);
+    if (!ptr) {
+        Logger::GetLogger()->error("Failed to map SSBO for BRDF LUT.");
+        ssbo->Unbind();
+        glDeleteTextures(1, &brdfLUTID);
+        return nullptr;
     }
 
-    // Unbind the SSBO
+    glBindTexture(GL_TEXTURE_2D, brdfLUTID);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RG, GL_FLOAT, ptr);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
     ssbo->Unbind();
 
-    // Wrap the BRDF LUT texture using your Texture2D class
-    std::shared_ptr<Texture2D> brdfLUTTexture;
-    try {
-        brdfLUTTexture = std::make_shared<Texture2D>(brdfLUTTextureID, width, height, GL_RG32F);
-    }
-    catch (const std::exception& e) {
-        Logger::GetLogger()->error("Failed to create Texture2D for BRDF LUT: {}", e.what());
-        glDeleteTextures(1, &brdfLUTTextureID);
-        return;
-    }
+    // Wrap into a basic ITexture
+    class ExistingOpenGLTexture : public ITexture {
+    public:
+        ExistingOpenGLTexture(GLuint id, int w, int h)
+            : m_TextureID(id), m_Width(w), m_Height(h) {}
+        ~ExistingOpenGLTexture() {
+            if (m_TextureID) glDeleteTextures(1, &m_TextureID);
+        }
+        void Bind(uint32_t unit) const override { glBindTextureUnit(unit, m_TextureID); }
+        void Unbind(uint32_t unit) const override { glBindTextureUnit(unit, 0); }
+        uint32_t GetWidth() const override { return m_Width; }
+        uint32_t GetHeight() const override { return m_Height; }
+        uint64_t GetBindlessHandle() const override { return 0; }
+        bool IsBindless() const override { return false; }
 
-    // Register the texture for later use
-    RegisterTexture2D("brdfLUT", brdfLUTTexture);
+    private:
+        GLuint m_TextureID;
+        int m_Width, m_Height;
+    };
 
-    Logger::GetLogger()->info("BRDF LUT initialized and registered as 'brdfLUT'.");
+    return std::make_shared<ExistingOpenGLTexture>(brdfLUTID, width, height);
+}
+
+std::shared_ptr<ITexture> TextureManager::GetTexture(const std::string& name) {
+    std::lock_guard<std::mutex> lock(m_Mutex);
+    auto it = m_Textures.find(name);
+    if (it != m_Textures.end()) return it->second;
+    Logger::GetLogger()->warn("Texture '{}' not found.", name);
+    return nullptr;
 }
 
 void TextureManager::Clear() {
     std::lock_guard<std::mutex> lock(m_Mutex);
-
-    m_Texture2Ds.clear();
-    m_CubeMapTextures.clear();
-    m_HeightMaps.clear();
-
+    m_Textures.clear();
     Logger::GetLogger()->info("Cleared all textures from TextureManager.");
 }

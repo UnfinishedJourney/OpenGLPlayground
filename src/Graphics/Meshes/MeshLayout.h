@@ -2,7 +2,6 @@
 
 #include <unordered_set>
 #include <functional>
-#include "Graphics/Textures/Texture2D.h"
 #include "Graphics/Meshes/Mesh.h"
 
 struct MeshLayout {

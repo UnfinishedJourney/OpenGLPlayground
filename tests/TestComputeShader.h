@@ -15,6 +15,6 @@ public:
 
 private:
     std::unique_ptr<ComputeShader> m_ComputeShader;
-    std::shared_ptr<Texture2D> m_ComputedTexture;
+    std::shared_ptr<ITexture> m_ComputedTexture;
     // OnRender, OnWindowResize, and GetCamera inherited from Test
 };

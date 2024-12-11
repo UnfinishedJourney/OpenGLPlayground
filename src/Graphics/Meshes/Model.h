@@ -8,10 +8,10 @@
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Meshes/MeshLayout.h"
 #include "Graphics/Buffers/MeshBuffer.h"
-#include "Graphics/Textures/Texture2D.h"
+#include "Graphics/Textures/OpenGLTexture.h"
 
 struct MeshTextures {
-    std::unordered_map<TextureType, std::shared_ptr<Texture2D>> textures;
+    std::unordered_map<TextureType, std::shared_ptr<ITexture>> textures;
 };
 
 struct MeshInfo {
@@ -25,7 +25,7 @@ public:
 
     size_t GetMeshCount() const { return m_MeshInfos.size(); }
     std::shared_ptr<MeshBuffer> GetMeshBuffer(size_t meshIndex, const MeshLayout& layout);
-    std::shared_ptr<Texture2D> GetTexture(size_t meshIndex, TextureType type) const;
+    std::shared_ptr<ITexture> GetTexture(size_t meshIndex, TextureType type) const;
 
     const std::vector<MeshInfo>& GetMeshesInfo() const { return m_MeshInfos; }
     std::vector<std::shared_ptr<MeshBuffer>> GetMeshBuffers(const MeshLayout& layout);

@@ -1,5 +1,6 @@
 #include "Model.h"
 #include "Utilities/Logger.h"
+#include "Resources/TextureManager.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -268,60 +269,59 @@ MeshTextures Model::LoadTextures(aiMaterial* material, const std::string& direct
 {
     MeshTextures result;
 
-    // Mapping from aiTextureType to your TextureType enum
     std::unordered_map<aiTextureType, TextureType> aiToMyTextureType = {
         { aiTextureType_DIFFUSE, TextureType::Albedo },
         { aiTextureType_NORMALS, TextureType::Normal },
-        { aiTextureType_UNKNOWN, TextureType::MetalRoughness },   // Assuming UNKNOWN is used for MetalRoughness
-        { aiTextureType_LIGHTMAP, TextureType::AO },             // Assuming LIGHTMAP is used for Ambient Occlusion
+        { aiTextureType_LIGHTMAP, TextureType::AO },
+        // If the model has roughness/metalness textures as UNKNOWN, consider a better strategy:
+        { aiTextureType_UNKNOWN, TextureType::MetalRoughness },
         { aiTextureType_EMISSIVE, TextureType::Emissive }
     };
 
-    // Log available texture types and counts
-    Logger::GetLogger()->debug("Texture counts per type:");
-    for (const auto& [aiType, myType] : aiToMyTextureType)
-    {
-        unsigned int count = material->GetTextureCount(aiType);
-        Logger::GetLogger()->debug("{}: {}", AiTextureTypeToString(aiType), count);
-    }
-
-    // Iterate through the mapping and load textures
-    for (const auto& [aiType, myType] : aiToMyTextureType)
-    {
+    for (const auto& [aiType, myType] : aiToMyTextureType) {
         unsigned int textureCount = material->GetTextureCount(aiType);
-        for (unsigned int i = 0; i < textureCount; ++i)
-        {
+        for (unsigned int i = 0; i < textureCount; ++i) {
             aiString str;
-            if (material->GetTexture(aiType, i, &str) == AI_SUCCESS)
-            {
-                std::string texturePath = std::string(str.C_Str());
-                std::filesystem::path fullPath = std::filesystem::path(directory) / texturePath;
+            if (material->GetTexture(aiType, i, &str) == AI_SUCCESS) {
+                std::string filename = std::filesystem::path(str.C_Str()).filename().string();
+                std::string fullPath = (std::filesystem::path(directory) / filename).string();
+
+                TextureData texData;
+                if (!texData.LoadFromFile(fullPath)) {
+                    Logger::GetLogger()->error("Failed to load texture: {}", fullPath);
+                    // Possibly assign a fallback texture here
+                    continue;
+                }
+
+                if (texData.GetWidth() <= 0 || texData.GetHeight() <= 0) {
+                    Logger::GetLogger()->error("Invalid texture dimensions for: {}", fullPath);
+                    // Fallback or skip
+                    continue;
+                }
+
+                TextureConfig texConfig; // Customize if needed
 
                 try {
-                    auto texture = std::make_shared<Texture2D>(fullPath.string());
-                    if (texture)
-                    {
+                    auto texture = std::make_shared<OpenGLTexture>(texData, texConfig);
+                    if (texture) {
                         result.textures[myType] = texture;
-                        Logger::GetLogger()->info("Loaded texture [{}]: {}", AiTextureTypeToString(aiType), fullPath.string());
+                        Logger::GetLogger()->info("Loaded texture [{}]: {}", AiTextureTypeToString(aiType), fullPath);
                     }
-                    else
-                    {
-                        Logger::GetLogger()->error("Failed to load texture: {}", fullPath.string());
+                    else {
+                        Logger::GetLogger()->error("Failed to create OpenGLTexture: {}", fullPath);
                     }
                 }
                 catch (const std::exception& e) {
-                    Logger::GetLogger()->error("Exception while loading texture '{}': {}", fullPath.string(), e.what());
+                    Logger::GetLogger()->error("Exception while loading texture '{}': {}", fullPath, e.what());
+                    // Fallback or skip
                 }
-            }
-            else
-            {
-                Logger::GetLogger()->warn("Failed to get texture of type {} at index {}", AiTextureTypeToString(aiType), i);
             }
         }
     }
 
     return result;
 }
+
 
 glm::vec3 Model::CalculateModelCenter() const {
     glm::vec3 center(0.0f);
@@ -417,18 +417,16 @@ std::vector<std::shared_ptr<MeshBuffer>> Model::GetMeshBuffers(const MeshLayout&
     return result;
 }
 
-std::shared_ptr<Texture2D> Model::GetTexture(size_t meshIndex, TextureType type) const {
+std::shared_ptr<ITexture> Model::GetTexture(size_t meshIndex, TextureType type) const {
     if (meshIndex >= m_MeshInfos.size()) {
         Logger::GetLogger()->error("Invalid mesh index: {}", meshIndex);
-        throw std::out_of_range("Invalid mesh index: " + std::to_string(meshIndex));
+        throw std::out_of_range("Invalid mesh index.");
     }
-
     const auto& textures = m_MeshInfos[meshIndex].meshTextures.textures;
     auto it = textures.find(type);
     if (it != textures.end()) {
-        return it->second;
+        return it->second; // returns ITexture now
     }
-
-    Logger::GetLogger()->warn("Texture of type {} not found for meshIndex: {}", static_cast<int>(type), meshIndex);
+    Logger::GetLogger()->warn("Texture of type {} not found for meshIndex: {}", (int)type, meshIndex);
     return nullptr;
 }

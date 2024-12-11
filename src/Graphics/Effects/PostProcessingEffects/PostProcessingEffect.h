@@ -12,7 +12,7 @@
 
 #include <variant>
 #include <glm/glm.hpp>
-#include "Graphics/Textures/Texture2D.h"
+#include "Graphics/Textures/ITexture.h"
 
 using EffectParameter = std::variant<
     float,
@@ -20,7 +20,7 @@ using EffectParameter = std::variant<
     glm::vec2,
     glm::vec3,
     glm::vec4,
-    std::shared_ptr<Texture2D>
+    std::shared_ptr<ITexture>
 >;
 
 class PostProcessingEffect {

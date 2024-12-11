@@ -1,75 +1,48 @@
-#include "Graphics/Materials/Material.h"
+#include "Material.h"
 #include "Utilities/Logger.h"
-#include <glm/gtc/type_ptr.hpp>
 
-void Material::AddTexture(const std::shared_ptr<TextureBase>& texture, GLuint textureUnit) {
-    if (texture) {
-        m_Textures[textureUnit] = texture;
-        Logger::GetLogger()->info("Texture added to unit {}.", textureUnit);
+void Material::AddTexture(const std::shared_ptr<ITexture>& texture, uint32_t unit) {
+    if (!texture) {
+        Logger::GetLogger()->warn("Attempted to add null texture.");
+        return;
     }
-    else {
-        Logger::GetLogger()->warn("Attempted to add a null texture to unit {}.", textureUnit);
-    }
+    m_Textures[unit] = texture;
 }
 
-template <typename T>
-void Material::AddParam(std::string_view name, const T& value) {
-    m_Params.emplace(std::string(name), value);
-    Logger::GetLogger()->info("Parameter '{}' added.", name);
+template<typename T>
+void Material::AddParam(const std::string& name, const T& value) {
+    m_Params[name] = value;
 }
 
-// Explicit template instantiations
-template void Material::AddParam<int>(std::string_view name, const int& value);
-template void Material::AddParam<float>(std::string_view name, const float& value);
-template void Material::AddParam<glm::vec2>(std::string_view name, const glm::vec2& value);
-template void Material::AddParam<glm::vec3>(std::string_view name, const glm::vec3& value);
-template void Material::AddParam<glm::vec4>(std::string_view name, const glm::vec4& value);
-template void Material::AddParam<glm::mat3>(std::string_view name, const glm::mat3& value);
-template void Material::AddParam<glm::mat4>(std::string_view name, const glm::mat4& value);
-
-const std::unordered_map<std::string, UniformValue>& Material::GetParams() const {
-    return m_Params;
-}
-
-const std::unordered_map<GLuint, std::shared_ptr<TextureBase>>& Material::GetTextures() const {
-    return m_Textures;
-}
+template void Material::AddParam<int>(const std::string&, const int&);
+template void Material::AddParam<float>(const std::string&, const float&);
+template void Material::AddParam<glm::vec2>(const std::string&, const glm::vec2&);
+template void Material::AddParam<glm::vec3>(const std::string&, const glm::vec3&);
+template void Material::AddParam<glm::vec4>(const std::string&, const glm::vec4&);
+template void Material::AddParam<glm::mat3>(const std::string&, const glm::mat3&);
+template void Material::AddParam<glm::mat4>(const std::string&, const glm::mat4&);
 
 void Material::Bind(const std::shared_ptr<BaseShader>& shader) const {
     if (!shader) {
-        Logger::GetLogger()->error("Attempted to bind material to a null shader.");
+        Logger::GetLogger()->error("No shader provided to material bind.");
         return;
     }
 
-    Logger::GetLogger()->debug("Binding material to shader.");
-
     // Bind textures
-    for (const auto& [unit, texture] : m_Textures) {
-        if (texture) {
-            texture->Bind(unit);
-            Logger::GetLogger()->debug("Texture bound to unit {}.", unit);
-        }
-        else {
-            Logger::GetLogger()->warn("Texture in unit {} is null. Skipping bind.", unit);
-        }
+    for (auto& [unit, tex] : m_Textures) {
+        tex->Bind(unit);
     }
 
-    // Set uniform parameters
-    for (const auto& [name, value] : m_Params) {
-        std::visit([&](const auto& arg) {
+    // Set uniforms
+    for (auto& [name, val] : m_Params) {
+        std::visit([&](auto&& arg) {
             shader->SetUniform(name, arg);
-            Logger::GetLogger()->debug("Set uniform '{}' with value.", name);
-            }, value);
+            }, val);
     }
 }
 
 void Material::Unbind() const {
-    Logger::GetLogger()->debug("Unbinding material textures.");
-
-    for (const auto& [unit, texture] : m_Textures) {
-        if (texture) {
-            texture->Unbind(unit);
-            Logger::GetLogger()->debug("Texture unbound from unit {}.", unit);
-        }
+    for (auto& [unit, tex] : m_Textures) {
+        tex->Unbind(unit);
     }
 }

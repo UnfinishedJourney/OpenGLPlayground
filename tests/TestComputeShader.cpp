@@ -22,7 +22,7 @@ void TestComputeShader::OnEnter() {
 
     m_Scene->SetPostProcessingEffect(PostProcessingEffectType::PresentTexture);
 
-    auto tex = textureManager.GetTexture2D("heightmap");
+    auto tex = textureManager.GetTexture("heightmap");
     std::unordered_map<std::string, EffectParameter> params;
     //params.insert({ "texture", tex });
     auto& effectsManager = EffectsManager::GetInstance();

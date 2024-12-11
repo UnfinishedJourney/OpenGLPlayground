@@ -15,7 +15,7 @@ PresentTextureEffect::PresentTextureEffect(std::shared_ptr<MeshBuffer> quad, int
 
     auto& textureManager = TextureManager::GetInstance();
 
-    m_Texture = textureManager.GetTexture2D("brdfLUT");
+    m_Texture = textureManager.GetTexture("brdfLUT");
     //m_Texture = textureManager.GetTexture2D("cuteDog");
 }
 
@@ -23,7 +23,7 @@ void PresentTextureEffect::SetParameters(const std::unordered_map<std::string, E
 {
     for (const auto& [key, value] : params) {
         if (key == "texture") {
-            if (auto tex = std::get_if<std::shared_ptr<Texture2D>>(&value)) {
+            if (auto tex = std::get_if<std::shared_ptr<ITexture>>(&value)) {
                 SetTexture(*tex);
             }
             else {
@@ -34,7 +34,7 @@ void PresentTextureEffect::SetParameters(const std::unordered_map<std::string, E
     }
 }
 
-void PresentTextureEffect::SetTexture(std::shared_ptr<Texture2D> texture)
+void PresentTextureEffect::SetTexture(std::shared_ptr<ITexture> texture)
 {
     if (texture) {
         m_Texture = texture;

@@ -10,7 +10,7 @@
 #include "Graphics/Buffers/UniformBuffer.h"
 #include "Graphics/Buffers/ShaderStorageBuffer.h"
 #include "Graphics/Effects/PostProcessingEffects/PostProcessingEffectType.h"
-#include "Graphics/Textures/Texture2D.h"
+#include "Graphics/Textures/OpenGLTexture.h"
 
 struct FrameCommonData {
     glm::mat4 view;
@@ -76,8 +76,8 @@ public:
 
     std::shared_ptr<Camera> GetCamera() { return m_Camera; }
 
-    void SetTerrainHeightMap(const std::shared_ptr<Texture2D>& heightMap);
-    std::shared_ptr<Texture2D> GetTerrainHeightMap() const;
+    void SetTerrainHeightMap(const std::shared_ptr<ITexture>& heightMap);
+    std::shared_ptr<ITexture> GetTerrainHeightMap() const;
 
 private:
 
@@ -91,5 +91,5 @@ private:
     std::unique_ptr<UniformBuffer> m_FrameDataUBO;
     std::unique_ptr<ShaderStorageBuffer> m_LightsSSBO;
     PostProcessingEffectType m_PostProcessingEffect;
-    std::shared_ptr<Texture2D> m_TerrainHeightMap = nullptr;
+    std::shared_ptr<ITexture> m_TerrainHeightMap = nullptr;
 };

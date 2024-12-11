@@ -150,12 +150,12 @@ void Scene::BindShaderAndMaterial(const std::string& shaderName, const std::stri
     BindLightSSBO();
 }
 
-void Scene::SetTerrainHeightMap(const std::shared_ptr<Texture2D>& heightMap)
+void Scene::SetTerrainHeightMap(const std::shared_ptr<ITexture>& heightMap)
 {
     m_TerrainHeightMap = heightMap;
 }
 
-std::shared_ptr<Texture2D> Scene::GetTerrainHeightMap() const
+std::shared_ptr<ITexture> Scene::GetTerrainHeightMap() const
 {
     return m_TerrainHeightMap;
 }

@@ -1,4 +1,4 @@
-#include "Resources/MaterialManager.h"
+#include "MaterialManager.h"
 #include "Utilities/Logger.h"
 
 MaterialManager& MaterialManager::GetInstance() {
@@ -6,48 +6,33 @@ MaterialManager& MaterialManager::GetInstance() {
     return instance;
 }
 
-std::shared_ptr<Material> MaterialManager::GetMaterial(std::string_view materialName) {
-    auto it = m_Materials.find(std::string(materialName));
+std::shared_ptr<Material> MaterialManager::GetMaterial(const std::string& name) {
+    auto it = m_Materials.find(name);
     if (it != m_Materials.end()) {
         return it->second;
     }
-    else {
-        Logger::GetLogger()->warn("Material '{}' not found.", materialName);
-        return nullptr;
-    }
+    Logger::GetLogger()->warn("Material '{}' not found.", name);
+    return nullptr;
 }
 
-void MaterialManager::AddMaterial(std::string_view name, const std::shared_ptr<Material>& material) {
-    m_Materials.emplace(std::string(name), material);
+void MaterialManager::AddMaterial(const std::string& name, const std::shared_ptr<Material>& material) {
+    m_Materials[name] = material;
 }
 
-void MaterialManager::BindMaterial(std::string_view name, const std::shared_ptr<BaseShader>& shader) {
-    auto material = GetMaterial(name);
-    if (!material) {
-        Logger::GetLogger()->error("Material '{}' not found. Cannot bind.", name);
+void MaterialManager::BindMaterial(const std::string& name, const std::shared_ptr<BaseShader>& shader) {
+    auto mat = GetMaterial(name);
+    if (!mat) {
+        Logger::GetLogger()->error("Cannot bind unknown material '{}'.", name);
         return;
     }
-
-    try {
-        material->Bind(shader);
-        m_CurrentlyBoundMaterial = std::string(name);
-        Logger::GetLogger()->debug("Material '{}' bound successfully.", name);
-    }
-    catch (const std::exception& e) {
-        Logger::GetLogger()->error("Failed to bind material '{}': {}", name, e.what());
-    }
+    mat->Bind(shader);
+    m_CurrentlyBoundMaterial = name;
 }
 
 void MaterialManager::UnbindMaterial() {
-    if (m_CurrentlyBoundMaterial.empty()) {
-        return;
+    if (!m_CurrentlyBoundMaterial.empty()) {
+        auto mat = GetMaterial(m_CurrentlyBoundMaterial);
+        if (mat) mat->Unbind();
+        m_CurrentlyBoundMaterial.clear();
     }
-
-    auto material = GetMaterial(m_CurrentlyBoundMaterial);
-    if (material) {
-        material->Unbind();
-        Logger::GetLogger()->debug("Material '{}' unbound successfully.", m_CurrentlyBoundMaterial);
-    }
-
-    m_CurrentlyBoundMaterial.clear();
 }
