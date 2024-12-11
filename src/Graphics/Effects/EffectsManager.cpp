@@ -1,23 +1,34 @@
 #include "EffectsManager.h"
 #include "Scene/Screen.h"
+#include "Resources/MeshManager.h"
+#include "Resources/ResourceManager.h"
 #include "Graphics/Effects/PostProcessingEffects/EdgeDetectionEffect.h"
 #include "Graphics/Effects/PostProcessingEffects/NoPostProcessingEffect.h"
 #include "Graphics/Effects/PostProcessingEffects/PresentTextureEffect.h"
 #include "Utilities/Logger.h"
+#include <fstream>
+#include <stdexcept>
 
-EffectsManager& EffectsManager::GetInstance()
-{
+// Use nlohmann::json for parsing
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
+EffectsManager& EffectsManager::GetInstance() {
     static EffectsManager instance;
     return instance;
 }
 
-EffectsManager::EffectsManager()
-{
+EffectsManager::EffectsManager() {
     SetupFullscreenQuad();
+    SetupFlipbookQuad();
 }
 
-EffectsManager::~EffectsManager()
-{
+EffectsManager::~EffectsManager() {}
+
+void EffectsManager::OnWindowResize(int width, int height) {
+    for (auto& [type, effect] : m_Effects) {
+        effect->OnWindowResize(width, height);
+    }
 }
 
 std::shared_ptr<PostProcessingEffect> EffectsManager::GetEffect(PostProcessingEffectType effectType)
@@ -58,35 +69,71 @@ void EffectsManager::SetEffectParameters(PostProcessingEffectType effectType, co
     }
 }
 
-void EffectsManager::OnWindowResize(int width, int height)
-{
-    for (auto& [type, effect] : m_Effects) {
-        effect->OnWindowResize(width, height);
+std::shared_ptr<FlipbookEffect> EffectsManager::GetFlipbookEffect(const std::string& name) {
+    auto it = m_FlipbookEffects.find(name);
+    if (it != m_FlipbookEffects.end()) {
+        return it->second;
     }
+
+    // Not found, try loading
+    LoadFlipbookEffect(name);
+    return m_FlipbookEffects[name];
 }
 
-void EffectsManager::SetupFullscreenQuad()
-{
-    auto& resourceManager = ResourceManager::GetInstance();
+void EffectsManager::LoadFlipbookEffect(const std::string& name) {
+    // Load config
+    auto cfg = LoadFlipbookConfig(name);
 
+    auto effect = std::make_shared<FlipbookEffect>(m_FlipbookQuadMeshBuffer);
+    effect->LoadConfig(cfg.basePath, cfg.framesFile, cfg.totalFrames, cfg.framesPerSecond, cfg.loop);
+    m_FlipbookEffects[name] = effect;
+}
+
+FlipbookEffectConfig EffectsManager::LoadFlipbookConfig(const std::string& name) {
+    // Construct path to JSON config
+    // E.g. "assets/VFX/FireBall04-flipbooks/FireBall04.json"
+    std::string basePath = "assets/VFX/" + name + "-flipbooks/";
+    std::string configPath = basePath + name + ".json";
+
+    std::ifstream file(configPath);
+    if (!file.is_open()) {
+        Logger::GetLogger()->error("EffectsManager: Could not open config file {}", configPath);
+        throw std::runtime_error("Cannot open effect config");
+    }
+
+    json j;
+    file >> j;
+
+    FlipbookEffectConfig cfg;
+    cfg.effectType = j.value("effectType", "FlipbookEffect");
+    cfg.framesFile = j.value("framesFile", "");
+    cfg.totalFrames = j.value("totalFrames", 64);
+    cfg.framesPerSecond = j.value("framesPerSecond", 30.0f);
+    cfg.loop = j.value("loop", false);
+    cfg.basePath = basePath;
+
+    if (cfg.framesFile.empty()) {
+        Logger::GetLogger()->error("EffectsManager: framesFile missing in {}", configPath);
+        throw std::runtime_error("framesFile not found in config");
+    }
+
+    return cfg;
+}
+
+void EffectsManager::SetupFullscreenQuad() {
     auto& meshManager = MeshManager::GetInstance();
     auto quadMesh = meshManager.GetMesh("quad");
-
     MeshLayout quadMeshLayout = {
         true,  // Positions (vec2)
         false, // Normals
         false, // Tangents
         false, // Bitangents
-        { TextureType::Albedo } // Texture Coordinates
+        { TextureType::Albedo }
     };
-
-    //maybe this should be handled through resource manager too
     m_FullscreenQuadMeshBuffer = std::make_shared<MeshBuffer>(*quadMesh, quadMeshLayout);
+    m_FlipbookQuadMeshBuffer = m_FullscreenQuadMeshBuffer;
+}
 
-    if (!m_FullscreenQuadMeshBuffer) {
-        Logger::GetLogger()->error("Failed to set up fullscreen quad mesh buffer.");
-    }
-    else {
-        Logger::GetLogger()->info("Fullscreen quad mesh buffer set up successfully.");
-    }
+void EffectsManager::SetupFlipbookQuad()
+{
 }
