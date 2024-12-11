@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "Utilities/Logger.h"
+#include "Utilities/Utility.h"
 #include <sstream>
 #define USING_EASY_PROFILER
 #include <easy/profiler.h>
@@ -16,11 +17,39 @@ Application::~Application() {
     logger->info("Application terminated gracefully.");
 }
 
-void Application::Init() {
+static GLuint g_queryStart = 0;
+static GLuint g_queryEnd = 0;
+
+static void showFPSAndTimes(GLFWwindow* window, double cpuFrameTimeMs, double gpuFrameTimeMs)
+{
+    static double previousSeconds = 0.0;
+    static int frameCount = 0;
+    double currentSeconds = glfwGetTime();
+    double elapsedSeconds = currentSeconds - previousSeconds;
+
+    frameCount++;
+    if (elapsedSeconds > 0.25) {
+        previousSeconds = currentSeconds;
+        double fps = (double)frameCount / elapsedSeconds;
+        frameCount = 0;
+
+        std::ostringstream outs;
+        outs.precision(3);
+        outs << std::fixed
+            << "FPS: " << fps << "    "
+            << "CPU: " << cpuFrameTimeMs << " ms    "
+            << "GPU: " << gpuFrameTimeMs << " ms";
+
+        glfwSetWindowTitle(window, outs.str().c_str());
+    }
+}
+
+void Application::Init()
+{
     EASY_FUNCTION(profiler::colors::Magenta);
     EASY_BLOCK("App Init");
-    window = GLContext::InitOpenGL(Screen::s_Width, Screen::s_Height, "OpenGL Application");
 
+    window = GLContext::InitOpenGL(Screen::s_Width, Screen::s_Height, "OpenGL Application");
     if (!window) {
         logger->error("Failed to initialize OpenGL context.");
         return;
@@ -41,61 +70,43 @@ void Application::Init() {
     ImGui::StyleColorsDark();
     logger->info("ImGui initialized successfully.");
 
-    // Initialize TestMenu and register tests
     testMenu = std::make_unique<TestMenu>(testManager);
-    //testMenu->RegisterTest("Simple Cube", []() { return std::make_shared<TestSimpleCube>(); });
     testMenu->RegisterTest("Lights", []() { return std::make_shared<TestLights>(); });
     testMenu->RegisterTest("Compute", []() { return std::make_shared<TestComputeShader>(); });
     testMenu->RegisterTest("Helmet", []() { return std::make_shared<TestDamagedHelmet>(); });
     testMenu->RegisterTest("Bistro", []() { return std::make_shared<TestBistro>(); });
-    //testMenu->RegisterTest("Terrain", []() { return std::make_shared<TestTerrain>(); });
-    // Add more tests as needed
 
-    // Register the TestMenuTest
     testManager.RegisterTest("Test Menu", [this]() {
         return std::make_shared<TestMenuTest>(*testMenu);
         });
-
-    // Start with the TestMenu
     testManager.SwitchTest("Test Menu");
     EASY_END_BLOCK;
+
+    // Create GPU queries
+    GLCall(glGenQueries(1, &g_queryStart));
+    GLCall(glGenQueries(1, &g_queryEnd));
 }
 
-void showFPS(GLFWwindow* window) {
-    static double previousSeconds = 0.0;
-    static int frameCount = 0;
-    double currentSeconds = glfwGetTime();
-    double elapsedSeconds = currentSeconds - previousSeconds;
-
-    if (elapsedSeconds > 0.25) {
-        previousSeconds = currentSeconds;
-        double fps = static_cast<double>(frameCount) / elapsedSeconds;
-        double msPerFrame = 1000.0 / fps;
-
-        std::ostringstream outs;
-        outs.precision(3);
-        outs << std::fixed
-            << "FPS: " << fps << "    "
-            << "Frame Time: " << msPerFrame << " ms";
-
-        glfwSetWindowTitle(window, outs.str().c_str());
-        frameCount = 0;
-    }
-
-    frameCount++;
-}
-
-void Application::Run() {
+void Application::Run()
+{
     if (!window) {
         logger->error("Cannot run application without a valid window.");
         return;
     }
 
     lastTime = glfwGetTime();
+
     while (!glfwWindowShouldClose(window)) {
-        glClearColor(0.3f, 0.2f, 0.8f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        showFPS(window);
+        EASY_BLOCK("Frame");
+
+        // Start CPU timer
+        auto cpuStart = std::chrono::high_resolution_clock::now();
+
+        // Start GPU timer query
+        GLCall(glBeginQuery(GL_TIME_ELAPSED, g_queryStart));
+
+        GLCall(glClearColor(0.3f, 0.2f, 0.8f, 1.0f));
+        GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         double currentTime = glfwGetTime();
         double deltaTime = currentTime - lastTime;
@@ -104,10 +115,11 @@ void Application::Run() {
         glfwPollEvents();
         ProcessInput(deltaTime);
 
-        testManager.UpdateCurrentTest(static_cast<float>(deltaTime));
+        testManager.UpdateCurrentTest((float)deltaTime);
         testManager.RenderCurrentTest();
         UpdateCameraController();
-        // ImGui Rendering
+
+        // IMGUI rendering
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -117,9 +129,31 @@ void Application::Run() {
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+        // End GPU query and start the end query
+        GLCall(glEndQuery(GL_TIME_ELAPSED));
+
+        // Another query can be started if needed, but typically one per frame is enough.
+        // For simplicity, we just measure the whole frame. If needed, measure sub-parts.
+
+        GLCall(glFinish()); // Ensure all commands completed before we read the query
+
+        // Fetch GPU timing
+        GLuint64 gpuTime = 0;
+        GLCall(glGetQueryObjectui64v(g_queryStart, GL_QUERY_RESULT, &gpuTime));
+        double gpuFrameTimeMs = (double)gpuTime / 1000000.0; // ns to ms
+
         // Swap buffers
         glfwSwapBuffers(window);
-        inputManager.Update(); // Update key states at the end of the frame
+        inputManager.Update();
+
+        // Stop CPU timer
+        auto cpuEnd = std::chrono::high_resolution_clock::now();
+        double cpuFrameTimeMs = std::chrono::duration<double, std::milli>(cpuEnd - cpuStart).count();
+
+        // Show FPS and times in title
+        showFPSAndTimes(window, cpuFrameTimeMs, gpuFrameTimeMs);
+
+        EASY_END_BLOCK;
     }
 
     // Cleanup
