@@ -2,6 +2,7 @@
 #include "Utilities/Logger.h"
 #include "Resources/ResourceManager.h"
 #include "Resources/ShaderManager.h"
+#include "Scene/Screen.h"
 #include "Utilities/Utility.h"
 #include <GLFW/glfw3.h>
 
@@ -54,14 +55,14 @@ void FlipbookEffect::Update(double currentTime) {
         UpdateFlipbook(anim, currentTime, m_Loop);
     }
 
-    //if (!m_Loop) {
-    //    m_Animations.erase(
-    //        std::remove_if(m_Animations.begin(), m_Animations.end(), [&](const FlipbookAnimation& a) {
-    //            return a.IsFinished(currentTime);
-    //            }),
-    //        m_Animations.end()
-    //    );
-    //}
+    if (!m_Loop) {
+        m_Animations.erase(
+            std::remove_if(m_Animations.begin(), m_Animations.end(), [&](const FlipbookAnimation& a) {
+                return a.IsFinished(currentTime);
+                }),
+            m_Animations.end()
+        );
+    }
 }
 
 void FlipbookEffect::Render() {
@@ -76,8 +77,10 @@ void FlipbookEffect::Render() {
 
     m_QuadMeshBuffer->Bind();
     for (auto& anim : m_Animations) {
+        float asR = float(Screen::s_Width) / Screen::s_Height;
         m_Shader->SetUniform("currentFrame", (int)anim.currentFrame);
         m_Shader->SetUniform("flipbookPosition", anim.position);
+        m_Shader->SetUniform("aspectRatio", asR);
         GLCall(glDrawElements(GL_TRIANGLES, (GLsizei)m_QuadMeshBuffer->GetIndexCount(), GL_UNSIGNED_INT, nullptr));
     }
     m_QuadMeshBuffer->Unbind();
