@@ -28,8 +28,8 @@ void FlipbookEffect::LoadConfig(const std::string& basePath, const std::string& 
     config.generateMips = false;
     config.wrapS = GL_CLAMP_TO_EDGE;
     config.wrapT = GL_CLAMP_TO_EDGE;
-    config.minFilter = GL_LINEAR;
-    config.magFilter = GL_LINEAR;
+    //config.minFilter = GL_LINEAR;
+    //config.magFilter = GL_LINEAR;
 
     std::vector<std::string> framePaths;
     framePaths.push_back(fullPath);
@@ -54,14 +54,14 @@ void FlipbookEffect::Update(double currentTime) {
         UpdateFlipbook(anim, currentTime, m_Loop);
     }
 
-    if (!m_Loop) {
-        m_Animations.erase(
-            std::remove_if(m_Animations.begin(), m_Animations.end(), [&](const FlipbookAnimation& a) {
-                return a.IsFinished(currentTime);
-                }),
-            m_Animations.end()
-        );
-    }
+    //if (!m_Loop) {
+    //    m_Animations.erase(
+    //        std::remove_if(m_Animations.begin(), m_Animations.end(), [&](const FlipbookAnimation& a) {
+    //            return a.IsFinished(currentTime);
+    //            }),
+    //        m_Animations.end()
+    //    );
+    //}
 }
 
 void FlipbookEffect::Render() {

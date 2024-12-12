@@ -8,5 +8,7 @@ uniform vec2 flipbookPosition;
 
 void main() {
     vUV = aUV;
+    vUV -= 1.0;
+    vUV = abs(vUV);
     gl_Position = vec4(aPos + flipbookPosition, 0.0, 1.0);
 }

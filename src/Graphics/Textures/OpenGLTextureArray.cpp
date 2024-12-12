@@ -17,7 +17,7 @@ OpenGLTextureArray::OpenGLTextureArray(const std::vector<std::string>& filePaths
     }
 
     TextureData data;
-    if (!data.LoadFromFile(filePaths[0], true)) {
+    if (!data.LoadFromFile(filePaths[0], false)) {
         throw std::runtime_error("Failed to load texture: " + filePaths[0]);
     }
 
@@ -50,10 +50,12 @@ OpenGLTextureArray::OpenGLTextureArray(const std::vector<std::string>& filePaths
     for (uint32_t y = 0; y < gridY && frameIndex < totalFrames; y++) {
         for (uint32_t x = 0; x < gridX && frameIndex < totalFrames; x++) {
 
+            uint32_t my_y = y;
+            uint32_t my_x = x;
             for (uint32_t row = 0; row < frameHeight; row++) {
                 for (uint32_t col = 0; col < frameWidth; col++) {
-                    uint32_t srcX = x * frameWidth + col;
-                    uint32_t srcY = y * frameHeight + row;
+                    uint32_t srcX = my_x * frameWidth + col;
+                    uint32_t srcY = my_y * frameHeight + row;
                     uint32_t srcIndex = (srcY * m_Width + srcX) * channels;
 
                     uint32_t dstIndex = (row * frameWidth + col) * channels;
