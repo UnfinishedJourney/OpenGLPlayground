@@ -75,6 +75,7 @@ void Application::Init()
     testMenu->RegisterTest("Compute", []() { return std::make_shared<TestComputeShader>(); });
     testMenu->RegisterTest("Helmet", []() { return std::make_shared<TestDamagedHelmet>(); });
     testMenu->RegisterTest("Bistro", []() { return std::make_shared<TestBistro>(); });
+    testMenu->RegisterTest("Flipbook", []() { return std::make_shared<TestFlipBookEffect>(); });
 
     testManager.RegisterTest("Test Menu", [this]() {
         return std::make_shared<TestMenuTest>(*testMenu);

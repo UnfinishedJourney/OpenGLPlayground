@@ -2,6 +2,7 @@
 
 #include "Graphics/Effects/EffectsManager.h"
 #include <GLFW/glfw3.h>
+#include <imgui.h>
 
 void TestFlipBookEffect::OnEnter() {
     auto& effectsManager = EffectsManager::GetInstance();
@@ -25,13 +26,11 @@ void TestFlipBookEffect::OnRender() {
     }
 }
 
-void TestFlipBookEffect::OnMouseClick(float x, float y) {
-    int width = Screen::s_Width;
-    int height = Screen::s_Height;
-    float mx = (x / (float)width) * 2.0f - 1.0f;
-    float my = (y / (float)height) * 2.0f - 1.0f;
-
-    if (m_Flipbook) {
-        m_Flipbook->SpawnAnimation({ mx, my }, 0);
+void TestFlipBookEffect::OnImGuiRender() {
+    if (ImGui::Button("Spawn FireBall Effect")) {
+        // Spawn animation at the center of the screen (0,0)
+        if (m_Flipbook) {
+            m_Flipbook->SpawnAnimation({ 0.0f, 0.0f }, 0);
+        }
     }
 }

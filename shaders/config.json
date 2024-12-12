@@ -93,6 +93,13 @@
             "shader_stages": {
                 "compute": "../shaders/BRDFCompute.comp"
             }
+        },
+        "flipbook": {
+            "binary_path": "../shaders/bin/Flipbook.bin",
+            "shader_stages": {
+                "vertex": "../shaders/Effects/Flipbook.vert",
+                "fragment": "../shaders/Effects/Flipbook.frag"
+            }
         }
     }
 }

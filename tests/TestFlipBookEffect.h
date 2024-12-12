@@ -13,11 +13,7 @@ public:
 
     void OnRender() override;
 
-    void OnImGuiRender() override {
-        // Add ImGui controls if needed
-    }
-
-    void OnMouseClick(float x, float y);
+    void OnImGuiRender() override;
 
 private:
     std::shared_ptr<FlipbookEffect> m_Flipbook;

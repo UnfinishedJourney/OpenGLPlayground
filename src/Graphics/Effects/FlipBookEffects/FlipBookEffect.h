@@ -3,20 +3,20 @@
 #include <vector>
 #include <string>
 #include <glm/glm.hpp>
-#include "FlipbookAnimation.h"
 #include "Graphics/Buffers/MeshBuffer.h"
 #include "Graphics/Shaders/BaseShader.h"
 #include "Graphics/Textures/OpenGLTextureArray.h"
+#include "FlipBookAnimation.h"
 
 class FlipbookEffect {
 public:
     FlipbookEffect(std::shared_ptr<MeshBuffer> quadMeshBuffer);
     ~FlipbookEffect() = default;
 
-    // Load parameters from config (called by EffectsManager)
+    // Load configuration and frames
     void LoadConfig(const std::string& basePath, const std::string& framesFile, uint32_t totalFrames, float fps, bool loop);
 
-    // Spawn a new animation instance
+    // Spawn a new animation instance at given position
     void SpawnAnimation(const glm::vec2& position, uint32_t flipbookOffset = 0);
 
     // Update all animations

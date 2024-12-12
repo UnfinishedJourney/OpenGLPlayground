@@ -2,12 +2,13 @@
 #include "Utilities/Logger.h"
 #include "Resources/ResourceManager.h"
 #include "Resources/ShaderManager.h"
-#include "GLFW/glfw3.h"
+#include "Utilities/Utility.h"
+#include <GLFW/glfw3.h>
 
 FlipbookEffect::FlipbookEffect(std::shared_ptr<MeshBuffer> quadMeshBuffer)
     : m_QuadMeshBuffer(quadMeshBuffer)
 {
-    m_Shader = ShaderManager::GetInstance().GetShader("Flipbook");
+    m_Shader = ShaderManager::GetInstance().GetShader("flipbook");
     if (!m_Shader) {
         Logger::GetLogger()->error("FlipbookEffect: 'Flipbook' shader not found!");
         throw std::runtime_error("Flipbook shader not found");
@@ -19,8 +20,10 @@ void FlipbookEffect::LoadConfig(const std::string& basePath, const std::string& 
     m_FramesPerSecond = fps;
     m_Loop = loop;
 
-    // For simplicity, assume framesFile is a texture array file or a single file that ResourceManager can load as array.
-    // If it's a single sprite-sheet, you'd need a preprocessing step.
+    // Assume framesFile is a single texture array file or a single-file sprite sheet
+    // If it's a single sprite sheet that needs slicing, you'd need additional code
+    // For now, assume we can load it as a single-layer texture array with one entry
+    // or that OpenGLTextureArray can handle single-file arrays.
 
     std::string fullPath = basePath + framesFile;
     TextureConfig config;
@@ -29,12 +32,8 @@ void FlipbookEffect::LoadConfig(const std::string& basePath, const std::string& 
     config.wrapS = GL_CLAMP_TO_EDGE;
     config.wrapT = GL_CLAMP_TO_EDGE;
 
-    // Load texture array
-    // If you actually have multiple frames as separate files, you must build a vector of file paths.
-    // If a single tga contains 64 frames in a grid, you must load them into a texture array. This may require custom code.
-    // For now, we assume the ResourceManager or the OpenGLTextureArray can handle a single multi-layer file.
     std::vector<std::string> framePaths;
-    framePaths.push_back(fullPath); // If this is a single-file array
+    framePaths.push_back(fullPath);
     m_TextureArray = std::make_shared<OpenGLTextureArray>(framePaths, config);
 
     Logger::GetLogger()->info("FlipbookEffect: Loaded flipbook from {}", fullPath);

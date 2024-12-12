@@ -8,9 +8,8 @@
 #include "Utilities/Logger.h"
 #include <fstream>
 #include <stdexcept>
+#include <filesystem>
 
-// Use nlohmann::json for parsing
-#include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 EffectsManager& EffectsManager::GetInstance() {
@@ -38,18 +37,15 @@ std::shared_ptr<PostProcessingEffect> EffectsManager::GetEffect(PostProcessingEf
         return it->second;
     }
     else {
-        if (effectType == PostProcessingEffectType::EdgeDetection)
-        {
+        if (effectType == PostProcessingEffectType::EdgeDetection) {
             m_Effects[PostProcessingEffectType::EdgeDetection] = std::make_shared<EdgeDetectionEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
             return m_Effects[PostProcessingEffectType::EdgeDetection];
         }
-        else if (effectType == PostProcessingEffectType::PresentTexture)
-        {
+        else if (effectType == PostProcessingEffectType::PresentTexture) {
             m_Effects[PostProcessingEffectType::PresentTexture] = std::make_shared<PresentTextureEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
             return m_Effects[PostProcessingEffectType::PresentTexture];
         }
-        else if (effectType == PostProcessingEffectType::None)
-        {
+        else if (effectType == PostProcessingEffectType::None) {
             m_Effects[PostProcessingEffectType::None] = std::make_shared<NoPostProcessingEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
             return m_Effects[PostProcessingEffectType::None];
         }
@@ -75,13 +71,11 @@ std::shared_ptr<FlipbookEffect> EffectsManager::GetFlipbookEffect(const std::str
         return it->second;
     }
 
-    // Not found, try loading
     LoadFlipbookEffect(name);
     return m_FlipbookEffects[name];
 }
 
 void EffectsManager::LoadFlipbookEffect(const std::string& name) {
-    // Load config
     auto cfg = LoadFlipbookConfig(name);
 
     auto effect = std::make_shared<FlipbookEffect>(m_FlipbookQuadMeshBuffer);
@@ -89,42 +83,97 @@ void EffectsManager::LoadFlipbookEffect(const std::string& name) {
     m_FlipbookEffects[name] = effect;
 }
 
-FlipbookEffectConfig EffectsManager::LoadFlipbookConfig(const std::string& name) {
-    // Construct path to JSON config
-    // E.g. "assets/VFX/FireBall04-flipbooks/FireBall04.json"
-    std::string basePath = "assets/VFX/" + name + "-flipbooks/";
-    std::string configPath = basePath + name + ".json";
+namespace fs = std::filesystem;
+using json = nlohmann::json;
 
+void LogCurrentWorkingDirectory() {
+    auto logger = Logger::GetLogger();
+    try {
+        fs::path cwd = fs::current_path();
+        logger->info("Current Working Directory: '{}'.", cwd.string());
+    }
+    catch (const std::exception& e) {
+        logger->error("Failed to get current working directory: {}", e.what());
+    }
+}
+
+FlipbookEffectConfig EffectsManager::LoadFlipbookConfig(const std::string& name) {
+    auto logger = Logger::GetLogger();
+
+    // Log the current working directory
+    LogCurrentWorkingDirectory();
+
+    // Construct paths using std::filesystem::path
+    std::string endstr = name + "\\";
+    fs::path basePath = fs::path("..") / "assets" / "VFX" / endstr;
+    fs::path configPath = fs::path("..") / "assets" / "VFX" / name / "FireBall04.json";
+
+    // Log the constructed paths
+    logger->info("Constructed Base Path: '{}'.", basePath.string());
+    logger->info("Constructed Config Path: '{}'.", configPath.string());
+
+    // Check if the config file exists
+    if (!fs::exists(fs::path(".."))) {
+        logger->error("EffectsManager: Config file '{}' does not exist.", configPath.string());
+        throw std::runtime_error("Config file does not exist");
+    }
+
+    if (!fs::exists(basePath)) {
+        logger->error("EffectsManager: Config file '{}' does not exist.", configPath.string());
+        throw std::runtime_error("Config file does not exist");
+    }
+
+    if (!fs::exists(configPath)) {
+        logger->error("EffectsManager: Config file '{}' does not exist.", configPath.string());
+        throw std::runtime_error("Config file does not exist");
+    }
+
+    // Open the config file
     std::ifstream file(configPath);
     if (!file.is_open()) {
-        Logger::GetLogger()->error("EffectsManager: Could not open config file {}", configPath);
+        logger->error("EffectsManager: Could not open config file '{}'.", configPath.string());
         throw std::runtime_error("Cannot open effect config");
     }
 
-    json j;
-    file >> j;
+    try {
+        json j;
+        file >> j;
 
-    FlipbookEffectConfig cfg;
-    cfg.effectType = j.value("effectType", "FlipbookEffect");
-    cfg.framesFile = j.value("framesFile", "");
-    cfg.totalFrames = j.value("totalFrames", 64);
-    cfg.framesPerSecond = j.value("framesPerSecond", 30.0f);
-    cfg.loop = j.value("loop", false);
-    cfg.basePath = basePath;
+        FlipbookEffectConfig cfg;
+        cfg.effectType = j.value("effectType", "FlipbookEffect");
+        cfg.framesFile = j.value("framesFile", "");
+        cfg.totalFrames = j.value("totalFrames", 64);
+        cfg.framesPerSecond = j.value("framesPerSecond", 30.0f);
+        cfg.loop = j.value("loop", false);
+        cfg.basePath = basePath.string();
 
-    if (cfg.framesFile.empty()) {
-        Logger::GetLogger()->error("EffectsManager: framesFile missing in {}", configPath);
-        throw std::runtime_error("framesFile not found in config");
+        if (cfg.framesFile.empty()) {
+            logger->error("EffectsManager: 'framesFile' missing in '{}'.", configPath.string());
+            throw std::runtime_error("'framesFile' not found in config");
+        }
+
+        logger->info("Flipbook config loaded successfully from '{}'.", configPath.string());
+        return cfg;
     }
-
-    return cfg;
+    catch (const json::parse_error& e) {
+        logger->error("Parse error in config file '{}': {}", configPath.string(), e.what());
+        throw; // Re-throw after logging
+    }
+    catch (const json::type_error& e) {
+        logger->error("Type error in config file '{}': {}", configPath.string(), e.what());
+        throw; // Re-throw after logging
+    }
+    catch (const std::exception& e) {
+        logger->error("Error parsing config file '{}': {}", configPath.string(), e.what());
+        throw; // Re-throw after logging
+    }
 }
 
 void EffectsManager::SetupFullscreenQuad() {
     auto& meshManager = MeshManager::GetInstance();
     auto quadMesh = meshManager.GetMesh("quad");
     MeshLayout quadMeshLayout = {
-        true,  // Positions (vec2)
+        true,  // Positions
         false, // Normals
         false, // Tangents
         false, // Bitangents
@@ -134,6 +183,7 @@ void EffectsManager::SetupFullscreenQuad() {
     m_FlipbookQuadMeshBuffer = m_FullscreenQuadMeshBuffer;
 }
 
-void EffectsManager::SetupFlipbookQuad()
-{
+void EffectsManager::SetupFlipbookQuad() {
+    // Currently using the same quad as fullscreen quad
+    // If needed, create a separate quad here.
 }

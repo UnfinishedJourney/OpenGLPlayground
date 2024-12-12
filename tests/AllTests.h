@@ -6,6 +6,7 @@
 #include "TestLights.h"
 #include "TestSkyBox.h"
 #include "TestSkyBoxReflection.h"
+#include "TestFlipBookEffect.h"
 //#include "TestAssimp.h"
 //#include "TestInstance.h"
 //#include "TestPBR.h"
