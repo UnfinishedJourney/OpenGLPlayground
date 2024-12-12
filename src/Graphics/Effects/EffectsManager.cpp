@@ -79,7 +79,7 @@ void EffectsManager::LoadFlipbookEffect(const std::string& name) {
     auto cfg = LoadFlipbookConfig(name);
 
     auto effect = std::make_shared<FlipbookEffect>(m_FlipbookQuadMeshBuffer);
-    effect->LoadConfig(cfg.basePath, cfg.framesFile, cfg.totalFrames, cfg.framesPerSecond, cfg.loop);
+    effect->LoadConfig(cfg.basePath, cfg.framesFile, cfg.totalFrames, cfg.gridX, cfg.gridY, cfg.framesPerSecond, cfg.loop);
     m_FlipbookEffects[name] = effect;
 }
 
@@ -100,73 +100,44 @@ void LogCurrentWorkingDirectory() {
 FlipbookEffectConfig EffectsManager::LoadFlipbookConfig(const std::string& name) {
     auto logger = Logger::GetLogger();
 
-    // Log the current working directory
-    LogCurrentWorkingDirectory();
+    fs::path basePath = fs::path("..") / "assets" / "VFX" / name;
+    fs::path configPath = basePath / (name + ".json");
 
-    // Construct paths using std::filesystem::path
-    std::string endstr = name + "\\";
-    fs::path basePath = fs::path("..") / "assets" / "VFX" / endstr;
-    fs::path configPath = fs::path("..") / "assets" / "VFX" / name / "FireBall04.json";
-
-    // Log the constructed paths
-    logger->info("Constructed Base Path: '{}'.", basePath.string());
-    logger->info("Constructed Config Path: '{}'.", configPath.string());
-
-    // Check if the config file exists
-    if (!fs::exists(fs::path(".."))) {
-        logger->error("EffectsManager: Config file '{}' does not exist.", configPath.string());
-        throw std::runtime_error("Config file does not exist");
-    }
-
-    if (!fs::exists(basePath)) {
-        logger->error("EffectsManager: Config file '{}' does not exist.", configPath.string());
-        throw std::runtime_error("Config file does not exist");
-    }
+    logger->info("Loading flipbook config from '{}'.", configPath.string());
 
     if (!fs::exists(configPath)) {
         logger->error("EffectsManager: Config file '{}' does not exist.", configPath.string());
         throw std::runtime_error("Config file does not exist");
     }
 
-    // Open the config file
     std::ifstream file(configPath);
     if (!file.is_open()) {
         logger->error("EffectsManager: Could not open config file '{}'.", configPath.string());
         throw std::runtime_error("Cannot open effect config");
     }
 
-    try {
-        json j;
-        file >> j;
+    json j;
+    file >> j;
 
-        FlipbookEffectConfig cfg;
-        cfg.effectType = j.value("effectType", "FlipbookEffect");
-        cfg.framesFile = j.value("framesFile", "");
-        cfg.totalFrames = j.value("totalFrames", 64);
-        cfg.framesPerSecond = j.value("framesPerSecond", 30.0f);
-        cfg.loop = j.value("loop", false);
-        cfg.basePath = basePath.string();
+    FlipbookEffectConfig cfg;
+    cfg.effectType = j.value("effectType", "FlipbookEffect");
+    cfg.framesFile = j.value("framesFile", "");
+    cfg.totalFrames = j.value("totalFrames", 64);
+    cfg.gridX = j.value("gridX", 8); // Correct usage of "gridX"
+    cfg.gridY = j.value("gridY", 8); // Correct usage of "gridY"
+    cfg.framesPerSecond = j.value("framesPerSecond", 30.0f);
+    cfg.loop = j.value("loop", false);
+    cfg.basePath = basePath.string() + "/";
 
-        if (cfg.framesFile.empty()) {
-            logger->error("EffectsManager: 'framesFile' missing in '{}'.", configPath.string());
-            throw std::runtime_error("'framesFile' not found in config");
-        }
+    if (cfg.framesFile.empty()) {
+        logger->error("EffectsManager: 'framesFile' missing in '{}'.", configPath.string());
+        throw std::runtime_error("'framesFile' not found in config");
+    }
 
-        logger->info("Flipbook config loaded successfully from '{}'.", configPath.string());
-        return cfg;
-    }
-    catch (const json::parse_error& e) {
-        logger->error("Parse error in config file '{}': {}", configPath.string(), e.what());
-        throw; // Re-throw after logging
-    }
-    catch (const json::type_error& e) {
-        logger->error("Type error in config file '{}': {}", configPath.string(), e.what());
-        throw; // Re-throw after logging
-    }
-    catch (const std::exception& e) {
-        logger->error("Error parsing config file '{}': {}", configPath.string(), e.what());
-        throw; // Re-throw after logging
-    }
+    logger->info("Flipbook config loaded: effectType={}, framesFile={}, totalFrames={}, gridX={}, gridY={}, fps={}, loop={}",
+        cfg.effectType, cfg.framesFile, cfg.totalFrames, cfg.gridX, cfg.gridY, cfg.framesPerSecond, cfg.loop);
+
+    return cfg;
 }
 
 void EffectsManager::SetupFullscreenQuad() {

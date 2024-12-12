@@ -8,7 +8,12 @@
 
 class OpenGLTextureArray : public ITexture {
 public:
-    OpenGLTextureArray(const std::vector<std::string>& filePaths, const TextureConfig& config);
+    // Updated constructor comment:
+    // If you have multiple files, pass them in filePaths.
+    // If you have only one file with a sprite sheet, also pass it as a single element in filePaths.
+    // Then use `frameCount` and `gridX`/`gridY` to slice it into multiple layers.
+    OpenGLTextureArray(const std::vector<std::string>& filePaths, const TextureConfig& config,
+        uint32_t totalFrames = 64, uint32_t gridX = 8, uint32_t gridY = 8);
     ~OpenGLTextureArray();
     void Bind(uint32_t unit) const override;
     void Unbind(uint32_t unit) const override;

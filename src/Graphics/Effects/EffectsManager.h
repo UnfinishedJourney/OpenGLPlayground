@@ -12,6 +12,8 @@ struct FlipbookEffectConfig {
     std::string effectType;
     std::string framesFile;
     uint32_t totalFrames;
+    uint32_t gridX;
+    uint32_t gridY;
     float framesPerSecond;
     bool loop;
     std::string basePath;

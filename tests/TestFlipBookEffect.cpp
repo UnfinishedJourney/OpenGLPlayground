@@ -6,7 +6,7 @@
 
 void TestFlipBookEffect::OnEnter() {
     auto& effectsManager = EffectsManager::GetInstance();
-    m_Flipbook = effectsManager.GetFlipbookEffect("FireBall04"); // loads from config if not present
+    m_Flipbook = effectsManager.GetFlipbookEffect("Flame02"); // loads from config if not present
 }
 
 void TestFlipBookEffect::OnUpdate(float deltaTime) {

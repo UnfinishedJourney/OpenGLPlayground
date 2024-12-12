@@ -15,15 +15,12 @@ FlipbookEffect::FlipbookEffect(std::shared_ptr<MeshBuffer> quadMeshBuffer)
     }
 }
 
-void FlipbookEffect::LoadConfig(const std::string& basePath, const std::string& framesFile, uint32_t totalFrames, float fps, bool loop) {
+void FlipbookEffect::LoadConfig(const std::string& basePath, const std::string& framesFile, uint32_t totalFrames, uint32_t gridX, uint32_t gridY, float fps, bool loop) {
     m_TotalFrames = totalFrames;
+    m_GridX = gridX;
+    m_GridY = gridY;
     m_FramesPerSecond = fps;
     m_Loop = loop;
-
-    // Assume framesFile is a single texture array file or a single-file sprite sheet
-    // If it's a single sprite sheet that needs slicing, you'd need additional code
-    // For now, assume we can load it as a single-layer texture array with one entry
-    // or that OpenGLTextureArray can handle single-file arrays.
 
     std::string fullPath = basePath + framesFile;
     TextureConfig config;
@@ -31,12 +28,15 @@ void FlipbookEffect::LoadConfig(const std::string& basePath, const std::string& 
     config.generateMips = false;
     config.wrapS = GL_CLAMP_TO_EDGE;
     config.wrapT = GL_CLAMP_TO_EDGE;
+    config.minFilter = GL_LINEAR;
+    config.magFilter = GL_LINEAR;
 
     std::vector<std::string> framePaths;
     framePaths.push_back(fullPath);
-    m_TextureArray = std::make_shared<OpenGLTextureArray>(framePaths, config);
 
-    Logger::GetLogger()->info("FlipbookEffect: Loaded flipbook from {}", fullPath);
+    m_TextureArray = std::make_shared<OpenGLTextureArray>(framePaths, config, totalFrames, gridX, gridY);
+
+    Logger::GetLogger()->info("FlipbookEffect: Loaded flipbook from {} ({} frames).", fullPath, totalFrames);
 }
 
 void FlipbookEffect::SpawnAnimation(const glm::vec2& position, uint32_t flipbookOffset) {
