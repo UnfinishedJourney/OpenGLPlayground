@@ -17,6 +17,7 @@ std::shared_ptr<Material> MaterialManager::GetMaterial(const std::string& name) 
 
 void MaterialManager::AddMaterial(const std::string& name, const std::shared_ptr<Material>& material) {
     m_Materials[name] = material;
+    material->SetName(name);
 }
 
 void MaterialManager::BindMaterial(const std::string& name, const std::shared_ptr<BaseShader>& shader) {

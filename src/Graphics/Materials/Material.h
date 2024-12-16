@@ -15,6 +15,9 @@ public:
     Material() = default;
     ~Material() = default;
 
+    void SetName(const std::string& n) { m_Name = n; }
+    std::string GetName() const { return m_Name; }
+
     void AddTexture(const std::shared_ptr<ITexture>& texture, uint32_t unit = 0);
     template<typename T> void AddParam(const std::string& name, const T& value);
 
@@ -22,6 +25,7 @@ public:
     void Unbind() const;
 
 private:
+    std::string m_Name;
     std::unordered_map<uint32_t, std::shared_ptr<ITexture>> m_Textures;
     std::unordered_map<std::string, UniformValue> m_Params;
 };

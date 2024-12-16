@@ -58,6 +58,15 @@ public:
         return m_NormalMatrix;
     }
 
+    void SetModelMatrix(const glm::mat4& matrix)
+    {
+        m_ModelMatrix = matrix;
+        m_NormalMatrix = glm::transpose(glm::inverse(glm::mat3(matrix)));
+        // We skip decomposing back to m_Position / m_Rotation / m_Scale
+        // Instead, we treat this Transform as just "holding" the final matrix.
+        m_NeedsUpdating = false;
+    }
+
 private:
     glm::vec3 m_Position;
     glm::quat m_Rotation;

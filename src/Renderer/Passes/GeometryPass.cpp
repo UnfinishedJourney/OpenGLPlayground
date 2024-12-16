@@ -1,5 +1,7 @@
 #include "GeometryPass.h"
 #include "Resources/ResourceManager.h"
+#include "Resources/ShaderManager.h"
+#include "Resources/MaterialManager.h"
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
 
@@ -9,51 +11,51 @@ GeometryPass::GeometryPass(std::shared_ptr<FrameBuffer> framebuffer, const std::
     InitializeSceneResources(scene);
 }
 
+GeometryPass::~GeometryPass() {}
+
 void GeometryPass::InitializeSceneResources(const std::shared_ptr<Scene>& scene)
 {
-    // No additional resources needed for now
+    // Possibly create additional buffers or GPU resources
 }
 
 void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
 {
     m_Framebuffer->Bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    // Update LODs based on camera distance
-    //scene->SetLOD(3);
+    // Example: LOD updates (distance-based)
     scene->UpdateLODs();
 
+    // Build the scene’s batches
     scene->UpdateFrameDataUBO();
     scene->BuildBatches();
+
+    // Bind UBO/SSBO
     scene->BindFrameDataUBO();
     scene->BindLightSSBO();
 
     const auto& batches = scene->GetBatches();
     for (const auto& batch : batches) {
-        const auto& renderObjects = batch->GetRenderObjects();
-        if (renderObjects.empty()) {
-            continue;
-        }
+        const auto& ros = batch->GetRenderObjects();
+        if (ros.empty()) continue;
 
-        auto& resourceManager = ResourceManager::GetInstance();
         auto& shaderManager = ShaderManager::GetInstance();
         auto& materialManager = MaterialManager::GetInstance();
 
         auto shader = shaderManager.GetShader(batch->GetShaderName());
-        if (shader) {
-            shader->Bind();
-        }
-        else {
+        if (!shader) {
             Logger::GetLogger()->error("Shader '{}' not found.", batch->GetShaderName());
             continue;
         }
+        shader->Bind();
 
         materialManager.BindMaterial(batch->GetMaterialName(), shader);
 
-        // Assuming all render objects in the batch have the same model matrix
-        glm::mat4 modelMatrix = renderObjects.front()->GetTransform()->GetModelMatrix();
-        glm::mat3 normalMatrix = renderObjects.front()->GetTransform()->GetNormalMatrix();
+        // For geometry pass, each batch uses the same transform only if the ROs share it 
+        // but in practice, they could differ. If your code lumps them together, you do one matrix.
+        // But multi-draw indirect means per-draw transform. For now, let's do the first:
+        glm::mat4 modelMatrix = ros.front()->GetTransform()->GetModelMatrix();
+        glm::mat3 normalMatrix = ros.front()->GetTransform()->GetNormalMatrix();
 
         shader->SetUniform("u_Model", modelMatrix);
         shader->SetUniform("u_NormalMatrix", normalMatrix);
@@ -62,14 +64,9 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
     }
 
     m_Framebuffer->Unbind();
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void GeometryPass::UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer)
 {
     m_Framebuffer = framebuffer;
-}
-
-GeometryPass::~GeometryPass()
-{
 }

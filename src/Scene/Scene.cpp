@@ -1,7 +1,7 @@
 #include "Scene.h"
 #include "Utilities/Logger.h"
-#include "Resources/ResourceManager.h"
-#include "Scene/Screen.h"
+#include "Resources/ShaderManager.h"
+#include "Resources/MaterialManager.h"
 #include <glad/glad.h>
 
 constexpr GLuint FRAME_DATA_BINDING_POINT = 0;
@@ -12,35 +12,39 @@ Scene::Scene()
 {
     m_Camera = std::make_shared<Camera>();
     auto logger = Logger::GetLogger();
-    m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData), FRAME_DATA_BINDING_POINT, GL_DYNAMIC_DRAW);
+
+    // Create root node
+    m_RootNode = std::make_shared<SceneNode>();
+
+    // FrameData UBO
+    m_FrameDataUBO = std::make_unique<UniformBuffer>(
+        sizeof(FrameCommonData),
+        FRAME_DATA_BINDING_POINT,
+        GL_DYNAMIC_DRAW
+    );
     logger->info("Created FrameData UBO with binding point {}.", FRAME_DATA_BINDING_POINT);
-    m_LightsData = {};
 
-    if (m_LightsData.size() > MAX_LIGHTS) {
-        throw std::runtime_error("Too many lights.");
-    }
-
+    // Lights SSBO
     GLuint bindingPoint = LIGHTS_DATA_BINDING_POINT;
     GLsizeiptr bufferSize = sizeof(glm::vec4) + MAX_LIGHTS * sizeof(LightData);
-    uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
+    uint32_t numLights = 0;
 
     m_LightsSSBO = std::make_unique<ShaderStorageBuffer>(bindingPoint, bufferSize, GL_DYNAMIC_DRAW);
     m_LightsSSBO->SetData(&numLights, sizeof(glm::vec4), 0);
-    m_LightsSSBO->SetData(m_LightsData.data(), m_LightsData.size() * sizeof(LightData), sizeof(glm::vec4));
-
+    // initial no lights
     m_LightsSSBO->BindBase();
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-    logger->info("Initialized Lights SSBO with {} light(s).", m_LightsData.size());
+    logger->info("Initialized Lights SSBO with 0 lights.");
 }
 
 Scene::~Scene()
 {
 }
 
-void Scene::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)
+void Scene::SetCamera(const std::shared_ptr<Camera>& camera)
 {
-    m_BatchManager.AddRenderObject(renderObject);
+    m_Camera = camera;
 }
 
 void Scene::AddLight(const LightData& light)
@@ -49,9 +53,20 @@ void Scene::AddLight(const LightData& light)
     UpdateLightsData();
 }
 
-void Scene::SetCamera(const std::shared_ptr<Camera>& camera)
+void Scene::UpdateLightsData()
 {
-    m_Camera = camera;
+    if (m_LightsData.size() > MAX_LIGHTS) {
+        throw std::runtime_error("Too many lights.");
+    }
+
+    uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
+    m_LightsSSBO->SetData(&numLights, sizeof(glm::vec4), 0);
+    m_LightsSSBO->SetData(m_LightsData.data(), m_LightsData.size() * sizeof(LightData), sizeof(glm::vec4));
+}
+
+void Scene::BindLightSSBO() const
+{
+    m_LightsSSBO->Bind();
 }
 
 void Scene::Clear()
@@ -61,11 +76,44 @@ void Scene::Clear()
     m_TerrainHeightMap = nullptr;
     m_BGrid = false;
     m_BDebugLights = false;
+
+    // Reset root node
+    m_RootNode = std::make_shared<SceneNode>();
 }
 
-void Scene::BuildBatches() const
+void Scene::BuildBatches()
 {
-    m_BatchManager.BuildBatches();
+    if (m_bFirstTraverse)
+    {
+        // 1. Clear old
+        m_BatchManager.Clear();
+
+        // 2. Traverse the scene graph, collect all render objects
+        TraverseSceneGraph(m_RootNode, glm::mat4(1.0f));
+
+        // 3. Build
+        m_BatchManager.BuildBatches();
+        m_bFirstTraverse = false;
+    }
+
+}
+
+void Scene::TraverseSceneGraph(std::shared_ptr<SceneNode> node, const glm::mat4& parentTransform)
+{
+    if (!node) return;
+
+    glm::mat4 worldTransform = node->CalculateWorldTransform(parentTransform);
+
+    // If node has a RenderObject, set the final model matrix
+    if (auto ro = node->GetRenderObject()) {
+        ro->GetTransform()->SetModelMatrix(worldTransform);
+        m_BatchManager.AddRenderObject(ro);
+    }
+
+    // Recurse children
+    for (const auto& child : node->GetChildren()) {
+        TraverseSceneGraph(child, worldTransform);
+    }
 }
 
 const std::vector<std::shared_ptr<Batch>>& Scene::GetBatches() const
@@ -90,23 +138,6 @@ void Scene::UpdateFrameDataUBO() const
     m_FrameDataUBO->SetData(&frameData, sizeof(FrameCommonData));
 }
 
-void Scene::UpdateLightsData()
-{
-    if (m_LightsData.size() > MAX_LIGHTS) {
-        throw std::runtime_error("Too many lights.");
-    }
-
-    uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
-
-    m_LightsSSBO->SetData(&numLights, sizeof(glm::vec4), 0);
-    m_LightsSSBO->SetData(m_LightsData.data(), m_LightsData.size() * sizeof(LightData), sizeof(glm::vec4));
-}
-
-void Scene::BindLightSSBO() const
-{
-    m_LightsSSBO->Bind();
-}
-
 void Scene::BindFrameDataUBO() const
 {
     m_FrameDataUBO->Bind();
@@ -120,34 +151,6 @@ void Scene::SetPostProcessingEffect(PostProcessingEffectType effect)
 PostProcessingEffectType Scene::GetPostProcessingEffect() const
 {
     return m_PostProcessingEffect;
-}
-
-void Scene::BindShaderAndMaterial(const std::string& shaderName, const std::string& materialName) const
-{
-    auto& shaderManager = ShaderManager::GetInstance();
-    auto& materialManager = MaterialManager::GetInstance();
-
-    auto shader = shaderManager.GetShader(shaderName);
-    if (shader) {
-        shader->Bind();
-    }
-    else {
-        Logger::GetLogger()->error("Shader '{}' not found.", shaderName);
-        return;
-    }
-
-    auto material = materialManager.GetMaterial(materialName);
-    if (material) {
-        materialManager.BindMaterial(materialName, shader);
-    }
-    else {
-        Logger::GetLogger()->error("Material '{}' not found.", materialName);
-        return;
-    }
-
-    // Bind frame data UBO and light SSBO
-    BindFrameDataUBO();
-    BindLightSSBO();
 }
 
 void Scene::SetTerrainHeightMap(const std::shared_ptr<ITexture>& heightMap)

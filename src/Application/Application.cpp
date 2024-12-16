@@ -72,9 +72,9 @@ void Application::Init()
 
     testMenu = std::make_unique<TestMenu>(testManager);
     testMenu->RegisterTest("Lights", []() { return std::make_shared<TestLights>(); });
-    testMenu->RegisterTest("Compute", []() { return std::make_shared<TestComputeShader>(); });
-    testMenu->RegisterTest("Helmet", []() { return std::make_shared<TestDamagedHelmet>(); });
-    testMenu->RegisterTest("Bistro", []() { return std::make_shared<TestBistro>(); });
+    //testMenu->RegisterTest("Compute", []() { return std::make_shared<TestComputeShader>(); });
+    //testMenu->RegisterTest("Helmet", []() { return std::make_shared<TestDamagedHelmet>(); });
+    //testMenu->RegisterTest("Bistro", []() { return std::make_shared<TestBistro>(); });
     testMenu->RegisterTest("Flipbook", []() { return std::make_shared<TestFlipBookEffect>(); });
 
     testManager.RegisterTest("Test Menu", [this]() {

@@ -5,18 +5,29 @@
 #include "Scene/Transform.h"
 #include "Scene/Lights.h"
 #include "Scene/Screen.h"
+#include "Scene/SceneNode.h"
 #include "Utilities/Logger.h"
+#include "Graphics/Meshes/ModelLoader.h"
 #include <imgui.h>
 
-TestLights::TestLights() {
-    // Initialization if needed
+TestLights::TestLights()
+    : Test()
+{
+    // ...
 }
 
 void TestLights::OnEnter() {
-
-    auto& modelManager = ModelManager::GetInstance();
     auto& materialManager = MaterialManager::GetInstance();
     auto& shaderManager = ShaderManager::GetInstance();
+
+    // Create the gold material
+    auto goldMaterial = std::make_shared<Material>();
+    goldMaterial->AddParam<glm::vec3>("material.Ka", glm::vec3(0.24725f, 0.1995f, 0.0745f));
+    goldMaterial->AddParam<glm::vec3>("material.Kd", glm::vec3(0.75164f, 0.60648f, 0.22648f));
+    goldMaterial->AddParam<glm::vec3>("material.Ks", glm::vec3(0.628281f, 0.555802f, 0.366065f));
+    goldMaterial->AddParam<float>("material.shininess", 51.2f);
+
+    materialManager.AddMaterial("objMaterial", goldMaterial);
 
     // Define mesh layout
     MeshLayout objMeshLayout = {
@@ -27,53 +38,35 @@ void TestLights::OnEnter() {
         {}     // Texture Coordinates
     };
 
-    // Get model
-    auto model = modelManager.GetModel("pig");
-    if (!model) {
-        Logger::GetLogger()->error("Failed to load model 'pig'");
+    // Use ModelLoader to load pig model into the scene graph
+    ModelLoader modelLoader;
+    auto pigNode = modelLoader.LoadModelIntoSceneGraph(
+        "pig",           // key or path
+        "simplelights",  // defaultShader
+        "objMaterial",   // defaultMaterial
+        objMeshLayout
+    );
+    if (!pigNode) {
+        Logger::GetLogger()->error("Failed to load pig model node");
         return;
     }
 
-    // Create material
-    auto material = std::make_shared<Material>();
+    // Optionally set local transform on pigNode if you want to move it up
+    glm::mat4 localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.5f, 0.0f));
+    pigNode->SetLocalTransform(localTransform);
 
-    // Gold material properties
-    material->AddParam<glm::vec3>("material.Ka", glm::vec3(0.24725f, 0.1995f, 0.0745f));
-    material->AddParam<glm::vec3>("material.Kd", glm::vec3(0.75164f, 0.60648f, 0.22648f));
-    material->AddParam<glm::vec3>("material.Ks", glm::vec3(0.628281f, 0.555802f, 0.366065f));
-    material->AddParam<float>("material.shininess", 51.2f);
+    // Attach pigNode to scene root
+    m_Scene->GetRootNode()->AddChild(pigNode);
 
-    materialManager.AddMaterial("objMaterial", material);
+    // Add some lights
+    LightData light1 = { glm::vec4(1.5f, 2.0f, 1.5f, 0.0f), glm::vec4(1.0f,1.0f,1.0f,1.0f) };
+    m_Scene->AddLight(light1);
+    LightData light2 = { glm::vec4(-1.5f,2.0f,-1.5f,0.0f), glm::vec4(1.0f,0.0f,0.0f,1.0f) };
+    m_Scene->AddLight(light2);
 
-    auto transform = std::make_shared<Transform>();
-    transform->SetPosition(glm::vec3(0.0, 0.5, 0.0));
-
-    // Get meshes from the model
-    const auto& meshinfos = model->GetMeshesInfo();
-
-    // Add render objects to the scene
-    for (const auto& minfo : meshinfos) {
-        auto renderObject = std::make_shared<RenderObject>(
-            minfo.mesh,
-            objMeshLayout,
-            "objMaterial",
-            "simplelights",
-            transform
-        );
-        m_Scene->AddRenderObject(renderObject);
-    }
-
-    // Add light to the scene
-    LightData light = { glm::vec4(1.5f, 2.0f, 1.5f, 0.0f) , glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) };
-    m_Scene->AddLight(light);
-
-    light = { glm::vec4(-1.5f, 2.0f, -1.5f, 0.0f) , glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) };
-    m_Scene->AddLight(light);
-
-    m_Scene->BuildBatches();
+    // Now the scene is ready
     m_Scene->SetBDebugLights(true);
     m_Scene->SetBGrid(true);
-    //m_Scene->SetPostProcessingEffect(PostProcessingEffectType::EdgeDetection);
 }
 
 void TestLights::OnExit() {
@@ -82,11 +75,11 @@ void TestLights::OnExit() {
 }
 
 void TestLights::OnUpdate(float deltaTime) {
-    // Update objects or animations if needed
+    // Update logic if needed
 }
-
 
 void TestLights::OnImGuiRender() {
     ImGui::Begin("TestLights Controls");
+    ImGui::Text("Use this panel for debugging or adjustments");
     ImGui::End();
 }

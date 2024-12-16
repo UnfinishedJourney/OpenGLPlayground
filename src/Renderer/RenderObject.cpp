@@ -11,7 +11,6 @@ RenderObject::RenderObject(const std::shared_ptr<Mesh>& mesh,
     m_ShaderName(shaderName),
     m_Transform(transform)
 {
-    // Initialization if needed
 }
 
 const std::string& RenderObject::GetShaderName() const { return m_ShaderName; }
@@ -26,11 +25,9 @@ void RenderObject::Update(float deltaTime)
 }
 
 float RenderObject::ComputeDistanceTo(const glm::vec3& pos) const {
-    // Transform min and max bounds to world space
+    // AABB distance check
     glm::vec3 worldMin = glm::vec3(GetTransform()->GetModelMatrix() * glm::vec4(m_Mesh->minBounds, 1.0f));
     glm::vec3 worldMax = glm::vec3(GetTransform()->GetModelMatrix() * glm::vec4(m_Mesh->maxBounds, 1.0f));
-
-    // Compute squared distance from camera to AABB
     float distanceSq = 0.0f;
     for (int i = 0; i < 3; ++i) {
         float v = pos[i];
@@ -45,8 +42,6 @@ glm::vec3 RenderObject::GetWorldCenter() const {
 }
 
 float RenderObject::GetBoundingSphereRadius() const {
-    // Assuming uniform scaling, adjust the radius by the scale factor
-    // If non-uniform scaling is used, consider computing an oriented bounding box or an ellipsoid
     float scale = glm::length(GetTransform()->GetScale());
     return m_Mesh->boundingSphereRadius * scale;
 }

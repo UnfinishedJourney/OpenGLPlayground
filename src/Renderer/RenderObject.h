@@ -1,5 +1,4 @@
 #pragma once
-
 #include <memory>
 #include <string>
 #include <glm/glm.hpp>
@@ -17,7 +16,6 @@ public:
 
     virtual ~RenderObject() = default;
 
-    // Accessors
     const std::string& GetShaderName() const;
     const std::string& GetMaterialName() const;
     const std::shared_ptr<Mesh>& GetMesh() const;
@@ -32,7 +30,7 @@ public:
 
     bool IsStatic() const { return m_IsStatic; }
 
-    // LOD management
+    // LOD
     size_t GetCurrentLOD() const { return m_CurrentLOD; }
     bool SetLOD(size_t lodLevel) {
         if (m_CurrentLOD != lodLevel) {
@@ -50,5 +48,5 @@ private:
     std::shared_ptr<Transform> m_Transform;
     bool m_IsStatic = true;
 
-    size_t m_CurrentLOD = 0; // Store the currently selected LOD
+    size_t m_CurrentLOD = 0;
 };

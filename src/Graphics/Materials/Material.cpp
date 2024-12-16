@@ -13,7 +13,6 @@ template<typename T>
 void Material::AddParam(const std::string& name, const T& value) {
     m_Params[name] = value;
 }
-
 template void Material::AddParam<int>(const std::string&, const int&);
 template void Material::AddParam<float>(const std::string&, const float&);
 template void Material::AddParam<glm::vec2>(const std::string&, const glm::vec2&);
@@ -27,13 +26,11 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const {
         Logger::GetLogger()->error("No shader provided to material bind.");
         return;
     }
-
     // Bind textures
     for (auto& [unit, tex] : m_Textures) {
         tex->Bind(unit);
     }
-
-    // Set uniforms
+    // set uniforms
     for (auto& [name, val] : m_Params) {
         std::visit([&](auto&& arg) {
             shader->SetUniform(name, arg);

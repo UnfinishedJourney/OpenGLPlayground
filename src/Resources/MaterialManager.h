@@ -11,6 +11,7 @@ public:
 
     std::shared_ptr<Material> GetMaterial(const std::string& name);
     void AddMaterial(const std::string& name, const std::shared_ptr<Material>& material);
+
     void BindMaterial(const std::string& name, const std::shared_ptr<BaseShader>& shader);
     void UnbindMaterial();
 

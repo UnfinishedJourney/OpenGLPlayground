@@ -11,58 +11,46 @@ OpenGLTextureArray::OpenGLTextureArray(const std::vector<std::string>& filePaths
     }
 
     if (filePaths.size() > 1) {
-        // If multiple files, load them all as before.
-        // For brevity, we assume only one file which is a sprite sheet.
         throw std::runtime_error("Multiple files not supported in this scenario.");
     }
 
     TextureData data;
-    if (!data.LoadFromFile(filePaths[0], false)) {
+    if (!data.LoadFromFile(filePaths[0], false)) { 
         throw std::runtime_error("Failed to load texture: " + filePaths[0]);
     }
 
     m_Width = data.GetWidth();
     m_Height = data.GetHeight();
 
-    // Each frame is (m_Width / gridX) by (m_Height / gridY)
     uint32_t frameWidth = m_Width / gridX;
     uint32_t frameHeight = m_Height / gridY;
-    if (frameWidth * gridX != m_Width || frameHeight * gridY != m_Height) {
-        throw std::runtime_error("Sprite sheet dimensions not divisible by grid.");
-    }
+    //if (frameWidth * gridX != m_Width || frameHeight * gridY != m_Height) {
+    //    throw std::runtime_error("Sprite sheet dimensions not divisible by grid.");
+    //}
 
-    // Create the texture array
     GLCall(glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &m_TextureID));
     if (!m_TextureID) throw std::runtime_error("Failed to create texture array.");
 
     int levels = config.generateMips ? (int)std::floor(std::log2(std::max(frameWidth, frameHeight))) + 1 : 1;
     GLCall(glTextureStorage3D(m_TextureID, levels, config.internalFormat, frameWidth, frameHeight, totalFrames));
 
-    // Extract each frame from the big image and upload as a layer
-    // data.GetData() is the full image RGBA
-    const unsigned char* fullImageData = data.GetData();
-    int channels = data.GetChannels(); // should be 4
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    // Buffer for one frame
+    const unsigned char* fullImageData = data.GetData();
+    int channels = data.GetChannels(); 
+
     std::vector<unsigned char> frameData(frameWidth * frameHeight * channels);
 
     uint32_t frameIndex = 0;
     for (uint32_t y = 0; y < gridY && frameIndex < totalFrames; y++) {
         for (uint32_t x = 0; x < gridX && frameIndex < totalFrames; x++) {
+            uint32_t srcX = x * frameWidth;
+            uint32_t srcY = y * frameHeight;
 
-            uint32_t my_y = y;
-            uint32_t my_x = x;
             for (uint32_t row = 0; row < frameHeight; row++) {
-                for (uint32_t col = 0; col < frameWidth; col++) {
-                    uint32_t srcX = my_x * frameWidth + col;
-                    uint32_t srcY = my_y * frameHeight + row;
-                    uint32_t srcIndex = (srcY * m_Width + srcX) * channels;
-
-                    uint32_t dstIndex = (row * frameWidth + col) * channels;
-                    for (int c = 0; c < channels; c++) {
-                        frameData[dstIndex + c] = fullImageData[srcIndex + c];
-                    }
-                }
+                const unsigned char* srcPtr = fullImageData + ((srcY + row) * m_Width + srcX) * channels;
+                unsigned char* dstPtr = frameData.data() + (row * frameWidth) * channels;
+                std::memcpy(dstPtr, srcPtr, frameWidth * channels);
             }
 
             GLCall(glTextureSubImage3D(m_TextureID, 0, 0, 0, frameIndex,
@@ -73,7 +61,6 @@ OpenGLTextureArray::OpenGLTextureArray(const std::vector<std::string>& filePaths
         }
     }
 
-    // Log how many frames were actually loaded
     Logger::GetLogger()->info("OpenGLTextureArray: Loaded {} frames into texture array (expected {}).", frameIndex, totalFrames);
 
     if (config.generateMips) GLCall(glGenerateTextureMipmap(m_TextureID));

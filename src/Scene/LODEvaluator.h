@@ -16,4 +16,6 @@ public:
 private:
     // Example thresholds, adjust as needed
     float m_Distances[4] = { 50.0f, 100.0f, 200.0f, 400.0f };
+
+    //float m_Distances[4] = { 2.0f, 4.0f, 6.0f, 8.0f }; test lods
 };
