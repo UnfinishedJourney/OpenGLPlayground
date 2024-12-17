@@ -51,7 +51,7 @@ void DebugLightsPass::Execute(const std::shared_ptr<Scene>& scene)
         static_cast<GLsizei>(m_LightSphereMeshBuffer->GetIndexCount()),
         GL_UNSIGNED_INT,
         nullptr,
-        static_cast<GLsizei>(scene->GetLights().size())
+        static_cast<GLsizei>(scene->GetLightsData().size())
     ));
 
     m_LightSphereMeshBuffer->Unbind();

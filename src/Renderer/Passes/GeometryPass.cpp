@@ -1,5 +1,4 @@
 #include "GeometryPass.h"
-#include "Resources/ResourceManager.h"
 #include "Resources/ShaderManager.h"
 #include "Resources/MaterialManager.h"
 #include "Utilities/Logger.h"
@@ -7,40 +6,31 @@
 
 GeometryPass::GeometryPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene>& scene)
     : m_Framebuffer(framebuffer)
-{
-    InitializeSceneResources(scene);
-}
-
-GeometryPass::~GeometryPass() {}
-
-void GeometryPass::InitializeSceneResources(const std::shared_ptr<Scene>& scene)
-{
-    // Possibly create additional buffers or GPU resources
-}
+{}
 
 void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
 {
     m_Framebuffer->Bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Example: LOD updates (distance-based)
-    scene->UpdateLODs();
+    // 1) Build static batches if needed
+    scene->BuildStaticBatchesIfNeeded();
 
-    // Build the scene’s batches
+    // 2) Cull + LOD update
+    scene->CullAndLODUpdate();
+
+    // 3) Update global UBO
     scene->UpdateFrameDataUBO();
-    scene->BuildBatches();
-
-    // Bind UBO/SSBO
     scene->BindFrameDataUBO();
     scene->BindLightSSBO();
 
-    const auto& batches = scene->GetBatches();
-    for (const auto& batch : batches) {
-        const auto& ros = batch->GetRenderObjects();
-        if (ros.empty()) continue;
+    // 4) Render static batches
+    auto& materialManager = MaterialManager::GetInstance();
+    auto& shaderManager = ShaderManager::GetInstance();
 
-        auto& shaderManager = ShaderManager::GetInstance();
-        auto& materialManager = MaterialManager::GetInstance();
+    const auto& staticBatches = scene->GetStaticBatches();
+    for (auto& batch : staticBatches) {
+        if (batch->GetRenderObjects().empty()) continue;
 
         auto shader = shaderManager.GetShader(batch->GetShaderName());
         if (!shader) {
@@ -51,17 +41,18 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
 
         materialManager.BindMaterial(batch->GetMaterialName(), shader);
 
-        // For geometry pass, each batch uses the same transform only if the ROs share it 
-        // but in practice, they could differ. If your code lumps them together, you do one matrix.
-        // But multi-draw indirect means per-draw transform. For now, let's do the first:
-        glm::mat4 modelMatrix = ros.front()->GetTransform()->GetModelMatrix();
-        glm::mat3 normalMatrix = ros.front()->GetTransform()->GetNormalMatrix();
+        // If all ROs in the batch share the same transform or are merged,
+        // we can use the transform from the first object (for typical static merges).
+        glm::mat4 modelMatrix = batch->GetRenderObjects().front()->GetTransform()->GetModelMatrix();
+        glm::mat3 normalMatrix = batch->GetRenderObjects().front()->GetTransform()->GetNormalMatrix();
 
         shader->SetUniform("u_Model", modelMatrix);
         shader->SetUniform("u_NormalMatrix", normalMatrix);
 
         batch->Render();
     }
+
+    // 5) (Optional) Render dynamic objects with single draws or another pass
 
     m_Framebuffer->Unbind();
 }
