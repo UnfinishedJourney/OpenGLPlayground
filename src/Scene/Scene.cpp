@@ -4,6 +4,7 @@
 #include "Graphics/Meshes/Mesh.h"
 #include "Resources/MaterialManager.h"
 #include "Graphics/Materials/Material.h"
+#include "Graphics/Materials/MaterialLayout.h"
 #include <glad/glad.h>
 #include <stdexcept>
 
@@ -16,6 +17,40 @@ struct FrameCommonData {
 constexpr GLuint FRAME_DATA_BINDING_POINT = 0;
 constexpr GLuint LIGHTS_DATA_BINDING_POINT = 1;
 static const size_t MAX_LIGHTS = 32;
+
+std::shared_ptr<Material> CreateMaterialFromLayout(const MaterialLayout& layout, const std::string& name) {
+    auto mat = std::make_shared<Material>();
+    mat->SetName(name);
+
+    // Set default parameters based on layout:
+    if (layout.hasAmbient) {
+        mat->AddParam("material.Ka", glm::vec3(0.2f, 0.2f, 0.2f));
+    }
+    if (layout.hasDiffuse) {
+        mat->AddParam("material.Kd", glm::vec3(0.8f, 0.8f, 0.8f));
+    }
+    if (layout.hasSpecular) {
+        mat->AddParam("material.Ks", glm::vec3(0.5f, 0.5f, 0.5f));
+    }
+    if (layout.hasShininess) {
+        mat->AddParam("material.shininess", 32.0f);
+    }
+    if (layout.hasRoughness) {
+        mat->AddParam("material.roughness", 0.5f);
+    }
+    if (layout.hasMetallic) {
+        mat->AddParam("material.metallic", 0.0f);
+    }
+    if (layout.hasEmissive) {
+        mat->AddParam("material.emissive", glm::vec3(0.0f, 0.0f, 0.0f));
+    }
+    if (layout.hasCustom) {
+        // Add some custom parameter
+        mat->AddParam("material.customFactor", 1.0f);
+    }
+
+    return mat;
+}
 
 Scene::Scene()
     : m_PostProcessingEffect(PostProcessingEffectType::None)
@@ -59,13 +94,26 @@ bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& 
         return false;
     }
 
+    //auto goldMaterial = std::make_shared<Material>();
+    //goldMaterial->AddParam<glm::vec3>("material.Ka", glm::vec3(0.24725f, 0.1995f, 0.0745f));
+    //goldMaterial->AddParam<glm::vec3>("material.Kd", glm::vec3(0.75164f, 0.60648f, 0.22648f));
+    //goldMaterial->AddParam<glm::vec3>("material.Ks", glm::vec3(0.628281f, 0.555802f, 0.366065f));
+    //goldMaterial->AddParam<float>("material.shininess", 51.2f);
+
+    MaterialLayout ml;
+    ml.hasAmbient = true;
+    ml.hasShininess = true;
+    ml.hasDiffuse = true;
+    ml.hasSpecular = true;
+
     // Create materials in MaterialManager:
     // For now, we just create a simple material for each entry in m_LoadedMaterials
     auto& matManager = MaterialManager::GetInstance();
     for (auto& matName : m_LoadedMaterials) {
         if (!matManager.GetMaterial(matName)) {
-            auto mat = std::make_shared<Material>();
-            mat->SetName(matName);
+            //auto mat = std::make_shared<Material>();
+            auto mat = CreateMaterialFromLayout(ml, matName);
+            //mat->SetName(matName);
             // Here you could add textures from MeshInfo if you map them per-material,
             // and set shader parameters.
             matManager.AddMaterial(matName, mat);
