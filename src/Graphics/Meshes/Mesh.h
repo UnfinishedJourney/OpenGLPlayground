@@ -4,15 +4,8 @@
 #include <glm/glm.hpp>
 #include <cfloat>
 #include <unordered_map>
-#include "Utilities/Utility.h" // if needed
-// TextureType enum assumed defined
-enum class TextureType {
-    Albedo,
-    Normal,
-    MetalRoughness,
-    AO,
-    Emissive
-};
+#include "Utilities/Utility.h" 
+#include "Graphics/Textures/TextureType.h"
 
 struct MeshLOD {
     uint32_t indexOffset;

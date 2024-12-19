@@ -4,7 +4,6 @@
 #include "Graphics/Meshes/Mesh.h"
 #include "Resources/MaterialManager.h"
 #include "Graphics/Materials/Material.h"
-#include "Graphics/Materials/MaterialLayout.h"
 #include <glad/glad.h>
 #include <stdexcept>
 
@@ -17,40 +16,6 @@ struct FrameCommonData {
 constexpr GLuint FRAME_DATA_BINDING_POINT = 0;
 constexpr GLuint LIGHTS_DATA_BINDING_POINT = 1;
 static const size_t MAX_LIGHTS = 32;
-
-std::shared_ptr<Material> CreateMaterialFromLayout(const MaterialLayout& layout, const std::string& name) {
-    auto mat = std::make_shared<Material>();
-    mat->SetName(name);
-
-    // Set default parameters based on layout:
-    if (layout.hasAmbient) {
-        mat->AddParam("material.Ka", glm::vec3(0.2f, 0.2f, 0.2f));
-    }
-    if (layout.hasDiffuse) {
-        mat->AddParam("material.Kd", glm::vec3(0.8f, 0.8f, 0.8f));
-    }
-    if (layout.hasSpecular) {
-        mat->AddParam("material.Ks", glm::vec3(0.5f, 0.5f, 0.5f));
-    }
-    if (layout.hasShininess) {
-        mat->AddParam("material.shininess", 32.0f);
-    }
-    if (layout.hasRoughness) {
-        mat->AddParam("material.roughness", 0.5f);
-    }
-    if (layout.hasMetallic) {
-        mat->AddParam("material.metallic", 0.0f);
-    }
-    if (layout.hasEmissive) {
-        mat->AddParam("material.emissive", glm::vec3(0.0f, 0.0f, 0.0f));
-    }
-    if (layout.hasCustom) {
-        // Add some custom parameter
-        mat->AddParam("material.customFactor", 1.0f);
-    }
-
-    return mat;
-}
 
 Scene::Scene()
     : m_PostProcessingEffect(PostProcessingEffectType::None)
@@ -77,7 +42,7 @@ void Scene::SetCamera(const std::shared_ptr<Camera>& camera) {
     m_Camera = camera;
 }
 
-bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& defaultShaderName, const std::string& defaultMaterialName, const MeshLayout& layout) {
+bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& defaultShaderName, const std::string& defaultMaterialName, const MeshLayout& meshLayout, const MaterialLayout& matLayout) {
     auto pathIt = m_ModelPaths.find(modelName);
     if (pathIt == m_ModelPaths.end()) {
         Logger::GetLogger()->error("Model '{}' path not found.", modelName);
@@ -85,37 +50,30 @@ bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& 
     }
 
     std::string modelPath = pathIt->second;
-    // Load the model directly:
-    Model model(modelPath, true, layout);
+    // Load the model
+    Model model(modelPath, true, meshLayout);
 
     ModelLoader loader;
-    if (!loader.LoadIntoSceneGraph(model, layout, m_SceneGraph, m_LoadedMeshes, m_LoadedMaterials)) {
+    if (!loader.LoadIntoSceneGraph(model, meshLayout, m_SceneGraph, m_LoadedMeshes, m_LoadedMaterials)) {
         Logger::GetLogger()->error("Failed to load model '{}' into scene graph.", modelName);
         return false;
     }
 
-    //auto goldMaterial = std::make_shared<Material>();
-    //goldMaterial->AddParam<glm::vec3>("material.Ka", glm::vec3(0.24725f, 0.1995f, 0.0745f));
-    //goldMaterial->AddParam<glm::vec3>("material.Kd", glm::vec3(0.75164f, 0.60648f, 0.22648f));
-    //goldMaterial->AddParam<glm::vec3>("material.Ks", glm::vec3(0.628281f, 0.555802f, 0.366065f));
-    //goldMaterial->AddParam<float>("material.shininess", 51.2f);
-
-    MaterialLayout ml;
-    ml.hasAmbient = true;
-    ml.hasShininess = true;
-    ml.hasDiffuse = true;
-    ml.hasSpecular = true;
-
-    // Create materials in MaterialManager:
-    // For now, we just create a simple material for each entry in m_LoadedMaterials
+    // Create materials using MaterialManager
     auto& matManager = MaterialManager::GetInstance();
-    for (auto& matName : m_LoadedMaterials) {
+    for (const auto& matName : m_LoadedMaterials) {
         if (!matManager.GetMaterial(matName)) {
-            //auto mat = std::make_shared<Material>();
-            auto mat = CreateMaterialFromLayout(ml, matName);
-            //mat->SetName(matName);
-            // Here you could add textures from MeshInfo if you map them per-material,
-            // and set shader parameters.
+            // Assuming the layout corresponds to all loaded materials
+            auto mat = matManager.CreateMaterial("Gold", glm::vec3(0.24725f, 0.1995f, 0.0745f), glm::vec3(0.75164f, 0.60648f, 0.22648f), glm::vec3(0.628281f, 0.555802f, 0.366065f), 51.2f);
+            // Adjust parameters as needed based on the material name
+            if (matName == "Silver") {
+                mat = matManager.CreateMaterial("Silver", glm::vec3(0.19225f, 0.19225f, 0.19225f), glm::vec3(0.50754f, 0.50754f, 0.50754f), glm::vec3(0.508273f, 0.508273f, 0.508273f), 51.2f);
+            }
+
+            //goldMaterial->AddParam<glm::vec3>("material.Ka", glm::vec3(0.24725f, 0.1995f, 0.0745f));
+            //goldMaterial->AddParam<glm::vec3>("material.Kd", glm::vec3(0.75164f, 0.60648f, 0.22648f));
+            //goldMaterial->AddParam<glm::vec3>("material.Ks", glm::vec3(0.628281f, 0.555802f, 0.366065f));
+            //goldMaterial->AddParam<float>("material.shininess", 51.2f);
             matManager.AddMaterial(matName, mat);
         }
     }
@@ -129,6 +87,10 @@ bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& 
 }
 
 void Scene::AddLight(const LightData& light) {
+    if (m_LightsData.size() >= MAX_LIGHTS) {
+        Logger::GetLogger()->warn("Maximum number of lights reached. Cannot add more.");
+        return;
+    }
     m_LightsData.push_back(light);
     UpdateLightsData();
 }
@@ -142,6 +104,7 @@ void Scene::UpdateLightsData() {
     m_LightsSSBO->SetData(m_LightsData.data(), m_LightsData.size() * sizeof(LightData), sizeof(glm::vec4));
 }
 
+
 void Scene::BindLightSSBO() const {
     m_LightsSSBO->Bind();
 }
@@ -153,26 +116,25 @@ void Scene::buildBatchesFromSceneGraph() {
 
     const auto& nodes = m_SceneGraph.GetNodes();
 
-    for (size_t i = 0; i < nodes.size(); i++) {
-        const auto& n = nodes[i];
-        if (n.meshIndex < 0) continue;
+    for (const auto& node : nodes) {
+        if (node.meshIndex < 0) continue;
 
-        auto meshInfo = m_LoadedMeshes[n.meshIndex];
+        auto meshInfo = m_LoadedMeshes[node.meshIndex];
         auto mesh = meshInfo.mesh;
 
         auto transform = std::make_shared<Transform>();
-        transform->SetModelMatrix(n.globalTransform);
+        transform->SetModelMatrix(node.globalTransform);
 
-        int matIdx = n.materialIndex;
-        std::string matName = "defaultMat";
-        if (matIdx >= 0 && matIdx < (int)m_LoadedMaterials.size()) {
+        int matIdx = node.materialIndex;
+        std::string matName = m_DefaultMaterial;
+        if (matIdx >= 0 && matIdx < static_cast<int>(m_LoadedMaterials.size())) {
             matName = m_LoadedMaterials[matIdx];
         }
 
         // Use defaultShader or a fallback if not set:
         std::string shaderName = m_DefaultShader.empty() ? "defaultShader" : m_DefaultShader;
 
-        auto ro = std::make_shared<RenderObject>(mesh, MeshLayout{ true,true }, matName, shaderName, transform);
+        auto ro = std::make_shared<RenderObject>(mesh, MeshLayout{ true, true }, matName, shaderName, transform);
         m_StaticBatchManager.AddRenderObject(ro);
     }
 }
@@ -228,13 +190,13 @@ void Scene::CullAndLODUpdate() {
     auto& batches = m_StaticBatchManager.GetBatches();
     for (auto& b : batches) {
         auto& ros = b->GetRenderObjects();
-        for (size_t i = 0; i < ros.size(); i++) {
+        for (size_t i = 0; i < ros.size(); ++i) {
             auto ro = ros[i];
             glm::vec3 c = ro->GetWorldCenter();
             float r = ro->GetBoundingSphereRadius();
             bool visible = m_FrustumCuller->IsSphereVisible(c, r, m_Camera);
             if (!visible) {
-                b->UpdateLOD(i, (size_t)-1);
+                b->UpdateLOD(i, static_cast<size_t>(-1));
             }
         }
     }

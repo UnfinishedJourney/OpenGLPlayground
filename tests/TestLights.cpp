@@ -9,8 +9,14 @@ void TestLights::OnEnter() {
     auto cam = std::make_shared<Camera>();
     m_Scene->SetCamera(cam);
 
+    MaterialLayout ml;
+    ml.params.insert(MaterialParamType::Ambient);
+    ml.params.insert(MaterialParamType::Diffuse);
+    ml.params.insert(MaterialParamType::Specular);
+    ml.params.insert(MaterialParamType::Shininess);
+
     MeshLayout layout = { true, true, false, false, {} };
-    if (!m_Scene->LoadModelIntoScene("pig", "simplelights", "objMaterial", layout)) {
+    if (!m_Scene->LoadModelIntoScene("pig", "simplelights", "objMaterial", layout, ml)) {
         Logger::GetLogger()->error("Failed to load pig model");
         return;
     }
