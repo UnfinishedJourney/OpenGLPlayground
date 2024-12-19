@@ -15,7 +15,7 @@ public:
 
     // Access to specialized managers
     MeshManager& GetMeshManager();
-    ModelManager& GetModelManager();
+    //ModelManager& GetModelManager();
     TextureManager& GetTextureManager();
     MaterialManager& GetMaterialManager();
     ShaderManager& GetShaderManager();

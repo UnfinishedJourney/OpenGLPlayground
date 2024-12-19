@@ -1,47 +1,53 @@
 #pragma once
-
 #include <string>
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include <filesystem>
-#include "Graphics/Meshes/Mesh.h"
-#include "Graphics/Meshes/MeshLayout.h"
-#include "Graphics/Buffers/MeshBuffer.h"
-#include "Graphics/Textures/OpenGLTexture.h"
+#include "Mesh.h"
+#include "MeshLayout.h"
+#include "Graphics/Textures/TextureData.h"
 
 struct MeshTextures {
-    std::unordered_map<TextureType, std::shared_ptr<ITexture>> textures;
+    std::unordered_map<TextureType, TextureData> textureData;
 };
 
 struct MeshInfo {
     MeshTextures meshTextures;
     std::shared_ptr<Mesh> mesh;
+    int materialIndex = -1;
+};
+
+struct MaterialInfo {
+    std::string name;
+    // Possibly store texture file paths or additional parameters
 };
 
 class Model {
 public:
-    explicit Model(const std::string& pathToModel, bool centerModel = true);
-
-    size_t GetMeshCount() const { return m_MeshInfos.size(); }
-    std::shared_ptr<MeshBuffer> GetMeshBuffer(size_t meshIndex, const MeshLayout& layout);
-    std::shared_ptr<ITexture> GetTexture(size_t meshIndex, TextureType type) const;
-
+    Model(const std::string& pathToModel, bool centerModel, const MeshLayout& requestedLayout);
     const std::vector<MeshInfo>& GetMeshesInfo() const { return m_MeshInfos; }
-    std::vector<std::shared_ptr<MeshBuffer>> GetMeshBuffers(const MeshLayout& layout);
+    const std::vector<MaterialInfo>& GetMaterials() const { return m_Materials; }
+
+    struct Node {
+        std::string name;
+        int parent = -1;
+        std::vector<int> children;
+        std::vector<int> meshes; // indices into m_MeshInfos
+        glm::mat4 localTransform;
+    };
+    const std::vector<Node>& GetNodes() const { return m_Nodes; }
 
 private:
-    void LoadModel();
-    void ProcessNode(const struct aiScene* scene, const struct aiNode* node);
-    void ProcessMesh(const struct aiScene* scene, const struct aiMesh* mesh);
-    void CenterModel();
-    glm::vec3 CalculateModelCenter() const;
-    MeshTextures LoadTextures(struct aiMaterial* material, const std::string& directory);
-
-    // Generates LOD levels for the mesh indices
+    friend class ModelLoader;
+    void LoadFromAssimp(const MeshLayout& layout, bool centerModel);
+    void ProcessNode(const struct aiScene* scene, const struct aiNode* ainode, int parentIndex);
+    int AddNode(const std::string& name, int parent, const glm::mat4& localTransform);
+    void ProcessMesh(const struct aiScene* scene, const struct aiMesh* aiMesh, const MeshLayout& layout);
     void ProcessLODs(std::vector<uint32_t>& indices, const std::vector<float>& vertices, std::vector<std::vector<uint32_t>>& outLods);
+    MeshTextures LoadMeshTextures(const struct aiMaterial* material, const std::string& directory);
 
     std::string m_FilePath;
     std::vector<MeshInfo> m_MeshInfos;
-    std::vector<std::unordered_map<MeshLayout, std::shared_ptr<MeshBuffer>>> m_MeshBuffersCache;
+    std::vector<MaterialInfo> m_Materials;
+    std::vector<Node> m_Nodes;
 };

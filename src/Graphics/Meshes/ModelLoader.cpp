@@ -1,50 +1,55 @@
 #include "ModelLoader.h"
-#include "Resources/ModelManager.h"
-#include "Graphics/Meshes/Mesh.h"
-#include "Scene/Transform.h"
-#include "Renderer/RenderObject.h"
-#include "Scene/SceneNode.h"
-#include "Utilities/Logger.h"
 
-std::shared_ptr<SceneNode> ModelLoader::LoadModelIntoSceneGraph(
-    const std::string& filePath,
-    const std::string& defaultShaderName,
-    const std::string& defaultMaterialName,
-    const MeshLayout& layout)
+std::unordered_map<std::string, std::filesystem::path> m_ModelPaths = {
+    {"pig", "../assets/Objs/pig_triangulated.obj"},
+    {"bunny", "../assets/Objs/bunny.obj"},
+    {"dragon", "../assets/Objs/dragon.obj"},
+    {"bistro", "../assets/AmazonBistro/Exterior/exterior.obj"},
+    {"helmet", "../assets/DamagedHelmet/glTF/DamagedHelmet.gltf" }
+};
+
+bool ModelLoader::LoadIntoSceneGraph(
+    const Model& model,
+    const MeshLayout& layout,
+    SceneGraph& sceneGraph,
+    std::vector<MeshInfo>& outMeshes,
+    std::vector<std::string>& outMaterials)
 {
-    // For example, use your existing ModelManager
-    auto& modelManager = ModelManager::GetInstance();
-    auto model = modelManager.GetModel(filePath); // Maybe your manager keys by 'pig' or by path
-
-    if (!model) {
-        Logger::GetLogger()->error("Failed to load model '{}'", filePath);
-        return nullptr;
+    outMeshes = model.GetMeshesInfo();
+    const auto& mats = model.GetMaterials();
+    for (auto& m : mats) {
+        outMaterials.push_back(m.name);
     }
 
-    // Create a root node for this model
-    auto rootNode = std::make_shared<SceneNode>();
-
-    // For each mesh in the model, create a child node
-    const auto& meshInfos = model->GetMeshesInfo();
-    for (const auto& meshInfo : meshInfos) {
-        auto transform = std::make_shared<Transform>();
-        // Optionally set a local transform here if needed
-        // transform->SetPosition(...);
-
-        auto ro = std::make_shared<RenderObject>(
-            meshInfo.mesh,
-            layout,
-            defaultMaterialName,
-            defaultShaderName,
-            transform
-        );
-
-        auto meshNode = std::make_shared<SceneNode>();
-        meshNode->SetRenderObject(ro);
-
-        // Add to root
-        rootNode->AddChild(meshNode);
+    const auto& nodes = model.GetNodes();
+    if (nodes.empty()) {
+        return false;
     }
 
-    return rootNode;
+    std::vector<int> nodeMap(nodes.size(), -1);
+
+    std::function<void(int, int)> processNode = [&](int idx, int parentSG) {
+        const auto& n = nodes[idx];
+        int sgNode = sceneGraph.AddNode(parentSG, n.name);
+        nodeMap[idx] = sgNode;
+        sceneGraph.SetLocalTransform(sgNode, n.localTransform);
+
+        for (auto meshIdx : n.meshes) {
+            int matIdx = outMeshes[meshIdx].materialIndex;
+            sceneGraph.SetNodeMesh(sgNode, meshIdx);
+            sceneGraph.SetNodeMaterial(sgNode, matIdx);
+
+            auto& m = outMeshes[meshIdx].mesh;
+            sceneGraph.SetNodeBoundingVolumes(sgNode, m->minBounds, m->maxBounds, m->localCenter, m->boundingSphereRadius);
+        }
+
+        for (auto c : n.children) {
+            processNode(c, sgNode);
+        }
+        };
+
+    processNode(0, -1);
+    sceneGraph.MarkAllChanged();
+    sceneGraph.RecalculateGlobalTransforms();
+    return true;
 }

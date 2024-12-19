@@ -13,9 +13,9 @@ MeshManager& ResourceManager::GetMeshManager() {
     return MeshManager::GetInstance();
 }
 
-ModelManager& ResourceManager::GetModelManager() {
-    return ModelManager::GetInstance();
-}
+//ModelManager& ResourceManager::GetModelManager() {
+//    return ModelManager::GetInstance();
+//}
 
 TextureManager& ResourceManager::GetTextureManager() {
     return TextureManager::GetInstance();

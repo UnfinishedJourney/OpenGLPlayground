@@ -20,55 +20,55 @@ TerrainPass::TerrainPass(std::shared_ptr<FrameBuffer> framebuffer, const std::sh
 
 void TerrainPass::Execute(const std::shared_ptr<Scene>& scene)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    m_Framebuffer->Bind();
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //m_Framebuffer->Bind();
 
-    // Enable necessary OpenGL states
-    glEnable(GL_DEPTH_TEST);
+    //// Enable necessary OpenGL states
+    //glEnable(GL_DEPTH_TEST);
 
-    auto& shaderManager = ShaderManager::GetInstance();
-    auto shader = shaderManager.GetShader("terrain");
-    if (shader) {
-        shader->Bind();
-    }
-    else {
-        Logger::GetLogger()->error("Terrain shader not found.");
-        return;
-    }
+    //auto& shaderManager = ShaderManager::GetInstance();
+    //auto shader = shaderManager.GetShader("terrain");
+    //if (shader) {
+    //    shader->Bind();
+    //}
+    //else {
+    //    Logger::GetLogger()->error("Terrain shader not found.");
+    //    return;
+    //}
 
-    // Bind height map texture
-    auto heightMap = scene->GetTerrainHeightMap();
-    if (!heightMap) {
-        Logger::GetLogger()->error("Height map not set in scene.");
-        return;
-    }
-    heightMap->Bind(0);
-    //shader->SetUniform("u_HeightMap", 0);
+    //// Bind height map texture
+    //auto heightMap = scene->GetTerrainHeightMap();
+    //if (!heightMap) {
+    //    Logger::GetLogger()->error("Height map not set in scene.");
+    //    return;
+    //}
+    //heightMap->Bind(0);
+    ////shader->SetUniform("u_HeightMap", 0);
 
-    // Bind frame data UBO
-    scene->BindFrameDataUBO();
+    //// Bind frame data UBO
+    //scene->BindFrameDataUBO();
 
-    // Set model matrix
-    glm::mat4 modelMatrix = glm::mat4(1.0f); // Adjust as needed
-    shader->SetUniform("u_Model", modelMatrix);
+    //// Set model matrix
+    //glm::mat4 modelMatrix = glm::mat4(1.0f); // Adjust as needed
+    //shader->SetUniform("u_Model", modelMatrix);
 
-    // Bind the terrain mesh
-    m_TerrainMeshBuffer->Bind();
+    //// Bind the terrain mesh
+    //m_TerrainMeshBuffer->Bind();
 
-    // Set up tessellation parameters
-    glPatchParameteri(GL_PATCH_VERTICES, 3);
+    //// Set up tessellation parameters
+    //glPatchParameteri(GL_PATCH_VERTICES, 3);
 
-    // Draw the terrain mesh using patches
-    if (m_TerrainMeshBuffer->GetIndexCount()) {
-        glDrawElements(GL_PATCHES, m_TerrainMeshBuffer->GetIndexCount(), GL_UNSIGNED_INT, nullptr);
-    }
-    else {
-        glDrawArrays(GL_PATCHES, 0, m_TerrainMeshBuffer->GetVertexCount());
-    }
+    //// Draw the terrain mesh using patches
+    //if (m_TerrainMeshBuffer->GetIndexCount()) {
+    //    glDrawElements(GL_PATCHES, m_TerrainMeshBuffer->GetIndexCount(), GL_UNSIGNED_INT, nullptr);
+    //}
+    //else {
+    //    glDrawArrays(GL_PATCHES, 0, m_TerrainMeshBuffer->GetVertexCount());
+    //}
 
-    m_TerrainMeshBuffer->Unbind();
+    //m_TerrainMeshBuffer->Unbind();
 
-    m_Framebuffer->Unbind();
+    //m_Framebuffer->Unbind();
 }
 
 TerrainPass::~TerrainPass()

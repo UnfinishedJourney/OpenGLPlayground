@@ -14,7 +14,7 @@ public:
         const std::string& shaderName,
         const std::shared_ptr<Transform>& transform);
 
-    virtual ~RenderObject() = default;
+    ~RenderObject() = default;
 
     const std::string& GetShaderName() const;
     const std::string& GetMaterialName() const;
@@ -22,7 +22,7 @@ public:
     const MeshLayout& GetMeshLayout() const;
     const std::shared_ptr<Transform>& GetTransform() const;
 
-    virtual void Update(float deltaTime);
+    void Update(float deltaTime);
 
     glm::vec3 GetWorldCenter() const;
     float GetBoundingSphereRadius() const;
@@ -47,6 +47,5 @@ private:
     MeshLayout m_MeshLayout;
     std::shared_ptr<Transform> m_Transform;
     bool m_IsStatic = true;
-
     size_t m_CurrentLOD = 0;
 };

@@ -1,4 +1,4 @@
-#include "Renderer/RenderObject.h"
+#include "RenderObject.h"
 
 RenderObject::RenderObject(const std::shared_ptr<Mesh>& mesh,
     const MeshLayout& meshLayout,
@@ -19,13 +19,11 @@ const std::shared_ptr<Mesh>& RenderObject::GetMesh() const { return m_Mesh; }
 const MeshLayout& RenderObject::GetMeshLayout() const { return m_MeshLayout; }
 const std::shared_ptr<Transform>& RenderObject::GetTransform() const { return m_Transform; }
 
-void RenderObject::Update(float deltaTime)
-{
-    // Implement per-frame updates if necessary
+void RenderObject::Update(float deltaTime) {
+    // per-frame logic
 }
 
 float RenderObject::ComputeDistanceTo(const glm::vec3& pos) const {
-    // AABB distance check
     glm::vec3 worldMin = glm::vec3(GetTransform()->GetModelMatrix() * glm::vec4(m_Mesh->minBounds, 1.0f));
     glm::vec3 worldMax = glm::vec3(GetTransform()->GetModelMatrix() * glm::vec4(m_Mesh->maxBounds, 1.0f));
     float distanceSq = 0.0f;

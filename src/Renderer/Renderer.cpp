@@ -60,10 +60,10 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
         m_RenderPasses.push_back(std::make_unique<GridPass>(framebuffer, scene));
     }
 
-    if (scene->GetTerrainHeightMap())
-    {
-        m_RenderPasses.push_back(std::make_unique<TerrainPass>(framebuffer, scene));
-    }
+    //if (scene->GetTerrainHeightMap())
+    //{
+    //    m_RenderPasses.push_back(std::make_unique<TerrainPass>(framebuffer, scene));
+    //}
 
     if (scene->GetBDebugLights())
     {
