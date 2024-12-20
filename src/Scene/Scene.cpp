@@ -3,6 +3,7 @@
 #include "Renderer/RenderObject.h"
 #include "Graphics/Meshes/Mesh.h"
 #include "Resources/MaterialManager.h"
+#include "Resources/ResourceManager.h"
 #include "Graphics/Materials/Material.h"
 #include <glad/glad.h>
 #include <stdexcept>
@@ -42,15 +43,16 @@ void Scene::SetCamera(const std::shared_ptr<Camera>& camera) {
     m_Camera = camera;
 }
 
-bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& defaultShaderName, const std::string& defaultMaterialName, const MeshLayout& meshLayout, const MaterialLayout& matLayout) {
+bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& defaultShaderName, const std::string& defaultMaterialName) {
     auto pathIt = m_ModelPaths.find(modelName);
     if (pathIt == m_ModelPaths.end()) {
         Logger::GetLogger()->error("Model '{}' path not found.", modelName);
         return false;
     }
 
+    auto& resourceManager = ResourceManager::GetInstance();
+    auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(defaultShaderName);
     std::string modelPath = pathIt->second;
-    // Load the model
     Model model(modelPath, true, meshLayout);
 
     ModelLoader loader;
@@ -70,17 +72,12 @@ bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& 
                 mat = matManager.CreateMaterial("Silver", glm::vec3(0.19225f, 0.19225f, 0.19225f), glm::vec3(0.50754f, 0.50754f, 0.50754f), glm::vec3(0.508273f, 0.508273f, 0.508273f), 51.2f);
             }
 
-            //goldMaterial->AddParam<glm::vec3>("material.Ka", glm::vec3(0.24725f, 0.1995f, 0.0745f));
-            //goldMaterial->AddParam<glm::vec3>("material.Kd", glm::vec3(0.75164f, 0.60648f, 0.22648f));
-            //goldMaterial->AddParam<glm::vec3>("material.Ks", glm::vec3(0.628281f, 0.555802f, 0.366065f));
-            //goldMaterial->AddParam<float>("material.shininess", 51.2f);
             matManager.AddMaterial(matName, mat);
         }
     }
 
     // Store defaults for this model if needed
-    m_DefaultShader = defaultShaderName;
-    m_DefaultMaterial = defaultMaterialName;
+    m_LastShader = defaultShaderName;
 
     m_StaticBatchesDirty = true;
     return true;
@@ -126,13 +123,13 @@ void Scene::buildBatchesFromSceneGraph() {
         transform->SetModelMatrix(node.globalTransform);
 
         int matIdx = node.materialIndex;
-        std::string matName = m_DefaultMaterial;
+        std::string matName;
         if (matIdx >= 0 && matIdx < static_cast<int>(m_LoadedMaterials.size())) {
             matName = m_LoadedMaterials[matIdx];
         }
 
         // Use defaultShader or a fallback if not set:
-        std::string shaderName = m_DefaultShader.empty() ? "defaultShader" : m_DefaultShader;
+        std::string shaderName = m_LastShader;
 
         auto ro = std::make_shared<RenderObject>(mesh, MeshLayout{ true, true }, matName, shaderName, transform);
         m_StaticBatchManager.AddRenderObject(ro);
@@ -159,8 +156,7 @@ void Scene::Clear() {
     m_BGrid = false;
     m_BDebugLights = false;
     m_StaticBatchesDirty = true;
-    m_DefaultShader.clear();
-    m_DefaultMaterial.clear();
+    m_LastShader.clear();
 }
 
 void Scene::UpdateFrameDataUBO() const {

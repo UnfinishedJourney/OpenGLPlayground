@@ -16,9 +16,9 @@ void main()
     vec3 norm = normalize(Normal);
     
     // Choose lighting model based on uniform
-    //vec3 lighting = CalculatePhongLighting(norm, viewDir, FragPos);
+    vec3 lighting = CalculatePhongLighting(norm, viewDir, FragPos);
 
-    vec3 lighting = CalculateToonLighting(norm, viewDir, FragPos);
+    //vec3 lighting = CalculateToonLighting(norm, viewDir, FragPos);
     
     color = vec4(lighting, 1.0);
 }

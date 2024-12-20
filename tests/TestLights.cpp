@@ -9,14 +9,7 @@ void TestLights::OnEnter() {
     auto cam = std::make_shared<Camera>();
     m_Scene->SetCamera(cam);
 
-    MaterialLayout ml;
-    ml.params.insert(MaterialParamType::Ambient);
-    ml.params.insert(MaterialParamType::Diffuse);
-    ml.params.insert(MaterialParamType::Specular);
-    ml.params.insert(MaterialParamType::Shininess);
-
-    MeshLayout layout = { true, true, false, false, {} };
-    if (!m_Scene->LoadModelIntoScene("pig", "simplelights", "objMaterial", layout, ml)) {
+    if (!m_Scene->LoadModelIntoScene("pig", "simplelights", "objMaterial")) {
         Logger::GetLogger()->error("Failed to load pig model");
         return;
     }
@@ -24,8 +17,9 @@ void TestLights::OnEnter() {
     LightData light1 = { glm::vec4(1.5f,2.0f,1.5f,0.0f), glm::vec4(1.0f) };
     m_Scene->AddLight(light1);
 
-    LightData light2 = { glm::vec4(-1.5f,2.0f,-1.5f,0.0f), glm::vec4(1.0f,0.0f,0.0f,1.0f) };
-    m_Scene->AddLight(light2);
+    //LightData light2 = { glm::vec4(-1.5f,2.0f,-1.5f,0.0f), glm::vec4(1.0f,0.0f,0.0f,1.0f) };
+    //LightData light2 = { glm::vec4(-1.5f,2.0f,-1.5f,0.0f), glm::vec4(0.1f) };
+    //m_Scene->AddLight(light2);
 
     m_Scene->SetBDebugLights(true);
     m_Scene->SetBGrid(true);
@@ -41,6 +35,10 @@ void TestLights::OnUpdate(float deltaTime) {
 }
 
 void TestLights::OnImGuiRender() {
+    //    ImGui::Begin("TestBistro Controls");
+//    glm::vec3& position = m_Camera->GetPositionRef();
+//    ImGui::SliderFloat3("Camera Position", &position.x, 0.0f, 2000.0f);
+//    ImGui::End();
     ImGui::Begin("TestLights Controls");
     ImGui::Text("Use this panel for debugging or adjustments");
     ImGui::End();

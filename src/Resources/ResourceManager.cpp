@@ -5,6 +5,28 @@ ResourceManager& ResourceManager::GetInstance() {
     return instance;
 }
 
+//need to make this better 
+std::pair<MeshLayout, MaterialLayout> ResourceManager::getLayoutsFromShader(std::string shaderName)
+{
+    MeshLayout meshL;
+    MaterialLayout matL;
+
+    if (shaderName == "simplelights")
+    {
+        matL.params.insert(MaterialParamType::Ambient);
+        matL.params.insert(MaterialParamType::Diffuse);
+        matL.params.insert(MaterialParamType::Specular);
+        matL.params.insert(MaterialParamType::Shininess);
+
+        meshL = { true, true, false, false, {} };
+
+        return { meshL, matL };
+    }
+
+    throw std::runtime_error("Trying to use the wrong shader for models.");
+    return {};
+}
+
 ResourceManager::ResourceManager() {
     // Initialization if needed
 }

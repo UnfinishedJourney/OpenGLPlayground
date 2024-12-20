@@ -22,42 +22,35 @@ public:
     Scene();
     ~Scene();
 
-    // Camera Management
+    void Clear();
+
     void SetCamera(const std::shared_ptr<Camera>& camera);
     std::shared_ptr<Camera> GetCamera() const { return m_Camera; }
 
-    // Model Loading
-    bool LoadModelIntoScene(const std::string& modelName, const std::string& defaultShaderName, const std::string& defaultMaterialName, const MeshLayout& meshLayout, const MaterialLayout& layout);
+    void SetBGrid(bool bGrid) { m_BGrid = bGrid; }
+    bool GetBGrid() const { return m_BGrid; }
 
-    // Light Management
+    void SetBDebugLights(bool bDebugLights) { m_BDebugLights = bDebugLights; }
+    bool GetBDebugLights() const { return m_BDebugLights; }
+
     void AddLight(const LightData& light);
-    void UpdateLightsData();
-    void BindLightSSBO() const;
+    const std::vector<LightData>& GetLightsData() const { return m_LightsData; }
 
-    // Batch Management
-    void BuildStaticBatchesIfNeeded();
-    const std::vector<std::shared_ptr<Batch>>& GetStaticBatches() const;
-
-    // Scene Management
-    void Clear();
-
-    // Frame Data
-    void UpdateFrameDataUBO() const;
-    void BindFrameDataUBO() const;
-
-    // Culling and LOD
-    void CullAndLODUpdate();
-
-    // Post-Processing
     void SetPostProcessingEffect(PostProcessingEffectType effect);
     PostProcessingEffectType GetPostProcessingEffect() const;
 
-    // Light Data Access
-    const std::vector<LightData>& GetLightsData() const { return m_LightsData; }
-    bool GetBDebugLights() const { return m_BDebugLights; }
-    bool GetBGrid() const { return m_BGrid; }
-    void SetBGrid(bool bGrid) { m_BGrid = bGrid; }
-    void SetBDebugLights(bool bDebugLights) { m_BDebugLights = bDebugLights; }
+    bool LoadModelIntoScene(const std::string& modelName, const std::string& defaultShaderName, const std::string& defaultMaterialName);
+
+    void UpdateLightsData();
+    void BindLightSSBO() const;
+
+    void BuildStaticBatchesIfNeeded();
+    const std::vector<std::shared_ptr<Batch>>& GetStaticBatches() const;
+
+    void UpdateFrameDataUBO() const;
+    void BindFrameDataUBO() const;
+
+    void CullAndLODUpdate();
 
 private:
     SceneGraph m_SceneGraph;
@@ -78,9 +71,8 @@ private:
     std::shared_ptr<FrustumCuller> m_FrustumCuller;
 
     std::vector<MeshInfo> m_LoadedMeshes;
-    std::vector<std::string> m_LoadedMaterials; // Actual material names from model
-    std::string m_DefaultShader;
-    std::string m_DefaultMaterial;
+    std::vector<std::string> m_LoadedMaterials; 
+    std::string m_LastShader;
 
     // Map of model names to file paths
     std::unordered_map<std::string, std::string> m_ModelPaths = {
