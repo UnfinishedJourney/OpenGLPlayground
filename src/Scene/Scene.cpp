@@ -44,41 +44,56 @@ void Scene::SetCamera(const std::shared_ptr<Camera>& camera) {
 }
 
 bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& defaultShaderName, const std::string& defaultMaterialName) {
-    auto pathIt = m_ModelPaths.find(modelName);
-    if (pathIt == m_ModelPaths.end()) {
+    std::string modelPath = ModelLoader::GetModelPath(modelName);
+    if (modelPath.empty()) {
         Logger::GetLogger()->error("Model '{}' path not found.", modelName);
         return false;
     }
 
     auto& resourceManager = ResourceManager::GetInstance();
     auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(defaultShaderName);
-    std::string modelPath = pathIt->second;
     Model model(modelPath, true, meshLayout);
 
-    ModelLoader loader;
-    if (!loader.LoadIntoSceneGraph(model, meshLayout, m_SceneGraph, m_LoadedMeshes, m_LoadedMaterials)) {
+    ModelLoader2 loader2;
+    if (!loader2.LoadModel(modelName, meshLayout, matLayout)) {
         Logger::GetLogger()->error("Failed to load model '{}' into scene graph.", modelName);
         return false;
     }
 
-    // Create materials using MaterialManager
+
+    ModelLoader loader;
+    if (!loader.LoadIntoSceneGraph(model, meshLayout, matLayout, m_SceneGraph, m_LoadedMeshes, m_LoadedMaterials)) {
+        Logger::GetLogger()->error("Failed to load model '{}' into scene graph.", modelName);
+        return false;
+    }
+
+    // Since we rely on standard materials now, ensure they're initialized:
+    resourceManager.GetMaterialManager().InitializeStandardMaterials();
+
     auto& matManager = MaterialManager::GetInstance();
     for (const auto& matName : m_LoadedMaterials) {
         if (!matManager.GetMaterial(matName)) {
-            // Assuming the layout corresponds to all loaded materials
-            auto mat = matManager.CreateMaterial("Gold", glm::vec3(0.24725f, 0.1995f, 0.0745f), glm::vec3(0.75164f, 0.60648f, 0.22648f), glm::vec3(0.628281f, 0.555802f, 0.366065f), 51.2f);
-            // Adjust parameters as needed based on the material name
-            if (matName == "Silver") {
-                mat = matManager.CreateMaterial("Silver", glm::vec3(0.19225f, 0.19225f, 0.19225f), glm::vec3(0.50754f, 0.50754f, 0.50754f), glm::vec3(0.508273f, 0.508273f, 0.508273f), 51.2f);
-            }
+            // Material not found, create a fallback material.
+            // For example, create a Gold-like material but give it the model's material name.
+            glm::vec3 goldAmbient(0.24725f, 0.1995f, 0.0745f);
+            glm::vec3 goldDiffuse(0.75164f, 0.60648f, 0.22648f);
+            glm::vec3 goldSpecular(0.628281f, 0.555802f, 0.366065f);
+            float goldShininess = 51.2f;
 
-            matManager.AddMaterial(matName, mat);
+            auto fallbackMaterial = matManager.CreateMaterial(matName, goldAmbient, goldDiffuse, goldSpecular, goldShininess);
+            matManager.AddMaterial(matName, fallbackMaterial);
         }
     }
 
-    // Store defaults for this model if needed
-    m_LastShader = defaultShaderName;
+    // The defaultMaterialName should now refer to a material that exists in the MaterialManager.
+    // If it doesn't, log a warning or fallback to a known standard material.
+    if (!resourceManager.GetMaterialManager().GetMaterial(defaultMaterialName)) {
+        Logger::GetLogger()->warn("Default material '{}' not found. Using 'Gold' instead.", defaultMaterialName);
+        // Optionally fallback:
+        // defaultMaterialName = "Gold";
+    }
 
+    m_LastShader = defaultShaderName;
     m_StaticBatchesDirty = true;
     return true;
 }
@@ -134,12 +149,12 @@ void Scene::buildBatchesFromSceneGraph() {
         auto ro = std::make_shared<RenderObject>(mesh, MeshLayout{ true, true }, matName, shaderName, transform);
         m_StaticBatchManager.AddRenderObject(ro);
     }
+    m_StaticBatchManager.BuildBatches();
 }
 
 void Scene::BuildStaticBatchesIfNeeded() {
     if (!m_StaticBatchesDirty) return;
     buildBatchesFromSceneGraph();
-    m_StaticBatchManager.BuildBatches();
     m_StaticBatchesDirty = false;
 }
 

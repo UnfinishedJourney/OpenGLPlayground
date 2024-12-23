@@ -42,6 +42,11 @@ void Model::LoadFromAssimp(const MeshLayout& layout, bool centerModel) {
         aiString name;
         scene->mMaterials[i]->Get(AI_MATKEY_NAME, name);
         m_Materials[i].name = name.C_Str();
+        aiColor3D diffuseColor;
+        if (AI_SUCCESS == scene->mMaterials[i]->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor)) {
+            diffuseColor;
+        }
+
     }
 
     // Meshes

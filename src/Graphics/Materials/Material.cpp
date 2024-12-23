@@ -111,15 +111,15 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const {
         case MaterialParamType::Shininess:
             shader->SetUniform("material.shininess", std::get<float>(val));
             break;
-        case MaterialParamType::Roughness:
-            shader->SetUniform("material.roughness", std::get<float>(val));
-            break;
-        case MaterialParamType::Metallic:
-            shader->SetUniform("material.metallic", std::get<float>(val));
-            break;
-        case MaterialParamType::Emissive:
-            shader->SetUniform("material.emissive", std::get<glm::vec3>(val));
-            break;
+        //case MaterialParamType::Roughness:
+        //    shader->SetUniform("material.roughness", std::get<float>(val));
+        //    break;
+        //case MaterialParamType::Metallic:
+        //    shader->SetUniform("material.metallic", std::get<float>(val));
+        //    break;
+        //case MaterialParamType::Emissive:
+        //    shader->SetUniform("material.emissive", std::get<glm::vec3>(val));
+        //    break;
             // No 'Custom' type
         }
     }

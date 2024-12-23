@@ -5,7 +5,7 @@ enum class MaterialParamType {
     Diffuse,    // material.Kd
     Specular,   // material.Ks
     Shininess,  // material.shininess
-    Roughness,  // material.roughness
-    Metallic,   // material.metallic
-    Emissive,   // material.emissive
+    //Roughness,  // material.roughness
+    //Metallic,   // material.metallic
+    //Emissive,   // material.emissive
 };

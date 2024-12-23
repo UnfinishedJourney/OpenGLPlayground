@@ -6,6 +6,7 @@
 #include "VertexArray.h"
 #include "VertexBuffer.h"
 #include "MeshBuffer.h"
+#include "Utilities/Utility.h"
 
 //need to revisit this class
 class InstanceBuffer {

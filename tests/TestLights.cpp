@@ -9,7 +9,7 @@ void TestLights::OnEnter() {
     auto cam = std::make_shared<Camera>();
     m_Scene->SetCamera(cam);
 
-    if (!m_Scene->LoadModelIntoScene("pig", "simplelights", "objMaterial")) {
+    if (!m_Scene->LoadModelIntoScene("pig", "simplelights", "Gold")) {
         Logger::GetLogger()->error("Failed to load pig model");
         return;
     }

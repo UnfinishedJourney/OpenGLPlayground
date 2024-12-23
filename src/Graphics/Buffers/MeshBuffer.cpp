@@ -1,5 +1,6 @@
 #include "Graphics/Buffers/MeshBuffer.h"
 #include "Utilities/Logger.h"
+#include "Utilities/Utility.h"
 #include <stdexcept>
 #include <glad/glad.h>
 #include <variant>
