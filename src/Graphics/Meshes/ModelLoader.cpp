@@ -11,50 +11,65 @@
 #include <filesystem>
 
 
-bool ModelLoader::LoadIntoSceneGraph(
-    const Model& model,
-    const MeshLayout& meshLayout,
-    const MaterialLayout& matLayout,
+bool ModelLoader::LoadModelIntoSceneGraph(const Model& model,
     SceneGraph& sceneGraph,
     std::vector<MeshInfo>& outMeshes,
     std::vector<std::string>& outMaterials)
 {
+    // 1) Copy mesh & material arrays
     outMeshes = model.GetMeshesInfo();
-    const auto& mats = model.GetMaterials();
+    auto mats = model.GetMaterials();
     for (auto& m : mats) {
         outMaterials.push_back(m.name);
     }
 
+    // 2) Build scene graph nodes
     const auto& nodes = model.GetNodes();
     if (nodes.empty()) {
         return false;
     }
 
+    // We'll store SG node indices
     std::vector<int> nodeMap(nodes.size(), -1);
 
+    // Recursive lambda
     std::function<void(int, int)> processNode = [&](int idx, int parentSG) {
         const auto& n = nodes[idx];
         int sgNode = sceneGraph.AddNode(parentSG, n.name);
         nodeMap[idx] = sgNode;
+
+        // local transform
         sceneGraph.SetLocalTransform(sgNode, n.localTransform);
 
+        // For each mesh in the node
         for (auto meshIdx : n.meshes) {
-            int matIdx = outMeshes[meshIdx].materialIndex;
-            sceneGraph.SetNodeMesh(sgNode, meshIdx);
-            sceneGraph.SetNodeMaterial(sgNode, matIdx);
+            int materialIndex = outMeshes[meshIdx].materialIndex;
+            sceneGraph.AddMeshReference(sgNode, meshIdx, materialIndex);
 
-            auto& m = outMeshes[meshIdx].mesh;
-            sceneGraph.SetNodeBoundingVolumes(sgNode, m->minBounds, m->maxBounds, m->localCenter, m->boundingSphereRadius);
+            // Also set bounding volumes for the node
+            auto& meshPtr = outMeshes[meshIdx].mesh;
+            if (meshPtr) {
+                sceneGraph.SetNodeBoundingVolumes(sgNode,
+                    meshPtr->minBounds,
+                    meshPtr->maxBounds,
+                    meshPtr->localCenter,
+                    meshPtr->boundingSphereRadius
+                );
+            }
         }
 
-        for (auto c : n.children) {
-            processNode(c, sgNode);
+        // Recurse children
+        for (auto child : n.children) {
+            processNode(child, sgNode);
         }
         };
 
+    // Start from node 0 as root
     processNode(0, -1);
-    sceneGraph.MarkAllChanged();
+
+    // Recalc transforms
     sceneGraph.RecalculateGlobalTransforms();
+
     return true;
 }
 

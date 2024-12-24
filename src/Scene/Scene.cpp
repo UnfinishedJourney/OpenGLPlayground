@@ -43,34 +43,78 @@ void Scene::SetCamera(const std::shared_ptr<Camera>& camera) {
     m_Camera = camera;
 }
 
+//bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& defaultShaderName, const std::string& defaultMaterialName) {
+//    std::string modelPath = ModelLoader::GetModelPath(modelName);
+//    if (modelPath.empty()) {
+//        Logger::GetLogger()->error("Model '{}' path not found.", modelName);
+//        return false;
+//    }
+//
+//    auto& resourceManager = ResourceManager::GetInstance();
+//    auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(defaultShaderName);
+//    m_MeshLayout = meshLayout;
+//    Model model(modelPath, true, meshLayout);
+//
+//    ModelLoader2 loader2;
+//    if (!loader2.LoadModel(modelName, meshLayout, matLayout)) {
+//        Logger::GetLogger()->error("Failed to load model '{}' into scene graph.", modelName);
+//        return false;
+//    }
+//
+//
+//    ModelLoader loader;
+//    //if (!loader.LoadIntoSceneGraph(model, meshLayout, matLayout, m_SceneGraph, m_LoadedMeshes, m_LoadedMaterials)) {
+//    if (!loader.LoadModelIntoSceneGraph(model, m_SceneGraph, m_LoadedMeshes, m_LoadedMaterials)) {
+//        Logger::GetLogger()->error("Failed to load model '{}' into scene graph.", modelName);
+//        return false;
+//    }
+//
+//    // Since we rely on standard materials now, ensure they're initialized:
+//    resourceManager.GetMaterialManager().InitializeStandardMaterials();
+//
+//    auto& matManager = MaterialManager::GetInstance();
+//    for (const auto& matName : m_LoadedMaterials) {
+//        if (!matManager.GetMaterial(matName)) {
+//            // Material not found, create a fallback material.
+//            // For example, create a Gold-like material but give it the model's material name.
+//            glm::vec3 goldAmbient(0.24725f, 0.1995f, 0.0745f);
+//            glm::vec3 goldDiffuse(0.75164f, 0.60648f, 0.22648f);
+//            glm::vec3 goldSpecular(0.628281f, 0.555802f, 0.366065f);
+//            float goldShininess = 51.2f;
+//
+//            auto fallbackMaterial = matManager.CreateMaterial(matName, goldAmbient, goldDiffuse, goldSpecular, goldShininess);
+//            matManager.AddMaterial(matName, fallbackMaterial);
+//        }
+//    }
+//
+//    // The defaultMaterialName should now refer to a material that exists in the MaterialManager.
+//    // If it doesn't, log a warning or fallback to a known standard material.
+//    if (!resourceManager.GetMaterialManager().GetMaterial(defaultMaterialName)) {
+//        Logger::GetLogger()->warn("Default material '{}' not found. Using 'Gold' instead.", defaultMaterialName);
+//        // Optionally fallback:
+//        // defaultMaterialName = "Gold";
+//    }
+//
+//    m_LastShader = defaultShaderName;
+//    m_StaticBatchesDirty = true;
+//    return true;
+//}
+
+
 bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& defaultShaderName, const std::string& defaultMaterialName) {
     std::string modelPath = ModelLoader::GetModelPath(modelName);
-    if (modelPath.empty()) {
-        Logger::GetLogger()->error("Model '{}' path not found.", modelName);
-        return false;
-    }
-
     auto& resourceManager = ResourceManager::GetInstance();
     auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(defaultShaderName);
+    m_MeshLayout = meshLayout;
     Model model(modelPath, true, meshLayout);
-
-    ModelLoader2 loader2;
-    if (!loader2.LoadModel(modelName, meshLayout, matLayout)) {
-        Logger::GetLogger()->error("Failed to load model '{}' into scene graph.", modelName);
-        return false;
-    }
-
-
+    // 2) Load into SceneGraph
     ModelLoader loader;
-    if (!loader.LoadIntoSceneGraph(model, meshLayout, matLayout, m_SceneGraph, m_LoadedMeshes, m_LoadedMaterials)) {
-        Logger::GetLogger()->error("Failed to load model '{}' into scene graph.", modelName);
+    if (!loader.LoadModelIntoSceneGraph(model, m_SceneGraph, m_LoadedMeshes, m_LoadedMaterials)) {
         return false;
     }
-
-    // Since we rely on standard materials now, ensure they're initialized:
-    resourceManager.GetMaterialManager().InitializeStandardMaterials();
 
     auto& matManager = MaterialManager::GetInstance();
+
     for (const auto& matName : m_LoadedMaterials) {
         if (!matManager.GetMaterial(matName)) {
             // Material not found, create a fallback material.
@@ -85,18 +129,13 @@ bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& 
         }
     }
 
-    // The defaultMaterialName should now refer to a material that exists in the MaterialManager.
-    // If it doesn't, log a warning or fallback to a known standard material.
-    if (!resourceManager.GetMaterialManager().GetMaterial(defaultMaterialName)) {
-        Logger::GetLogger()->warn("Default material '{}' not found. Using 'Gold' instead.", defaultMaterialName);
-        // Optionally fallback:
-        // defaultMaterialName = "Gold";
-    }
 
     m_LastShader = defaultShaderName;
     m_StaticBatchesDirty = true;
+    // 3) Now m_SceneGraph has nodes, bounding volumes, transforms, etc.
     return true;
 }
+
 
 void Scene::AddLight(const LightData& light) {
     if (m_LightsData.size() >= MAX_LIGHTS) {
@@ -121,41 +160,44 @@ void Scene::BindLightSSBO() const {
     m_LightsSSBO->Bind();
 }
 
-void Scene::buildBatchesFromSceneGraph() {
-    m_StaticBatchManager.Clear();
-
-    auto& matManager = MaterialManager::GetInstance();
-
-    const auto& nodes = m_SceneGraph.GetNodes();
-
-    for (const auto& node : nodes) {
-        if (node.meshIndex < 0) continue;
-
-        auto meshInfo = m_LoadedMeshes[node.meshIndex];
-        auto mesh = meshInfo.mesh;
-
-        auto transform = std::make_shared<Transform>();
-        transform->SetModelMatrix(node.globalTransform);
-
-        int matIdx = node.materialIndex;
-        std::string matName;
-        if (matIdx >= 0 && matIdx < static_cast<int>(m_LoadedMaterials.size())) {
-            matName = m_LoadedMaterials[matIdx];
-        }
-
-        // Use defaultShader or a fallback if not set:
-        std::string shaderName = m_LastShader;
-
-        auto ro = std::make_shared<RenderObject>(mesh, MeshLayout{ true, true }, matName, shaderName, transform);
-        m_StaticBatchManager.AddRenderObject(ro);
-    }
-    m_StaticBatchManager.BuildBatches();
-}
-
 void Scene::BuildStaticBatchesIfNeeded() {
+
     if (!m_StaticBatchesDirty) return;
-    buildBatchesFromSceneGraph();
     m_StaticBatchesDirty = false;
+
+    auto& nodes = m_SceneGraph.GetNodes();
+    for (size_t i = 0; i < nodes.size(); i++) {
+        auto& node = nodes[i];
+        for (size_t k = 0; k < node.meshIndices.size(); k++) {
+            int meshIdx = node.meshIndices[k];
+            int materialIdx = node.materialIndices[k];
+
+            // Create a RenderObject
+            std::shared_ptr<Mesh> meshPtr = m_LoadedMeshes[meshIdx].mesh;
+            std::string materialName = (materialIdx >= 0 &&
+                materialIdx < (int)m_LoadedMaterials.size())
+                ? m_LoadedMaterials[materialIdx]
+                : "UnknownMaterial";
+
+            // For static geometry, store the node's transform in a new Transform?
+            // OR we just do "transform->SetModelMatrix(node.globalTransform)".
+            auto transform = std::make_shared<Transform>();
+            transform->SetModelMatrix(node.globalTransform);
+
+            // Build the RenderObject
+            auto ro = std::make_shared<RenderObject>(
+                meshPtr,
+                /*the same meshLayout*/ m_MeshLayout,
+                materialName,
+                m_LastShader,
+                transform
+            );
+            // Add it to the batch manager
+            m_StaticBatchManager.AddRenderObject(ro);
+        }
+    }
+
+    m_StaticBatchManager.BuildBatches();
 }
 
 const std::vector<std::shared_ptr<Batch>>& Scene::GetStaticBatches() const {
@@ -194,21 +236,22 @@ void Scene::BindFrameDataUBO() const {
 }
 
 void Scene::CullAndLODUpdate() {
-    if (!m_Camera || !m_LODEvaluator || !m_FrustumCuller) return;
-
-    m_StaticBatchManager.UpdateLODs(m_Camera, *m_LODEvaluator);
-
     auto& batches = m_StaticBatchManager.GetBatches();
-    for (auto& b : batches) {
-        auto& ros = b->GetRenderObjects();
-        for (size_t i = 0; i < ros.size(); ++i) {
-            auto ro = ros[i];
-            glm::vec3 c = ro->GetWorldCenter();
-            float r = ro->GetBoundingSphereRadius();
-            bool visible = m_FrustumCuller->IsSphereVisible(c, r, m_Camera);
+    for (auto& batch : batches) {
+        auto& objects = batch->GetRenderObjects();
+        for (size_t i = 0; i < objects.size(); i++) {
+            auto ro = objects[i];
+            // bounding-sphere cull or bounding-box cull
+            bool visible = true; // do your cull check here
             if (!visible) {
-                b->UpdateLOD(i, static_cast<size_t>(-1));
+                //batch->CullObject(i); // set count=0 in draw command
+                continue;
             }
+            // LOD
+            float distance = 0.0f; // compute distance to camera
+            size_t newLOD = 0;     // decide based on thresholds
+            ro->SetLOD(newLOD);
+            batch->UpdateLOD(i, newLOD);
         }
     }
 }

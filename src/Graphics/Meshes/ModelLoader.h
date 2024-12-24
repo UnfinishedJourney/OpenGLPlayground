@@ -10,10 +10,8 @@
 
 class ModelLoader {
 public:
-    bool LoadIntoSceneGraph(
+    bool LoadModelIntoSceneGraph(
         const Model& model,
-        const MeshLayout& meshLayout,
-        const MaterialLayout& matLayout,
         SceneGraph& sceneGraph,
         std::vector<MeshInfo>& outMeshes,
         std::vector<std::string>& outMaterials);

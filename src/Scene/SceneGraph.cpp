@@ -1,73 +1,73 @@
 #include "SceneGraph.h"
 
-int SceneGraph::AddNode(int parent, const std::string& name) {
-    NodeData nd;
-    nd.parent = parent;
-    nd.name = name;
-    int node = (int)m_Nodes.size();
-    m_Nodes.push_back(nd);
-    if (parent >= 0) {
-        int s = m_Nodes[parent].firstChild;
-        if (s == -1) {
-            m_Nodes[parent].firstChild = node;
-            m_Nodes[node].lastSibling = node;
-        }
-        else {
-            int dest = m_Nodes[s].lastSibling;
-            if (dest <= -1) {
-                for (dest = s; m_Nodes[dest].nextSibling != -1; dest = m_Nodes[dest].nextSibling);
-            }
-            m_Nodes[dest].nextSibling = node;
-            m_Nodes[s].lastSibling = node;
-        }
-        m_Nodes[node].level = m_Nodes[parent].level + 1;
+int SceneGraph::AddNode(int parent, const std::string& name)
+{
+    SceneGraphNode node;
+    node.parent = parent;
+    node.name = name;
+
+    int nodeIndex = (int)m_Nodes.size();
+    m_Nodes.push_back(node);
+
+    // Hook it under the parent if valid
+    if (parent >= 0 && parent < (int)m_Nodes.size()) {
+        m_Nodes[parent].children.push_back(nodeIndex);
     }
-    return node;
+    return nodeIndex;
 }
 
-void SceneGraph::SetLocalTransform(int node, const glm::mat4& transform) {
-    m_Nodes[node].localTransform = transform;
-    // Mark changed:
-    int lvl = m_Nodes[node].level;
-    m_ChangedAtLevel[lvl].push_back(node);
+void SceneGraph::SetLocalTransform(int nodeIndex, const glm::mat4& transform)
+{
+    if (nodeIndex < 0 || nodeIndex >= (int)m_Nodes.size()) return;
+    m_Nodes[nodeIndex].localTransform = transform;
 }
 
-void SceneGraph::SetNodeMesh(int node, int meshIndex) {
-    m_Nodes[node].meshIndex = meshIndex;
+void SceneGraph::SetNodeBoundingVolumes(int nodeIndex,
+    const glm::vec3& minB,
+    const glm::vec3& maxB,
+    const glm::vec3& sphereCenter,
+    float sphereRadius)
+{
+    if (nodeIndex < 0 || nodeIndex >= (int)m_Nodes.size()) return;
+    m_Nodes[nodeIndex].boundingBoxMin = minB;
+    m_Nodes[nodeIndex].boundingBoxMax = maxB;
+    m_Nodes[nodeIndex].boundingSphereCenter = sphereCenter;
+    m_Nodes[nodeIndex].boundingSphereRadius = sphereRadius;
 }
 
-void SceneGraph::SetNodeMaterial(int node, int materialIndex) {
-    m_Nodes[node].materialIndex = materialIndex;
+void SceneGraph::AddMeshReference(int nodeIndex, int meshIndex, int materialIndex)
+{
+    if (nodeIndex < 0 || nodeIndex >= (int)m_Nodes.size()) return;
+    m_Nodes[nodeIndex].meshIndices.push_back(meshIndex);
+    m_Nodes[nodeIndex].materialIndices.push_back(materialIndex);
 }
 
-void SceneGraph::SetNodeBoundingVolumes(int node, const glm::vec3& minB, const glm::vec3& maxB, const glm::vec3& center, float radius) {
-    m_Nodes[node].boundingBoxMin = minB;
-    m_Nodes[node].boundingBoxMax = maxB;
-    m_Nodes[node].boundingSphereCenter = center;
-    m_Nodes[node].boundingSphereRadius = radius;
-}
-
-void SceneGraph::MarkAllChanged() {
+void SceneGraph::RecalculateGlobalTransforms()
+{
+    // For each root node (parent == -1), do a DFS
     for (int i = 0; i < (int)m_Nodes.size(); i++) {
-        int lvl = m_Nodes[i].level;
-        m_ChangedAtLevel[lvl].push_back(i);
+        if (m_Nodes[i].parent == -1) {
+            // This is a root
+            computeGlobalTransformRecursive(i, glm::mat4(1.0f));
+        }
     }
 }
 
-void SceneGraph::RecalculateGlobalTransforms() {
-    // Level 0 nodes:
-    if (!m_ChangedAtLevel[0].empty()) {
-        for (auto c : m_ChangedAtLevel[0]) {
-            m_Nodes[c].globalTransform = m_Nodes[c].localTransform;
-        }
-        m_ChangedAtLevel[0].clear();
-    }
+void SceneGraph::computeGlobalTransformRecursive(int nodeIndex, const glm::mat4& parentGlobal)
+{
+    auto& node = m_Nodes[nodeIndex];
+    node.globalTransform = parentGlobal * node.localTransform;
 
-    for (int i = 1; i < 16; i++) {
-        for (auto c : m_ChangedAtLevel[i]) {
-            int p = m_Nodes[c].parent;
-            m_Nodes[c].globalTransform = m_Nodes[p].globalTransform * m_Nodes[c].localTransform;
-        }
-        m_ChangedAtLevel[i].clear();
+    // Recurse children
+    for (auto childIdx : node.children) {
+        computeGlobalTransformRecursive(childIdx, node.globalTransform);
+    }
+}
+
+void SceneGraph::TraverseGraph(std::function<void(int nodeIndex)> visitor)
+{
+    // Simple loop
+    for (int i = 0; i < (int)m_Nodes.size(); i++) {
+        visitor(i);
     }
 }

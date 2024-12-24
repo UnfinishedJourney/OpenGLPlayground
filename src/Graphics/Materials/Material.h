@@ -1,15 +1,20 @@
 #pragma once
-#include <string>
-#include <unordered_map>
-#include <memory>
+
 #include <variant>
+#include <unordered_map>
+#include <string>
+#include <memory>
 #include <glm/glm.hpp>
 #include "MaterialParamType.h"
+#include "MaterialLayout.h"
 #include "Graphics/Textures/TextureType.h"
 #include "Graphics/Textures/ITexture.h"
 #include "Graphics/Shaders/BaseShader.h"
-#include "MaterialLayout.h"
 
+/**
+ * A Material in the engine, storing standard parameters (ambient, diffuse, etc.)
+ * plus standard textures (albedo, normal, etc.) and custom ones.
+ */
 using UniformValue = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4>;
 
 class Material {
@@ -46,11 +51,13 @@ private:
 
     // Standard Textures
     std::unordered_map<TextureType, std::shared_ptr<ITexture>> m_Textures;
+
     // Custom Textures
     std::unordered_map<std::string, std::shared_ptr<ITexture>> m_CustomTextures;
 
     // Standard Parameters
     std::unordered_map<MaterialParamType, UniformValue> m_Params;
+
     // Custom Parameters
     std::unordered_map<std::string, UniformValue> m_CustomParams;
 };

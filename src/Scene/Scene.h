@@ -56,7 +56,7 @@ private:
     SceneGraph m_SceneGraph;
     bool m_StaticBatchesDirty = true;
     BatchManager m_StaticBatchManager;
-
+    MeshLayout m_MeshLayout;
     std::shared_ptr<Camera> m_Camera;
     std::vector<LightData> m_LightsData;
 
@@ -83,5 +83,4 @@ private:
         {"helmet","../assets/DamagedHelmet/glTF/DamagedHelmet.gltf"}
     };
 
-    void buildBatchesFromSceneGraph();
 };

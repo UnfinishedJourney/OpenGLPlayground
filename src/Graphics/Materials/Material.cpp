@@ -8,7 +8,6 @@ void Material::SetParam(MaterialParamType type, const UniformValue& value) {
 
 void Material::SetCustomParam(const std::string& name, const UniformValue& value) {
     m_CustomParams[name] = value;
-    // Custom parameters are tracked implicitly by their string names
 }
 
 bool Material::GetParam(MaterialParamType type, UniformValue& outValue) const {
@@ -36,7 +35,7 @@ void Material::SetTexture(TextureType type, const std::shared_ptr<ITexture>& tex
     }
     m_Textures[type] = texture;
     m_Layout.textures.insert(type);
-    texture->Bind(unit);
+    // Typically, binding is done in Bind(), so we don't bind it here permanently.
 }
 
 void Material::SetCustomTexture(const std::string& name, const std::shared_ptr<ITexture>& texture, uint32_t unit) {
@@ -45,24 +44,17 @@ void Material::SetCustomTexture(const std::string& name, const std::shared_ptr<I
         return;
     }
     m_CustomTextures[name] = texture;
-    // Custom textures are tracked by their string names
-    texture->Bind(unit);
+    // We'll bind it in Bind().
 }
 
 std::shared_ptr<ITexture> Material::GetTexture(TextureType type) const {
     auto it = m_Textures.find(type);
-    if (it != m_Textures.end()) {
-        return it->second;
-    }
-    return nullptr;
+    return (it != m_Textures.end()) ? it->second : nullptr;
 }
 
 std::shared_ptr<ITexture> Material::GetCustomTexture(const std::string& name) const {
     auto it = m_CustomTextures.find(name);
-    if (it != m_CustomTextures.end()) {
-        return it->second;
-    }
-    return nullptr;
+    return (it != m_CustomTextures.end()) ? it->second : nullptr;
 }
 
 void Material::Bind(const std::shared_ptr<BaseShader>& shader) const {
@@ -70,79 +62,68 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const {
         Logger::GetLogger()->error("No shader provided to material bind.");
         return;
     }
+    // Bind standard textures with appropriate uniform names
+    for (auto& [texType, texPtr] : m_Textures) {
+        uint32_t unit = static_cast<uint32_t>(texType); // simplistic
+        texPtr->Bind(unit);
 
-    // Bind standard textures
-    for (const auto& [type, tex] : m_Textures) {
-        uint32_t unit = static_cast<uint32_t>(type); // Ensure mapping is correct
-        tex->Bind(unit);
-        // Assume uniform names follow a convention like "textureAlbedo", "textureNormal", etc.
+        // You could map TextureType -> uniform string here
         std::string uniformName;
-        switch (type) {
-        case TextureType::Albedo: uniformName = "textureAlbedo"; break;
-        case TextureType::Normal: uniformName = "textureNormal"; break;
+        switch (texType) {
+        case TextureType::Albedo:         uniformName = "textureAlbedo";        break;
+        case TextureType::Normal:         uniformName = "textureNormal";        break;
         case TextureType::MetalRoughness: uniformName = "textureMetalRoughness"; break;
-        case TextureType::AO: uniformName = "textureAO"; break;
-        case TextureType::Emissive: uniformName = "textureEmissive"; break;
-        default: continue; // Skip unknown types
+        case TextureType::AO:             uniformName = "textureAO";            break;
+        case TextureType::Emissive:       uniformName = "textureEmissive";      break;
+        default:                          uniformName = "textureUnknown";       break;
         }
         shader->SetUniform(uniformName, static_cast<int>(unit));
     }
 
     // Bind custom textures
-    uint32_t customUnit = static_cast<uint32_t>(m_Textures.size()); // Start after standard units
-    for (const auto& [name, tex] : m_CustomTextures) {
-        tex->Bind(customUnit);
-        shader->SetUniform(name, static_cast<int>(customUnit));
-        customUnit++;
+    uint32_t customUnit = static_cast<uint32_t>(m_Textures.size());
+    for (auto& [customName, texPtr] : m_CustomTextures) {
+        texPtr->Bind(customUnit);
+        shader->SetUniform(customName, static_cast<int>(customUnit));
+        ++customUnit;
     }
 
-    // Set standard parameters
-    for (const auto& [type, val] : m_Params) {
-        switch (type) {
+    // Bind standard parameters
+    for (auto& [paramType, value] : m_Params) {
+        switch (paramType) {
         case MaterialParamType::Ambient:
-            shader->SetUniform("material.Ka", std::get<glm::vec3>(val));
+            shader->SetUniform("material.Ka", std::get<glm::vec3>(value));
             break;
         case MaterialParamType::Diffuse:
-            shader->SetUniform("material.Kd", std::get<glm::vec3>(val));
+            shader->SetUniform("material.Kd", std::get<glm::vec3>(value));
             break;
         case MaterialParamType::Specular:
-            shader->SetUniform("material.Ks", std::get<glm::vec3>(val));
+            shader->SetUniform("material.Ks", std::get<glm::vec3>(value));
             break;
         case MaterialParamType::Shininess:
-            shader->SetUniform("material.shininess", std::get<float>(val));
+            shader->SetUniform("material.shininess", std::get<float>(value));
             break;
-        //case MaterialParamType::Roughness:
-        //    shader->SetUniform("material.roughness", std::get<float>(val));
-        //    break;
-        //case MaterialParamType::Metallic:
-        //    shader->SetUniform("material.metallic", std::get<float>(val));
-        //    break;
-        //case MaterialParamType::Emissive:
-        //    shader->SetUniform("material.emissive", std::get<glm::vec3>(val));
-        //    break;
-            // No 'Custom' type
         }
     }
 
-    // Set custom parameters
-    for (const auto& [name, val] : m_CustomParams) {
+    // Bind custom parameters
+    for (auto& [customName, val] : m_CustomParams) {
         std::visit([&](auto&& arg) {
-            shader->SetUniform(name, arg);
+            shader->SetUniform(customName, arg);
             }, val);
     }
 }
 
 void Material::Unbind() const {
     // Unbind standard textures
-    for (const auto& [type, tex] : m_Textures) {
-        uint32_t unit = static_cast<uint32_t>(type);
-        tex->Unbind(unit);
+    for (auto& [texType, texPtr] : m_Textures) {
+        uint32_t unit = static_cast<uint32_t>(texType);
+        texPtr->Unbind(unit);
     }
-
     // Unbind custom textures
     uint32_t customUnit = static_cast<uint32_t>(m_Textures.size());
-    for (const auto& [name, tex] : m_CustomTextures) {
-        tex->Unbind(customUnit);
-        customUnit++;
+    for (auto& [customName, texPtr] : m_CustomTextures) {
+        texPtr->Unbind(customUnit);
+        ++customUnit;
     }
 }
