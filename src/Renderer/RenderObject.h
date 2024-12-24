@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <memory>
 #include <string>
 #include <glm/glm.hpp>
@@ -31,7 +31,7 @@ public:
 
     /**
      * This method returns the distance from `pos` to this
-     * RenderObject�s world-aligned bounding box.
+     * RenderObject’s world-aligned bounding box.
      * If `pos` is inside the box, distance is 0.
      */
     float ComputeDistanceTo(const glm::vec3& pos) const;

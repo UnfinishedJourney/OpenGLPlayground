@@ -43,63 +43,6 @@ void Scene::SetCamera(const std::shared_ptr<Camera>& camera) {
     m_Camera = camera;
 }
 
-//bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& defaultShaderName, const std::string& defaultMaterialName) {
-//    std::string modelPath = ModelLoader::GetModelPath(modelName);
-//    if (modelPath.empty()) {
-//        Logger::GetLogger()->error("Model '{}' path not found.", modelName);
-//        return false;
-//    }
-//
-//    auto& resourceManager = ResourceManager::GetInstance();
-//    auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(defaultShaderName);
-//    m_MeshLayout = meshLayout;
-//    Model model(modelPath, true, meshLayout);
-//
-//    ModelLoader2 loader2;
-//    if (!loader2.LoadModel(modelName, meshLayout, matLayout)) {
-//        Logger::GetLogger()->error("Failed to load model '{}' into scene graph.", modelName);
-//        return false;
-//    }
-//
-//
-//    ModelLoader loader;
-//    //if (!loader.LoadIntoSceneGraph(model, meshLayout, matLayout, m_SceneGraph, m_LoadedMeshes, m_LoadedMaterials)) {
-//    if (!loader.LoadModelIntoSceneGraph(model, m_SceneGraph, m_LoadedMeshes, m_LoadedMaterials)) {
-//        Logger::GetLogger()->error("Failed to load model '{}' into scene graph.", modelName);
-//        return false;
-//    }
-//
-//    // Since we rely on standard materials now, ensure they're initialized:
-//    resourceManager.GetMaterialManager().InitializeStandardMaterials();
-//
-//    auto& matManager = MaterialManager::GetInstance();
-//    for (const auto& matName : m_LoadedMaterials) {
-//        if (!matManager.GetMaterial(matName)) {
-//            // Material not found, create a fallback material.
-//            // For example, create a Gold-like material but give it the model's material name.
-//            glm::vec3 goldAmbient(0.24725f, 0.1995f, 0.0745f);
-//            glm::vec3 goldDiffuse(0.75164f, 0.60648f, 0.22648f);
-//            glm::vec3 goldSpecular(0.628281f, 0.555802f, 0.366065f);
-//            float goldShininess = 51.2f;
-//
-//            auto fallbackMaterial = matManager.CreateMaterial(matName, goldAmbient, goldDiffuse, goldSpecular, goldShininess);
-//            matManager.AddMaterial(matName, fallbackMaterial);
-//        }
-//    }
-//
-//    // The defaultMaterialName should now refer to a material that exists in the MaterialManager.
-//    // If it doesn't, log a warning or fallback to a known standard material.
-//    if (!resourceManager.GetMaterialManager().GetMaterial(defaultMaterialName)) {
-//        Logger::GetLogger()->warn("Default material '{}' not found. Using 'Gold' instead.", defaultMaterialName);
-//        // Optionally fallback:
-//        // defaultMaterialName = "Gold";
-//    }
-//
-//    m_LastShader = defaultShaderName;
-//    m_StaticBatchesDirty = true;
-//    return true;
-//}
-
 
 bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& defaultShaderName, const std::string& defaultMaterialName) {
     std::string modelPath = ModelLoader::GetModelPath(modelName);
@@ -107,13 +50,12 @@ bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& 
     auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(defaultShaderName);
     m_MeshLayout = meshLayout;
     BetterModelLoader loader;
-    //if (!loader.LoadModel(modelPath, meshLayout, matLayout, true, &m_SceneGraph)) {
-    if (!loader.LoadModel(modelPath, meshLayout, matLayout, true)) {
+    if (!loader.LoadModel(modelPath, meshLayout, matLayout, true, m_SceneGraph)) {
         // Handle error
         return false;
     }
 
-    auto& data = loader.GetLoadedData();
+    auto& data = loader.GetModelData();
 
     for (size_t i = 0; i < data.meshesData.size(); i++)
     {
@@ -132,29 +74,12 @@ bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& 
         m_LoadedMaterials.push_back(matName);
     }
 
-    //auto& matManager = MaterialManager::GetInstance();
-
-    //for (const auto& matName : m_LoadedMaterials) {
-    //    if (!matManager.GetMaterial(matName)) {
-    //        // Material not found, create a fallback material.
-    //        // For example, create a Gold-like material but give it the model's material name.
-    //        glm::vec3 goldAmbient(0.24725f, 0.1995f, 0.0745f);
-    //        glm::vec3 goldDiffuse(0.75164f, 0.60648f, 0.22648f);
-    //        glm::vec3 goldSpecular(0.628281f, 0.555802f, 0.366065f);
-    //        float goldShininess = 51.2f;
-
-    //        auto fallbackMaterial = matManager.CreateMaterial(matName, goldAmbient, goldDiffuse, goldSpecular, goldShininess);
-    //        matManager.AddMaterial(matName, fallbackMaterial);
-    //    }
-    //}
-
 
     m_LastShader = defaultShaderName;
     m_StaticBatchesDirty = true;
     // 3) Now m_SceneGraph has nodes, bounding volumes, transforms, etc.
     return true;
 }
-
 
 void Scene::AddLight(const LightData& light) {
     if (m_LightsData.size() >= MAX_LIGHTS) {

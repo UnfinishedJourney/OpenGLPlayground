@@ -18,6 +18,7 @@
 #include "Resources/MaterialManager.h"
 #include "Graphics/Materials/Material.h"
 
+// Constructor and Destructor
 BetterModelLoader::BetterModelLoader()
     : m_FallbackMaterialCounter(0)
 {
@@ -31,7 +32,8 @@ bool BetterModelLoader::LoadModel(
     const std::string& filePath,
     const MeshLayout& meshLayout,
     const MaterialLayout& matLayout,
-    bool centerModel)
+    bool centerModel,
+    SceneGraph& sceneGraph)
 {
     // Clear old data
     m_Data.meshesData.clear();
@@ -46,7 +48,8 @@ bool BetterModelLoader::LoadModel(
         aiProcess_CalcTangentSpace |
         aiProcess_RemoveRedundantMaterials |
         aiProcess_FindInvalidData |
-        aiProcess_OptimizeMeshes;
+        aiProcess_OptimizeMeshes |
+        aiProcess_ConvertToLeftHanded; // Optional: depending on your engine's coordinate system
 
     const aiScene* scene = importer.ReadFile(filePath, importFlags);
     if (!scene || !scene->HasMeshes())
@@ -58,19 +61,44 @@ bool BetterModelLoader::LoadModel(
     // 1) Load the scene’s materials
     loadSceneMaterials(scene, matLayout);
 
-    // 2) For each mesh, read the geometry into your Mesh class
-    //    Also handle fallback materials if the material index is out-of-range.
+    // 2) Traverse and process nodes to build the SceneGraph
     std::string directory = std::filesystem::path(filePath).parent_path().string();
-    for (unsigned int i = 0; i < scene->mNumMeshes; i++)
-    {
-        aiMesh* aimesh = scene->mMeshes[i];
-        processAssimpMesh(scene, aimesh, meshLayout, i, directory);
-    }
+    processAssimpNode(scene, scene->mRootNode, meshLayout, matLayout, directory, sceneGraph, -1);
 
     // 3) If centerModel == true, shift geometry so the bounding box is centered at origin
     if (centerModel)
     {
-        centerAllMeshes();
+        // After building the scene graph, adjust transforms to center the model
+        // This can be done by calculating the overall bounding box from all meshes
+        // and adjusting the root node's transform
+        // For simplicity, assume the root node is at index 0
+        if (!sceneGraph.GetNodes().empty()) {
+            glm::vec3 sceneMin(FLT_MAX);
+            glm::vec3 sceneMax(-FLT_MAX);
+
+            // Gather overall bounding box from all meshes
+            for (const auto& meshData : m_Data.meshesData)
+            {
+                sceneMin = glm::min(sceneMin, meshData.mesh->minBounds);
+                sceneMax = glm::max(sceneMax, meshData.mesh->maxBounds);
+            }
+
+            glm::vec3 center = 0.5f * (sceneMin + sceneMax);
+
+            // Create a translation matrix to shift the scene
+            glm::mat4 translation = glm::translate(glm::mat4(1.0f), -center);
+
+            // Apply the translation to the root node's local transform
+            // Assuming root node is at index 0
+            if (!sceneGraph.GetNodes().empty()) {
+                sceneGraph.SetLocalTransform(0, translation * sceneGraph.GetNodes()[0].localTransform);
+            }
+
+            // Recalculate global transforms after modification
+            sceneGraph.RecalculateGlobalTransforms();
+
+            // Optionally, update bounding volumes if needed
+        }
     }
 
     Logger::GetLogger()->info(
@@ -167,9 +195,107 @@ std::string BetterModelLoader::createMaterialForAssimpMat(const aiMaterial* aiMa
         mat->SetParam(MaterialParamType::Shininess, shininessVal);
     }
 
+    // Load textures if needed
+    loadMaterialTextures(aiMat, mat, matLayout, ""); // Directory will be set later
+
     // Add the newly created material to the manager
     MaterialManager::GetInstance().AddMaterial(matName, mat);
     return matName;
+}
+
+void BetterModelLoader::processAssimpNode(
+    const aiScene* scene,
+    const aiNode* ainode,
+    const MeshLayout& meshLayout,
+    const MaterialLayout& matLayout,
+    const std::string& directory,
+    SceneGraph& sceneGraph,
+    int parentNode)
+{
+    // Add a new node to the SceneGraph
+    int currentSGNode = sceneGraph.AddNode(parentNode, ainode->mName.C_Str());
+
+    // Convert Assimp's transformation to glm::mat4
+    glm::mat4 localTransform = AiToGlm(ainode->mTransformation);
+    sceneGraph.SetLocalTransform(currentSGNode, localTransform);
+
+    // Process all meshes assigned to this node
+    for (unsigned int i = 0; i < ainode->mNumMeshes; i++)
+    {
+        unsigned int meshIndex = ainode->mMeshes[i];
+        aiMesh* aimesh = scene->mMeshes[meshIndex];
+        // Process the mesh and store it
+        processAssimpMesh(scene, aimesh, meshLayout, meshIndex, directory);
+        // Retrieve the processed mesh data
+        auto& meshData = m_Data.meshesData.back(); // Assuming processAssimpMesh adds to m_Data.meshesData
+        // Find the material name
+        int matIndex = aimesh->mMaterialIndex;
+        std::string materialName;
+        if (matIndex < 0 || matIndex >= static_cast<int>(m_Data.createdMaterials.size()))
+        {
+            // Create a fallback material for this mesh
+            materialName = createFallbackMaterialName();
+            Logger::GetLogger()->warn(
+                "Mesh #{} does not have a valid material index => creating fallback '{}'.",
+                meshIndex, materialName
+            );
+
+            // Actually add the fallback material in MaterialManager:
+            auto fallbackMat = std::make_shared<Material>();
+            fallbackMat->SetName(materialName);
+            // e.g., set some default color
+            fallbackMat->SetParam(MaterialParamType::Ambient, glm::vec3(0.2f, 0.2f, 0.2f));
+            fallbackMat->SetParam(MaterialParamType::Diffuse, glm::vec3(0.6f, 0.6f, 0.6f));
+            fallbackMat->SetParam(MaterialParamType::Specular, glm::vec3(0.5f));
+            fallbackMat->SetParam(MaterialParamType::Shininess, 32.f);
+
+            MaterialManager::GetInstance().AddMaterial(materialName, fallbackMat);
+            m_Data.createdMaterials.push_back(materialName);
+        }
+        else
+        {
+            materialName = m_Data.createdMaterials[matIndex];
+        }
+
+        // Add mesh and material reference to the SceneGraph node
+        sceneGraph.AddMeshReference(currentSGNode, static_cast<int>(meshIndex), matIndex);
+    }
+
+    // Recursively process child nodes
+    for (unsigned int i = 0; i < ainode->mNumChildren; i++)
+    {
+        processAssimpNode(scene, ainode->mChildren[i], meshLayout, matLayout, directory, sceneGraph, currentSGNode);
+    }
+
+    // After processing all meshes and children, set bounding volumes if needed
+    // Compute bounding volumes based on meshes assigned to this node
+    glm::vec3 nodeMin(FLT_MAX);
+    glm::vec3 nodeMax(-FLT_MAX);
+    glm::vec3 nodeCenter(0.0f);
+    float nodeRadius = 0.0f;
+
+    for (unsigned int i = 0; i < ainode->mNumMeshes; i++)
+    {
+        unsigned int meshIndex = ainode->mMeshes[i];
+        aiMesh* aimesh = scene->mMeshes[meshIndex];
+        auto& meshData = m_Data.meshesData[meshIndex].mesh;
+
+        nodeMin = glm::min(nodeMin, meshData->minBounds);
+        nodeMax = glm::max(nodeMax, meshData->maxBounds);
+    }
+
+    if (ainode->mNumMeshes > 0)
+    {
+        nodeCenter = 0.5f * (nodeMin + nodeMax);
+        nodeRadius = glm::length(nodeMax - nodeCenter);
+        sceneGraph.SetNodeBoundingVolumes(currentSGNode, nodeMin, nodeMax, nodeCenter, nodeRadius);
+    }
+}
+
+std::string BetterModelLoader::createFallbackMaterialName()
+{
+    ++m_FallbackMaterialCounter;
+    return "FallbackMaterial_" + std::to_string(m_FallbackMaterialCounter);
 }
 
 void BetterModelLoader::processAssimpMesh(
@@ -311,44 +437,10 @@ void BetterModelLoader::processAssimpMesh(
         newMesh->lods.push_back(lod);
     }
 
-    // 3) Determine which material is used. 
-    //    If the mesh’s material index is out of range => fallback
-    int matIndex = (int)aimesh->mMaterialIndex;
-    std::string materialName;
-    if (matIndex < 0 || matIndex >= (int)m_Data.createdMaterials.size())
-    {
-        // Create a fallback material for this mesh
-        materialName = createFallbackMaterialName();
-        Logger::GetLogger()->warn(
-            "Mesh #{} does not have a valid material index => creating fallback '{}'.",
-            meshIndex, materialName
-        );
-
-        // Actually add the fallback material in MaterialManager:
-        auto fallbackMat = std::make_shared<Material>();
-        fallbackMat->SetName(materialName);
-        // e.g. set some random color or something:
-        fallbackMat->SetParam(MaterialParamType::Ambient, glm::vec3(0.2f, 0.2f, 0.2f));
-        fallbackMat->SetParam(MaterialParamType::Diffuse, glm::vec3(0.6f, 0.6f, 0.6f));
-        fallbackMat->SetParam(MaterialParamType::Specular, glm::vec3(0.5f));
-        fallbackMat->SetParam(MaterialParamType::Shininess, 32.f);
-
-        MaterialManager::GetInstance().AddMaterial(materialName, fallbackMat);
-        m_Data.createdMaterials.push_back(materialName);
-    }
-    else
-    {
-        materialName = m_Data.createdMaterials[matIndex];
-    }
-
-    // If you want to load actual textures from the aiMaterial, do it here:
-    //   loadMaterialTextures(scene->mMaterials[aimesh->mMaterialIndex], fallbackMat, ...);
-    // Or handle it in createMaterialForAssimpMat(...). Up to you.
-
-    // 4) Create final record
+    // 3) Store the mesh
     BetterModelMeshData record;
     record.mesh = newMesh;
-    record.materialName = materialName;
+    // materialName is handled in processAssimpNode
     m_Data.meshesData.push_back(record);
 }
 
@@ -378,7 +470,7 @@ void BetterModelLoader::generateLODs(std::vector<uint32_t>& indices,
         size_t numOptIndices = meshopt_simplify(
             indices.data(),         // destination
             indices.data(),         // source
-            (uint32_t)indices.size(),
+            static_cast<uint32_t>(indices.size()),
             vertices3f.data(),      // vertex positions
             vertexCount,
             sizeof(float) * 3,
@@ -394,7 +486,7 @@ void BetterModelLoader::generateLODs(std::vector<uint32_t>& indices,
                 numOptIndices = meshopt_simplifySloppy(
                     indices.data(),
                     indices.data(),
-                    (uint32_t)indices.size(),
+                    static_cast<uint32_t>(indices.size()),
                     vertices3f.data(),
                     vertexCount,
                     sizeof(float) * 3,
@@ -418,7 +510,7 @@ void BetterModelLoader::generateLODs(std::vector<uint32_t>& indices,
 
         indices.resize(numOptIndices);
         // Also reorder for better vertex cache usage
-        meshopt_optimizeVertexCache(indices.data(), indices.data(), (uint32_t)indices.size(), vertexCount);
+        meshopt_optimizeVertexCache(indices.data(), indices.data(), static_cast<uint32_t>(indices.size()), vertexCount);
 
         Logger::GetLogger()->info("LOD{}: {} indices {}", lodLevel, numOptIndices, sloppy ? "[sloppy]" : "");
         lodLevel++;
@@ -427,60 +519,55 @@ void BetterModelLoader::generateLODs(std::vector<uint32_t>& indices,
     }
 }
 
-void BetterModelLoader::loadMaterialTextures(const aiMaterial* /*aiMat*/,
-    std::shared_ptr<Material> /*material*/,
-    const MaterialLayout& /*matLayout*/,
-    const std::string& /*directory*/)
+void BetterModelLoader::loadMaterialTextures(const aiMaterial* aiMat,
+    std::shared_ptr<Material> material,
+    const MaterialLayout& matLayout,
+    const std::string& directory)
 {
-    // If you want to load actual textures from the disk and store them in the Material,
-    // do it here, e.g.:
-    //
-    // - Check if matLayout.textures contains TextureType::Albedo => then search aiTextureType_DIFFUSE
-    // - For each found texture path, load into a TextureData or create an ITexture, etc.
-    // - Then call material->SetTexture(TextureType::Albedo, theTexturePointer);
-    //
-    // This is mostly the same approach as your older code in "LoadMeshTextures(...)",
-    // but you’d tie it to the new Material.
-}
+    // Implement texture loading based on matLayout and aiMat
+    // Example:
+    // if (matLayout.textures.count(TextureType::Albedo)) {
+    //     // Load aiTextureType_DIFFUSE
+    //     // Similar for other texture types
+    // }
+    // This is a placeholder and should be implemented as per your engine's requirements
 
-std::string BetterModelLoader::createFallbackMaterialName()
-{
-    ++m_FallbackMaterialCounter;
-    return "FallbackMaterial_" + std::to_string(m_FallbackMaterialCounter);
-}
+    // Example Implementation:
+    /*
+    if (matLayout.textures.count(TextureType::Albedo)) {
+        unsigned int textureCount = aiMat->GetTextureCount(aiTextureType_DIFFUSE);
+        for (unsigned int i = 0; i < textureCount; ++i) {
+            aiString str;
+            if (aiMat->GetTexture(aiTextureType_DIFFUSE, i, &str) == AI_SUCCESS) {
+                std::string filename = std::filesystem::path(str.C_Str()).filename().string();
+                std::string fullPath = (std::filesystem::path(directory) / filename).string();
 
-void BetterModelLoader::centerAllMeshes()
-{
-    // For demonstration, suppose we compute the overall bounding box of all sub-meshes,
-    // then shift every vertex so the center is at (0,0,0).
-    glm::vec3 sceneMin(FLT_MAX);
-    glm::vec3 sceneMax(-FLT_MAX);
+                TextureData texData;
+                if (!texData.LoadFromFile(fullPath)) {
+                    Logger::GetLogger()->error("Failed to load texture: {}", fullPath);
+                    continue;
+                }
 
-    // 1) gather the bounding box
-    for (auto& rec : m_Data.meshesData)
-    {
-        auto& mesh = rec.mesh;
-        sceneMin = glm::min(sceneMin, mesh->minBounds);
-        sceneMax = glm::max(sceneMax, mesh->maxBounds);
-    }
-    glm::vec3 center = 0.5f * (sceneMin + sceneMax);
+                if (texData.GetWidth() <= 0 || texData.GetHeight() <= 0) {
+                    Logger::GetLogger()->error("Invalid texture dimensions for: {}", fullPath);
+                    continue;
+                }
 
-    // 2) shift each mesh’s vertex data
-    for (auto& rec : m_Data.meshesData)
-    {
-        auto& mesh = rec.mesh;
-        if (std::holds_alternative<std::vector<glm::vec3>>(mesh->positions))
-        {
-            auto& pvec = std::get<std::vector<glm::vec3>>(mesh->positions);
-            for (auto& p : pvec)
-            {
-                p -= center;
+                // Create or retrieve texture from a texture manager
+                // For example:
+                // auto texture = TextureManager::GetInstance().LoadTexture(fullPath);
+                // material->SetTexture(TextureType::Albedo, texture);
             }
-            // Recalc bounding box, localCenter
-            mesh->minBounds -= center;
-            mesh->maxBounds -= center;
-            mesh->localCenter = 0.5f * (mesh->minBounds + mesh->maxBounds);
         }
     }
-    Logger::GetLogger()->info("Centered all meshes around the origin.");
+    */
+}
+
+glm::mat4 BetterModelLoader::AiToGlm(const aiMatrix4x4& m) {
+    glm::mat4 r;
+    r[0][0] = m.a1; r[1][0] = m.b1; r[2][0] = m.c1; r[3][0] = m.d1;
+    r[0][1] = m.a2; r[1][1] = m.b2; r[2][1] = m.c2; r[3][1] = m.d2;
+    r[0][2] = m.a3; r[1][2] = m.b3; r[2][2] = m.c3; r[3][2] = m.d3;
+    r[0][3] = m.a4; r[1][3] = m.b4; r[2][3] = m.c4; r[3][3] = m.d4;
+    return glm::transpose(r);
 }
