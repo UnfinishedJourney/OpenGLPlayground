@@ -106,28 +106,47 @@ bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& 
     auto& resourceManager = ResourceManager::GetInstance();
     auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(defaultShaderName);
     m_MeshLayout = meshLayout;
-    Model model(modelPath, true, meshLayout);
-    // 2) Load into SceneGraph
-    ModelLoader loader;
-    if (!loader.LoadModelIntoSceneGraph(model, m_SceneGraph, m_LoadedMeshes, m_LoadedMaterials)) {
+    BetterModelLoader loader;
+    //if (!loader.LoadModel(modelPath, meshLayout, matLayout, true, &m_SceneGraph)) {
+    if (!loader.LoadModel(modelPath, meshLayout, matLayout, true)) {
+        // Handle error
         return false;
     }
 
-    auto& matManager = MaterialManager::GetInstance();
+    auto& data = loader.GetLoadedData();
 
-    for (const auto& matName : m_LoadedMaterials) {
-        if (!matManager.GetMaterial(matName)) {
-            // Material not found, create a fallback material.
-            // For example, create a Gold-like material but give it the model's material name.
-            glm::vec3 goldAmbient(0.24725f, 0.1995f, 0.0745f);
-            glm::vec3 goldDiffuse(0.75164f, 0.60648f, 0.22648f);
-            glm::vec3 goldSpecular(0.628281f, 0.555802f, 0.366065f);
-            float goldShininess = 51.2f;
-
-            auto fallbackMaterial = matManager.CreateMaterial(matName, goldAmbient, goldDiffuse, goldSpecular, goldShininess);
-            matManager.AddMaterial(matName, fallbackMaterial);
-        }
+    for (size_t i = 0; i < data.meshesData.size(); i++)
+    {
+        MeshInfo info;
+        BetterModelMeshData td = data.meshesData[i];
+        info.mesh = td.mesh;
+        info.materialIndex = 0; // Or see below on how to set the correct index
+        m_LoadedMeshes.push_back(info);
     }
+
+    // Also store the material names
+    // e.g., data.materialNames might have N materials
+    // For each name, push back to m_LoadedMaterials to maintain your old style
+    // or just store them directly in a vector<string> if that’s all you need.
+    for (auto& matName : data.createdMaterials) {
+        m_LoadedMaterials.push_back(matName);
+    }
+
+    //auto& matManager = MaterialManager::GetInstance();
+
+    //for (const auto& matName : m_LoadedMaterials) {
+    //    if (!matManager.GetMaterial(matName)) {
+    //        // Material not found, create a fallback material.
+    //        // For example, create a Gold-like material but give it the model's material name.
+    //        glm::vec3 goldAmbient(0.24725f, 0.1995f, 0.0745f);
+    //        glm::vec3 goldDiffuse(0.75164f, 0.60648f, 0.22648f);
+    //        glm::vec3 goldSpecular(0.628281f, 0.555802f, 0.366065f);
+    //        float goldShininess = 51.2f;
+
+    //        auto fallbackMaterial = matManager.CreateMaterial(matName, goldAmbient, goldDiffuse, goldSpecular, goldShininess);
+    //        matManager.AddMaterial(matName, fallbackMaterial);
+    //    }
+    //}
 
 
     m_LastShader = defaultShaderName;

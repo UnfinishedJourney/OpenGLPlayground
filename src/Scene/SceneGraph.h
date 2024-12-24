@@ -1,4 +1,4 @@
-#pragma once
+Ôªø#pragma once
 
 #include <vector>
 #include <string>
@@ -63,7 +63,7 @@ public:
     // Usually called after loading or after modifying transforms.
     void RecalculateGlobalTransforms();
 
-    // A ìvisitorî or DFS approach so you can do culling or LOD logic
+    // A ‚Äúvisitor‚Äù or DFS approach so you can do culling or LOD logic
     void TraverseGraph(std::function<void(int nodeIndex)> visitor);
 
     // For convenience
