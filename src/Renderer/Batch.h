@@ -30,17 +30,23 @@ public:
     Batch(const std::string& shaderName, const std::string& materialName, const MeshLayout& meshLayout);
     ~Batch();
 
+    // RenderObject Management
     void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
+    const std::vector<std::shared_ptr<RenderObject>>& GetRenderObjects() const;
+
+    // Batch Operations
+    void BuildBatches();
     void Update();
     void Render() const;
 
-    const std::string& GetShaderName() const { return m_ShaderName; }
-    const std::string& GetMaterialName() const { return m_MaterialName; }
-    const MeshLayout& GetMeshLayout() const { return m_MeshLayout; }
-    const std::vector<std::shared_ptr<RenderObject>>& GetRenderObjects() const { return m_RenderObjects; }
-
-    // LOD management
+    // Culling and LOD
+    void CullObject(size_t objectIndex);
     void UpdateLOD(size_t objectIndex, size_t newLOD);
+
+    // Getters
+    const std::string& GetShaderName() const;
+    const std::string& GetMaterialName() const;
+    const MeshLayout& GetMeshLayout() const;
 
 private:
     void BuildBatch();
@@ -54,7 +60,7 @@ private:
     std::shared_ptr<VertexBuffer> m_VBO;
     std::shared_ptr<IndexBuffer> m_IBO;
 
-    std::unique_ptr<IndirectBuffer> m_DrawCommandBuffer;  // Use IndirectBuffer now
+    std::unique_ptr<IndirectBuffer> m_DrawCommandBuffer;
     std::vector<DrawElementsIndirectCommand> m_DrawCommands;
     std::vector<std::vector<LODInfo>> m_LODInfos;
 

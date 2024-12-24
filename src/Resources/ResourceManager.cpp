@@ -23,6 +23,15 @@ std::pair<MeshLayout, MaterialLayout> ResourceManager::getLayoutsFromShader(std:
         return { meshL, matL };
     }
 
+    else if (shaderName == "basic")
+    {
+
+        meshL = { true, false, false, false, {TextureType::Albedo} };
+
+        return { meshL, matL };
+    }
+
+
     throw std::runtime_error("Trying to use the wrong shader for models.");
     return {};
 }

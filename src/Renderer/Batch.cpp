@@ -1,4 +1,4 @@
-﻿#include "Renderer/Batch.h"
+﻿#include "Batch.h"
 #include "Utilities/Logger.h"
 #include <variant>
 #include <numeric>
@@ -12,7 +12,7 @@ Batch::Batch(const std::string& shaderName, const std::string& materialName, con
 }
 
 Batch::~Batch() {
-    // automatically cleaned
+    // Resources are automatically cleaned up
 }
 
 void Batch::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject) {
@@ -20,13 +20,23 @@ void Batch::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject) {
     m_IsDirty = true;
 }
 
-void Batch::Update() {
-    if (!m_IsDirty) return;
-    BuildBatch();
-    m_IsDirty = false;
+const std::vector<std::shared_ptr<RenderObject>>& Batch::GetRenderObjects() const {
+    return m_RenderObjects;
 }
 
-void Batch::BuildBatch() {
+const std::string& Batch::GetShaderName() const {
+    return m_ShaderName;
+}
+
+const std::string& Batch::GetMaterialName() const {
+    return m_MaterialName;
+}
+
+const MeshLayout& Batch::GetMeshLayout() const {
+    return m_MeshLayout;
+}
+
+void Batch::BuildBatches() {
     if (m_RenderObjects.empty()) {
         Logger::GetLogger()->warn("No RenderObjects to batch.");
         return;
@@ -46,7 +56,7 @@ void Batch::BuildBatch() {
         }, firstMesh->positions);
 
     if (m_MeshLayout.hasPositions) {
-        vertexBufferLayout.Push<float>((GLuint)positionComponentCount, attributeIndex++);
+        vertexBufferLayout.Push<float>(static_cast<GLuint>(positionComponentCount), attributeIndex++);
     }
     if (m_MeshLayout.hasNormals) {
         vertexBufferLayout.Push<float>(3, attributeIndex++);
@@ -146,15 +156,15 @@ void Batch::BuildBatch() {
 
         const LODInfo& defaultLODInfo = lodInfos[initialLOD];
         DrawElementsIndirectCommand cmd = {};
-        cmd.count = (GLuint)defaultLODInfo.indexCount;
+        cmd.count = static_cast<GLuint>(defaultLODInfo.indexCount);
         cmd.instanceCount = 1;
-        cmd.firstIndex = (GLuint)defaultLODInfo.indexOffsetInCombinedBuffer;
+        cmd.firstIndex = static_cast<GLuint>(defaultLODInfo.indexOffsetInCombinedBuffer);
         cmd.baseVertex = 0;
         cmd.baseInstance = 0;
 
         m_DrawCommands.push_back(cmd);
 
-        baseVertex += (GLuint)vertexCount;
+        baseVertex += static_cast<GLuint>(vertexCount);
     }
 
     // Create/Update VBO
@@ -196,6 +206,48 @@ void Batch::BuildBatch() {
     m_VAO->AddBuffer(*m_VBO, vertexBufferLayout);
     m_VAO->SetIndexBuffer(*m_IBO);
     m_VAO->Unbind();
+
+    m_IsDirty = false;
+}
+
+void Batch::Update() {
+    if (m_IsDirty) {
+        BuildBatch();
+    }
+}
+
+void Batch::BuildBatch() {
+    // Rebuild the batch if it's marked dirty
+    BuildBatches();
+}
+
+void Batch::Render() const {
+    if (m_DrawCommands.empty()) return;
+
+    m_VAO->Bind();
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_DrawCommandBuffer->GetRendererID());
+    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(m_DrawCommands.size()), 0);
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
+    m_VAO->Unbind();
+}
+
+void Batch::CullObject(size_t objectIndex) {
+    if (objectIndex >= m_DrawCommands.size()) {
+        Logger::GetLogger()->error("Invalid object index in CullObject.");
+        return;
+    }
+
+    // Set the draw count to zero to cull the object
+    DrawElementsIndirectCommand& cmd = m_DrawCommands[objectIndex];
+    cmd.count = 0;
+
+    // Update the specific command in the IndirectBuffer
+    std::span<const std::byte> cmdSpan(
+        reinterpret_cast<const std::byte*>(&cmd),
+        sizeof(DrawElementsIndirectCommand)
+    );
+    GLintptr offset = objectIndex * sizeof(DrawElementsIndirectCommand);
+    m_DrawCommandBuffer->UpdateData(cmdSpan, offset);
 }
 
 void Batch::UpdateLOD(size_t objectIndex, size_t newLOD) {
@@ -210,22 +262,15 @@ void Batch::UpdateLOD(size_t objectIndex, size_t newLOD) {
     }
 
     const LODInfo& lodInfo = m_LODInfos[objectIndex][newLOD];
-    auto& cmd = m_DrawCommands[objectIndex];
-    cmd.count = (GLuint)lodInfo.indexCount;
-    cmd.firstIndex = (GLuint)lodInfo.indexOffsetInCombinedBuffer;
+    DrawElementsIndirectCommand& cmd = m_DrawCommands[objectIndex];
+    cmd.count = static_cast<GLuint>(lodInfo.indexCount);
+    cmd.firstIndex = static_cast<GLuint>(lodInfo.indexOffsetInCombinedBuffer);
 
-    // Update one command in the IndirectBuffer
+    // Update the specific command in the IndirectBuffer
     std::span<const std::byte> cmdSpan(
         reinterpret_cast<const std::byte*>(&cmd),
         sizeof(DrawElementsIndirectCommand)
     );
     GLintptr offset = objectIndex * sizeof(DrawElementsIndirectCommand);
     m_DrawCommandBuffer->UpdateData(cmdSpan, offset);
-}
-
-void Batch::Render() const {
-    m_VAO->Bind();
-    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_DrawCommandBuffer->GetRendererID());
-    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (GLsizei)m_DrawCommands.size(), 0);
-    m_VAO->Unbind();
 }
