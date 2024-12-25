@@ -78,13 +78,4 @@ private:
     std::vector<std::string> m_LoadedMaterials; 
     std::string m_LastShader;
 
-    // Map of model names to file paths
-    std::unordered_map<std::string, std::string> m_ModelPaths = {
-        {"pig", "../assets/Objs/pig_triangulated.obj"},
-        {"bunny","../assets/Objs/bunny.obj"},
-        {"dragon","../assets/Objs/dragon.obj"},
-        {"bistro","../assets/AmazonBistro/Exterior/exterior.obj"},
-        {"helmet","../assets/DamagedHelmet/glTF/DamagedHelmet.gltf"}
-    };
-
 };

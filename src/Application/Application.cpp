@@ -2,18 +2,22 @@
 #include "Utilities/Logger.h"
 #include "Utilities/Utility.h"
 #include <sstream>
-#define USING_EASY_PROFILER
-#include <easy/profiler.h>
 #include "AllTests.h"
+#include "Utilities/ProfilerMacros.h" 
 
 Application::Application()
-    : cameraController(inputManager) {
+    : cameraController(inputManager)
+{
+    PROFILE_FUNCTION(Magenta); // Profile the constructor
+
     Logger::Init();
     logger = Logger::GetLogger();
     logger->info("Application started.");
 }
 
 Application::~Application() {
+    PROFILE_FUNCTION(Magenta); // Profile the destructor
+
     logger->info("Application terminated gracefully.");
 }
 
@@ -46,53 +50,72 @@ static void showFPSAndTimes(GLFWwindow* window, double cpuFrameTimeMs, double gp
 
 void Application::Init()
 {
-    EASY_FUNCTION(profiler::colors::Magenta);
-    EASY_BLOCK("App Init");
+    PROFILE_FUNCTION(Magenta); // Profile the Init function
 
-    window = GLContext::InitOpenGL(Screen::s_Width, Screen::s_Height, "OpenGL Application");
-    if (!window) {
-        logger->error("Failed to initialize OpenGL context.");
-        return;
+    // Start a profiling block for application initialization
+    {
+        PROFILE_BLOCK("App Init", Yellow);
+
+        window = GLContext::InitOpenGL(Screen::s_Width, Screen::s_Height, "OpenGL Application");
+        if (!window) {
+            logger->error("Failed to initialize OpenGL context.");
+            return;
+        }
+
+        glfwSetWindowUserPointer(window, this);
+        SetupCallbacks();
+
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+        // Initialize ImGui
+        logger->info("Initializing ImGui...");
+        {
+            PROFILE_BLOCK("Initialize ImGui", Yellow);
+            IMGUI_CHECKVERSION();
+            ImGui::CreateContext();
+            ImGui_ImplGlfw_InitForOpenGL(window, true);
+            const char* glsl_version = "#version 460";
+            ImGui_ImplOpenGL3_Init(glsl_version);
+            ImGui::StyleColorsDark();
+            logger->info("ImGui initialized successfully.");
+            // Profiling block ends here
+        }
+
+        // Initialize TestMenu with shared_ptr
+        {
+            PROFILE_BLOCK("Initialize TestMenu", Yellow);
+            testMenu = std::make_shared<TestMenu>(testManager);
+            // Register tests
+            testMenu->RegisterTest("Lights", []() { return std::make_shared<TestLights>(); });
+            //testMenu->RegisterTest("Compute", []() { return std::make_shared<TestComputeShader>(); });
+            //testMenu->RegisterTest("Helmet", []() { return std::make_shared<TestDamagedHelmet>(); });
+            testMenu->RegisterTest("Bistro", []() { return std::make_shared<TestBistro>(); });
+            testMenu->RegisterTest("Flipbook", []() { return std::make_shared<TestFlipBookEffect>(); });
+
+            // Register TestMenuTest with a weak_ptr to TestMenu
+            testManager.RegisterTest("Test Menu", [this]() {
+                return std::make_shared<TestMenuTest>(testMenu);
+                });
+            testManager.SwitchTest("Test Menu");
+            // Profiling block ends here
+        }
+
+        // Create GPU queries
+        {
+            PROFILE_BLOCK("Create GPU Queries", Yellow);
+            GLCall(glGenQueries(1, &g_queryStart));
+            GLCall(glGenQueries(1, &g_queryEnd));
+            // Profiling block ends here
+        }
+
+        // Profiling block ends here
     }
-
-    glfwSetWindowUserPointer(window, this);
-    SetupCallbacks();
-
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
-    // Initialize ImGui
-    logger->info("Initializing ImGui...");
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    const char* glsl_version = "#version 460";
-    ImGui_ImplOpenGL3_Init(glsl_version);
-    ImGui::StyleColorsDark();
-    logger->info("ImGui initialized successfully.");
-
-    // Initialize TestMenu with shared_ptr
-    testMenu = std::make_shared<TestMenu>(testManager);
-    // Register tests
-    testMenu->RegisterTest("Lights", []() { return std::make_shared<TestLights>(); });
-    //testMenu->RegisterTest("Compute", []() { return std::make_shared<TestComputeShader>(); });
-    //testMenu->RegisterTest("Helmet", []() { return std::make_shared<TestDamagedHelmet>(); });
-    testMenu->RegisterTest("Bistro", []() { return std::make_shared<TestBistro>(); });
-    testMenu->RegisterTest("Flipbook", []() { return std::make_shared<TestFlipBookEffect>(); });
-
-    // Register TestMenuTest with a weak_ptr to TestMenu
-    testManager.RegisterTest("Test Menu", [this]() {
-        return std::make_shared<TestMenuTest>(testMenu);
-        });
-    testManager.SwitchTest("Test Menu");
-    EASY_END_BLOCK;
-
-    // Create GPU queries
-    GLCall(glGenQueries(1, &g_queryStart));
-    GLCall(glGenQueries(1, &g_queryEnd));
 }
 
 void Application::Run()
 {
+    PROFILE_FUNCTION(Cyan); // Profile the Run function
+
     if (!window) {
         logger->error("Cannot run application without a valid window.");
         return;
@@ -101,73 +124,108 @@ void Application::Run()
     lastTime = glfwGetTime();
 
     while (!glfwWindowShouldClose(window)) {
-        EASY_BLOCK("Frame");
+        // Start profiling the frame
+        {
+            PROFILE_BLOCK("Frame", Purple);
 
-        // Start CPU timer
-        auto cpuStart = std::chrono::high_resolution_clock::now();
+            // Start CPU timer
+            auto cpuStart = std::chrono::high_resolution_clock::now();
 
-        // Start GPU timer query
-        GLCall(glBeginQuery(GL_TIME_ELAPSED, g_queryStart));
+            // Start GPU timer query
+            GLCall(glBeginQuery(GL_TIME_ELAPSED, g_queryStart));
 
-        GLCall(glClearColor(0.3f, 0.2f, 0.8f, 1.0f));
-        GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+            // Clear the framebuffer
+            {
+                PROFILE_BLOCK("Render Setup", Blue);
+                GLCall(glClearColor(0.3f, 0.2f, 0.8f, 1.0f));
+                GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+                // Profiling block ends here
+            }
 
-        double currentTime = glfwGetTime();
-        double deltaTime = currentTime - lastTime;
-        lastTime = currentTime;
+            // Update time
+            double currentTime = glfwGetTime();
+            double deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
 
-        glfwPollEvents();
-        ProcessInput(deltaTime);
+            // Handle input
+            {
+                PROFILE_BLOCK("Handle Input", Blue);
+                glfwPollEvents();
+                ProcessInput(deltaTime);
+                // Profiling block ends here
+            }
 
-        testManager.UpdateCurrentTest((float)deltaTime);
-        testManager.RenderCurrentTest();
-        UpdateCameraController();
+            // Update and render current test
+            {
+                PROFILE_BLOCK("Update and Render Test", Blue);
+                testManager.UpdateCurrentTest(static_cast<float>(deltaTime));
+                testManager.RenderCurrentTest();
+                UpdateCameraController();
+                // Profiling block ends here
+            }
 
-        // IMGUI rendering
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+            // IMGUI rendering
+            {
+                PROFILE_BLOCK("ImGui Rendering", Blue);
+                ImGui_ImplOpenGL3_NewFrame();
+                ImGui_ImplGlfw_NewFrame();
+                ImGui::NewFrame();
 
-        testManager.RenderCurrentTestImGui();
+                testManager.RenderCurrentTestImGui();
 
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+                ImGui::Render();
+                ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+                // Profiling block ends here
+            }
 
-        // End GPU query and start the end query
-        GLCall(glEndQuery(GL_TIME_ELAPSED));
+            // End GPU query
+            GLCall(glEndQuery(GL_TIME_ELAPSED));
 
-        // Another query can be started if needed, but typically one per frame is enough.
-        // For simplicity, we just measure the whole frame. If needed, measure sub-parts.
+            // Ensure all commands completed before reading the query
+            GLCall(glFinish());
 
-        GLCall(glFinish()); // Ensure all commands completed before we read the query
+            // Fetch GPU timing
+            GLuint64 gpuTime = 0;
+            GLCall(glGetQueryObjectui64v(g_queryStart, GL_QUERY_RESULT, &gpuTime));
+            double gpuFrameTimeMs = static_cast<double>(gpuTime) / 1000000.0; // ns to ms
 
-        // Fetch GPU timing
-        GLuint64 gpuTime = 0;
-        GLCall(glGetQueryObjectui64v(g_queryStart, GL_QUERY_RESULT, &gpuTime));
-        double gpuFrameTimeMs = (double)gpuTime / 1000000.0; // ns to ms
+            // Swap buffers and update input
+            {
+                PROFILE_BLOCK("Swap Buffers", Blue);
+                glfwSwapBuffers(window);
+                inputManager.Update();
+                // Profiling block ends here
+            }
 
-        // Swap buffers
-        glfwSwapBuffers(window);
-        inputManager.Update();
+            // Stop CPU timer
+            auto cpuEnd = std::chrono::high_resolution_clock::now();
+            double cpuFrameTimeMs = std::chrono::duration<double, std::milli>(cpuEnd - cpuStart).count();
 
-        // Stop CPU timer
-        auto cpuEnd = std::chrono::high_resolution_clock::now();
-        double cpuFrameTimeMs = std::chrono::duration<double, std::milli>(cpuEnd - cpuStart).count();
+            // Show FPS and times in title
+            {
+                PROFILE_BLOCK("Update FPS and Times", Blue);
+                showFPSAndTimes(window, cpuFrameTimeMs, gpuFrameTimeMs);
+                // Profiling block ends here
+            }
 
-        // Show FPS and times in title
-        showFPSAndTimes(window, cpuFrameTimeMs, gpuFrameTimeMs);
-
-        EASY_END_BLOCK;
+            // Profiling block ends here
+        }
     }
 
     // Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-    GLContext::Cleanup(window);
+    {
+        PROFILE_BLOCK("Cleanup", Magenta);
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+        GLContext::Cleanup(window);
+        // Profiling block ends here
+    }
 }
 
 void Application::ProcessInput(double deltaTime) {
+    PROFILE_FUNCTION(Yellow); // Profile the ProcessInput function
+
     cameraController.Update(deltaTime);
     if (inputManager.WasKeyJustPressed(GLFW_KEY_R)) {
         logger->info("Reloading all shaders...");
@@ -176,6 +234,8 @@ void Application::ProcessInput(double deltaTime) {
 }
 
 void Application::UpdateCameraController() {
+    PROFILE_FUNCTION(Yellow); // Profile the UpdateCameraController function
+
     auto camera = testManager.GetCurrentCamera();
     cameraController.SetCamera(camera);
     if (camera) {
@@ -187,42 +247,79 @@ void Application::UpdateCameraController() {
 }
 
 void Application::SetupCallbacks() {
-    glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-        auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
+    PROFILE_FUNCTION(Green); // Profile the SetupCallbacks function
 
-        bool isPressed = (action == GLFW_PRESS || action == GLFW_REPEAT);
-        app->inputManager.SetKey(key, isPressed);
-        });
+    // Key Callback
+    {
+        PROFILE_BLOCK("Setup Key Callback", Yellow);
+        glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+            {
+                PROFILE_BLOCK("Key Callback Execution", Yellow);
+                auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+                if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+                    glfwSetWindowShouldClose(window, GLFW_TRUE);
 
-    glfwSetCursorPosCallback(window, [](GLFWwindow* window, double xpos, double ypos) {
-        auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
-        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            app->cameraController.ProcessMouseMovement(static_cast<float>(xpos), static_cast<float>(ypos));
-        }
-        else {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            app->cameraController.Reset();
-        }
-        });
+                bool isPressed = (action == GLFW_PRESS || action == GLFW_REPEAT);
+                app->inputManager.SetKey(key, isPressed);
+                // Profiling block ends here
+            }
+            });
+        // Profiling block ends here
+    }
 
-    glfwSetScrollCallback(window, [](GLFWwindow* window, double xoffset, double yoffset) {
-        auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
-        app->cameraController.ProcessMouseScroll(static_cast<float>(yoffset));
-        });
+    // Cursor Position Callback
+    {
+        PROFILE_BLOCK("Setup Cursor Position Callback", Yellow);
+        glfwSetCursorPosCallback(window, [](GLFWwindow* window, double xpos, double ypos) {
+            {
+                PROFILE_BLOCK("Cursor Position Callback Execution", Yellow);
+                auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+                if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                    app->cameraController.ProcessMouseMovement(static_cast<float>(xpos), static_cast<float>(ypos));
+                }
+                else {
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                    app->cameraController.Reset();
+                }
+                // Profiling block ends here
+            }
+            });
+        // Profiling block ends here
+    }
 
-    glfwSetWindowSizeCallback(window, [](GLFWwindow* window, int width, int height) {
-        auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
-        if (height == 0)
-            height = 1;
+    // Scroll Callback
+    {
+        PROFILE_BLOCK("Setup Scroll Callback", Yellow);
+        glfwSetScrollCallback(window, [](GLFWwindow* window, double xoffset, double yoffset) {
+            {
+                PROFILE_BLOCK("Scroll Callback Execution", Yellow);
+                auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+                app->cameraController.ProcessMouseScroll(static_cast<float>(yoffset));
+                // Profiling block ends here
+            }
+            });
+        // Profiling block ends here
+    }
 
-        glViewport(0, 0, width, height);
-        Screen::SetResolution(width, height);
+    // Window Size Callback
+    {
+        PROFILE_BLOCK("Setup Window Size Callback", Yellow);
+        glfwSetWindowSizeCallback(window, [](GLFWwindow* window, int width, int height) {
+            {
+                PROFILE_BLOCK("Window Size Callback Execution", Yellow);
+                auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+                if (height == 0)
+                    height = 1;
 
-        app->testManager.HandleWindowResize(width, height);
-        app->cameraController.UpdateFOV();
-        });
+                glViewport(0, 0, width, height);
+                Screen::SetResolution(width, height);
+
+                app->testManager.HandleWindowResize(width, height);
+                app->cameraController.UpdateFOV();
+                // Profiling block ends here
+            }
+            });
+        // Profiling block ends here
+    }
 }
-

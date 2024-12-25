@@ -11,6 +11,7 @@
 #include "Graphics/Buffers/VertexBufferLayout.h"
 #include "Graphics/Meshes/MeshLayout.h"
 #include "Graphics/Buffers/IndirectBuffer.h"
+#include "Utilities/ProfilerMacros.h"
 
 struct DrawElementsIndirectCommand {
     GLuint count;          // Number of indices
