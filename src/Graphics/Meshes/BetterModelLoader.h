@@ -24,7 +24,6 @@ struct aiNode;
 #include "Graphics/Materials/MaterialLayout.h"
 #include "Graphics/Materials/Material.h"
 #include "Graphics/Materials/MaterialParamType.h"
-#include "Graphics/Textures/TextureType.h"
 #include "Graphics/Textures/TextureData.h"
 #include "Scene/SceneGraph.h"
 #include "Utilities/Logger.h"
@@ -50,6 +49,21 @@ struct BetterModelData
     std::vector<BetterModelMeshData> meshesData;      ///< Each mesh + the associated material name
     std::vector<std::string>         createdMaterials; ///< All unique material names created
     // If you want node hierarchy, you can add it here (like in your older code).
+};
+
+struct MeshTextures {
+    std::unordered_map<TextureType, TextureData> textureData;
+};
+
+struct MeshInfo {
+    MeshTextures meshTextures;
+    std::shared_ptr<Mesh> mesh;
+    int materialIndex = -1;
+};
+
+struct MaterialInfo {
+    std::string name;
+    // Possibly store texture file paths or additional parameters
 };
 
 struct BetterMeshTextures {
@@ -81,6 +95,8 @@ public:
     const BetterModelData& GetModelData() {
         return m_Data;
     }
+
+    static std::string GetModelPath(const std::string& modelName);
 
 private:
     // Existing member variables

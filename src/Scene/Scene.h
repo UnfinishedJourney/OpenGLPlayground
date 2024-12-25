@@ -12,9 +12,7 @@
 #include "Graphics/Effects/PostProcessingEffects/PostProcessingEffectType.h"
 #include "LODEvaluator.h"
 #include "FrustumCuller.h"
-#include "Graphics/Meshes/ModelLoader.h"
 #include "Graphics/Meshes/BetterModelLoader.h"
-#include "Graphics/Meshes/Model.h"
 #include "Resources/MaterialManager.h"
 #include "Graphics/Materials/MaterialLayout.h"
 

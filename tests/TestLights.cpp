@@ -26,7 +26,7 @@ void TestLights::OnEnter() {
 
     auto& materials = m_Scene->GetMaterials();
     m_MatName = materials[0];
-    auto existingMat = MaterialManager::GetInstance().GetMaterial(m_MatName);
+    auto existingMat = MaterialManager::GetInstance().GetMaterialByName(m_MatName);
     existingMat->SetParam(MaterialParamType::Ambient, glm::vec3(0.9, 0.1, 0.3));
 }
 

@@ -45,11 +45,12 @@ void Scene::SetCamera(const std::shared_ptr<Camera>& camera) {
 
 
 bool Scene::LoadModelIntoScene(const std::string& modelName, const std::string& defaultShaderName, const std::string& defaultMaterialName) {
-    std::string modelPath = ModelLoader::GetModelPath(modelName);
+    //std::string modelPath = ModelLoader::GetModelPath(modelName);
     auto& resourceManager = ResourceManager::GetInstance();
     auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(defaultShaderName);
     m_MeshLayout = meshLayout;
     BetterModelLoader loader;
+    std::string modelPath = BetterModelLoader::GetModelPath(modelName);
     if (!loader.LoadModel(modelPath, meshLayout, matLayout, true, m_SceneGraph)) {
         // Handle error
         return false;

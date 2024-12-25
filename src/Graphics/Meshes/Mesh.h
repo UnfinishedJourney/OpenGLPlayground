@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <glm/glm.hpp>
 #include <cfloat>
-#include "Graphics/Textures/TextureType.h"
+#include "Graphics/Materials/MaterialParamType.h"
 
 /**
  * Represents a sub-range of indices for a specific LOD level.

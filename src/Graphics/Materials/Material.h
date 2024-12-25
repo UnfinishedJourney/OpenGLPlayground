@@ -7,7 +7,6 @@
 #include <glm/glm.hpp>
 #include "MaterialParamType.h"
 #include "MaterialLayout.h"
-#include "Graphics/Textures/TextureType.h"
 #include "Graphics/Textures/ITexture.h"
 #include "Graphics/Shaders/BaseShader.h"
 

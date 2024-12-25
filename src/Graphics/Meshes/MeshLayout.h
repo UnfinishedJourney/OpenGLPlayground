@@ -1,7 +1,6 @@
 #pragma once
 #include <unordered_set>
-
-enum class TextureType; // forward
+#include "Graphics/Materials/MaterialParamType.h"
 
 struct MeshLayout {
     bool hasPositions = true;
@@ -31,8 +30,8 @@ namespace std {
             hash_combine(seed, std::hash<bool>{}(layout.hasNormals));
             hash_combine(seed, std::hash<bool>{}(layout.hasTangents));
             hash_combine(seed, std::hash<bool>{}(layout.hasBitangents));
-            for (auto t : layout.textureTypes) {
-                hash_combine(seed, std::hash<int>{}((int)t));
+            for (const auto& t : layout.textureTypes) {
+                hash_combine(seed, std::hash<TextureType>{}(t));
             }
             return seed;
         }

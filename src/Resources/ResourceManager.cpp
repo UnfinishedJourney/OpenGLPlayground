@@ -8,32 +8,28 @@ ResourceManager& ResourceManager::GetInstance() {
 //need to make this better 
 std::pair<MeshLayout, MaterialLayout> ResourceManager::getLayoutsFromShader(std::string shaderName)
 {
-    MeshLayout meshL;
-    MaterialLayout matL;
+    static const std::unordered_map<std::string, std::pair<MeshLayout, MaterialLayout>> shaderLayouts = {
+        {"simplelights",
+            {
+                MeshLayout{ true, true, false, false, {} },
+                MaterialLayout{ {MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess}, {} }
+            }
+        },
+        {"basic",
+            {
+                MeshLayout{ true, false, false, false, {TextureType::Albedo} },
+                MaterialLayout{ {}, {} }
+            }
+        },
+        // Add more shader layouts as needed
+    };
 
-    if (shaderName == "simplelights")
-    {
-        matL.params.insert(MaterialParamType::Ambient);
-        matL.params.insert(MaterialParamType::Diffuse);
-        matL.params.insert(MaterialParamType::Specular);
-        matL.params.insert(MaterialParamType::Shininess);
-
-        meshL = { true, true, false, false, {} };
-
-        return { meshL, matL };
+    auto it = shaderLayouts.find(shaderName);
+    if (it != shaderLayouts.end()) {
+        return it->second;
     }
-
-    else if (shaderName == "basic")
-    {
-
-        meshL = { true, false, false, false, {TextureType::Albedo} };
-
-        return { meshL, matL };
-    }
-
 
     throw std::runtime_error("Trying to use the wrong shader for models.");
-    return {};
 }
 
 ResourceManager::ResourceManager() {

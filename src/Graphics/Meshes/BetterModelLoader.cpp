@@ -134,7 +134,7 @@ std::string BetterModelLoader::createMaterialForAssimpMat(const aiMaterial* aiMa
     std::string matName = ainame.C_Str();
 
     // Check if MaterialManager already has this
-    auto existingMat = MaterialManager::GetInstance().GetMaterial(matName);
+    auto existingMat = MaterialManager::GetInstance().GetMaterialByName(matName);
     if (existingMat)
     {
         // Already exists, just reuse
@@ -199,7 +199,7 @@ std::string BetterModelLoader::createMaterialForAssimpMat(const aiMaterial* aiMa
     loadMaterialTextures(aiMat, mat, matLayout, ""); // Directory will be set later
 
     // Add the newly created material to the manager
-    MaterialManager::GetInstance().AddMaterial(matName, mat);
+    MaterialManager::GetInstance().AddMaterial(matName, matLayout, mat);
     return matName;
 }
 
@@ -249,7 +249,7 @@ void BetterModelLoader::processAssimpNode(
             fallbackMat->SetParam(MaterialParamType::Specular, glm::vec3(0.5f));
             fallbackMat->SetParam(MaterialParamType::Shininess, 32.f);
 
-            MaterialManager::GetInstance().AddMaterial(materialName, fallbackMat);
+            MaterialManager::GetInstance().AddMaterial(materialName, matLayout, fallbackMat);
             m_Data.createdMaterials.push_back(materialName);
         }
         else
@@ -580,4 +580,20 @@ glm::mat4 BetterModelLoader::AiToGlm(const aiMatrix4x4& m) {
     r[0][2] = m.a3; r[1][2] = m.b3; r[2][2] = m.c3; r[3][2] = m.d3;
     r[0][3] = m.a4; r[1][3] = m.b4; r[2][3] = m.c4; r[3][3] = m.d4;
     return glm::transpose(r);
+}
+
+std::string BetterModelLoader::GetModelPath(const std::string& modelName) {
+    static const std::unordered_map<std::string, std::string> modelPaths = {
+        {"pig",    "../assets/Objs/pig_triangulated.obj"},
+        {"bunny",  "../assets/Objs/bunny.obj"},
+        {"dragon", "../assets/Objs/dragon.obj"},
+        {"bistro", "../assets/AmazonBistro/Exterior/exterior.obj"},
+        {"helmet", "../assets/DamagedHelmet/glTF/DamagedHelmet.gltf"}
+    };
+
+    auto it = modelPaths.find(modelName);
+    if (it != modelPaths.end()) {
+        return it->second;
+    }
+    return "";
 }
