@@ -70,15 +70,18 @@ void Application::Init()
     ImGui::StyleColorsDark();
     logger->info("ImGui initialized successfully.");
 
-    testMenu = std::make_unique<TestMenu>(testManager);
+    // Initialize TestMenu with shared_ptr
+    testMenu = std::make_shared<TestMenu>(testManager);
+    // Register tests
     testMenu->RegisterTest("Lights", []() { return std::make_shared<TestLights>(); });
     //testMenu->RegisterTest("Compute", []() { return std::make_shared<TestComputeShader>(); });
     //testMenu->RegisterTest("Helmet", []() { return std::make_shared<TestDamagedHelmet>(); });
     testMenu->RegisterTest("Bistro", []() { return std::make_shared<TestBistro>(); });
     testMenu->RegisterTest("Flipbook", []() { return std::make_shared<TestFlipBookEffect>(); });
 
+    // Register TestMenuTest with a weak_ptr to TestMenu
     testManager.RegisterTest("Test Menu", [this]() {
-        return std::make_shared<TestMenuTest>(*testMenu);
+        return std::make_shared<TestMenuTest>(testMenu);
         });
     testManager.SwitchTest("Test Menu");
     EASY_END_BLOCK;

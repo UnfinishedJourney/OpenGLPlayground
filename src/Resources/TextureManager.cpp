@@ -71,6 +71,44 @@ bool TextureManager::Load2DTextures(const nlohmann::json& json) {
     return true;
 }
 
+std::shared_ptr<ITexture> TextureManager::LoadTexture(const std::string& name, const std::string& path) {
+    std::lock_guard<std::mutex> lock(m_Mutex);
+
+    // Check if the texture is already loaded
+    auto it = m_Textures.find(name);
+    if (it != m_Textures.end()) {
+        return it->second;
+    }
+
+    // Verify that the file exists
+    if (!std::filesystem::exists(path)) {
+        Logger::GetLogger()->error("Texture '{}' not found at path '{}'.", name, path);
+        return nullptr;
+    }
+
+    // Load texture data
+    TextureData data;
+    if (!data.LoadFromFile(path)) {
+        Logger::GetLogger()->error("Failed to load texture '{}' from '{}'.", name, path);
+        return nullptr;
+    }
+
+    // Configure texture parameters as needed
+    TextureConfig config; // Customize as required
+
+    try {
+        // Create an OpenGL texture instance
+        auto tex = std::make_shared<OpenGLTexture>(data, config);
+        m_Textures[name] = tex;
+        Logger::GetLogger()->info("Loaded texture '{}' from '{}'.", name, path);
+        return tex;
+    }
+    catch (const std::exception& e) {
+        Logger::GetLogger()->error("Exception while loading texture '{}': {}", name, e.what());
+        return nullptr;
+    }
+}
+
 bool TextureManager::LoadCubeMaps(const nlohmann::json& json) {
     for (auto& [name, arrVal] : json.items()) {
         auto arr = arrVal.get<std::vector<std::string>>();

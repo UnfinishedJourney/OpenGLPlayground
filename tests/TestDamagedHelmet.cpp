@@ -12,7 +12,6 @@
 //TestDamagedHelmet::TestDamagedHelmet() {}
 //
 //void TestDamagedHelmet::OnEnter() {
-//    auto& modelManager = ModelManager::GetInstance();
 //    auto& materialManager = MaterialManager::GetInstance();
 //    auto& shaderManager = ShaderManager::GetInstance();
 //    auto& textureManager = TextureManager::GetInstance();
@@ -49,25 +48,25 @@
 //
 //    materialManager.AddMaterial("objMaterial", material);
 //
-//    auto transform = std::make_shared<Transform>();
-//    transform->SetPosition({ 0.0f, 0.5f, 0.0f });
+//    //auto transform = std::make_shared<Transform>();
+//    //transform->SetPosition({ 0.0f, 0.5f, 0.0f });
 //
-//    const auto& meshinfos = model->GetMeshesInfo();
-//    for (const auto& minfo : meshinfos) {
-//        auto renderObject = std::make_shared<RenderObject>(
-//            minfo.mesh,
-//            objMeshLayout,
-//            "objMaterial",
-//            "HelmetPBR",
-//            transform
-//        );
-//        m_Scene->AddRenderObject(renderObject);
-//    }
+//    //const auto& meshinfos = model->GetMeshesInfo();
+//    //for (const auto& minfo : meshinfos) {
+//    //    auto renderObject = std::make_shared<RenderObject>(
+//    //        minfo.mesh,
+//    //        objMeshLayout,
+//    //        "objMaterial",
+//    //        "HelmetPBR",
+//    //        transform
+//    //    );
+//    //    m_Scene->AddRenderObject(renderObject);
+//    //}
 //
 //    LightData light = { {10.0f,10.0f,10.0f,0.0f}, {1.0f,1.0f,1.0f,1.0f} };
 //    m_Scene->AddLight(light);
 //
-//    m_Scene->BuildBatches();
+//    //m_Scene->BuildBatches();
 //    m_Scene->SetBDebugLights(true);
 //}
 //

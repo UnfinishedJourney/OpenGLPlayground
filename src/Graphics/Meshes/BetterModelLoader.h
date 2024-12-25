@@ -29,6 +29,7 @@ struct aiNode;
 #include "Scene/SceneGraph.h"
 #include "Utilities/Logger.h"
 #include "Resources/MaterialManager.h"
+#include "Resources/TextureManager.h"
 
 /**
  * A container for the final loaded data:
@@ -49,6 +50,10 @@ struct BetterModelData
     std::vector<BetterModelMeshData> meshesData;      ///< Each mesh + the associated material name
     std::vector<std::string>         createdMaterials; ///< All unique material names created
     // If you want node hierarchy, you can add it here (like in your older code).
+};
+
+struct BetterMeshTextures {
+    std::unordered_map<TextureType, std::shared_ptr<ITexture>> textures;
 };
 
 class BetterModelLoader {
@@ -95,6 +100,7 @@ private:
 
     // Existing private methods
     void loadSceneMaterials(const aiScene* scene, const MaterialLayout& matLayout);
+    BetterMeshTextures LoadMeshTextures(const aiMaterial* material, const std::string& directory);
     std::string createMaterialForAssimpMat(const aiMaterial* aiMat, const MaterialLayout& matLayout);
     std::string createFallbackMaterialName();
     void centerAllMeshes() {};

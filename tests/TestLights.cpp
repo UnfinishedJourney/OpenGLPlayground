@@ -23,6 +23,11 @@ void TestLights::OnEnter() {
 
     m_Scene->SetBDebugLights(true);
     m_Scene->SetBGrid(true);
+
+    auto& materials = m_Scene->GetMaterials();
+    m_MatName = materials[0];
+    auto existingMat = MaterialManager::GetInstance().GetMaterial(m_MatName);
+    existingMat->SetParam(MaterialParamType::Ambient, glm::vec3(0.9, 0.1, 0.3));
 }
 
 void TestLights::OnExit() {

@@ -519,48 +519,58 @@ void BetterModelLoader::generateLODs(std::vector<uint32_t>& indices,
     }
 }
 
+BetterMeshTextures BetterModelLoader::LoadMeshTextures(const aiMaterial* material, const std::string& directory)
+{
+    BetterMeshTextures result;
+
+    // Mapping Assimp texture types to your engine's TextureType
+    std::unordered_map<aiTextureType, TextureType> aiToMyTextureType = {
+        { aiTextureType_DIFFUSE, TextureType::Albedo },
+        { aiTextureType_NORMALS, TextureType::Normal },
+        { aiTextureType_LIGHTMAP, TextureType::AO },
+        { aiTextureType_UNKNOWN, TextureType::MetalRoughness },
+        { aiTextureType_EMISSIVE, TextureType::Emissive }
+    };
+
+    for (const auto& [aiType, myType] : aiToMyTextureType) {
+        unsigned int textureCount = material->GetTextureCount(aiType);
+        for (unsigned int i = 0; i < textureCount; ++i) {
+            aiString str;
+            if (material->GetTexture(aiType, i, &str) == AI_SUCCESS) {
+                std::string filename = std::filesystem::path(str.C_Str()).filename().string();
+                std::string fullPath = (std::filesystem::path(directory) / filename).string();
+
+                // Use filename as texture name or construct a unique name if needed
+                std::string textureName = filename; // Alternatively, use matName + "_" + filename for uniqueness
+
+                // Load texture via TextureManager
+                auto texture = TextureManager::GetInstance().LoadTexture(textureName, fullPath);
+                if (!texture) {
+                    Logger::GetLogger()->error("Failed to load texture '{}' for type '{}'.", fullPath, static_cast<int>(myType));
+                    continue;
+                }
+
+                result.textures[myType] = texture;
+                Logger::GetLogger()->info("Texture '{}' loaded for type '{}'.", fullPath, static_cast<int>(myType));
+            }
+        }
+    }
+
+    return result;
+}
+
 void BetterModelLoader::loadMaterialTextures(const aiMaterial* aiMat,
     std::shared_ptr<Material> material,
     const MaterialLayout& matLayout,
     const std::string& directory)
 {
-    // Implement texture loading based on matLayout and aiMat
-    // Example:
-    // if (matLayout.textures.count(TextureType::Albedo)) {
-    //     // Load aiTextureType_DIFFUSE
-    //     // Similar for other texture types
-    // }
-    // This is a placeholder and should be implemented as per your engine's requirements
+    // Load textures using LoadMeshTextures
+    BetterMeshTextures meshTextures = LoadMeshTextures(aiMat, directory);
 
-    // Example Implementation:
-    /*
-    if (matLayout.textures.count(TextureType::Albedo)) {
-        unsigned int textureCount = aiMat->GetTextureCount(aiTextureType_DIFFUSE);
-        for (unsigned int i = 0; i < textureCount; ++i) {
-            aiString str;
-            if (aiMat->GetTexture(aiTextureType_DIFFUSE, i, &str) == AI_SUCCESS) {
-                std::string filename = std::filesystem::path(str.C_Str()).filename().string();
-                std::string fullPath = (std::filesystem::path(directory) / filename).string();
-
-                TextureData texData;
-                if (!texData.LoadFromFile(fullPath)) {
-                    Logger::GetLogger()->error("Failed to load texture: {}", fullPath);
-                    continue;
-                }
-
-                if (texData.GetWidth() <= 0 || texData.GetHeight() <= 0) {
-                    Logger::GetLogger()->error("Invalid texture dimensions for: {}", fullPath);
-                    continue;
-                }
-
-                // Create or retrieve texture from a texture manager
-                // For example:
-                // auto texture = TextureManager::GetInstance().LoadTexture(fullPath);
-                // material->SetTexture(TextureType::Albedo, texture);
-            }
-        }
+    // Assign textures to the material
+    for (const auto& [texType, texture] : meshTextures.textures) {
+        material->SetTexture(texType, texture);
     }
-    */
 }
 
 glm::mat4 BetterModelLoader::AiToGlm(const aiMatrix4x4& m) {

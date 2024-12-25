@@ -15,4 +15,5 @@ public:
     void OnImGuiRender() override;
 
 private:
+    std::string m_MatName;
 };

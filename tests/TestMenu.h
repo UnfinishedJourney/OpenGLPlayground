@@ -19,8 +19,8 @@ private:
 
 class TestMenuTest : public Test {
 public:
-    explicit TestMenuTest(TestMenu& testMenu);
-
+    explicit TestMenuTest(std::weak_ptr<TestMenu> testMenu);
+    ~TestMenuTest() override;
     void OnEnter() override;
     void OnExit() override;
     void OnUpdate(float deltaTime) override;
@@ -30,5 +30,5 @@ public:
     std::shared_ptr<Camera> GetCamera() const override;
 
 private:
-    TestMenu& m_TestMenu;
+    std::weak_ptr<TestMenu> m_TestMenu;
 };

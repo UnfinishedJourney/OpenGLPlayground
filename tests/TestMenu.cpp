@@ -20,34 +20,49 @@ void TestMenu::OnImGuiRender() {
     ImGui::End();
 }
 
-TestMenuTest::TestMenuTest(TestMenu& testMenu)
-    : m_TestMenu(testMenu) {
+TestMenuTest::TestMenuTest(std::weak_ptr<TestMenu> testMenu)
+    : Test(), m_TestMenu(testMenu) {
+    Logger::GetLogger()->info("TestMenuTest created.");
 }
 
 void TestMenuTest::OnEnter() {
-    // No initialization needed for the test menu
+    Logger::GetLogger()->info("TestMenuTest OnEnter.");
+    // Additional initialization if needed
 }
 
 void TestMenuTest::OnExit() {
-    // No cleanup needed for the test menu
+    Logger::GetLogger()->info("TestMenuTest OnExit.");
+    m_Renderer.reset();
+    if (m_Scene) {
+        m_Scene->Clear();
+    }
 }
 
 void TestMenuTest::OnUpdate(float deltaTime) {
-    // No update logic required
+    // Update logic if needed
 }
 
 void TestMenuTest::OnRender() {
-    // No rendering logic required
+    // Rendering logic if needed
 }
 
 void TestMenuTest::OnImGuiRender() {
-    m_TestMenu.OnImGuiRender();
+    if (auto testMenu = m_TestMenu.lock()) { // Safely access TestMenu
+        testMenu->OnImGuiRender();
+    }
+    else {
+        Logger::GetLogger()->warn("TestMenuTest: TestMenu no longer exists.");
+    }
 }
 
 void TestMenuTest::OnWindowResize(int width, int height) {
-    // No action needed for window resize
+    // Handle window resize if needed
 }
 
 std::shared_ptr<Camera> TestMenuTest::GetCamera() const {
     return nullptr;
+}
+
+TestMenuTest::~TestMenuTest() {
+    Logger::GetLogger()->info("TestMenuTest destroyed.");
 }

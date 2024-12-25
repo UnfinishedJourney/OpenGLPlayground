@@ -33,7 +33,7 @@ private:
     CameraController cameraController;
     InputManager inputManager;
     TestManager testManager;
-    std::unique_ptr<TestMenu> testMenu;
+    std::shared_ptr<TestMenu> testMenu; 
     double lastTime = 0.0;
 
     std::shared_ptr<spdlog::logger> logger;

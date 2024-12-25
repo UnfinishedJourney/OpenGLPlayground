@@ -53,6 +53,11 @@ public:
 
     void CullAndLODUpdate();
 
+    const std::vector<std::string>& GetMaterials() const
+    {
+        return m_LoadedMaterials;
+    }
+
 private:
     SceneGraph m_SceneGraph;
     bool m_StaticBatchesDirty = true;
