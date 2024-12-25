@@ -19,7 +19,7 @@ Sphere::Sphere(float radius, unsigned int sectorCount, unsigned int stackCount)
 
     // Initialize positions as std::vector<glm::vec3>
     positions = std::vector<glm::vec3>();
-    auto& positionsVec = std::get<std::vector<glm::vec3>>(positions);
+    auto& positionsVec = positions;
     positionsVec.reserve((stackCount + 1) * (sectorCount + 1));
 
     if (sectorCount == 0 || stackCount == 0) {

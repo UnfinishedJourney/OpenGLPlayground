@@ -3,39 +3,23 @@
 #include "Utilities/Utility.h"
 #include <stdexcept>
 #include <glad/glad.h>
-#include <variant>
-#include <span> 
+#include <span>
 
 MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout)
     : m_MeshLayout(layout)
 {
     if (m_MeshLayout.hasPositions) {
-        bool positionsEmpty = std::visit([](const auto& positionsVec) {
-            return positionsVec.empty();
-            }, mesh.positions);
-
-        if (positionsEmpty) {
+        if (mesh.positions.empty()) {
             Logger::GetLogger()->error("Mesh requires positions, but none were found.");
             throw std::runtime_error("Mesh requires positions, but none were found.");
         }
     }
 
-    m_VertexCount = static_cast<GLuint>(std::visit([](const auto& positionsVec) {
-        return positionsVec.size();
-        }, mesh.positions));
+    m_VertexCount = static_cast<GLuint>(mesh.positions.size());
 
     size_t totalComponents = 0;
     if (m_MeshLayout.hasPositions) {
-        size_t positionComponentCount = std::visit([](const auto& positionsVec) {
-            using VecType = typename std::decay_t<decltype(positionsVec)>::value_type;
-            if constexpr (std::is_same_v<VecType, glm::vec3>) {
-                return 3;
-            }
-            else {
-                return 2;
-            }
-            }, mesh.positions);
-        totalComponents += positionComponentCount;
+        totalComponents += 3; // vec3 positions
     }
     if (m_MeshLayout.hasNormals && !mesh.normals.empty()) {
         totalComponents += 3;
@@ -58,15 +42,8 @@ MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout)
 
     for (size_t i = 0; i < m_VertexCount; ++i) {
         if (m_MeshLayout.hasPositions) {
-            std::visit([&](const auto& positionsVec) {
-                const auto& pos = positionsVec[i];
-                if constexpr (std::is_same_v<std::decay_t<decltype(pos)>, glm::vec3>) {
-                    vertexData.insert(vertexData.end(), { pos.x, pos.y, pos.z });
-                }
-                else if constexpr (std::is_same_v<std::decay_t<decltype(pos)>, glm::vec2>) {
-                    vertexData.insert(vertexData.end(), { pos.x, pos.y });
-                }
-                }, mesh.positions);
+            const auto& pos = mesh.positions[i];
+            vertexData.insert(vertexData.end(), { pos.x, pos.y, pos.z });
         }
 
         if (m_MeshLayout.hasNormals && !mesh.normals.empty()) {
@@ -92,8 +69,8 @@ MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout)
             vertexData.insert(vertexData.end(), { bitangent.x, bitangent.y, bitangent.z });
         }
     }
-
     m_VAO = std::make_unique<VertexArray>();
+    m_VAO->Bind();
 
     std::span<const std::byte> vertexSpan{
         reinterpret_cast<const std::byte*>(vertexData.data()),
@@ -106,17 +83,7 @@ MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout)
     GLuint attributeIndex = 0;
 
     if (m_MeshLayout.hasPositions) {
-        size_t positionComponentCount = std::visit([](const auto& positionsVec) {
-            using VecType = typename std::decay_t<decltype(positionsVec)>::value_type;
-            if constexpr (std::is_same_v<VecType, glm::vec3>) {
-                return 3;
-            }
-            else {
-                return 2;
-            }
-            }, mesh.positions);
-
-        bufferLayout.Push<float>(static_cast<GLuint>(positionComponentCount), attributeIndex++);
+        bufferLayout.Push<float>(3, attributeIndex++); // vec3 positions
     }
 
     if (m_MeshLayout.hasNormals && !mesh.normals.empty()) {
@@ -153,19 +120,21 @@ MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout)
         m_IndexCount = m_VertexCount;
         m_BHasIndices = false;
     }
+
+    m_VAO->Unbind();
 }
 
 void MeshBuffer::Bind() const
 {
     m_VAO->Bind();
-    if (m_IBO) {
+    if (m_BHasIndices) {
         m_IBO->Bind();
     }
 }
 
 void MeshBuffer::Unbind() const
 {
-    if (m_IBO) {
+    if (m_BHasIndices) {
         m_IBO->Unbind();
     }
     m_VAO->Unbind();
@@ -174,7 +143,7 @@ void MeshBuffer::Unbind() const
 void MeshBuffer::Render() const
 {
     Bind();
-    if (m_IBO) {
+    if (m_BHasIndices) {
         GLCall(glDrawElements(GL_TRIANGLES, m_IndexCount, GL_UNSIGNED_INT, nullptr));
     }
     else {

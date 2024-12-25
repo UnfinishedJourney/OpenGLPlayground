@@ -1,8 +1,7 @@
 ﻿#include "Batch.h"
 #include "Utilities/Logger.h"
-#include <variant>
-#include <numeric>
 #include <algorithm>
+#include <numeric>
 
 Batch::Batch(const std::string& shaderName, const std::string& materialName, const MeshLayout& meshLayout)
     : m_ShaderName(shaderName),
@@ -14,8 +13,6 @@ Batch::Batch(const std::string& shaderName, const std::string& materialName, con
 Batch::~Batch() {
     // Resources are automatically cleaned up
 }
-
-
 
 void Batch::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject) {
     PROFILE_FUNCTION(Magenta); // Profile the entire function
@@ -56,12 +53,14 @@ void Batch::BuildBatches() {
 
     size_t positionComponentCount = 3;
     const auto& firstMesh = m_RenderObjects.front()->GetMesh();
-    std::visit([&](const auto& positionsVec) {
-        using VecType = typename std::decay_t<decltype(positionsVec)>::value_type;
-        if constexpr (std::is_same_v<VecType, glm::vec2>) {
-            positionComponentCount = 2;
-        }
-        }, firstMesh->positions);
+
+    // Directly access positions vector
+    if (!firstMesh->positions.empty()) {
+        // Assuming all meshes have the same position component count
+        // If positions are glm::vec3, then 3 components; glm::vec2 would have 2
+        // Here, assuming glm::vec3
+        positionComponentCount = 3; // Update accordingly if you have different types
+    }
 
     if (m_MeshLayout.hasPositions) {
         vertexBufferLayout.Push<float>(static_cast<GLuint>(positionComponentCount), attributeIndex++);
@@ -92,23 +91,14 @@ void Batch::BuildBatches() {
             const auto& mesh = ro->GetMesh();
             std::vector<LODInfo> lodInfos;
 
-            size_t vertexCount = std::visit([](const auto& positionsVec) {
-                return positionsVec.size();
-                }, mesh->positions);
+            size_t vertexCount = mesh->positions.size();
 
             // Fill vertex data
             for (size_t i = 0; i < vertexCount; ++i) {
                 // Positions
                 if (m_MeshLayout.hasPositions) {
-                    std::visit([&](const auto& positionsVec) {
-                        const auto& pos = positionsVec[i];
-                        if constexpr (std::is_same_v<std::decay_t<decltype(pos)>, glm::vec3>) {
-                            combinedVertexData.insert(combinedVertexData.end(), { pos.x, pos.y, pos.z });
-                        }
-                        else if constexpr (std::is_same_v<std::decay_t<decltype(pos)>, glm::vec2>) {
-                            combinedVertexData.insert(combinedVertexData.end(), { pos.x, pos.y });
-                        }
-                        }, mesh->positions);
+                    const glm::vec3& pos = mesh->positions[i];
+                    combinedVertexData.insert(combinedVertexData.end(), { pos.x, pos.y, pos.z });
                 }
 
                 // Normals
@@ -131,9 +121,9 @@ void Batch::BuildBatches() {
 
                 // Texture Coordinates
                 for (const auto& texType : m_MeshLayout.textureTypes) {
-                    const auto& uvMap = mesh->uvs.find(texType);
-                    if (uvMap != mesh->uvs.end() && i < uvMap->second.size()) {
-                        const glm::vec2& texCoord = uvMap->second[i];
+                    auto texIt = mesh->uvs.find(texType);
+                    if (texIt != mesh->uvs.end() && i < texIt->second.size()) {
+                        const glm::vec2& texCoord = texIt->second[i];
                         combinedVertexData.insert(combinedVertexData.end(), { texCoord.x, texCoord.y });
                     }
                     else {
@@ -192,7 +182,6 @@ void Batch::BuildBatches() {
         else {
             m_VBO->UpdateData(vertexSpan);
         }
-        // Profiling block ends here when scope closes
     }
 
     // Create/Update IBO
@@ -205,7 +194,6 @@ void Batch::BuildBatches() {
         else {
             m_IBO->UpdateData(indexSpan);
         }
-        // Profiling block ends here when scope closes
     }
 
     // Create/Update IndirectBuffer
@@ -222,7 +210,6 @@ void Batch::BuildBatches() {
         else {
             m_DrawCommandBuffer->UpdateData(drawCommandSpan);
         }
-        // Profiling block ends here when scope closes
     }
 
     // Setup VAO
@@ -232,7 +219,6 @@ void Batch::BuildBatches() {
         m_VAO->AddBuffer(*m_VBO, vertexBufferLayout);
         m_VAO->SetIndexBuffer(*m_IBO);
         m_VAO->Unbind();
-        // Profiling block ends here when scope closes
     }
 
     m_IsDirty = false;
@@ -241,7 +227,7 @@ void Batch::BuildBatches() {
 void Batch::Update() {
     PROFILE_FUNCTION(Purple);
     if (m_IsDirty) {
-        BuildBatch();
+        BuildBatches();
     }
 }
 

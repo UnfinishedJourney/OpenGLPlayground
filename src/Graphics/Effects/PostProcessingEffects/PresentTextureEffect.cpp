@@ -70,7 +70,7 @@ void PresentTextureEffect::Apply(GLuint inputTexture, GLuint outputFramebuffer)
     m_FullscreenQuadMeshBuffer->Bind();
 
 
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     m_FullscreenQuadMeshBuffer->Unbind();
 
     glEnable(GL_DEPTH_TEST);

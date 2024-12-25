@@ -1,30 +1,23 @@
 #include "Quad.h"
 
 Quad::Quad() {
-    // Initialize positions as std::vector<glm::vec2>
-    positions = std::vector<glm::vec2>{
-        { -1.0f,  1.0f },
-        { -1.0f, -1.0f },
-        {  1.0f, -1.0f },
-        { -1.0f,  1.0f },
-        {  1.0f, -1.0f },
-        {  1.0f,  1.0f }
+    positions = {
+        { -1.0f,  1.0f, 0.0f }, // Top-left
+        { -1.0f, -1.0f, 0.0f }, // Bottom-left
+        {  1.0f, -1.0f, 0.0f }, // Bottom-right
+        {  1.0f,  1.0f, 0.0f }  // Top-right
     };
 
-    // Initialize UVs for Albedo texture
     uvs[TextureType::Albedo] = {
-        { 0.0f, 1.0f },
-        { 0.0f, 0.0f },
-        { 1.0f, 0.0f },
-        { 0.0f, 1.0f },
-        { 1.0f, 0.0f },
-        { 1.0f, 1.0f }
+        { 0.0f, 1.0f }, // Top-left
+        { 0.0f, 0.0f }, // Bottom-left
+        { 1.0f, 0.0f }, // Bottom-right
+        { 1.0f, 1.0f }  // Top-right
     };
 
-    // Initialize indices for quad
     indices = {
-        0, 1, 2,
-        3, 4, 5
+        0, 1, 2, // First triangle
+        0, 2, 3  // Second triangle
     };
 
     if (lods.empty()) {
@@ -34,5 +27,9 @@ Quad::Quad() {
         lods.push_back(defaultLOD);
     }
 
-    // For 2D meshes, normals, tangents, bitangents might not be necessary
+    normals.reserve(4);
+    for (int i = 0; i < 4; ++i) {
+        normals.emplace_back(0.0f, 0.0f, 1.0f); // Assuming quad faces +Z
+    }
+
 }
