@@ -19,7 +19,8 @@ constexpr GLuint FRAME_DATA_BINDING_POINT = 0;
 constexpr GLuint LIGHTS_DATA_BINDING_POINT = 1;
 static const size_t MAX_LIGHTS = 32;
 
-Scene::Scene() {
+Scene::Scene()
+{
     m_Camera = std::make_shared<Camera>();
     m_FrameDataUBO = std::make_unique<UniformBuffer>(sizeof(FrameCommonData),
         FRAME_DATA_BINDING_POINT,
@@ -38,11 +39,13 @@ Scene::Scene() {
     m_FrustumCuller = std::make_shared<FrustumCuller>();
 }
 
-Scene::~Scene() {
+Scene::~Scene()
+{
     Clear();
 }
 
-void Scene::Clear() {
+void Scene::Clear()
+{
     m_LightsData.clear();
     m_StaticBatchManager.Clear();
     m_SceneGraph = SceneGraph();
@@ -53,7 +56,8 @@ void Scene::Clear() {
     m_LastShader.clear();
 }
 
-void Scene::SetCamera(const std::shared_ptr<Camera>& camera) {
+void Scene::SetCamera(const std::shared_ptr<Camera>& camera)
+{
     m_Camera = camera;
 }
 
@@ -68,22 +72,21 @@ bool Scene::LoadModelIntoScene(const std::string& modelName,
     BetterModelLoader loader;
     std::string modelPath = BetterModelLoader::GetModelPath(modelName);
     if (!loader.LoadModel(modelPath, meshLayout, matLayout, true, m_SceneGraph)) {
-        Logger::GetLogger()->error("Failed to load model {}", modelName);
+        Logger::GetLogger()->error("Failed to load model '{}'.", modelName);
         return false;
     }
 
-    // Retrieve loaded data
+    // Extract loaded data
     auto& data = loader.GetModelData();
     for (auto& md : data.meshesData) {
         MeshInfo info;
         info.mesh = md.mesh;
-        // The loader sets materialName in md.materialName. We store an integer index
-        // For now, just store 0 or find your real index
+        // Could do a real material index from md.materialName -> MaterialManager
         info.materialIndex = 0;
         m_LoadedMeshes.push_back(info);
     }
 
-    // Also store created material names
+    // Store created materials
     for (auto& matName : data.createdMaterials) {
         m_LoadedMaterials.push_back(matName);
     }
@@ -91,24 +94,26 @@ bool Scene::LoadModelIntoScene(const std::string& modelName,
     m_LastShader = defaultShaderName;
     m_StaticBatchesDirty = true;
 
-    // Resize node -> RenderObjects
+    // Resize node->RenderObjects
     m_NodeToRenderObjects.resize(m_SceneGraph.GetNodes().size());
 
     return true;
 }
 
-void Scene::AddLight(const LightData& light) {
+void Scene::AddLight(const LightData& light)
+{
     if (m_LightsData.size() >= MAX_LIGHTS) {
-        Logger::GetLogger()->warn("Max lights reached!");
+        Logger::GetLogger()->warn("Maximum number of lights reached!");
         return;
     }
     m_LightsData.push_back(light);
     UpdateLightsData();
 }
 
-void Scene::UpdateLightsData() {
+void Scene::UpdateLightsData()
+{
     if (m_LightsData.size() > MAX_LIGHTS) {
-        throw std::runtime_error("Too many lights!");
+        throw std::runtime_error("Too many lights in the scene!");
     }
     uint32_t numLights = (uint32_t)m_LightsData.size();
     m_LightsSSBO->SetData(&numLights, sizeof(glm::vec4), 0);
@@ -117,28 +122,33 @@ void Scene::UpdateLightsData() {
         sizeof(glm::vec4));
 }
 
-void Scene::BindLightSSBO() const {
+void Scene::BindLightSSBO() const
+{
     m_LightsSSBO->Bind();
 }
 
-void Scene::SetPostProcessingEffect(PostProcessingEffectType effect) {
+void Scene::SetPostProcessingEffect(PostProcessingEffectType effect)
+{
     m_PostProcessingEffect = effect;
 }
 
-PostProcessingEffectType Scene::GetPostProcessingEffect() const {
+PostProcessingEffectType Scene::GetPostProcessingEffect() const
+{
     return m_PostProcessingEffect;
 }
 
-void Scene::BuildStaticBatchesIfNeeded() {
+void Scene::BuildStaticBatchesIfNeeded()
+{
     if (!m_StaticBatchesDirty) return;
     m_StaticBatchesDirty = false;
 
+    // 1) Recompute transforms
     m_SceneGraph.RecalculateGlobalTransforms();
     auto& nodes = m_SceneGraph.GetNodes();
 
-    // For each node, create RenderObjects
+    // 2) For each node, create RenderObjects
     for (size_t i = 0; i < nodes.size(); i++) {
-        auto& node = nodes[i];
+        const auto& node = nodes[i];
         for (size_t k = 0; k < node.meshIndices.size(); k++) {
             int meshIdx = node.meshIndices[k];
             int matIdx = node.materialIndices[k];
@@ -160,22 +170,22 @@ void Scene::BuildStaticBatchesIfNeeded() {
                 transform
             );
 
-            // Keep track of it
             m_NodeToRenderObjects[i].push_back(ro);
-
-            // Add to batch manager
             m_StaticBatchManager.AddRenderObject(ro);
         }
     }
 
+    // 3) Build final batches
     m_StaticBatchManager.BuildBatches();
 }
 
-const std::vector<std::shared_ptr<Batch>>& Scene::GetStaticBatches() const {
+const std::vector<std::shared_ptr<Batch>>& Scene::GetStaticBatches() const
+{
     return m_StaticBatchManager.GetBatches();
 }
 
-void Scene::UpdateFrameDataUBO() const {
+void Scene::UpdateFrameDataUBO() const
+{
     FrameCommonData data;
     if (m_Camera) {
         data.view = m_Camera->GetViewMatrix();
@@ -190,48 +200,50 @@ void Scene::UpdateFrameDataUBO() const {
     m_FrameDataUBO->SetData(&data, sizeof(FrameCommonData));
 }
 
-void Scene::BindFrameDataUBO() const {
+void Scene::BindFrameDataUBO() const
+{
     m_FrameDataUBO->Bind();
 }
 
-void Scene::CullAndLODUpdate() {
+void Scene::CullAndLODUpdate()
+{
     if (!m_Camera) return;
 
-    // 1) Extract planes
+    // 1) Extract frustum planes
     glm::mat4 VP = m_Camera->GetProjectionMatrix() * m_Camera->GetViewMatrix();
     m_FrustumCuller->ExtractFrustumPlanes(VP);
 
     auto& nodes = m_SceneGraph.GetNodes();
 
-    // Hierarchical culling DFS
-    auto cullVisitor = [&](int nodeIndex) -> bool {
-        auto& node = nodes[nodeIndex];
-        glm::vec3 centerWorld = glm::vec3(node.globalTransform * glm::vec4(node.boundingSphereCenter, 1.f));
-        float radius = node.boundingSphereRadius;
+    //// 2) Hierarchical culling DFS
+    //auto cullVisitor = [&](int nodeIndex) -> bool {
+    //    const auto& node = nodes[nodeIndex];
+    //    glm::vec3 centerWorld = glm::vec3(node.globalTransform * glm::vec4(node.boundingSphereCenter, 1.f));
+    //    float radius = node.boundingSphereRadius;
 
-        bool visible = m_FrustumCuller->IsSphereVisible(centerWorld, radius);
-        if (!visible) {
-            // Cull all objects in this node
-            for (auto& ro : m_NodeToRenderObjects[nodeIndex]) {
-                // Cull in batch
-                m_StaticBatchManager.CullObject(ro);
-            }
-            return false; // skip children
-        }
+    //    bool visible = m_FrustumCuller->IsSphereVisible(centerWorld, radius);
+    //    if (!visible) {
+    //        // Cull entire node
+    //        for (auto& ro : m_NodeToRenderObjects[nodeIndex]) {
+    //            m_StaticBatchManager.CullObject(ro);
+    //        }
+    //        return false; // skip children
+    //    }
 
-        // If node is visible, we might do per-object culling too
-        for (auto& ro : m_NodeToRenderObjects[nodeIndex]) {
-            glm::vec3 roCenter = ro->GetWorldCenter();
-            float roRadius = ro->GetBoundingSphereRadius();
-            if (!m_FrustumCuller->IsSphereVisible(roCenter, roRadius)) {
-                m_StaticBatchManager.CullObject(ro);
-            }
-        }
-        return true; // proceed to children
-        };
+    //    // If node is visible, optionally do per-RO culling
+    //    for (auto& ro : m_NodeToRenderObjects[nodeIndex]) {
+    //        glm::vec3 roCenter = ro->GetWorldCenter();
+    //        float roRadius = ro->GetBoundingSphereRadius();
+    //        if (!m_FrustumCuller->IsSphereVisible(roCenter, roRadius)) {
+    //            m_StaticBatchManager.CullObject(ro);
+    //        }
+    //    }
+    //    return true;
+    //    };
 
-    m_SceneGraph.TraverseGraphDFS(cullVisitor);
+    //m_SceneGraph.TraverseGraphDFS(cullVisitor);
 
-    // 2) Now do LOD updates
+    // 3) LOD updates
+    //    The LODEvaluator maps each RO -> newLOD. We only do an update if changed.
     m_StaticBatchManager.UpdateLODs(m_Camera, *m_LODEvaluator);
 }

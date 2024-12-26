@@ -87,6 +87,7 @@ void Application::Init()
             testMenu = std::make_shared<TestMenu>(testManager);
             // Register tests
             testMenu->RegisterTest("Lights", []() { return std::make_shared<TestLights>(); });
+            testMenu->RegisterTest("ClearColor", []() { return std::make_shared<TestClearColor>(); });
             //testMenu->RegisterTest("Compute", []() { return std::make_shared<TestComputeShader>(); });
             //testMenu->RegisterTest("Helmet", []() { return std::make_shared<TestDamagedHelmet>(); });
             testMenu->RegisterTest("Bistro", []() { return std::make_shared<TestBistro>(); });

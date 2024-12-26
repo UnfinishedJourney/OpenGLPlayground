@@ -3,10 +3,13 @@
 #include "Resources/MaterialManager.h"
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
+#include "Utilities/ProfilerMacros.h"
 
-GeometryPass::GeometryPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene>& scene)
+GeometryPass::GeometryPass(std::shared_ptr<FrameBuffer> framebuffer,
+    const std::shared_ptr<Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
+    // Potentially store references or do setup
 }
 
 void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
@@ -17,74 +20,70 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
         PROFILE_BLOCK("Bind Framebuffer", Magenta);
         m_Framebuffer->Bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // Profiling block ends here
     }
 
     // 1) Build static batches if needed
     {
         PROFILE_BLOCK("Build Static Batches", Yellow);
         scene->BuildStaticBatchesIfNeeded();
-        // Profiling block ends here
     }
 
-    // 2) Cull + LOD update
+    // 2) Cull & LOD
     {
         PROFILE_BLOCK("Cull and LOD Update", Yellow);
         scene->CullAndLODUpdate();
-        // Profiling block ends here
     }
 
-    // 3) Update global UBO
+    // 3) Update frame data + bind
     {
         PROFILE_BLOCK("Update and Bind UBOs", Yellow);
         scene->UpdateFrameDataUBO();
         scene->BindFrameDataUBO();
         scene->BindLightSSBO();
-        // Profiling block ends here
     }
 
-    // 4) Render static batches
+    // 4) Render batches
     {
         PROFILE_BLOCK("Render Static Batches", Cyan);
         auto& materialManager = MaterialManager::GetInstance();
         auto& shaderManager = ShaderManager::GetInstance();
 
         const auto& staticBatches = scene->GetStaticBatches();
-        for (auto& batch : staticBatches) {
-            {
-                PROFILE_BLOCK("Render Batch", Purple);
-                if (batch->GetRenderObjects().empty()) continue;
+        for (auto& batch : staticBatches)
+        {
+            PROFILE_BLOCK("Render Batch", Purple);
+            if (batch->GetRenderObjects().empty()) continue;
 
-                auto shader = shaderManager.GetShader(batch->GetShaderName());
-                if (!shader) {
-                    Logger::GetLogger()->error("Shader '{}' not found.", batch->GetShaderName());
-                    continue;
-                }
-                shader->Bind();
-
-                materialManager.BindMaterial(batch->GetMaterialName(), shader);
-
-                // If all ROs in the batch share the same transform or are merged,
-                // we can use the transform from the first object (for typical static merges).
-                glm::mat4 modelMatrix = batch->GetRenderObjects().front()->GetTransform()->GetModelMatrix();
-                glm::mat3 normalMatrix = batch->GetRenderObjects().front()->GetTransform()->GetNormalMatrix();
-
-                shader->SetUniform("u_Model", modelMatrix);
-                shader->SetUniform("u_NormalMatrix", normalMatrix);
-
-                batch->Render();
-                // Profiling block ends here
+            // Grab shader
+            auto shader = shaderManager.GetShader(batch->GetShaderName());
+            if (!shader) {
+                Logger::GetLogger()->error("Shader '{}' not found.", batch->GetShaderName());
+                continue;
             }
-        }
-        // Profiling block ends here
-    }
+            shader->Bind();
 
-    // 5) (Optional) Render dynamic objects with single draws or another pass
+            // Material
+            materialManager.BindMaterial(batch->GetMaterialName(), shader);
+
+            // Model matrix from first object if all merged
+            auto roTransform = batch->GetRenderObjects().front()->GetTransform();
+            glm::mat4 modelMatrix = roTransform->GetModelMatrix();
+            glm::mat3 normalMatrix = roTransform->GetNormalMatrix();
+
+            shader->SetUniform("u_Model", modelMatrix);
+            shader->SetUniform("u_NormalMatrix", normalMatrix);
+
+            // Actually render
+            batch->Render();
+
+            // Unbind material if needed
+            materialManager.UnbindMaterial();
+        }
+    }
 
     {
         PROFILE_BLOCK("Unbind Framebuffer", Magenta);
         m_Framebuffer->Unbind();
-        // Profiling block ends here
     }
 }
 

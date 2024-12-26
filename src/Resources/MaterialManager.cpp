@@ -160,6 +160,5 @@ std::shared_ptr<Material> MaterialManager::CreateMaterial(const std::string& nam
     mat->SetParam(MaterialParamType::Diffuse, diffuse);
     mat->SetParam(MaterialParamType::Specular, specular);
     mat->SetParam(MaterialParamType::Shininess, shininess);
-    mat->SetParam(MaterialParamType::Emissive, emissive);
     return mat;
 }

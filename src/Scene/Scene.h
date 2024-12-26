@@ -1,4 +1,5 @@
 #pragma once
+
 #include <memory>
 #include <vector>
 #include <string>
@@ -57,7 +58,6 @@ public:
     const std::vector<std::string>& GetMaterials() const { return m_LoadedMaterials; }
     void SetBGrid(bool bGrid) { m_BGrid = bGrid; }
     bool GetBGrid() const { return m_BGrid; }
-
     void SetBDebugLights(bool bDebugLights) { m_BDebugLights = bDebugLights; }
     bool GetBDebugLights() const { return m_BDebugLights; }
 
@@ -74,6 +74,7 @@ private:
 
     PostProcessingEffectType m_PostProcessingEffect = PostProcessingEffectType::None;
 
+    // LOD & culling
     std::shared_ptr<LODEvaluator> m_LODEvaluator;
     std::shared_ptr<FrustumCuller> m_FrustumCuller;
 
@@ -84,6 +85,6 @@ private:
     std::vector<std::string> m_LoadedMaterials;
     std::string m_LastShader;
 
-    // Mapping: node index -> vector of newly created RenderObjects
+    // node index -> vector of RenderObjects
     std::vector<std::vector<std::shared_ptr<RenderObject>>> m_NodeToRenderObjects;
 };

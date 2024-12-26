@@ -11,8 +11,7 @@ enum class MaterialParamType : std::size_t {
     Diffuse = 1, // Bit 1
     Specular = 2, // Bit 2
     Shininess = 3, // Bit 3
-    Emissive = 4, // Bit 4
-    COUNT = 5  // Number of parameters
+    COUNT = 4  // Number of parameters
 };
 
 namespace std {
@@ -25,13 +24,17 @@ namespace std {
 }
 
 enum class TextureType : std::size_t {
-    Albedo = 0, // Bit 0
-    Normal = 1, // Bit 1
-    MetalRoughness = 2, // Bit 2
-    AO = 3, // Bit 3
-    Emissive = 4, // Bit 4
-    COUNT = 5  // Number of texture types
+    Albedo = 0,          // bit 0
+    Normal = 1,          // bit 1
+    MetalRoughness = 2,  // bit 2
+    AO = 3,              // bit 3
+    Emissive = 4,        // bit 4
+
+    BRDFLut = 5,         // NEW: dedicated slot for BRDF LUT
+
+    COUNT = 6
 };
+
 
 namespace std {
     template <>

@@ -21,132 +21,99 @@ Renderer::~Renderer()
 
 void Renderer::Initialize(int width, int height)
 {
+    // Potentially set up your GL states, etc.
+    m_Width = width;
+    m_Height = height;
 }
 
 void Renderer::RenderScene(const std::shared_ptr<Scene>& scene)
 {
-    PROFILE_FUNCTION(Blue); // Profile the RenderScene function
+    PROFILE_FUNCTION(Blue);
 
-    // Start profiling the entire RenderScene process
     {
         PROFILE_BLOCK("Clear Framebuffer", Yellow);
         Clear();
-        // Profiling block ends when the scope ends
     }
 
-    if (scene != m_CurrentScene)
-    {
-        {
-            PROFILE_BLOCK("Initialize New Scene Passes", Yellow);
-            m_CurrentScene = scene;
-            InitializePassesForScene(scene);
-            // Profiling block ends here
-        }
+    // If scene changed, re-init passes
+    if (scene != m_CurrentScene) {
+        PROFILE_BLOCK("Initialize New Scene Passes", Yellow);
+        m_CurrentScene = scene;
+        InitializePassesForScene(scene);
     }
 
     {
         PROFILE_BLOCK("Execute Render Passes", Yellow);
-        for (auto& pass : m_RenderPasses)
-        {
+        for (auto& pass : m_RenderPasses) {
             pass->Execute(scene);
         }
-        // Profiling block ends here
     }
 }
 
 void Renderer::Clear(float r, float g, float b, float a) const
 {
-    PROFILE_FUNCTION(Yellow); // Profile the Clear function
+    PROFILE_FUNCTION(Yellow);
     glClearColor(r, g, b, a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
 {
-    PROFILE_FUNCTION(Cyan); // Profile the InitializePassesForScene function
+    PROFILE_FUNCTION(Cyan);
 
-    // Start a profiling block for initializing render passes
+    m_RenderPasses.clear();
+
+    auto framebuffer = CreateFramebufferForScene(scene, m_Width, m_Height);
+
+    // 1) Geometry Pass
     {
-        PROFILE_BLOCK("Initialize Passes for Scene", Green);
-        m_RenderPasses.clear();
+        m_RenderPasses.push_back(std::make_unique<GeometryPass>(framebuffer, scene));
+    }
 
-        auto framebuffer = CreateFramebufferForScene(scene, m_Width, m_Height);
+    // 2) Optional Grid
+    if (scene->GetBGrid()) {
+        m_RenderPasses.push_back(std::make_unique<GridPass>(framebuffer, scene));
+    }
 
-        {
-            PROFILE_BLOCK("Add GeometryPass", Green);
-            m_RenderPasses.push_back(std::make_unique<GeometryPass>(framebuffer, scene));
-            // Profiling block ends here
-        }
+    // 3) Optional debug lights
+    if (scene->GetBDebugLights()) {
+        m_RenderPasses.push_back(std::make_unique<DebugLightsPass>(framebuffer, scene));
+    }
 
-        if (scene->GetBGrid())
-        {
-            {
-                PROFILE_BLOCK("Add GridPass", Green);
-                m_RenderPasses.push_back(std::make_unique<GridPass>(framebuffer, scene));
-                // Profiling block ends here
-            }
-        }
-
-        //if (scene->GetTerrainHeightMap())
-        //{
-        //    {
-        //        PROFILE_BLOCK("Add TerrainPass", Green);
-        //        m_RenderPasses.push_back(std::make_unique<TerrainPass>(framebuffer, scene));
-        //        // Profiling block ends here
-        //    }
-        //}
-
-        if (scene->GetBDebugLights())
-        {
-            {
-                PROFILE_BLOCK("Add DebugLightsPass", Green);
-                m_RenderPasses.push_back(std::make_unique<DebugLightsPass>(framebuffer, scene));
-                // Profiling block ends here
-            }
-        }
-
-        {
-            PROFILE_BLOCK("Add PostProcessingPass", Green);
-            auto ppPass = std::make_unique<PostProcessingPass>(framebuffer, scene);
-            auto& effectManager = EffectsManager::GetInstance();
-            auto edgeEffect = effectManager.GetEffect(scene->GetPostProcessingEffect());
-            ppPass->SetPostProcessingEffect(edgeEffect);
-            m_RenderPasses.push_back(std::move(ppPass));
-            // Profiling block ends here
-        }
-        // Profiling block ends here
+    // 4) Post-processing
+    {
+        auto ppPass = std::make_unique<PostProcessingPass>(framebuffer, scene);
+        auto& effectManager = EffectsManager::GetInstance();
+        auto effect = effectManager.GetEffect(scene->GetPostProcessingEffect());
+        ppPass->SetPostProcessingEffect(effect);
+        m_RenderPasses.push_back(std::move(ppPass));
     }
 }
 
-std::shared_ptr<FrameBuffer> Renderer::CreateFramebufferForScene(const std::shared_ptr<Scene>& scene, int width, int height)
+std::shared_ptr<FrameBuffer> Renderer::CreateFramebufferForScene(const std::shared_ptr<Scene>& scene,
+    int width, int height)
 {
-    PROFILE_FUNCTION(Yellow); // Profile the CreateFramebufferForScene function
+    PROFILE_FUNCTION(Yellow);
 
     std::vector<FrameBufferTextureAttachment> colorAttachments = {
-        { GL_COLOR_ATTACHMENT0, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE }       // Will need more attachments later
+        { GL_COLOR_ATTACHMENT0, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE }
     };
 
     auto framebuffer = std::make_shared<FrameBuffer>(width, height, colorAttachments, true);
-
     return framebuffer;
 }
 
 void Renderer::OnWindowResize(int width, int height)
 {
-    PROFILE_FUNCTION(Green); // Profile the OnWindowResize function
+    PROFILE_FUNCTION(Green);
     m_Width = width;
     m_Height = height;
 
-    if (m_CurrentScene)
-    {
-        {
-            PROFILE_BLOCK("Recreate Framebuffer on Resize", Yellow);
-            auto framebuffer = CreateFramebufferForScene(m_CurrentScene, m_Width, m_Height);
-            for (auto& pass : m_RenderPasses)
-            {
-                pass->UpdateFramebuffer(framebuffer);
-            }
-            // Profiling block ends here
+    if (m_CurrentScene) {
+        PROFILE_BLOCK("Recreate Framebuffer on Resize", Yellow);
+        auto framebuffer = CreateFramebufferForScene(m_CurrentScene, m_Width, m_Height);
+        for (auto& pass : m_RenderPasses) {
+            pass->UpdateFramebuffer(framebuffer);
         }
     }
 
@@ -154,6 +121,5 @@ void Renderer::OnWindowResize(int width, int height)
         PROFILE_BLOCK("Handle Effects Manager Resize", Yellow);
         auto& effectManager = EffectsManager::GetInstance();
         effectManager.OnWindowResize(m_Width, m_Height);
-        // Profiling block ends here
     }
 }

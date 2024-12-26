@@ -45,7 +45,7 @@ void GridPass::Execute(const std::shared_ptr<Scene>& scene)
 
     // Render the grid mesh
     m_GridMeshBuffer->Bind();
-    GLCall(glDrawArrays(GL_TRIANGLES, 0, m_GridMeshBuffer->GetVertexCount()));
+    GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
     m_GridMeshBuffer->Unbind();
 
     // Reset render states

@@ -3,9 +3,7 @@
 #include "RenderPass.h"
 #include "Graphics/Buffers/FrameBuffer.h"
 #include "Scene/Scene.h"
-#include "Utilities/ProfilerMacros.h"
 
-// GeometryPass renders the scene's geometry into the framebuffer
 class GeometryPass : public RenderPass
 {
 public:
@@ -17,5 +15,4 @@ public:
 
 private:
     std::shared_ptr<FrameBuffer> m_Framebuffer;
-    //void InitializeSceneResources(const std::shared_ptr<Scene>& scene);
 };
