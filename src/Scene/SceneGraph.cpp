@@ -9,7 +9,6 @@ int SceneGraph::AddNode(int parent, const std::string& name)
     int nodeIndex = (int)m_Nodes.size();
     m_Nodes.push_back(node);
 
-    // Hook it under the parent if valid
     if (parent >= 0 && parent < (int)m_Nodes.size()) {
         m_Nodes[parent].children.push_back(nodeIndex);
     }
@@ -44,10 +43,8 @@ void SceneGraph::AddMeshReference(int nodeIndex, int meshIndex, int materialInde
 
 void SceneGraph::RecalculateGlobalTransforms()
 {
-    // For each root node (parent == -1), do a DFS
     for (int i = 0; i < (int)m_Nodes.size(); i++) {
         if (m_Nodes[i].parent == -1) {
-            // This is a root
             computeGlobalTransformRecursive(i, glm::mat4(1.0f));
         }
     }
@@ -58,7 +55,6 @@ void SceneGraph::computeGlobalTransformRecursive(int nodeIndex, const glm::mat4&
     auto& node = m_Nodes[nodeIndex];
     node.globalTransform = parentGlobal * node.localTransform;
 
-    // Recurse children
     for (auto childIdx : node.children) {
         computeGlobalTransformRecursive(childIdx, node.globalTransform);
     }
@@ -66,8 +62,28 @@ void SceneGraph::computeGlobalTransformRecursive(int nodeIndex, const glm::mat4&
 
 void SceneGraph::TraverseGraph(std::function<void(int nodeIndex)> visitor)
 {
-    // Simple loop
     for (int i = 0; i < (int)m_Nodes.size(); i++) {
         visitor(i);
+    }
+}
+
+// DFS with early-out. preVisitor returns false => skip children.
+void SceneGraph::TraverseGraphDFS(std::function<bool(int)> preVisitor)
+{
+    for (int i = 0; i < (int)m_Nodes.size(); i++) {
+        if (m_Nodes[i].parent == -1) {
+            dfsCulling(i, preVisitor);
+        }
+    }
+}
+
+void SceneGraph::dfsCulling(int nodeIndex, std::function<bool(int)> preVisitor)
+{
+    if (!preVisitor(nodeIndex)) {
+        // If preVisitor says "false," skip children
+        return;
+    }
+    for (auto child : m_Nodes[nodeIndex].children) {
+        dfsCulling(child, preVisitor);
     }
 }

@@ -1,17 +1,31 @@
+#pragma once
 #include <glm/glm.hpp>
-#include <memory>
+#include <array>
 
+class Camera;
+
+/**
+ * Simple frustum culler that extracts 6 planes (left, right, bottom, top, near, far)
+ * from the camera’s projection * view matrix. Then does sphere-plane tests.
+ */
 class FrustumCuller {
 public:
-    // For a more advanced approach, you'd extract planes from the camera's projection/view matrix.
-    // For simplicity, let's define a helper function:
-    bool IsSphereVisible(const glm::vec3& center, float radius, const std::shared_ptr<Camera>& camera) const {
-        // Basic approach: check if (center) is within some distance from the camera
-        // or do a real frustum-plane intersection test. We'll do a simple distance check:
-        float distance = glm::distance(camera->GetPosition(), center);
-        // If the distance - radius is beyond some huge range, we cull. E.g. 1000
-        // (In real code, you'd extract planes from the camera frustum)
-        float farPlane = camera->GetFarPlane();
-        return (distance - radius) < farPlane;
+    // Call once per frame to update planes
+    void ExtractFrustumPlanes(const glm::mat4& projViewMatrix);
+
+    // Return true if a bounding sphere is inside (or intersects) the frustum
+    bool IsSphereVisible(const glm::vec3& center, float radius) const;
+
+private:
+    // Each plane: ax + by + cz + d = 0
+    struct Plane {
+        float a, b, c, d;
+    };
+
+    std::array<Plane, 6> m_Planes;
+
+    void NormalizePlane(Plane& plane);
+    float PlaneDistance(const Plane& plane, const glm::vec3& point) const {
+        return plane.a * point.x + plane.b * point.y + plane.c * point.z + plane.d;
     }
 };
