@@ -77,7 +77,7 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const {
         case TextureType::Emissive:       uniformName = "textureEmissive";      break;
         default:                          uniformName = "textureUnknown";       break;
         }
-        shader->SetUniform(uniformName, static_cast<int>(unit));
+        //shader->SetUniform(uniformName, static_cast<int>(unit));
     }
 
     // Bind custom textures

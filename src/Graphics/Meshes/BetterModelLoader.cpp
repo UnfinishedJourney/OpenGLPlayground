@@ -35,21 +35,25 @@ bool BetterModelLoader::LoadModel(
     bool centerModel,
     SceneGraph& sceneGraph)
 {
-    // Clear old data
     m_Data.meshesData.clear();
     m_Data.createdMaterials.clear();
     m_FallbackMaterialCounter = 0;
 
-    // Setup Assimp Importer
     Assimp::Importer importer;
     unsigned int importFlags = aiProcess_JoinIdenticalVertices |
         aiProcess_Triangulate |
-        aiProcess_GenSmoothNormals |
-        aiProcess_CalcTangentSpace |
         aiProcess_RemoveRedundantMaterials |
         aiProcess_FindInvalidData |
-        aiProcess_OptimizeMeshes |
-        aiProcess_ConvertToLeftHanded; // Adjust based on your engine's coordinate system
+        aiProcess_OptimizeMeshes; 
+
+
+    if (meshLayout.hasNormals) {
+        importFlags |= aiProcess_GenSmoothNormals;
+    }
+
+    if (meshLayout.hasTangents) {
+        importFlags |= aiProcess_CalcTangentSpace;
+    }
 
     const aiScene* scene = importer.ReadFile(filePath, importFlags);
     if (!scene || !scene->HasMeshes())
@@ -58,16 +62,11 @@ bool BetterModelLoader::LoadModel(
         return false;
     }
 
-    // Determine the directory path for textures
     std::string directory = std::filesystem::path(filePath).parent_path().string();
-
-    // 1) Load the scene’s materials
     loadSceneMaterials(scene, matLayout, directory);
 
-    // 2) Traverse and process nodes to build the SceneGraph
     processAssimpNode(scene, scene->mRootNode, meshLayout, matLayout, directory, sceneGraph, -1);
 
-    // 3) If centerModel == true, shift geometry so the bounding box is centered at origin
     if (centerModel)
     {
         centerScene(sceneGraph);
@@ -84,19 +83,16 @@ bool BetterModelLoader::LoadModel(
 
 void BetterModelLoader::loadSceneMaterials(const aiScene* scene, const MaterialLayout& matLayout, const std::string& directory)
 {
-    // Iterate through each material in the scene and create engine materials
     for (unsigned int i = 0; i < scene->mNumMaterials; i++)
     {
         aiMaterial* aiMat = scene->mMaterials[i];
         std::string matName = createMaterialForAssimpMat(aiMat, matLayout, directory);
-        // Store the material name
         m_Data.createdMaterials.push_back(matName);
     }
 }
 
 std::string BetterModelLoader::createMaterialForAssimpMat(const aiMaterial* aiMat, const MaterialLayout& matLayout, const std::string& directory)
 {
-    // Retrieve material name from Assimp
     aiString ainame;
     if (AI_SUCCESS != aiMat->Get(AI_MATKEY_NAME, ainame))
     {
@@ -104,10 +100,8 @@ std::string BetterModelLoader::createMaterialForAssimpMat(const aiMaterial* aiMa
     }
     std::string matName = ainame.C_Str();
 
-    // Ensure the material name is unique
     matName = ensureUniqueMaterialName(matName);
 
-    // Check if the material already exists in the MaterialManager
     auto existingMat = MaterialManager::GetInstance().GetMaterialByName(matName);
     if (existingMat)
     {
@@ -115,7 +109,6 @@ std::string BetterModelLoader::createMaterialForAssimpMat(const aiMaterial* aiMa
         return existingMat->GetName();
     }
 
-    // Create a new Material instance
     auto mat = std::make_shared<Material>();
     mat->SetName(matName);
 
@@ -125,7 +118,6 @@ std::string BetterModelLoader::createMaterialForAssimpMat(const aiMaterial* aiMa
     // Load and assign textures to the material
     loadMaterialTextures(aiMat, mat, matLayout, directory);
 
-    // Add the newly created material to the MaterialManager
     MaterialManager::GetInstance().AddMaterial(matName, matLayout, mat);
 
     return matName;
@@ -145,7 +137,6 @@ std::string BetterModelLoader::ensureUniqueMaterialName(const std::string& baseN
 
 void BetterModelLoader::loadMaterialProperties(const aiMaterial* aiMat, std::shared_ptr<Material> mat, const MaterialLayout& matLayout)
 {
-    // Load ambient color
     if (matLayout.params.count(MaterialParamType::Ambient))
     {
         aiColor3D color(0.1f, 0.1f, 0.1f);  // Default ambient color
@@ -153,7 +144,6 @@ void BetterModelLoader::loadMaterialProperties(const aiMaterial* aiMat, std::sha
         mat->SetParam(MaterialParamType::Ambient, glm::vec3(color.r, color.g, color.b));
     }
 
-    // Load diffuse color
     if (matLayout.params.count(MaterialParamType::Diffuse))
     {
         aiColor3D color(0.5f, 0.5f, 0.5f);  // Default diffuse color
@@ -161,7 +151,6 @@ void BetterModelLoader::loadMaterialProperties(const aiMaterial* aiMat, std::sha
         mat->SetParam(MaterialParamType::Diffuse, glm::vec3(color.r, color.g, color.b));
     }
 
-    // Load specular color
     if (matLayout.params.count(MaterialParamType::Specular))
     {
         aiColor3D color(0.5f, 0.5f, 0.5f);  // Default specular color
@@ -169,7 +158,6 @@ void BetterModelLoader::loadMaterialProperties(const aiMaterial* aiMat, std::sha
         mat->SetParam(MaterialParamType::Specular, glm::vec3(color.r, color.g, color.b));
     }
 
-    // Load shininess
     if (matLayout.params.count(MaterialParamType::Shininess))
     {
         float shininessVal = 32.0f;  // Default shininess
@@ -183,10 +171,8 @@ void BetterModelLoader::loadMaterialTextures(const aiMaterial* aiMat,
     const MaterialLayout& matLayout,
     const std::string& directory)
 {
-    // Load textures using LoadMeshTextures
     BetterMeshTextures meshTextures = LoadMeshTextures(aiMat, directory);
 
-    // Assign textures to the material
     for (const auto& [texType, texture] : meshTextures.textures) {
         material->SetTexture(texType, texture);
     }
@@ -196,7 +182,7 @@ BetterMeshTextures BetterModelLoader::LoadMeshTextures(const aiMaterial* materia
 {
     BetterMeshTextures result;
 
-    // Mapping Assimp texture types to your engine's TextureType
+    // Mapping Assimp texture types, need to check why some dependencies are like that
     std::unordered_map<aiTextureType, TextureType> aiToMyTextureType = {
         { aiTextureType_DIFFUSE, TextureType::Albedo },
         { aiTextureType_NORMALS, TextureType::Normal },
@@ -213,10 +199,9 @@ BetterMeshTextures BetterModelLoader::LoadMeshTextures(const aiMaterial* materia
                 std::string filename = std::filesystem::path(str.C_Str()).filename().string();
                 std::string fullPath = (std::filesystem::path(directory) / filename).string();
 
-                // Generate a unique texture name (you can customize this as needed)
+                // Generate a unique texture name
                 std::string textureName = filename; // Alternatively, use matName + "_" + filename for uniqueness
 
-                // Load texture via TextureManager
                 auto texture = TextureManager::GetInstance().LoadTexture(textureName, fullPath);
                 if (!texture) {
                     Logger::GetLogger()->error("Failed to load texture '{}' for type '{}'.", fullPath, static_cast<int>(myType));
@@ -231,6 +216,8 @@ BetterMeshTextures BetterModelLoader::LoadMeshTextures(const aiMaterial* materia
 
     return result;
 }
+
+//need to think about combining scene graphs
 
 void BetterModelLoader::processAssimpNode(
     const aiScene* scene,
@@ -258,7 +245,7 @@ void BetterModelLoader::processAssimpNode(
         processAssimpMesh(scene, aimesh, meshLayout, meshIndex, directory);
 
         // Retrieve the processed mesh data
-        auto& meshData = m_Data.meshesData.back(); // Assuming processAssimpMesh adds to m_Data.meshesData
+        auto& meshData = m_Data.meshesData.back(); 
 
         // Find the material name
         int matIndex = aimesh->mMaterialIndex;
@@ -304,6 +291,7 @@ std::string BetterModelLoader::createFallbackMaterialName()
     return "FallbackMaterial_" + std::to_string(++m_FallbackMaterialCounter);
 }
 
+//don't like that at all
 std::shared_ptr<Material> BetterModelLoader::createFallbackMaterial(const std::string& name, const MaterialLayout& matLayout)
 {
     auto fallbackMat = std::make_shared<Material>();
@@ -349,7 +337,6 @@ void BetterModelLoader::processAssimpMesh(
     // Create a new Mesh instance
     auto newMesh = std::make_shared<Mesh>();
 
-    // 1) Load positions
     if (meshLayout.hasPositions && aimesh->HasPositions())
     {
         newMesh->positions.reserve(aimesh->mNumVertices);
@@ -359,13 +346,12 @@ void BetterModelLoader::processAssimpMesh(
                 aimesh->mVertices[v].y,
                 aimesh->mVertices[v].z);
             newMesh->positions.push_back(pos);
-            // Update bounding box
+
             newMesh->minBounds = glm::min(newMesh->minBounds, pos);
             newMesh->maxBounds = glm::max(newMesh->maxBounds, pos);
         }
     }
 
-    // 2) Load normals
     if (meshLayout.hasNormals && aimesh->HasNormals())
     {
         newMesh->normals.reserve(aimesh->mNumVertices);
@@ -378,7 +364,6 @@ void BetterModelLoader::processAssimpMesh(
         }
     }
 
-    // 3) Load tangents
     if (meshLayout.hasTangents && aimesh->HasTangentsAndBitangents())
     {
         newMesh->tangents.reserve(aimesh->mNumVertices);
@@ -391,7 +376,6 @@ void BetterModelLoader::processAssimpMesh(
         }
     }
 
-    // 4) Load bitangents
     if (meshLayout.hasBitangents && aimesh->HasTangentsAndBitangents())
     {
         newMesh->bitangents.reserve(aimesh->mNumVertices);
@@ -404,7 +388,7 @@ void BetterModelLoader::processAssimpMesh(
         }
     }
 
-    // 5) Load UVs
+    //need to load different uv sets
     if (!meshLayout.textureTypes.empty() && aimesh->HasTextureCoords(0))
     {
         std::vector<glm::vec2> uvSet(aimesh->mNumVertices);
@@ -415,31 +399,28 @@ void BetterModelLoader::processAssimpMesh(
                 aimesh->mTextureCoords[0][v].y
             );
         }
-        // Assign the same UV set to all requested texture types
+
         for (auto textureType : meshLayout.textureTypes)
         {
             newMesh->uvs[textureType] = uvSet;
         }
     }
 
-    // 6) Load indices
+
     std::vector<uint32_t> srcIndices;
     srcIndices.reserve(aimesh->mNumFaces * 3);
     for (unsigned f = 0; f < aimesh->mNumFaces; f++)
     {
         const aiFace& face = aimesh->mFaces[f];
-        // Assuming the mesh is triangulated
         for (unsigned idx = 0; idx < face.mNumIndices; idx++)
         {
             srcIndices.push_back(face.mIndices[idx]);
         }
     }
 
-    // 7) Setup bounding sphere
     newMesh->localCenter = 0.5f * (newMesh->minBounds + newMesh->maxBounds);
     newMesh->boundingSphereRadius = glm::length(newMesh->maxBounds - newMesh->localCenter);
 
-    // 8) LOD generation
     std::vector<float> floatPositions;
     floatPositions.reserve(newMesh->positions.size() * 3);
     for (const auto& pos : newMesh->positions)
@@ -452,7 +433,6 @@ void BetterModelLoader::processAssimpMesh(
     std::vector<std::vector<uint32_t>> lodIndices;
     generateLODs(srcIndices, floatPositions, lodIndices);
 
-    // 9) Populate Mesh::indices and Mesh::lods
     newMesh->indices.clear();
     newMesh->lods.clear();
     for (const auto& singleLod : lodIndices)
@@ -464,10 +444,8 @@ void BetterModelLoader::processAssimpMesh(
         newMesh->lods.push_back(lod);
     }
 
-    // 10) Store the mesh
     BetterModelMeshData record;
     record.mesh = newMesh;
-    // Material name is handled in processAssimpNode
     m_Data.meshesData.push_back(record);
 }
 

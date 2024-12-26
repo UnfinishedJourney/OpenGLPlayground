@@ -9,22 +9,15 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-// Include GLM extensions
-#include <glm/gtc/matrix_transform.hpp> // For glm::translate
+#include <glm/gtc/matrix_transform.hpp> 
 
-// Forward Declarations
-struct aiScene;
-struct aiMesh;
-struct aiMaterial;
-struct aiNode;
 
-// Forward declare your engine classes
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Meshes/MeshLayout.h"
 #include "Graphics/Materials/MaterialLayout.h"
 #include "Graphics/Materials/Material.h"
 #include "Graphics/Materials/MaterialParamType.h"
-#include "Graphics/Textures/ITexture.h" // Assuming ITexture is the interface for textures
+#include "Graphics/Textures/ITexture.h" 
 #include "Scene/SceneGraph.h"
 #include "Utilities/Logger.h"
 #include "Resources/MaterialManager.h"
