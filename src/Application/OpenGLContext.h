@@ -4,6 +4,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+/**
+ * @brief Responsible for initializing and cleaning up the OpenGL/GLFW context.
+ */
 class GLContext
 {
 public:

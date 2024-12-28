@@ -1,26 +1,37 @@
 #pragma once
 
 #include <vector>
-#include <functional>
 #include <string>
+#include <functional>
+#include <memory>
+
 #include "TestManager.h"
 
-class TestMenu {
+/**
+ * @brief Menu for registering available tests and displaying them in ImGui.
+ */
+class TestMenu
+{
 public:
     explicit TestMenu(TestManager& testManager);
 
-    void OnImGuiRender();
     void RegisterTest(const std::string& name, std::function<std::shared_ptr<Test>()> createFunc);
+    void OnImGuiRender();
 
 private:
     TestManager& m_TestManager;
     std::vector<std::pair<std::string, std::function<std::shared_ptr<Test>()>>> m_Tests;
 };
 
-class TestMenuTest : public Test {
+/**
+ * @brief A specialized Test that displays the TestMenu (hence letting user select a different test).
+ */
+class TestMenuTest : public Test
+{
 public:
     explicit TestMenuTest(std::weak_ptr<TestMenu> testMenu);
     ~TestMenuTest() override;
+
     void OnEnter() override;
     void OnExit() override;
     void OnUpdate(float deltaTime) override;

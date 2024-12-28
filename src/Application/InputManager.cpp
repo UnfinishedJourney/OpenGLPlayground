@@ -4,7 +4,7 @@
 void InputManager::SetKey(int key, bool isPressed)
 {
     m_KeysCurrent[key] = isPressed;
-    Logger::GetLogger()->debug("Key {} is now {}.", key, isPressed ? "Pressed" : "Released");
+    Logger::GetLogger()->debug("Key {} is {}", key, (isPressed ? "Pressed" : "Released"));
 }
 
 bool InputManager::IsKeyPressed(int key) const

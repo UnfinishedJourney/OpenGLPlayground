@@ -3,7 +3,7 @@
 #include <unordered_map>
 
 /**
- * @brief Manages the current and previous state of keys to detect presses, releases, etc.
+ * @brief Manages current and previous key states for input detection.
  */
 class InputManager
 {

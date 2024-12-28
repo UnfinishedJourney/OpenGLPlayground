@@ -1,7 +1,7 @@
 #pragma once
 
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 enum class CameraMovement {
     Forward,
@@ -17,20 +17,21 @@ class Camera
 public:
     Camera(const glm::vec3& position = glm::vec3(0.0f, 0.0f, 8.0f),
         const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f),
-        float yaw = -90.0f, float pitch = 0.0f);
+        float yaw = -90.0f,
+        float pitch = 0.0f);
 
     glm::mat4 GetViewMatrix() const;
     glm::mat4 GetProjectionMatrix() const;
 
     float GetFOV() const;
-    void SetFOV(float fov);
+    void  SetFOV(float fov);
 
-    void Move(CameraMovement direction, float deltaTime);
-    void Rotate(float xOffset, float yOffset);
-    void SetSpeed(float speed);
+    void  Move(CameraMovement direction, float deltaTime);
+    void  Rotate(float xOffset, float yOffset);
+    void  SetSpeed(float speed);
 
-    void UpdateFOV();
-    void UpdateProjectionMatrix(float aspectRatio);
+    void  UpdateFOV();
+    void  UpdateProjectionMatrix(float aspectRatio);
 
     glm::vec3 GetPosition() const { return m_Position; }
     glm::vec3& GetPositionRef() { return m_Position; }
@@ -38,14 +39,12 @@ public:
     glm::vec3 GetUp() const { return m_Up; }
 
     float GetNearPlane() const;
-
-    void SetNearPlane(float nearPlane);
+    void  SetNearPlane(float nearPlane);
 
     float GetFarPlane() const;
+    void  SetFarPlane(float farPlane);
 
-    void SetFarPlane(float farPlane);
-
-    void SetPosition(glm::vec3 pos) { m_Position = pos; }
+    void  SetPosition(const glm::vec3& pos) { m_Position = pos; }
 
 private:
     void UpdateCameraVectors();
@@ -63,5 +62,6 @@ private:
     float m_MouseSensitivity;
     float m_NearPlane;
     float m_FarPlane;
+
     glm::mat4 m_ProjectionMatrix;
 };

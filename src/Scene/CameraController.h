@@ -1,12 +1,13 @@
 #pragma once
 
-#include "Camera.h"
-#include "Application/InputManager.h"
 #include <memory>
+#include "Application/InputManager.h"
+#include "Scene/Camera.h"
 
-class CameraController {
+class CameraController
+{
 public:
-    CameraController(InputManager& inputManager);
+    explicit CameraController(InputManager& inputManager);
 
     void Update(float deltaTime);
     void ProcessMouseMovement(float xpos, float ypos);
@@ -14,16 +15,18 @@ public:
 
     void SetSpeed(float speed);
     void Reset();
-
     void UpdateFOV();
+
     void SetCamera(const std::shared_ptr<Camera>& camera) { m_Camera = camera; }
-    bool HasCamera() const { return m_Camera != nullptr; }
+    bool HasCamera() const { return (m_Camera != nullptr); }
 
 private:
-    std::shared_ptr<Camera> m_Camera; 
+    std::shared_ptr<Camera> m_Camera;
     InputManager& m_InputManager;
+
     float m_Sensitivity;
     float m_Speed;
-    float m_LastX, m_LastY;
-    bool m_FirstMouse;
+    float m_LastX;
+    float m_LastY;
+    bool  m_FirstMouse;
 };
