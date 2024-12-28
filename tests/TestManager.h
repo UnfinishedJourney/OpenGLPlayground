@@ -7,17 +7,23 @@
 #include "Test.h"
 #include "Scene/Camera.h"
 
-class TestManager {
+/**
+ * @brief Manages the currently active Test and a registry of all available Tests.
+ */
+class TestManager
+{
 public:
     TestManager();
     ~TestManager();
 
     void RegisterTest(const std::string& name, std::function<std::shared_ptr<Test>()> createFunc);
     void SwitchTest(const std::string& testName);
+
     void UpdateCurrentTest(float deltaTime);
     void RenderCurrentTest();
     void RenderCurrentTestImGui();
     void HandleWindowResize(int width, int height);
+
     std::shared_ptr<Camera> GetCurrentCamera() const;
 
 private:
