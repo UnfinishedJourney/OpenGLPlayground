@@ -4,29 +4,26 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <glm/glm.hpp>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
-#include <glm/gtc/matrix_transform.hpp> 
-
-
+#include <assimp/scene.h>       // for aiScene, aiMesh, aiMaterial
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Meshes/MeshLayout.h"
 #include "Graphics/Materials/MaterialLayout.h"
 #include "Graphics/Materials/Material.h"
 #include "Graphics/Materials/MaterialParamType.h"
-#include "Graphics/Textures/ITexture.h" 
+#include "Graphics/Textures/ITexture.h"
+#include "Graphics/Textures/TextureData.h"
 #include "Scene/SceneGraph.h"
 #include "Utilities/Logger.h"
 #include "Resources/MaterialManager.h"
 #include "Resources/TextureManager.h"
-#include "Graphics/Textures/TextureData.h"
+
+// Include the MeshInfo definition so we can reference it if needed
+#include "MeshInfo.h"
+
 /**
- * A container for the final loaded data:
- *  - The meshes
- *  - A parallel array of material names
+ * @brief Container for a single mesh plus the associated material name.
  */
 struct BetterModelMeshData
 {
@@ -35,124 +32,95 @@ struct BetterModelMeshData
 };
 
 /**
- * This struct holds the final data loaded by the loader:
+ * @brief Holds all final data loaded by BetterModelLoader: the meshes and any created materials.
  */
 struct BetterModelData
 {
-    std::vector<BetterModelMeshData> meshesData;      ///< Each mesh + the associated material name
-    std::vector<std::string>         createdMaterials; ///< All unique material names created
+    std::vector<BetterModelMeshData> meshesData;
+    std::vector<std::string>         createdMaterials;
 };
 
 /**
- * Represents textures associated with a mesh, categorized by texture type.
+ * @brief Holds textures loaded for a single mesh, categorized by TextureType.
  */
-struct BetterMeshTextures {
+struct BetterMeshTextures
+{
     std::unordered_map<TextureType, std::shared_ptr<ITexture>> textures;
 };
 
-struct MeshTextures {
-    std::unordered_map<TextureType, TextureData> textureData;
-};
-
-struct MeshInfo {
-    MeshTextures meshTextures;
-    std::shared_ptr<Mesh> mesh;
-    int materialIndex = -1;
-};
-
-struct MaterialInfo {
-    std::string name;
-    // Possibly store texture file paths or additional parameters
-};
-
-
-/**
- * The BetterModelLoader class is responsible for loading 3D models using Assimp,
- * processing their meshes, materials, and textures, and integrating them into the SceneGraph.
- */
-class BetterModelLoader {
+class BetterModelLoader
+{
 public:
     BetterModelLoader();
     ~BetterModelLoader();
 
-    /**
-     * Loads a model from the given file path into the provided SceneGraph.
-     * @param filePath Path to the model file.
-     * @param meshLayout Defines the mesh data to be loaded.
-     * @param matLayout Defines the material data to be loaded.
-     * @param centerModel If true, centers the model at the origin.
-     * @param sceneGraph The SceneGraph to populate with nodes.
-     * @return True if loading is successful, false otherwise.
-     */
-    bool LoadModel(
-        const std::string& filePath,
+    bool LoadModel(const std::string& filePath,
         const MeshLayout& meshLayout,
         const MaterialLayout& matLayout,
         bool centerModel,
-        SceneGraph& sceneGraph
-    );
+        SceneGraph& sceneGraph);
 
-    /**
-     * Retrieves the loaded model data.
-     * @return A reference to the BetterModelData struct containing meshes and materials.
-     */
-    const BetterModelData& GetModelData() const {
-        return m_Data;
-    }
+    const BetterModelData& GetModelData() const { return m_Data; }
 
-    /**
-     * Retrieves the file path for a given model name.
-     * @param modelName The name identifier for the model.
-     * @return The corresponding file path as a string.
-     */
     static std::string GetModelPath(const std::string& modelName);
 
 private:
-    // Member Variables
     BetterModelData m_Data;
-    int m_FallbackMaterialCounter;
+    int m_FallbackMaterialCounter = 0;
 
-    // Private Methods for Scene Graph Integration
-    void processAssimpNode(
-        const aiScene* scene,
+private:
+    // Helpers
+    void loadSceneMaterials(const aiScene* scene,
+        const MaterialLayout& matLayout,
+        const std::string& directory);
+
+    std::string createMaterialForAssimpMat(const aiMaterial* aiMat,
+        const MaterialLayout& matLayout,
+        const std::string& directory);
+
+    std::string ensureUniqueMaterialName(const std::string& baseName);
+    void loadMaterialProperties(const aiMaterial* aiMat,
+        std::shared_ptr<Material> mat,
+        const MaterialLayout& matLayout);
+    void loadMaterialTextures(const aiMaterial* aiMat,
+        std::shared_ptr<Material> material,
+        const MaterialLayout& matLayout,
+        const std::string& directory);
+
+    /**
+     * @brief Actually loads the texture files from disk, returning a map of TextureType -> ITexture
+     */
+    BetterMeshTextures LoadMeshTextures(const aiMaterial* material,
+        const std::string& directory);
+
+    std::string createFallbackMaterialName();
+    std::shared_ptr<Material> createFallbackMaterial(const std::string& name,
+        const MaterialLayout& matLayout);
+
+    void processAssimpNode(const aiScene* scene,
         const aiNode* ainode,
         const MeshLayout& meshLayout,
         const MaterialLayout& matLayout,
         const std::string& directory,
         SceneGraph& sceneGraph,
-        int parentNode = -1
-    );
+        int parentNode = -1);
 
-    // Private Methods for Loading
-    void loadSceneMaterials(const aiScene* scene, const MaterialLayout& matLayout, const std::string& directory);
-    BetterMeshTextures LoadMeshTextures(const aiMaterial* material, const std::string& directory);
-    std::string createMaterialForAssimpMat(const aiMaterial* aiMat, const MaterialLayout& matLayout, const std::string& directory);
-    std::string createFallbackMaterialName();
-    std::shared_ptr<Material> createFallbackMaterial(const std::string& name, const MaterialLayout& matLayout);
-    void loadMaterialProperties(const aiMaterial* aiMat, std::shared_ptr<Material> mat, const MaterialLayout& matLayout);
-    void loadMaterialTextures(const aiMaterial* aiMat,
-        std::shared_ptr<Material> material,
-        const MaterialLayout& matLayout,
-        const std::string& directory);
-    void processAssimpMesh(
-        const aiScene* scene,
+    void processAssimpMesh(const aiScene* scene,
         const aiMesh* aimesh,
         const MeshLayout& meshLayout,
         int meshIndex,
         const std::string& directory);
+
     void generateLODs(const std::vector<uint32_t>& srcIndices,
         const std::vector<float>& vertices3f,
         std::vector<std::vector<uint32_t>>& outLods) const;
-    void setNodeBoundingVolumes(const aiScene* scene, const aiNode* ainode, int currentSGNode, SceneGraph& sceneGraph);
+
+    void setNodeBoundingVolumes(const aiScene* scene,
+        const aiNode* ainode,
+        int currentSGNode,
+        SceneGraph& sceneGraph);
+
     void centerScene(SceneGraph& sceneGraph);
 
-    // Helper Function
     glm::mat4 AiToGlm(const aiMatrix4x4& m);
-
-    /**
-     * Ensures that each material name is unique by appending a counter if necessary.
-     * @param baseName The original material name.
-     * @return A unique material name.
-     */
-    std::string ensureUniqueMaterialName(const std::string& baseName);
 };

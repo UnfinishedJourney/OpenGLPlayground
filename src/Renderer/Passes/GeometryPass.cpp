@@ -16,6 +16,9 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
 {
     PROFILE_FUNCTION(Blue);
 
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
     {
         PROFILE_BLOCK("Bind Framebuffer", Magenta);
         m_Framebuffer->Bind();

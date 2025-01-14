@@ -122,9 +122,18 @@ void Application::UpdateAndRenderFrame()
     // Update + Render current test
     {
         PROFILE_BLOCK("UpdateAndRenderTest", Blue);
-        m_TestManager.UpdateCurrentTest(static_cast<float>(deltaTime));
-        m_TestManager.RenderCurrentTest();
-        SynchronizeCameraController();
+        {
+            PROFILE_BLOCK("UpdateCurrentTest", Green);
+            m_TestManager.UpdateCurrentTest(static_cast<float>(deltaTime));
+        }
+        {
+            PROFILE_BLOCK("RenderCurrentTest", Green);
+            m_TestManager.RenderCurrentTest();
+        }
+        {
+            PROFILE_BLOCK("SynchronizeCameraController", Green);
+            SynchronizeCameraController();
+        }
     }
 
     // ImGui
@@ -144,17 +153,22 @@ void Application::UpdateAndRenderFrame()
     glEndQuery(GL_TIME_ELAPSED);
 
     // glFinish ensures the query is complete before reading
-    glFinish();
+    {
+        PROFILE_BLOCK("GLFinishQuery", Blue);
+        glFinish();
+    }
 
     // Read GPU time
     GLuint64 gpuTime = 0;
     glGetQueryObjectui64v(m_GpuQueryStart, GL_QUERY_RESULT, &gpuTime);
     double gpuFrameTimeMs = static_cast<double>(gpuTime) / 1'000'000.0; // ns->ms
 
-    // Swap
     {
-        PROFILE_BLOCK("Swap Buffers", Blue);
+        PROFILE_BLOCK("SwapBuffers", Blue);
         glfwSwapBuffers(m_Window);
+    }
+    {
+        PROFILE_BLOCK("UpdateInputManager", Blue);
         m_InputManager.Update();
     }
 

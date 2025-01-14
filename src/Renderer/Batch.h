@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <memory>
+#include <vector>
 #include <string>
 #include <glad/glad.h>
 #include "Renderer/RenderObject.h"
@@ -12,60 +12,85 @@
 #include "Graphics/Meshes/MeshLayout.h"
 #include "Graphics/Buffers/IndirectBuffer.h"
 
-struct DrawElementsIndirectCommand {
+/**
+ * @brief A struct for one multi-draw command (used with glMultiDrawElementsIndirect).
+ */
+struct DrawElementsIndirectCommand
+{
     GLuint count;
     GLuint instanceCount;
     GLuint firstIndex;
-    GLint baseVertex;
+    GLint  baseVertex;
     GLuint baseInstance;
 };
 
-struct LODInfo {
-    size_t indexOffsetInCombinedBuffer;
-    size_t indexCount;
+/**
+ * @brief Info about a single LOD range: we track where in the global index buffer this LOD starts,
+ * and how many indices it has.
+ */
+struct LODInfo
+{
+    size_t indexOffsetInCombinedBuffer = 0;
+    size_t indexCount = 0;
 };
 
-class Batch {
+/**
+ * @brief A Batch groups multiple RenderObjects that share the same shader, material, and mesh layout.
+ * It then merges their data into combined VBO/IBO, and issues a multi-draw command.
+ */
+class Batch
+{
 public:
     Batch(const std::string& shaderName,
         const std::string& materialName,
         const MeshLayout& meshLayout);
     ~Batch();
 
-    // RenderObject Management
     void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
     const std::vector<std::shared_ptr<RenderObject>>& GetRenderObjects() const;
 
-    // Build / Update / Render
+    /**
+     * @brief Build the combined VBO/IBO for all RenderObjects.
+     *        Also populates the multi-draw commands with the correct offsets.
+     */
     void BuildBatches();
+
+    /**
+     * @brief If the batch is dirty, rebuild it; otherwise, do nothing.
+     */
     void Update();
+
+    /**
+     * @brief Issue a multi-draw call for all commands in this batch.
+     */
     void Render() const;
 
-    // Culling and LOD
+    // Culling & LOD
     void CullObject(size_t objectIndex);
     void UpdateLOD(size_t objectIndex, size_t newLOD);
 
-    // Getters
+    // Accessors
     const std::string& GetShaderName() const;
     const std::string& GetMaterialName() const;
     const MeshLayout& GetMeshLayout() const;
 
 private:
-    void BuildBatch();
+    void BuildBatchIfDirty(); // convenience if you want a separate method
 
-    std::string m_ShaderName;
-    std::string m_MaterialName;
-    MeshLayout  m_MeshLayout;
-
+    std::string                           m_ShaderName;
+    std::string                           m_MaterialName;
+    MeshLayout                            m_MeshLayout;
     std::vector<std::shared_ptr<RenderObject>> m_RenderObjects;
 
+    // GPU buffers
     std::unique_ptr<VertexArray>   m_VAO;
     std::shared_ptr<VertexBuffer>  m_VBO;
     std::shared_ptr<IndexBuffer>   m_IBO;
     std::unique_ptr<IndirectBuffer> m_DrawCommandBuffer;
 
+    // Draw commands & LOD
     std::vector<DrawElementsIndirectCommand> m_DrawCommands;
-    std::vector<std::vector<LODInfo>> m_LODInfos;
+    std::vector<std::vector<LODInfo>>        m_LODInfos;
 
     bool m_IsDirty = true;
 };

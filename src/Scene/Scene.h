@@ -14,11 +14,14 @@
 #include "Graphics/Effects/PostProcessingEffects/PostProcessingEffectType.h"
 #include "LODEvaluator.h"
 #include "FrustumCuller.h"
-#include "Graphics/Meshes/BetterModelLoader.h"
-#include "Resources/MaterialManager.h"
-#include "Graphics/Materials/MaterialLayout.h"
+#include "Graphics/Meshes/BetterModelLoader.h"  // so we can reference BetterModelData if needed
+#include "Graphics/Meshes/MeshInfo.h"  // ensure "MeshInfo" is visible
 
-class Scene {
+/**
+ * @brief Represents the entire scene: SceneGraph, camera, lights, etc.
+ */
+class Scene
+{
 public:
     Scene();
     ~Scene();
@@ -62,29 +65,39 @@ public:
     bool GetBDebugLights() const { return m_BDebugLights; }
 
 private:
-    SceneGraph m_SceneGraph;
-    bool m_StaticBatchesDirty = true;
-    BatchManager m_StaticBatchManager;
-    MeshLayout m_MeshLayout;
+    // SceneGraph holds hierarchical transforms, bounding volumes, etc.
+    SceneGraph         m_SceneGraph;
+    bool               m_StaticBatchesDirty = true;
+    BatchManager       m_StaticBatchManager;
+    MeshLayout         m_MeshLayout;
     std::shared_ptr<Camera> m_Camera;
 
-    std::vector<LightData> m_LightsData;
-    std::unique_ptr<UniformBuffer> m_FrameDataUBO;
+    // Lights
+    std::vector<LightData>   m_LightsData;
+    std::unique_ptr<UniformBuffer>       m_FrameDataUBO;
     std::unique_ptr<ShaderStorageBuffer> m_LightsSSBO;
 
     PostProcessingEffectType m_PostProcessingEffect = PostProcessingEffectType::None;
 
     // LOD & culling
-    std::shared_ptr<LODEvaluator> m_LODEvaluator;
+    std::shared_ptr<LODEvaluator>  m_LODEvaluator;
     std::shared_ptr<FrustumCuller> m_FrustumCuller;
 
     bool m_BGrid = false;
     bool m_BDebugLights = false;
 
-    std::vector<MeshInfo> m_LoadedMeshes;
-    std::vector<std::string> m_LoadedMaterials;
-    std::string m_LastShader;
+    /**
+     * List of loaded mesh references, each storing a pointer to the actual Mesh
+     * and possibly a material index or other data.
+     */
+    std::vector<MeshInfo> m_LoadedMeshes;   // <--- now recognized
 
-    // node index -> vector of RenderObjects
+    std::vector<std::string> m_LoadedMaterials;
+    std::string              m_LastShader;
+
+    /**
+     * Each node in SceneGraph can have multiple meshes =>
+     * we store a vector of RenderObjects for each node index.
+     */
     std::vector<std::vector<std::shared_ptr<RenderObject>>> m_NodeToRenderObjects;
 };

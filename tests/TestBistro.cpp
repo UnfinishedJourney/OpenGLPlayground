@@ -51,7 +51,7 @@ void TestBistro::OnExit() {
 }
 
 void TestBistro::OnUpdate(float deltaTime) {
-    m_Scene->CullAndLODUpdate();
+    //m_Scene->CullAndLODUpdate();
 }
 
 void TestBistro::OnImGuiRender() {
