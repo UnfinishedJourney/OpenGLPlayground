@@ -39,7 +39,8 @@ GLFWwindow* GLContext::InitOpenGL(int width, int height, const std::string& titl
     logger->info("GLAD initialized successfully.");
 
     glViewport(0, 0, width, height);
-    glfwSwapInterval(1); // VSync
+    //glfwSwapInterval(1); // VSync
+    glfwSwapInterval(0); // VSync
     glEnable(GL_DEPTH_TEST);
 
     InitOpenGLDebug();

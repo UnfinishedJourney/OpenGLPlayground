@@ -65,7 +65,7 @@ void Application::Init()
     }
 
     // Initialize GPU queries
-    InitializeGpuQueries();
+    //InitializeGpuQueries();
 }
 
 void Application::Run()
@@ -86,7 +86,7 @@ void Application::Run()
 
     // Cleanup
     ShutdownImGui();
-    ShutdownGpuQueries();
+    //ShutdownGpuQueries();
     GLContext::Cleanup(m_Window);
 }
 
@@ -96,9 +96,6 @@ void Application::UpdateAndRenderFrame()
 
     // CPU timing
     auto cpuStart = std::chrono::high_resolution_clock::now();
-
-    // Begin GPU timer
-    glBeginQuery(GL_TIME_ELAPSED, m_GpuQueryStart);
 
     // Clear
     {
@@ -149,20 +146,6 @@ void Application::UpdateAndRenderFrame()
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
-    // End GPU timer
-    glEndQuery(GL_TIME_ELAPSED);
-
-    // glFinish ensures the query is complete before reading
-    {
-        PROFILE_BLOCK("GLFinishQuery", Blue);
-        glFinish();
-    }
-
-    // Read GPU time
-    GLuint64 gpuTime = 0;
-    glGetQueryObjectui64v(m_GpuQueryStart, GL_QUERY_RESULT, &gpuTime);
-    double gpuFrameTimeMs = static_cast<double>(gpuTime) / 1'000'000.0; // ns->ms
-
     {
         PROFILE_BLOCK("SwapBuffers", Blue);
         glfwSwapBuffers(m_Window);
@@ -178,7 +161,7 @@ void Application::UpdateAndRenderFrame()
         = std::chrono::duration<double, std::milli>(cpuEnd - cpuStart).count();
 
     // Show perf info
-    ShowFpsAndFrameTimes(cpuFrameTimeMs, gpuFrameTimeMs);
+    ShowFpsAndFrameTimes(cpuFrameTimeMs);
 }
 
 void Application::ProcessInput(double deltaTime)
@@ -209,7 +192,7 @@ void Application::SynchronizeCameraController()
     }
 }
 
-void Application::ShowFpsAndFrameTimes(double cpuFrameTimeMs, double gpuFrameTimeMs)
+void Application::ShowFpsAndFrameTimes(double cpuFrameTimeMs)
 {
     static double prevSeconds = 0.0;
     static int    frameCount = 0;
@@ -227,8 +210,7 @@ void Application::ShowFpsAndFrameTimes(double cpuFrameTimeMs, double gpuFrameTim
         oss.precision(3);
         oss << std::fixed
             << "FPS: " << fps << "   "
-            << "CPU: " << cpuFrameTimeMs << " ms   "
-            << "GPU: " << gpuFrameTimeMs << " ms";
+            << "CPU: " << cpuFrameTimeMs << " ms";
 
         glfwSetWindowTitle(m_Window, oss.str().c_str());
     }
@@ -318,23 +300,23 @@ void Application::ShutdownImGui()
     ImGui::DestroyContext();
 }
 
-void Application::InitializeGpuQueries()
-{
-    PROFILE_BLOCK("Create GPU Queries", Yellow);
-    glGenQueries(1, &m_GpuQueryStart);
-    glGenQueries(1, &m_GpuQueryEnd);
-}
-
-void Application::ShutdownGpuQueries()
-{
-    PROFILE_BLOCK("Delete GPU Queries", Magenta);
-
-    if (m_GpuQueryStart) {
-        glDeleteQueries(1, &m_GpuQueryStart);
-        m_GpuQueryStart = 0;
-    }
-    if (m_GpuQueryEnd) {
-        glDeleteQueries(1, &m_GpuQueryEnd);
-        m_GpuQueryEnd = 0;
-    }
-}
+//void Application::InitializeGpuQueries()
+//{
+//    PROFILE_BLOCK("Create GPU Queries", Yellow);
+//    glGenQueries(1, &m_GpuQueryStart);
+//    glGenQueries(1, &m_GpuQueryEnd);
+//}
+//
+//void Application::ShutdownGpuQueries()
+//{
+//    PROFILE_BLOCK("Delete GPU Queries", Magenta);
+//
+//    if (m_GpuQueryStart) {
+//        glDeleteQueries(1, &m_GpuQueryStart);
+//        m_GpuQueryStart = 0;
+//    }
+//    if (m_GpuQueryEnd) {
+//        glDeleteQueries(1, &m_GpuQueryEnd);
+//        m_GpuQueryEnd = 0;
+//    }
+//}

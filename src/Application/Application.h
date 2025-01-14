@@ -29,12 +29,12 @@ private:
     void RegisterCallbacks();
     void InitializeImGui();
     void ShutdownImGui();
-    void InitializeGpuQueries();
-    void ShutdownGpuQueries();
+    //void InitializeGpuQueries();
+    //void ShutdownGpuQueries();
     void UpdateAndRenderFrame();
     void ProcessInput(double deltaTime);
     void SynchronizeCameraController();
-    void ShowFpsAndFrameTimes(double cpuFrameTimeMs, double gpuFrameTimeMs);
+    void ShowFpsAndFrameTimes(double cpuFrameTimeMs);
 
 private:
     GLFWwindow* m_Window = nullptr;
@@ -45,8 +45,8 @@ private:
     double                      m_LastFrameTime = 0.0;
 
     // GPU Queries to measure GPU frame time
-    GLuint                      m_GpuQueryStart = 0;
-    GLuint                      m_GpuQueryEnd = 0;
+    //GLuint                      m_GpuQueryStart = 0;
+    //GLuint                      m_GpuQueryEnd = 0;
 
     // Logging
     std::shared_ptr<spdlog::logger> m_Logger;
