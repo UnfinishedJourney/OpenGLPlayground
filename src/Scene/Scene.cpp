@@ -89,7 +89,7 @@ bool Scene::LoadModelIntoScene(const std::string& modelName,
         return false;
     }
 
-    if (!loader.LoadModel(modelPath, meshLayout, matLayout, true, m_SceneGraph)) {
+    if (!loader.LoadModel(modelPath, meshLayout, matLayout, m_SceneGraph, true)) {
         Logger::GetLogger()->error("Failed to load model '{}'.", modelName);
         return false;
     }

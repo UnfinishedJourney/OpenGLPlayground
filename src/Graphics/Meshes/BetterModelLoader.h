@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <glm/glm.hpp>
-#include <assimp/scene.h>       // for aiScene, aiMesh, aiMaterial
+#include <assimp/scene.h>       
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Meshes/MeshLayout.h"
 #include "Graphics/Materials/MaterialLayout.h"
@@ -19,7 +19,6 @@
 #include "Resources/MaterialManager.h"
 #include "Resources/TextureManager.h"
 
-// Include the MeshInfo definition so we can reference it if needed
 #include "MeshInfo.h"
 
 /**
@@ -57,8 +56,8 @@ public:
     bool LoadModel(const std::string& filePath,
         const MeshLayout& meshLayout,
         const MaterialLayout& matLayout,
-        bool centerModel,
-        SceneGraph& sceneGraph);
+        SceneGraph& sceneGraph,
+        bool centerModel);
 
     const BetterModelData& GetModelData() const { return m_Data; }
 
@@ -69,20 +68,19 @@ private:
     int m_FallbackMaterialCounter = 0;
 
 private:
-    // Helpers
-    void loadSceneMaterials(const aiScene* scene,
+    void LoadSceneMaterials(const aiScene* scene,
         const MaterialLayout& matLayout,
         const std::string& directory);
 
-    std::string createMaterialForAssimpMat(const aiMaterial* aiMat,
+    std::string CreateMaterialForAssimpMat(const aiMaterial* aiMat,
         const MaterialLayout& matLayout,
         const std::string& directory);
 
-    std::string ensureUniqueMaterialName(const std::string& baseName);
-    void loadMaterialProperties(const aiMaterial* aiMat,
+    std::string EnsureUniqueMaterialName(const std::string& baseName);
+    void LoadMaterialProperties(const aiMaterial* aiMat,
         std::shared_ptr<Material> mat,
         const MaterialLayout& matLayout);
-    void loadMaterialTextures(const aiMaterial* aiMat,
+    void LoadMaterialTextures(const aiMaterial* aiMat,
         std::shared_ptr<Material> material,
         const MaterialLayout& matLayout,
         const std::string& directory);
@@ -93,11 +91,11 @@ private:
     BetterMeshTextures LoadMeshTextures(const aiMaterial* material,
         const std::string& directory);
 
-    std::string createFallbackMaterialName();
+    std::string CreateFallbackMaterialName();
     std::shared_ptr<Material> createFallbackMaterial(const std::string& name,
         const MaterialLayout& matLayout);
 
-    void processAssimpNode(const aiScene* scene,
+    void ProcessAssimpNode(const aiScene* scene,
         const aiNode* ainode,
         const MeshLayout& meshLayout,
         const MaterialLayout& matLayout,
@@ -105,22 +103,22 @@ private:
         SceneGraph& sceneGraph,
         int parentNode = -1);
 
-    void processAssimpMesh(const aiScene* scene,
+    void ProcessAssimpMesh(const aiScene* scene,
         const aiMesh* aimesh,
         const MeshLayout& meshLayout,
         int meshIndex,
         const std::string& directory);
 
-    void generateLODs(const std::vector<uint32_t>& srcIndices,
+    void GenerateLODs(const std::vector<uint32_t>& srcIndices,
         const std::vector<float>& vertices3f,
         std::vector<std::vector<uint32_t>>& outLods) const;
 
-    void setNodeBoundingVolumes(const aiScene* scene,
+    void SetNodeBoundingVolumes(const aiScene* scene,
         const aiNode* ainode,
         int currentSGNode,
         SceneGraph& sceneGraph);
 
-    void centerScene(SceneGraph& sceneGraph);
+    void CenterScene(SceneGraph& sceneGraph);
 
     glm::mat4 AiToGlm(const aiMatrix4x4& m);
 };
