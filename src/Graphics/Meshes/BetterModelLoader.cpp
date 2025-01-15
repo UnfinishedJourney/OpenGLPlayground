@@ -171,18 +171,25 @@ BetterMeshTextures BetterModelLoader::LoadMeshTextures(const aiMaterial* materia
         for (unsigned int i = 0; i < texCount; i++) {
             aiString str;
             if (material->GetTexture(aiType, i, &str) == AI_SUCCESS) {
-                std::string filename = std::filesystem::path(str.C_Str()).filename().string();
-                std::string fullPath = (std::filesystem::path(directory) / filename).string();
-                auto texName = filename;
+                // OLD CODE: 
+                // std::string filename = std::filesystem::path(str.C_Str()).filename().string();
+                // std::string fullPath = (std::filesystem::path(directory) / filename).string();
 
-                auto loadedTex = TextureManager::GetInstance().LoadTexture(texName, fullPath);
+                // NEW CODE:
+                std::filesystem::path relativePath(str.C_Str());
+                relativePath = relativePath.lexically_normal();
+                std::filesystem::path fullPath = std::filesystem::path(directory) / relativePath;
+                fullPath = fullPath.lexically_normal();
+
+                auto texName = relativePath.filename().string(); // short name
+                auto loadedTex = TextureManager::GetInstance().LoadTexture(texName, fullPath.string());
                 if (!loadedTex) {
                     Logger::GetLogger()->error("Failed to load texture '{}' for type '{}'.",
-                        fullPath, (int)myType);
+                        fullPath.string(), (int)myType);
                     continue;
                 }
                 result.textures[myType] = loadedTex;
-                Logger::GetLogger()->info("Texture '{}' loaded (type {}).", fullPath, (int)myType);
+                Logger::GetLogger()->info("Texture '{}' loaded (type {}).", fullPath.string(), (int)myType);
             }
         }
     }

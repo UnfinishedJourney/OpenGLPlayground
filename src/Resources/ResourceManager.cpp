@@ -21,6 +21,12 @@ std::pair<MeshLayout, MaterialLayout> ResourceManager::getLayoutsFromShader(std:
                 MaterialLayout{ {}, {} }
             }
         },
+        {"basicTextured",
+            {
+                MeshLayout{ true, false, false, false, {TextureType::Albedo} },
+                MaterialLayout{ {}, {TextureType::Albedo} }
+            }
+        },
         // Add more shader layouts as needed
     };
 

@@ -25,7 +25,7 @@ void TestBistro::OnEnter() {
     m_Scene->SetCamera(m_Camera);
 
     // Load the "bistro" model into the scene
-    if (!m_Scene->LoadModelIntoScene("bistro", "basic", "objMaterial")) {
+    if (!m_Scene->LoadModelIntoScene("bistro", "basicTextured", "objMaterial")) {
         Logger::GetLogger()->error("Failed to load 'bistro' model into the scene.");
         return;
     }
