@@ -14,7 +14,7 @@
 #include "Graphics/Effects/PostProcessingEffects/PostProcessingEffectType.h"
 #include "LODEvaluator.h"
 #include "FrustumCuller.h"
-#include "Graphics/Meshes/BetterModelLoader.h"  // so we can reference BetterModelData if needed
+#include "Graphics/Meshes/ModelLoader.h"  // so we can reference BetterModelData if needed
 #include "Graphics/Meshes/MeshInfo.h"  // ensure "MeshInfo" is visible
 
 /**

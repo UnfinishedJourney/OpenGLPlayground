@@ -31,7 +31,7 @@ struct BetterModelMeshData
 };
 
 /**
- * @brief Holds all final data loaded by BetterModelLoader: the meshes and any created materials.
+ * @brief Holds all final data loaded by ModelLoader: the meshes and any created materials.
  */
 struct BetterModelData
 {
@@ -47,12 +47,20 @@ struct BetterMeshTextures
     std::unordered_map<TextureType, std::shared_ptr<ITexture>> textures;
 };
 
-class BetterModelLoader
+/*
+* We load model based on mesh layout and matlayout we get from the shader
+* we either move center to 0 or not
+* load everything to scene graph which i might not need for now
+*/
+
+//maybe materials should also have some sort of int id additionally to string
+class ModelLoader
 {
 public:
-    BetterModelLoader();
-    ~BetterModelLoader();
+    ModelLoader();
+    ~ModelLoader();
 
+    //probably should add something for lod loader
     bool LoadModel(const std::string& filePath,
         const MeshLayout& meshLayout,
         const MaterialLayout& matLayout,
@@ -64,6 +72,7 @@ public:
     static std::string GetModelPath(const std::string& modelName);
 
 private:
+    //maybe should use unique_ptr or something like that
     BetterModelData m_Data;
     int m_FallbackMaterialCounter = 0;
 
@@ -92,7 +101,7 @@ private:
         const std::string& directory);
 
     std::string CreateFallbackMaterialName();
-    std::shared_ptr<Material> createFallbackMaterial(const std::string& name,
+    std::shared_ptr<Material> CreateFallbackMaterial(const std::string& name,
         const MaterialLayout& matLayout);
 
     void ProcessAssimpNode(const aiScene* scene,

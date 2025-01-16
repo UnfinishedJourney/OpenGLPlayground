@@ -1,4 +1,4 @@
-#include "BetterModelLoader.h"
+#include "ModelLoader.h"
 #include <meshoptimizer.h>
 #include <filesystem>
 #include <cfloat>
@@ -7,16 +7,16 @@
 #include <assimp/postprocess.h>
 #include <glm/gtc/matrix_transform.hpp>
 
-BetterModelLoader::BetterModelLoader()
+ModelLoader::ModelLoader()
     : m_FallbackMaterialCounter(0)
 {
 }
 
-BetterModelLoader::~BetterModelLoader()
+ModelLoader::~ModelLoader()
 {
 }
 
-bool BetterModelLoader::LoadModel(const std::string& filePath,
+bool ModelLoader::LoadModel(const std::string& filePath,
     const MeshLayout& meshLayout,
     const MaterialLayout& matLayout,
     SceneGraph& sceneGraph,
@@ -35,7 +35,7 @@ bool BetterModelLoader::LoadModel(const std::string& filePath,
     if (meshLayout.hasNormals) {
         importFlags |= aiProcess_GenSmoothNormals;
     }
-    if (meshLayout.hasTangents) {
+    if (meshLayout.hasTangents || meshLayout.hasBitangents) {
         importFlags |= aiProcess_CalcTangentSpace;
     }
 
@@ -53,19 +53,19 @@ bool BetterModelLoader::LoadModel(const std::string& filePath,
     // Recursively process the scene’s node hierarchy
     ProcessAssimpNode(scene, scene->mRootNode, meshLayout, matLayout, directory, sceneGraph, -1);
 
-    // Optionally center the model
+
     if (centerModel) {
         CenterScene(sceneGraph);
     }
 
     Logger::GetLogger()->info(
-        "BetterModelLoader: Successfully loaded '{}' with {} meshes and {} materials.",
+        "ModelLoader: Successfully loaded '{}' with {} meshes and {} materials.",
         filePath, m_Data.meshesData.size(), m_Data.createdMaterials.size()
     );
     return true;
 }
 
-void BetterModelLoader::LoadSceneMaterials(const aiScene* scene,
+void ModelLoader::LoadSceneMaterials(const aiScene* scene,
     const MaterialLayout& matLayout,
     const std::string& directory)
 {
@@ -77,14 +77,14 @@ void BetterModelLoader::LoadSceneMaterials(const aiScene* scene,
     }
 }
 
-std::string BetterModelLoader::CreateMaterialForAssimpMat(const aiMaterial* aiMat,
+std::string ModelLoader::CreateMaterialForAssimpMat(const aiMaterial* aiMat,
     const MaterialLayout& matLayout,
     const std::string& directory)
 {
     aiString aiName;
     if (AI_SUCCESS != aiMat->Get(AI_MATKEY_NAME, aiName))
     {
-        aiName = aiString("UnnamedMaterial");
+        aiName = aiString("UnnamedMaterial"); //maybe should rename it somehow to model name + counter
     }
 
     std::string matName = EnsureUniqueMaterialName(aiName.C_Str());
@@ -103,7 +103,7 @@ std::string BetterModelLoader::CreateMaterialForAssimpMat(const aiMaterial* aiMa
     return matName;
 }
 
-std::string BetterModelLoader::EnsureUniqueMaterialName(const std::string& baseName)
+std::string ModelLoader::EnsureUniqueMaterialName(const std::string& baseName)
 {
     static std::unordered_set<std::string> usedNames;
     std::string uniqueName = baseName;
@@ -115,7 +115,7 @@ std::string BetterModelLoader::EnsureUniqueMaterialName(const std::string& baseN
     return uniqueName;
 }
 
-void BetterModelLoader::LoadMaterialProperties(const aiMaterial* aiMat,
+void ModelLoader::LoadMaterialProperties(const aiMaterial* aiMat,
     std::shared_ptr<Material> mat,
     const MaterialLayout& matLayout)
 {
@@ -143,7 +143,7 @@ void BetterModelLoader::LoadMaterialProperties(const aiMaterial* aiMat,
     }
 }
 
-void BetterModelLoader::LoadMaterialTextures(const aiMaterial* aiMat,
+void ModelLoader::LoadMaterialTextures(const aiMaterial* aiMat,
     std::shared_ptr<Material> material,
     const MaterialLayout& matLayout,
     const std::string& directory)
@@ -154,7 +154,7 @@ void BetterModelLoader::LoadMaterialTextures(const aiMaterial* aiMat,
     }
 }
 
-BetterMeshTextures BetterModelLoader::LoadMeshTextures(const aiMaterial* material,
+BetterMeshTextures ModelLoader::LoadMeshTextures(const aiMaterial* material,
     const std::string& directory)
 {
     BetterMeshTextures result;
@@ -196,12 +196,13 @@ BetterMeshTextures BetterModelLoader::LoadMeshTextures(const aiMaterial* materia
     return result;
 }
 
-std::string BetterModelLoader::CreateFallbackMaterialName()
+std::string ModelLoader::CreateFallbackMaterialName()
 {
     return "FallbackMat_" + std::to_string(++m_FallbackMaterialCounter);
 }
 
-std::shared_ptr<Material> BetterModelLoader::createFallbackMaterial(const std::string& name,
+//fallback material should be assosiated with layout
+std::shared_ptr<Material> ModelLoader::CreateFallbackMaterial(const std::string& name,
     const MaterialLayout& matLayout)
 {
     auto fallbackMat = std::make_shared<Material>();
@@ -213,7 +214,7 @@ std::shared_ptr<Material> BetterModelLoader::createFallbackMaterial(const std::s
     return fallbackMat;
 }
 
-void BetterModelLoader::SetNodeBoundingVolumes(const aiScene* scene,
+void ModelLoader::SetNodeBoundingVolumes(const aiScene* scene,
     const aiNode* ainode,
     int currentSGNode,
     SceneGraph& sceneGraph)
@@ -237,7 +238,7 @@ void BetterModelLoader::SetNodeBoundingVolumes(const aiScene* scene,
     }
 }
 
-void BetterModelLoader::ProcessAssimpNode(const aiScene* scene,
+void ModelLoader::ProcessAssimpNode(const aiScene* scene,
     const aiNode* ainode,
     const MeshLayout& meshLayout,
     const MaterialLayout& matLayout,
@@ -269,7 +270,7 @@ void BetterModelLoader::ProcessAssimpNode(const aiScene* scene,
         if (matIndex < 0 || matIndex >= (int)m_Data.createdMaterials.size()) {
             // fallback
             materialName = CreateFallbackMaterialName();
-            auto fallback = createFallbackMaterial(materialName, matLayout);
+            auto fallback = CreateFallbackMaterial(materialName, matLayout);
             MaterialManager::GetInstance().AddMaterial(materialName, matLayout, fallback);
             m_Data.createdMaterials.push_back(materialName);
         }
@@ -293,7 +294,7 @@ void BetterModelLoader::ProcessAssimpNode(const aiScene* scene,
     SetNodeBoundingVolumes(scene, ainode, currentSGNode, sceneGraph);
 }
 
-void BetterModelLoader::ProcessAssimpMesh(const aiScene* scene,
+void ModelLoader::ProcessAssimpMesh(const aiScene* scene,
     const aiMesh* aimesh,
     const MeshLayout& meshLayout,
     int meshIndex,
@@ -402,7 +403,7 @@ void BetterModelLoader::ProcessAssimpMesh(const aiScene* scene,
     m_Data.meshesData.push_back(record);
 }
 
-void BetterModelLoader::GenerateLODs(const std::vector<uint32_t>& srcIndices,
+void ModelLoader::GenerateLODs(const std::vector<uint32_t>& srcIndices,
     const std::vector<float>& vertices3f,
     std::vector<std::vector<uint32_t>>& outLods) const
 {
@@ -472,7 +473,7 @@ void BetterModelLoader::GenerateLODs(const std::vector<uint32_t>& srcIndices,
     }
 }
 
-void BetterModelLoader::CenterScene(SceneGraph& sceneGraph)
+void ModelLoader::CenterScene(SceneGraph& sceneGraph)
 {
     // If you want to shift the entire scene so that bounding box is centered at origin
     if (sceneGraph.GetNodes().empty()) return;
@@ -496,7 +497,7 @@ void BetterModelLoader::CenterScene(SceneGraph& sceneGraph)
     sceneGraph.RecalculateGlobalTransforms();
 }
 
-glm::mat4 BetterModelLoader::AiToGlm(const aiMatrix4x4& m)
+glm::mat4 ModelLoader::AiToGlm(const aiMatrix4x4& m)
 {
     glm::mat4 r;
     r[0][0] = m.a1; r[1][0] = m.b1; r[2][0] = m.c1; r[3][0] = m.d1;
@@ -506,7 +507,7 @@ glm::mat4 BetterModelLoader::AiToGlm(const aiMatrix4x4& m)
     return glm::transpose(r);
 }
 
-std::string BetterModelLoader::GetModelPath(const std::string& modelName)
+std::string ModelLoader::GetModelPath(const std::string& modelName)
 {
     static const std::unordered_map<std::string, std::string> modelPaths = {
         {"pig",    "../assets/Objs/pig_triangulated.obj"},
