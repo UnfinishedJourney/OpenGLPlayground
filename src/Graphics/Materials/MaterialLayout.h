@@ -4,6 +4,7 @@
 #include <functional>
 #include <cstdint>
 
+//maybe should use bit-map
 struct MaterialLayout {
     std::unordered_set<MaterialParamType> params;
     std::unordered_set<TextureType> textures;

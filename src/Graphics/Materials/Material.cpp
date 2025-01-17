@@ -1,5 +1,4 @@
 #include "Material.h"
-#include "Utilities/Logger.h"
 
 // Helper: map each TextureType to a known GLSL uniform name & binding slot
 static std::string GetTextureUniformName(TextureType type)
@@ -25,20 +24,20 @@ static int GetTextureBindingSlot(TextureType type)
     case TextureType::MetalRoughness: return 2;
     case TextureType::AO:             return 3;
     case TextureType::Emissive:       return 4;
-    case TextureType::BRDFLut:        return 5; 
-    default:                          return 10; // fallback for anything else
+    case TextureType::BRDFLut:        return 5;
+    default:                          return 10; // fallback
     }
 }
 
 void Material::SetParam(MaterialParamType type, const UniformValue& value)
 {
-    m_Params[type] = value;
-    m_Layout.params.insert(type);
-}
-
-void Material::SetCustomParam(const std::string& name, const UniformValue& value)
-{
-    m_CustomParams[name] = value;
+    if (m_Layout.params.find(type) != m_Layout.params.end()) {
+        m_Params[type] = value;
+    }
+    
+    else {
+        Logger::GetLogger()->warn("Attempted to set wrong parameter of type {}.", static_cast<int>(type));
+    }
 }
 
 bool Material::GetParam(MaterialParamType type, UniformValue& outValue) const
@@ -49,6 +48,11 @@ bool Material::GetParam(MaterialParamType type, UniformValue& outValue) const
         return true;
     }
     return false;
+}
+
+void Material::SetCustomParam(const std::string& name, const UniformValue& value)
+{
+    m_CustomParams[name] = value;
 }
 
 bool Material::GetCustomParam(const std::string& name, UniformValue& outValue) const
@@ -64,11 +68,22 @@ bool Material::GetCustomParam(const std::string& name, UniformValue& outValue) c
 void Material::SetTexture(TextureType type, const std::shared_ptr<ITexture>& texture)
 {
     if (!texture) {
-        Logger::GetLogger()->warn("Attempted to set null texture for type {}.", (int)type);
+        Logger::GetLogger()->warn("Attempted to set null texture for type {}.", static_cast<int>(type));
         return;
     }
-    m_Textures[type] = texture;
-    m_Layout.textures.insert(type);
+
+    if (m_Layout.textures.find(type) != m_Layout.textures.end()) {
+        m_Textures[type] = texture;
+    }
+    else {
+        Logger::GetLogger()->warn("Attempted to set wrong wrong of type {}.", static_cast<int>(type));
+    }
+}
+
+std::shared_ptr<ITexture> Material::GetTexture(TextureType type) const
+{
+    auto it = m_Textures.find(type);
+    return (it != m_Textures.end()) ? it->second : nullptr;
 }
 
 void Material::SetCustomTexture(const std::string& name, const std::shared_ptr<ITexture>& texture)
@@ -78,12 +93,6 @@ void Material::SetCustomTexture(const std::string& name, const std::shared_ptr<I
         return;
     }
     m_CustomTextures[name] = texture;
-}
-
-std::shared_ptr<ITexture> Material::GetTexture(TextureType type) const
-{
-    auto it = m_Textures.find(type);
-    return (it != m_Textures.end()) ? it->second : nullptr;
 }
 
 std::shared_ptr<ITexture> Material::GetCustomTexture(const std::string& name) const
@@ -100,8 +109,7 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const
     }
 
     // 1. Bind standard textures
-    for (auto& [texType, texPtr] : m_Textures)
-    {
+    for (const auto& [texType, texPtr] : m_Textures) {
         if (!texPtr) continue;
         int slot = GetTextureBindingSlot(texType);
         texPtr->Bind(slot);
@@ -110,11 +118,9 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const
         shader->SetUniform(uniformName, slot);
     }
 
-    // 2. Bind custom textures
-    //    Let’s pick a start slot offset beyond the standard ones, e.g. 10
+    // 2. Bind custom textures (slots start after the standard ones, e.g. 10)
     int customSlot = 10;
-    for (auto& [customName, texPtr] : m_CustomTextures)
-    {
+    for (const auto& [customName, texPtr] : m_CustomTextures) {
         if (!texPtr) continue;
         texPtr->Bind(customSlot);
         shader->SetUniform(customName, customSlot);
@@ -122,8 +128,7 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const
     }
 
     // 3. Bind standard parameters
-    for (auto& [paramType, value] : m_Params)
-    {
+    for (const auto& [paramType, value] : m_Params) {
         switch (paramType)
         {
         case MaterialParamType::Ambient:
@@ -139,14 +144,13 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const
             shader->SetUniform("material.shininess", std::get<float>(value));
             break;
         default:
-            // ...
+            Logger::GetLogger()->warn("Unhandled MaterialParamType {}.", static_cast<int>(paramType));
             break;
         }
     }
 
-    // 4. Bind custom params
-    for (auto& [customName, val] : m_CustomParams)
-    {
+    // 4. Bind custom parameters
+    for (const auto& [customName, val] : m_CustomParams) {
         std::visit([&](auto&& arg) {
             shader->SetUniform(customName, arg);
             }, val);
@@ -156,8 +160,7 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const
 void Material::Unbind() const
 {
     // 1. Unbind standard textures
-    for (auto& [texType, texPtr] : m_Textures)
-    {
+    for (const auto& [texType, texPtr] : m_Textures) {
         if (!texPtr) continue;
         int slot = GetTextureBindingSlot(texType);
         texPtr->Unbind(slot);
@@ -165,8 +168,7 @@ void Material::Unbind() const
 
     // 2. Unbind custom textures
     int customSlot = 10;
-    for (auto& [customName, texPtr] : m_CustomTextures)
-    {
+    for (const auto& [customName, texPtr] : m_CustomTextures) {
         if (!texPtr) continue;
         texPtr->Unbind(customSlot);
         ++customSlot;

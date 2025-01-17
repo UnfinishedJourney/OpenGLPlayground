@@ -94,12 +94,12 @@ std::string ModelLoader::CreateMaterialForAssimpMat(const aiMaterial* aiMat,
         return existingMat->GetName();
     }
 
-    auto mat = std::make_shared<Material>();
+    auto mat = std::make_shared<Material>(matLayout);
     mat->SetName(matName);
     LoadMaterialProperties(aiMat, mat, matLayout);
     LoadMaterialTextures(aiMat, mat, matLayout, directory);
 
-    MaterialManager::GetInstance().AddMaterial(matName, matLayout, mat);
+    MaterialManager::GetInstance().AddMaterial(mat);
     return matName;
 }
 
@@ -205,7 +205,7 @@ std::string ModelLoader::CreateFallbackMaterialName()
 std::shared_ptr<Material> ModelLoader::CreateFallbackMaterial(const std::string& name,
     const MaterialLayout& matLayout)
 {
-    auto fallbackMat = std::make_shared<Material>();
+    auto fallbackMat = std::make_shared<Material>(matLayout);
     fallbackMat->SetName(name);
     fallbackMat->SetParam(MaterialParamType::Ambient, glm::vec3(0.2f));
     fallbackMat->SetParam(MaterialParamType::Diffuse, glm::vec3(0.6f));
@@ -271,7 +271,7 @@ void ModelLoader::ProcessAssimpNode(const aiScene* scene,
             // fallback
             materialName = CreateFallbackMaterialName();
             auto fallback = CreateFallbackMaterial(materialName, matLayout);
-            MaterialManager::GetInstance().AddMaterial(materialName, matLayout, fallback);
+            MaterialManager::GetInstance().AddMaterial(fallback);
             m_Data.createdMaterials.push_back(materialName);
         }
         else {
@@ -307,9 +307,9 @@ void ModelLoader::ProcessAssimpMesh(const aiScene* scene,
     if (meshLayout.hasPositions && aimesh->HasPositions()) {
         newMesh->positions.reserve(aimesh->mNumVertices);
         for (unsigned v = 0; v < aimesh->mNumVertices; v++) {
-            glm::vec3 pos(aimesh->mVertices[v].x,
-                aimesh->mVertices[v].y,
-                aimesh->mVertices[v].z);
+            glm::vec3 pos(0.01 * aimesh->mVertices[v].x,
+                0.01 * aimesh->mVertices[v].y,
+                0.01 * aimesh->mVertices[v].z);
             newMesh->positions.push_back(pos);
             newMesh->minBounds = glm::min(newMesh->minBounds, pos);
             newMesh->maxBounds = glm::max(newMesh->maxBounds, pos);

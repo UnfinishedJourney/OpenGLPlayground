@@ -14,15 +14,15 @@ TestBistro::TestBistro() : Test() {}
 
 void TestBistro::OnEnter() {
     // Initialize Camera
-    m_Camera = std::make_shared<Camera>(
-        glm::vec3(10.0f, 5.0f, 15.0f), // Position: further away for a large scene
-        glm::vec3(0.0f, 1.0f, 0.0f),   // Up vector
-        -135.0f,                        // Yaw: facing towards the origin
-        -20.0f                          // Pitch: looking slightly downward
-    );
-    m_Camera->SetSpeed(200.0f);
-    m_Camera->SetFarPlane(10000.0f);
-    m_Scene->SetCamera(m_Camera);
+    //m_Camera = std::make_shared<Camera>(
+    //    glm::vec3(10.0f, 5.0f, 15.0f), // Position: further away for a large scene
+    //    glm::vec3(0.0f, 1.0f, 0.0f),   // Up vector
+    //    -135.0f,                        // Yaw: facing towards the origin
+    //    -20.0f                          // Pitch: looking slightly downward
+    //);
+    //m_Camera->SetSpeed(200.0f);
+    //m_Camera->SetFarPlane(10000.0f);
+    //m_Scene->SetCamera(m_Camera);
 
     // Load the "bistro" model into the scene
     if (!m_Scene->LoadModelIntoScene("bistro", "basicTextured", "objMaterial")) {
