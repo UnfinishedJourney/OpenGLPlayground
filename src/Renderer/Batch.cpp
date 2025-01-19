@@ -170,20 +170,10 @@ void Batch::BuildBatches()
         reinterpret_cast<const std::byte*>(combinedVertexData.data()),
         combinedVertexData.size() * sizeof(float)
     );
-    if (!m_VBO) {
-        m_VBO = std::make_shared<VertexBuffer>(vertSpan, GL_STATIC_DRAW);
-    }
-    else {
-        m_VBO->UpdateData(vertSpan);
-    }
 
+    auto m_VBO = std::make_unique<VertexBuffer>(vertSpan, GL_STATIC_DRAW);
     std::span<const GLuint> idxSpan(combinedIndices.data(), combinedIndices.size());
-    if (!m_IBO) {
-        m_IBO = std::make_shared<IndexBuffer>(idxSpan, GL_STATIC_DRAW);
-    }
-    else {
-        m_IBO->UpdateData(idxSpan);
-    }
+    auto m_IBO = std::make_unique<IndexBuffer>(idxSpan, GL_STATIC_DRAW);
 
     // Indirect command buffer
     std::span<const std::byte> cmdSpan(

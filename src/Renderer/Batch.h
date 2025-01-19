@@ -77,7 +77,6 @@ public:
     const Transform& GetTransform() const;
 
 private:
-    void BuildBatchIfDirty(); // convenience if you want a separate method
 
     const std::string                           m_ShaderName;
     const std::string                           m_MaterialName;
@@ -87,13 +86,9 @@ private:
 
     std::vector<std::shared_ptr<RenderObject>> m_RenderObjects;
 
-    // GPU buffers
     std::unique_ptr<VertexArray>   m_VAO;
-    std::shared_ptr<VertexBuffer>  m_VBO;
-    std::shared_ptr<IndexBuffer>   m_IBO;
     std::unique_ptr<IndirectBuffer> m_DrawCommandBuffer;
 
-    // Draw commands & LOD
     std::vector<DrawElementsIndirectCommand> m_DrawCommands;
     std::vector<std::vector<LODInfo>>        m_LODInfos;
 
