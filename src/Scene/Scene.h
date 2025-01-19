@@ -44,7 +44,8 @@ public:
     // Loading
     bool LoadModelIntoScene(const std::string& modelName,
         const std::string& defaultShaderName,
-        const std::string& defaultMaterialName);
+        const std::string& defaultMaterialName,
+        float scaleFactor = 1.0);
 
     // Batching
     void BuildStaticBatchesIfNeeded();

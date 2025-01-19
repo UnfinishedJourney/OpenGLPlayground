@@ -10,6 +10,7 @@
 #include "Graphics/Buffers/IndexBuffer.h"
 #include "Graphics/Buffers/VertexBufferLayout.h"
 #include "Graphics/Meshes/MeshLayout.h"
+#include "Scene/Transform.h"
 #include "Graphics/Buffers/IndirectBuffer.h"
 
 /**
@@ -43,7 +44,7 @@ class Batch
 public:
     Batch(const std::string& shaderName,
         const std::string& materialName,
-        const MeshLayout& meshLayout);
+        const Transform transform);
     ~Batch();
 
     void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
@@ -73,13 +74,17 @@ public:
     const std::string& GetShaderName() const;
     const std::string& GetMaterialName() const;
     const MeshLayout& GetMeshLayout() const;
+    const Transform& GetTransform() const;
 
 private:
     void BuildBatchIfDirty(); // convenience if you want a separate method
 
-    std::string                           m_ShaderName;
-    std::string                           m_MaterialName;
-    MeshLayout                            m_MeshLayout;
+    const std::string                           m_ShaderName;
+    const std::string                           m_MaterialName;
+    MeshLayout                                  m_MeshLayout;
+    const Transform                             m_Transform;
+
+
     std::vector<std::shared_ptr<RenderObject>> m_RenderObjects;
 
     // GPU buffers

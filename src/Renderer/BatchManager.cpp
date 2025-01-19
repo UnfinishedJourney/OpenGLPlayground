@@ -38,22 +38,22 @@ std::vector<std::shared_ptr<Batch>> BatchManager::BuildBatchesFromRenderObjects(
 
     // We'll group by (ShaderName, MaterialName, MeshLayout)
     // That triple is the key for one batch
-    using LayoutMap = std::unordered_map<MeshLayout, std::vector<std::shared_ptr<RenderObject>>>;
-    using MaterialMap = std::unordered_map<std::string, LayoutMap>;
+    using TransformMap = std::unordered_map<Transform, std::vector<std::shared_ptr<RenderObject>>>;
+    using MaterialMap = std::unordered_map<std::string, TransformMap>;
     std::unordered_map<std::string, MaterialMap> bigMap;
 
     for (auto& ro : ros) {
         bigMap[ro->GetShaderName()]
             [ro->GetMaterialName()]
-            [ro->GetMeshLayout()]
+            [*(ro->GetTransform())]
             .push_back(ro);
     }
 
     // Then build each batch
     for (auto& [shaderName, matMap] : bigMap) {
-        for (auto& [matName, layoutMap] : matMap) {
-            for (auto& [layout, roVec] : layoutMap) {
-                auto batch = std::make_shared<Batch>(shaderName, matName, layout);
+        for (auto& [matName, transformMap] : matMap) {
+            for (auto& [transform, roVec] : transformMap) {
+                auto batch = std::make_shared<Batch>(shaderName, matName, transform);
                 for (auto& ro : roVec) {
                     batch->AddRenderObject(ro);
                 }

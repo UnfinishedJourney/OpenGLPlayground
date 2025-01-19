@@ -7,8 +7,9 @@
 #include <assimp/postprocess.h>
 #include <glm/gtc/matrix_transform.hpp>
 
-ModelLoader::ModelLoader()
-    : m_FallbackMaterialCounter(0)
+ModelLoader::ModelLoader(float scaleFactor)
+    : m_FallbackMaterialCounter(0),
+    m_ScaleFactor(scaleFactor)
 {
 }
 
@@ -307,9 +308,9 @@ void ModelLoader::ProcessAssimpMesh(const aiScene* scene,
     if (meshLayout.hasPositions && aimesh->HasPositions()) {
         newMesh->positions.reserve(aimesh->mNumVertices);
         for (unsigned v = 0; v < aimesh->mNumVertices; v++) {
-            glm::vec3 pos(0.01 * aimesh->mVertices[v].x,
-                0.01 * aimesh->mVertices[v].y,
-                0.01 * aimesh->mVertices[v].z);
+            glm::vec3 pos(m_ScaleFactor * aimesh->mVertices[v].x,
+                m_ScaleFactor * aimesh->mVertices[v].y,
+                m_ScaleFactor * aimesh->mVertices[v].z);
             newMesh->positions.push_back(pos);
             newMesh->minBounds = glm::min(newMesh->minBounds, pos);
             newMesh->maxBounds = glm::max(newMesh->maxBounds, pos);

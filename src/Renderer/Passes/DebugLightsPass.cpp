@@ -1,6 +1,7 @@
 #include "Renderer/Passes/DebugLightsPass.h"
 #include "Resources/ResourceManager.h"
 #include "Utilities/Logger.h"
+#include "Utilities/Utility.h"
 #include <glad/glad.h>
 
 DebugLightsPass::DebugLightsPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene>& scene)

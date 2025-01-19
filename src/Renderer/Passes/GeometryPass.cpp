@@ -69,9 +69,9 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
             materialManager.BindMaterial(batch->GetMaterialName(), shader);
 
             // Model matrix from first object if all merged
-            auto roTransform = batch->GetRenderObjects().front()->GetTransform();
-            glm::mat4 modelMatrix = roTransform->GetModelMatrix();
-            glm::mat3 normalMatrix = roTransform->GetNormalMatrix();
+            auto roTransform = batch->GetTransform();
+            glm::mat4 modelMatrix = roTransform.GetModelMatrix();
+            glm::mat3 normalMatrix = roTransform.GetNormalMatrix();
 
             shader->SetUniform("u_Model", modelMatrix);
             shader->SetUniform("u_NormalMatrix", normalMatrix);

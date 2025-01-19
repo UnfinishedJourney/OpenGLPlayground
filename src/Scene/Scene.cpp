@@ -73,7 +73,8 @@ void Scene::SetCamera(const std::shared_ptr<Camera>& camera)
 
 bool Scene::LoadModelIntoScene(const std::string& modelName,
     const std::string& defaultShaderName,
-    const std::string& defaultMaterialName)
+    const std::string& defaultMaterialName,
+    float scaleFactor)
 {
     auto& resourceManager = ResourceManager::GetInstance();
 
@@ -82,7 +83,7 @@ bool Scene::LoadModelIntoScene(const std::string& modelName,
     m_MeshLayout = meshLayout;  // Remember the layout used for future references
 
     // Use our "BetterModelLoader" to load the model into the SceneGraph
-    ModelLoader loader;
+    ModelLoader loader(scaleFactor);
     std::string modelPath = ModelLoader::GetModelPath(modelName);
     if (modelPath.empty()) {
         Logger::GetLogger()->error("Unknown model name '{}'. Check your path registry.", modelName);

@@ -2,21 +2,23 @@
 #include "Utilities/Logger.h"
 #include <numeric>
 #include <span>
+#include "Resources/ResourceManager.h"
 
 Batch::Batch(const std::string& shaderName,
     const std::string& materialName,
-    const MeshLayout& meshLayout)
+    const Transform transform)
     : m_ShaderName(shaderName)
     , m_MaterialName(materialName)
-    , m_MeshLayout(meshLayout)
+    , m_Transform(transform)
     , m_VAO(std::make_unique<VertexArray>())
     , m_IsDirty(true)
 {
+    auto [mel, mal] = ResourceManager::GetInstance().getLayoutsFromShader(shaderName);
+    m_MeshLayout = mel;
 }
 
 Batch::~Batch()
 {
-    // RAII automatically cleans up
 }
 
 void Batch::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)
@@ -43,6 +45,11 @@ const std::string& Batch::GetMaterialName() const
 const MeshLayout& Batch::GetMeshLayout() const
 {
     return m_MeshLayout;
+}
+
+const Transform& Batch::GetTransform() const
+{
+    return m_Transform;
 }
 
 void Batch::BuildBatches()

@@ -2,6 +2,7 @@
 #include "Resources/ShaderManager.h"
 #include "Resources/MeshManager.h"
 #include "Utilities/Logger.h"
+#include "Utilities/Utility.h"
 #include <glad/glad.h>
 
 GridPass::GridPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene>& scene)

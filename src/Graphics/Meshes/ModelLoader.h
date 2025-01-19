@@ -57,7 +57,7 @@ struct BetterMeshTextures
 class ModelLoader
 {
 public:
-    ModelLoader();
+    ModelLoader(float scaleFactor = 1.0);
     ~ModelLoader();
 
     //probably should add something for lod loader
@@ -75,7 +75,7 @@ private:
     //maybe should use unique_ptr or something like that
     BetterModelData m_Data;
     int m_FallbackMaterialCounter = 0;
-
+    float m_ScaleFactor = 1.0;
 private:
     void LoadSceneMaterials(const aiScene* scene,
         const MaterialLayout& matLayout,
