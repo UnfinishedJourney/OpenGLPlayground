@@ -80,7 +80,7 @@
                 "fragment": "../shaders/Wireframe.frag"
             }
         },
-        "HelmetPBR": {
+        "helmetPBR": {
             "binary_path": "../shaders/bin/HelmetPBR.bin",
             "shader_stages": {
                 "vertex": "../shaders/HelmetPBR.vert",

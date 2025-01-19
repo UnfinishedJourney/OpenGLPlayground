@@ -19,6 +19,13 @@ std::unordered_map<RenderObject*, size_t> LODEvaluator::EvaluateLODs(
         return lodMap;
     }
 
+    // Compute dynamic thresholds based on the camera's far plane.
+    float farPlane = camera->GetFarPlane();
+    float thresholds[4];
+    for (int i = 0; i < 4; ++i) {
+        thresholds[i] = m_Ratios[i] * farPlane;
+    }
+
     glm::vec3 camPos = camera->GetPosition();
 
     for (auto& ro : objects) {
@@ -28,8 +35,9 @@ std::unordered_map<RenderObject*, size_t> LODEvaluator::EvaluateLODs(
         if (distance < 0.0f) distance = 0.0f;
 
         size_t lodLevel = 0;
-        for (float threshold : m_Distances) {
-            if (distance > threshold) {
+        // Now use our computed thresholds
+        for (int i = 0; i < 4; ++i) {
+            if (distance > thresholds[i]) {
                 lodLevel++;
             }
             else {
@@ -37,7 +45,7 @@ std::unordered_map<RenderObject*, size_t> LODEvaluator::EvaluateLODs(
             }
         }
 
-        // Clamp to max LOD
+        // Clamp to max available LOD for the object's mesh.
         size_t maxLOD = std::max<size_t>(1, ro->GetMesh()->GetLODCount()) - 1;
         lodLevel = std::min(lodLevel, maxLOD);
 

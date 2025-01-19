@@ -56,6 +56,7 @@ void Application::Init()
         m_TestMenu->RegisterTest("ClearColor", []() { return std::make_shared<TestClearColor>();  });
         m_TestMenu->RegisterTest("Bistro", []() { return std::make_shared<TestBistro>();      });
         m_TestMenu->RegisterTest("Flipbook", []() { return std::make_shared<TestFlipBookEffect>(); });
+        m_TestMenu->RegisterTest("PBRHelmet", []() { return std::make_shared<TestDamagedHelmet>(); });
 
         // Register a special test that displays the menu itself
         m_TestManager.RegisterTest("Test Menu", [this]() {

@@ -27,6 +27,12 @@ std::pair<MeshLayout, MaterialLayout> ResourceManager::getLayoutsFromShader(std:
                 MaterialLayout{ {}, {TextureType::Albedo} }
             }
         },
+        {"helmetPBR",
+            {
+                MeshLayout{ true, true, true, false, {TextureType::Albedo} },
+                MaterialLayout{ {}, {TextureType::Albedo, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut} }
+            }
+        },
         // Add more shader layouts as needed
     };
 

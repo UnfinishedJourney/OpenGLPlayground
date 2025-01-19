@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <glm/glm.hpp>
 #include <glad/glad.h>
+#include <stb_image_write.h>
 
 TextureManager& TextureManager::GetInstance() {
     static TextureManager instance;
@@ -261,4 +262,65 @@ void TextureManager::Clear() {
     std::lock_guard<std::mutex> lock(m_Mutex);
     m_Textures.clear();
     Logger::GetLogger()->info("Cleared all textures from TextureManager.");
+}
+
+bool TextureManager::SaveTexture(const std::string& textureName, const std::filesystem::path& outputFile)
+{
+    std::lock_guard<std::mutex> lock(m_Mutex);
+
+    // 1. Look up the texture in our map
+    auto it = m_Textures.find(textureName);
+    if (it == m_Textures.end()) {
+        Logger::GetLogger()->error("SaveTexture failed: Texture '{}' not found.", textureName);
+        return false;
+    }
+
+    // 2. Cast to OpenGLTexture so we can access the native texture ID
+    auto glTexture = std::dynamic_pointer_cast<OpenGLTexture>(it->second);
+    if (!glTexture) {
+        Logger::GetLogger()->error("SaveTexture failed: Texture '{}' is not an OpenGLTexture.", textureName);
+        return false;
+    }
+
+    // 3. Retrieve the texture ID and dimensions
+    GLuint textureID = glTexture->GetTextureID();
+    int width = static_cast<int>(glTexture->GetWidth());
+    int height = static_cast<int>(glTexture->GetHeight());
+
+    // 4. Bind the texture and read back data via glGetTexImage
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    // By default, let's assume it's an RGBA8 texture.
+    // We'll read it back as GL_RGBA, GL_UNSIGNED_BYTE.
+    // If your texture's internal format is different (e.g., GL_RG32F),
+    // you need to adjust the read parameters and how you convert it to 8-bit.
+    std::vector<unsigned char> pixels(width * height * 4);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // 5. Save with stb_image_write. For an RGBA8, we can do:
+    //    stbi_write_png  (for PNG)
+    //    stbi_write_jpg  (for JPEG)
+    //    stbi_write_tga  (for TGA)
+    //    stbi_write_bmp  (for BMP)
+    //    stbi_write_hdr  (for HDR) [but that takes float data, not bytes]
+
+    // For PNG:
+    int channels = 4;
+    int strideInBytes = width * channels;
+
+    if (!stbi_write_png(outputFile.string().c_str(),
+        width,
+        height,
+        channels,
+        pixels.data(),
+        strideInBytes))
+    {
+        Logger::GetLogger()->error("Failed to write texture '{}' to file '{}'.", textureName, outputFile.string());
+        return false;
+    }
+
+    Logger::GetLogger()->info("Saved texture '{}' to '{}'.", textureName, outputFile.string());
+    return true;
 }

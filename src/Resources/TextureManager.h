@@ -30,6 +30,8 @@ private:
     TextureManager() = default;
     ~TextureManager() = default;
 
+    bool SaveTexture(const std::string& textureName, const std::filesystem::path& outputFile);
+
     // Helper methods for different texture types
     bool Load2DTextures(const nlohmann::json& json);
     bool LoadCubeMaps(const nlohmann::json& json);

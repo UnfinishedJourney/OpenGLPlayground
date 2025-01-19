@@ -19,7 +19,8 @@ public:
         const std::shared_ptr<Camera>& camera);
 
 private:
-    // The old approach: fixed distance thresholds
-    float m_Distances[4] = { 50.0f, 100.0f, 200.0f, 400.0f };
-    //float m_Distances[4] = { 2.0f, 4.0f, 6.0f, 8.0f }; test lods
+    // Instead of fixed absolute distances, we define ratios.
+    // For instance, if farPlane is 150 and the ratios are 0.25, 0.5, 0.75, 1.0,
+    // the thresholds will be 37.5, 75, 112.5, and 150.
+    float m_Ratios[4] = { 0.25f, 0.50f, 0.75f, 1.0f };
 };

@@ -14,12 +14,12 @@ out vec4 out_FragColor; // Output fragment color
 
 // **3. Define Samplers**
 
-layout(binding = 0) uniform sampler2D texBRDF_LUT;
-layout(binding = 1) uniform sampler2D texAlbedo;
-layout(binding = 2) uniform sampler2D texNormal;
-layout(binding = 3) uniform sampler2D texMetalRoughness;
-layout(binding = 4) uniform sampler2D texAO;
-layout(binding = 5) uniform sampler2D texEmissive;
+layout(binding = 0) uniform sampler2D texAlbedo;
+layout(binding = 1) uniform sampler2D texNormal;
+layout(binding = 2) uniform sampler2D texMetalRoughness;
+layout(binding = 3) uniform sampler2D texAO;
+layout(binding = 4) uniform sampler2D texEmissive;
+layout(binding = 5) uniform sampler2D texBRDF_LUT;
 
 // **4. Define Constants**
 
