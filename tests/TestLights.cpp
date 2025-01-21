@@ -37,7 +37,7 @@ void TestLights::OnEnter()
         m_MatName = materials[0];
         auto existingMat = MaterialManager::GetInstance().GetMaterialByName(m_MatName);
         if (existingMat) {
-            existingMat->SetParam(MaterialParamType::Ambient, glm::vec3(0.9f, 0.1f, 0.3f));
+            existingMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.9f, 0.1f, 0.3f));
         }
     }
 }

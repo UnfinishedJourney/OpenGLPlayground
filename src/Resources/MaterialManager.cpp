@@ -81,42 +81,42 @@ void MaterialManager::UnbindMaterial()
 
 void MaterialManager::InitializeStandardMaterials()
 {
-    // Example: Gold
-    MaterialLayout goldLayout{
-        { MaterialParamType::Ambient, MaterialParamType::Diffuse,
-          MaterialParamType::Specular, MaterialParamType::Shininess },
-        {} // textures if any
-    };
-
-    // Construct via builder for clarity
-    auto gold = MaterialBuilder()
-        .WithName("Gold")
-        .WithParam(MaterialParamType::Ambient, glm::vec3(0.24725f, 0.1995f, 0.0745f))
-        .WithParam(MaterialParamType::Diffuse, glm::vec3(0.75164f, 0.60648f, 0.22648f))
-        .WithParam(MaterialParamType::Specular, glm::vec3(0.628281f, 0.555802f, 0.366065f))
-        .WithParam(MaterialParamType::Shininess, 51.2f)
-        .WithLayout(goldLayout)
-        .Build();
-
-    AddMaterial(gold);
-
-    // Example: Silver
-    MaterialLayout silverLayout{
-        { MaterialParamType::Ambient, MaterialParamType::Diffuse,
-          MaterialParamType::Specular, MaterialParamType::Shininess },
-        {}
-    };
-
-    auto silver = MaterialBuilder()
-        .WithName("Silver")
-        .WithParam(MaterialParamType::Ambient, glm::vec3(0.19225f))
-        .WithParam(MaterialParamType::Diffuse, glm::vec3(0.50754f))
-        .WithParam(MaterialParamType::Specular, glm::vec3(0.508273f))
-        .WithParam(MaterialParamType::Shininess, 51.2f)
-        .WithLayout(silverLayout)
-        .Build();
-
-    AddMaterial(silver);
+//    // Example: Gold
+//    MaterialLayout goldLayout{
+//        { MaterialParamType::Ambient, MaterialParamType::Diffuse,
+//          MaterialParamType::Specular, MaterialParamType::Shininess },
+//        {} // textures if any
+//    };
+//
+//    // Construct via builder for clarity
+//    auto gold = MaterialBuilder()
+//        .WithName("Gold")
+//        .WithParam(MaterialParamType::Ambient, glm::vec3(0.24725f, 0.1995f, 0.0745f))
+//        .WithParam(MaterialParamType::Diffuse, glm::vec3(0.75164f, 0.60648f, 0.22648f))
+//        .WithParam(MaterialParamType::Specular, glm::vec3(0.628281f, 0.555802f, 0.366065f))
+//        .WithParam(MaterialParamType::Shininess, 51.2f)
+//        .WithLayout(goldLayout)
+//        .Build();
+//
+//    AddMaterial(gold);
+//
+//    // Example: Silver
+//    MaterialLayout silverLayout{
+//        { MaterialParamType::Ambient, MaterialParamType::Diffuse,
+//          MaterialParamType::Specular, MaterialParamType::Shininess },
+//        {}
+//    };
+//
+//    auto silver = MaterialBuilder()
+//        .WithName("Silver")
+//        .WithParam(MaterialParamType::Ambient, glm::vec3(0.19225f))
+//        .WithParam(MaterialParamType::Diffuse, glm::vec3(0.50754f))
+//        .WithParam(MaterialParamType::Specular, glm::vec3(0.508273f))
+//        .WithParam(MaterialParamType::Shininess, 51.2f)
+//        .WithLayout(silverLayout)
+//        .Build();
+//
+//    AddMaterial(silver);
 }
 
 std::vector<std::string> MaterialManager::GetMaterialNames() const

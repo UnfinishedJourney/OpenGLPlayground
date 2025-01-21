@@ -73,7 +73,7 @@ public:
     bool GetBDebugLights() const { return m_BDebugLights; }
 
     bool GetBSkybox() const { return m_EnableSkybox; }
-    bool SetBSkybox(bool bSkyBox) { m_EnableSkybox = bSkyBox; }
+    void SetBSkybox(bool bSkyBox) { m_EnableSkybox = bSkyBox; }
 
 private:
     // SceneGraph holds hierarchical transforms, bounding volumes, etc.

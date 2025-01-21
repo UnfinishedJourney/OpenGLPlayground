@@ -1,8 +1,27 @@
-struct Material {
-    vec3 Ka;          // Ambient reflectivity
-    vec3 Kd;          // Diffuse reflectivity
-    vec3 Ks;          // Specular reflectivity
-    float shininess;  // Specular shininess factor
+struct PackedMtlParams {
+    vec4 Mtl0;  // (Ka.xyz, Ni)
+    vec4 Mtl1;  // (Kd.xyz, d)
+    vec4 Mtl2;  // (Ks.xyz, Ns)
+    vec4 Mtl3;  // (Ke.xyz, extra)
 };
 
-uniform Material material;
+uniform PackedMtlParams uMaterial;       // Mtl0..Mtl3
+
+// Uniforms
+uniform int uMaterial_textureUsageFlags; // bitmask
+
+
+layout(binding = 1) uniform sampler2D uTexAlbedo;
+layout(binding = 2) uniform sampler2D uTexNormal;
+layout(binding = 3) uniform sampler2D uTexMetalRoughness;
+layout(binding = 4) uniform sampler2D uTexAO;
+layout(binding = 5) uniform sampler2D uTexEmissive;
+layout(binding = 6) uniform sampler2D uTexAmbient;
+layout(binding = 7) uniform sampler2D uTexHeight;
+layout(binding = 8) uniform sampler2D uTexBRDFLUT; // if you want, etc.
+
+// A helper to check bits in the bitmask:
+bool HasTexture(int bitIndex)
+{
+    return (uMaterial_textureUsageFlags & (1 << bitIndex)) != 0;
+}

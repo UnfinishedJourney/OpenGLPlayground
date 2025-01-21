@@ -125,23 +125,23 @@ void ModelLoader::LoadMaterialProperties(const aiMaterial* aiMat,
     if (matLayout.params.count(MaterialParamType::Ambient)) {
         aiColor3D color(0.1f, 0.1f, 0.1f);
         aiMat->Get(AI_MATKEY_COLOR_AMBIENT, color);
-        mat->SetParam(MaterialParamType::Ambient, glm::vec3(color.r, color.g, color.b));
+        mat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(color.r, color.g, color.b));
     }
     // Similarly for Diffuse, Specular, Shininess, etc.
     if (matLayout.params.count(MaterialParamType::Diffuse)) {
         aiColor3D color(0.5f, 0.5f, 0.5f);
         aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-        mat->SetParam(MaterialParamType::Diffuse, glm::vec3(color.r, color.g, color.b));
+        mat->AssignToPackedParams(MaterialParamType::Diffuse, glm::vec3(color.r, color.g, color.b));
     }
     if (matLayout.params.count(MaterialParamType::Specular)) {
         aiColor3D color(0.5f, 0.5f, 0.5f);
         aiMat->Get(AI_MATKEY_COLOR_SPECULAR, color);
-        mat->SetParam(MaterialParamType::Specular, glm::vec3(color.r, color.g, color.b));
+        mat->AssignToPackedParams(MaterialParamType::Specular, glm::vec3(color.r, color.g, color.b));
     }
     if (matLayout.params.count(MaterialParamType::Shininess)) {
         float shininessVal = 32.0f;
         aiMat->Get(AI_MATKEY_SHININESS, shininessVal);
-        mat->SetParam(MaterialParamType::Shininess, shininessVal);
+        mat->AssignToPackedParams(MaterialParamType::Shininess, shininessVal);
     }
 }
 
@@ -203,10 +203,10 @@ std::shared_ptr<Material> ModelLoader::CreateFallbackMaterial(const std::string&
 {
     auto fallbackMat = std::make_shared<Material>(matLayout);
     fallbackMat->SetName(name);
-    fallbackMat->SetParam(MaterialParamType::Ambient, glm::vec3(0.2f));
-    fallbackMat->SetParam(MaterialParamType::Diffuse, glm::vec3(0.6f));
-    fallbackMat->SetParam(MaterialParamType::Specular, glm::vec3(0.5f));
-    fallbackMat->SetParam(MaterialParamType::Shininess, 32.0f);
+    fallbackMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.2f));
+    fallbackMat->AssignToPackedParams(MaterialParamType::Diffuse, glm::vec3(0.6f));
+    fallbackMat->AssignToPackedParams(MaterialParamType::Specular, glm::vec3(0.5f));
+    fallbackMat->AssignToPackedParams(MaterialParamType::Shininess, 32.0f);
     return fallbackMat;
 }
 

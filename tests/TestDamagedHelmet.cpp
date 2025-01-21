@@ -23,6 +23,8 @@ void TestDamagedHelmet::OnEnter() {
         Logger::GetLogger()->error("Failed to load 'helmet' model in TestDamagedHelmet");
         return;
     }
+
+    m_Scene->SetBSkybox(true);
 }
 
 void TestDamagedHelmet::OnExit() {
