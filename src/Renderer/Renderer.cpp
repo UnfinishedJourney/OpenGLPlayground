@@ -2,6 +2,7 @@
 #include "Renderer/Passes/GeometryPass.h"
 #include "Renderer/Passes/GridPass.h"
 #include "Renderer/Passes/TerrainPass.h"
+#include "Renderer/Passes/SkyBoxPass.h"
 #include "Renderer/Passes/PostProcessingPass.h"
 #include "Renderer/Passes/DebugLightsPass.h"
 #include "Graphics/Effects/PostProcessingEffects/EdgeDetectionEffect.h"
@@ -69,6 +70,9 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
     {
         m_RenderPasses.push_back(std::make_unique<GeometryPass>(framebuffer, scene));
     }
+    if (scene->GetBSkybox()) {
+        m_RenderPasses.push_back(std::make_unique<SkyBoxPass>(framebuffer, scene));
+    }
 
     // 2) Optional Grid
     if (scene->GetBGrid()) {
@@ -96,10 +100,11 @@ std::shared_ptr<FrameBuffer> Renderer::CreateFramebufferForScene(const std::shar
     PROFILE_FUNCTION(Yellow);
 
     std::vector<FrameBufferTextureAttachment> colorAttachments = {
-        { GL_COLOR_ATTACHMENT0, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE }
+        { GL_COLOR_ATTACHMENT0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE }  //for gamma-correction
     };
 
     auto framebuffer = std::make_shared<FrameBuffer>(width, height, colorAttachments, true);
+    glEnable(GL_FRAMEBUFFER_SRGB);
     return framebuffer;
 }
 

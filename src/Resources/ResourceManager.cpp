@@ -33,6 +33,12 @@ std::pair<MeshLayout, MaterialLayout> ResourceManager::getLayoutsFromShader(std:
                 MaterialLayout{ {}, {TextureType::Albedo, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut} }
             }
         },
+        {"bistroShader",
+            {
+                MeshLayout{ true, true, false, false, {TextureType::Albedo} },
+                MaterialLayout{ {}, {TextureType::Albedo, TextureType::Ambient} }
+            }
+        },
         // Add more shader layouts as needed
     };
 

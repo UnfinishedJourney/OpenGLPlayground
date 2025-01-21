@@ -55,6 +55,8 @@ void DebugLightsPass::Execute(const std::shared_ptr<Scene>& scene)
         static_cast<GLsizei>(scene->GetLightsData().size())
     ));
 
+    glDisable(GL_CULL_FACE);
+
     m_LightSphereMeshBuffer->Unbind();
     m_Framebuffer->Unbind();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

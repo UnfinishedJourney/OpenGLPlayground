@@ -44,6 +44,13 @@
                 "fragment": "../shaders/DebugGeo/DebugLights.frag"
             }
         },
+        "skyBox": {
+            "binary_path": "../shaders/bin/SkyBox.bin",
+            "shader_stages": {
+                "vertex": "../shaders/DebugGeo/SkyBox.vert",
+                "fragment": "../shaders/DebugGeo/SkyBox.frag"
+            }
+        },
         "presentTexture": {
             "binary_path": "../shaders/bin/PresentTexture.bin",
             "shader_stages": {
@@ -85,6 +92,13 @@
             "shader_stages": {
                 "vertex": "../shaders/HelmetPBR.vert",
                 "fragment": "../shaders/HelmetPBR.frag"
+            }
+        },
+        "bistroShader": {
+            "binary_path": "../shaders/bin/BistroShader.bin",
+            "shader_stages": {
+                "vertex": "../shaders/BistroShader.vert",
+                "fragment": "../shaders/BistroShader.frag"
             }
         },
         "brdfCompute": {

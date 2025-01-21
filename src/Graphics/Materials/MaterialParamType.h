@@ -24,15 +24,19 @@ namespace std {
 }
 
 enum class TextureType : std::size_t {
-    Albedo = 0,          // bit 0
-    Normal = 1,          // bit 1
-    MetalRoughness = 2,  // bit 2
-    AO = 3,              // bit 3
-    Emissive = 4,        // bit 4
+    Albedo          = 0,            // bit 0
+    Normal          = 1,            // bit 1
+    MetalRoughness  = 2,            // bit 2
+    AO              = 3,            // bit 3
+    Emissive        = 4,            // bit 4
+    Ambient         = 5,
+    Height          = 6,
 
-    BRDFLut = 5,         // NEW: dedicated slot for BRDF LUT
+    BRDFLut         = 7,            // NEW: dedicated slot for BRDF LUT
 
-    COUNT = 6
+    Unknown         = 8,
+
+    COUNT           = 9
 };
 
 

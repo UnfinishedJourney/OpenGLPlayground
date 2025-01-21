@@ -57,7 +57,13 @@ struct BetterMeshTextures
 class ModelLoader
 {
 public:
-    ModelLoader(float scaleFactor = 1.0);
+    ModelLoader(float scaleFactor = 1.0, std::unordered_map<aiTextureType, TextureType> aiToMyType = {
+            { aiTextureType_DIFFUSE,  TextureType::Albedo      },
+            { aiTextureType_NORMALS,  TextureType::Normal      },
+            { aiTextureType_SPECULAR,  TextureType::MetalRoughness },
+            { aiTextureType_EMISSIVE, TextureType::Emissive    },
+            { aiTextureType_AMBIENT, TextureType::Emissive    },
+        });
     ~ModelLoader();
 
     //probably should add something for lod loader
@@ -130,4 +136,6 @@ private:
     void CenterScene(SceneGraph& sceneGraph);
 
     glm::mat4 AiToGlm(const aiMatrix4x4& m);
+
+    std::unordered_map<aiTextureType, TextureType> m_AiToMyType;
 };

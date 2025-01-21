@@ -4,9 +4,11 @@
 
 class TextureData {
 public:
+    // Load from file with optional Y-flip
     bool LoadFromFile(const std::string& filePath, bool flipY = true);
-    const unsigned char* GetData() const { return m_Data.data(); }
-    int GetWidth() const { return m_Width; }
+
+    const unsigned char* GetData()  const { return m_Data.data(); }
+    int GetWidth()  const { return m_Width; }
     int GetHeight() const { return m_Height; }
     int GetChannels() const { return m_Channels; }
 

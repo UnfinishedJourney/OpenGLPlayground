@@ -7,9 +7,10 @@
 #include <assimp/postprocess.h>
 #include <glm/gtc/matrix_transform.hpp>
 
-ModelLoader::ModelLoader(float scaleFactor)
+ModelLoader::ModelLoader(float scaleFactor, std::unordered_map<aiTextureType, TextureType> aiToMyType)
     : m_FallbackMaterialCounter(0),
-    m_ScaleFactor(scaleFactor)
+    m_ScaleFactor(scaleFactor),
+    m_AiToMyType(aiToMyType)
 {
 }
 
@@ -159,15 +160,9 @@ BetterMeshTextures ModelLoader::LoadMeshTextures(const aiMaterial* material,
     const std::string& directory)
 {
     BetterMeshTextures result;
-    std::unordered_map<aiTextureType, TextureType> aiToMyType = {
-        { aiTextureType_DIFFUSE,  TextureType::Albedo      },
-        { aiTextureType_NORMALS,  TextureType::Normal      },
-        { aiTextureType_LIGHTMAP, TextureType::AO          },
-        { aiTextureType_UNKNOWN,  TextureType::MetalRoughness },
-        { aiTextureType_EMISSIVE, TextureType::Emissive    }
-    };
 
-    for (auto& [aiType, myType] : aiToMyType) {
+
+    for (auto& [aiType, myType] : m_AiToMyType) {
         unsigned int texCount = material->GetTextureCount(aiType);
         for (unsigned int i = 0; i < texCount; i++) {
             aiString str;

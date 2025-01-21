@@ -45,7 +45,14 @@ public:
     bool LoadModelIntoScene(const std::string& modelName,
         const std::string& defaultShaderName,
         const std::string& defaultMaterialName,
-        float scaleFactor = 1.0);
+        float scaleFactor = 1.0,
+        std::unordered_map<aiTextureType, TextureType> aiToMyType = {
+            { aiTextureType_DIFFUSE,  TextureType::Albedo      },
+            { aiTextureType_NORMALS,  TextureType::Normal      },
+            { aiTextureType_SPECULAR,  TextureType::MetalRoughness },
+            { aiTextureType_EMISSIVE, TextureType::Emissive    },
+            { aiTextureType_AMBIENT, TextureType::Emissive    },
+        });
 
     // Batching
     void BuildStaticBatchesIfNeeded();
@@ -65,10 +72,14 @@ public:
     void SetBDebugLights(bool bDebugLights) { m_BDebugLights = bDebugLights; }
     bool GetBDebugLights() const { return m_BDebugLights; }
 
+    bool GetBSkybox() const { return m_EnableSkybox; }
+    bool SetBSkybox(bool bSkyBox) { m_EnableSkybox = bSkyBox; }
+
 private:
     // SceneGraph holds hierarchical transforms, bounding volumes, etc.
     SceneGraph         m_SceneGraph;
     bool               m_StaticBatchesDirty = true;
+    bool               m_EnableSkybox = false;
     BatchManager       m_StaticBatchManager;
     MeshLayout         m_MeshLayout;
     std::shared_ptr<Camera> m_Camera;

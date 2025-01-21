@@ -19,13 +19,15 @@ static int GetTextureBindingSlot(TextureType type)
 {
     switch (type)
     {
-    case TextureType::Albedo:         return 0;
-    case TextureType::Normal:         return 1;
-    case TextureType::MetalRoughness: return 2;
-    case TextureType::AO:             return 3;
-    case TextureType::Emissive:       return 4;
-    case TextureType::BRDFLut:        return 5;
-    default:                          return 10; // fallback
+    case TextureType::Albedo:           return 1;
+    case TextureType::Normal:           return 2;
+    case TextureType::MetalRoughness:   return 3;
+    case TextureType::AO:               return 4;
+    case TextureType::Emissive:         return 5;
+    case TextureType::Ambient:          return 6;
+    case TextureType::Height:           return 7;
+    case TextureType::BRDFLut:          return 8;
+    default:                            return 10; // fallback
     }
 }
 

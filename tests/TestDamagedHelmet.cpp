@@ -11,17 +11,18 @@
 TestDamagedHelmet::TestDamagedHelmet() {}
 
 void TestDamagedHelmet::OnEnter() {
-  
-    if (!m_Scene->LoadModelIntoScene("helmet", "helmetPBR", "helmetMaterial")) {
+    std::unordered_map<aiTextureType, TextureType> aiToMyType = {
+      { aiTextureType_DIFFUSE,  TextureType::Albedo      },
+      { aiTextureType_NORMALS,  TextureType::Normal      },
+      { aiTextureType_LIGHTMAP, TextureType::AO          },
+      { aiTextureType_UNKNOWN,  TextureType::MetalRoughness },
+      { aiTextureType_EMISSIVE, TextureType::Emissive    }
+    };
+
+    if (!m_Scene->LoadModelIntoScene("helmet", "helmetPBR", "helmetMaterial", 1.0, aiToMyType)) {
         Logger::GetLogger()->error("Failed to load 'helmet' model in TestDamagedHelmet");
         return;
     }
-
-    // Add a light
-    LightData light1 = { glm::vec4(1.5f, 2.0f, 1.5f, 0.0f), glm::vec4(1.0f) };
-    m_Scene->AddLight(light1);
-
-    m_Scene->SetBDebugLights(true);
 }
 
 void TestDamagedHelmet::OnExit() {

@@ -4,7 +4,8 @@ layout(location = 0) out vec4 color;
 
 in vec2 v_TexCoord;
 
-layout(binding = 1) uniform sampler2D u_Texture;
+layout(binding = 1) uniform sampler2D texAlbedo;
+layout(binding = 6) uniform sampler2D texAmbient;
 
 void runAlphaTest(float alpha, float alphaThreshold)
 {
@@ -26,9 +27,12 @@ void runAlphaTest(float alpha, float alphaThreshold)
 
 void main()
 {
-    vec4 texColor = texture(u_Texture, v_TexCoord);
+    vec4 texColor = texture(texAlbedo, v_TexCoord);
+	vec4 ambientColor = texture(texAmbient, v_TexCoord);
     if (texColor.a < 0.5)
         discard;
     //runAlphaTest(texColor.a, 0.01);
-    color = texColor;
+    color = 0.5 * (texColor + ambientColor);
+
+	color = texColor;
 }
