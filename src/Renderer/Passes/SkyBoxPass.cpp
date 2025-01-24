@@ -63,7 +63,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene>& scene)
     scene->BindFrameDataUBO();
 
     // Bind the cubemap texture (assume it is named "pisaCube" in your TextureManager)
-    auto pisaCube = TextureManager::GetInstance().GetTexture("pisaCube");
+    auto pisaCube = TextureManager::GetInstance().GetTexture("overcastSky");
     if (!pisaCube)
     {
         Logger::GetLogger()->error("SkyBox cubemap 'pisaCube' not found.");

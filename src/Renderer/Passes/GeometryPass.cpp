@@ -22,7 +22,7 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
     {
         PROFILE_BLOCK("Bind Framebuffer", Magenta);
         m_Framebuffer->Bind();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_DEPTH_BUFFER_BIT);
     }
 
     // 1) Build static batches if needed

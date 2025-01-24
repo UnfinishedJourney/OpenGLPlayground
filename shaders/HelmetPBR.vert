@@ -26,7 +26,7 @@ void main()
 
     // Compute Tangent, Bitangent, Normal (TBN) matrix
     vec3 T = normalize(mat3(u_Model) * tangents);
-    vec3 N = normalize(normal);
+    vec3 N = normal;
     vec3 B = cross(N, T);
     TBN = mat3(T, B, N); 
 

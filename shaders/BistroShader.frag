@@ -4,7 +4,11 @@
 
 layout(location = 0) out vec4 color;
 
-in vec2 v_TexCoord;
+layout(binding = 0) uniform samplerCube u_Texture;
+
+in vec3 wPos;
+in vec3 wNormal;
+in vec2 uv;
 
 void runAlphaTest(float alpha, float alphaThreshold)
 {
@@ -26,18 +30,37 @@ void runAlphaTest(float alpha, float alphaThreshold)
 
 void main()
 {
-	if (uMaterial_textureUsageFlags % 2 == 1) {
-    	color = texture(uTexAlbedo, v_TexCoord);
-		return;
-	}
+	vec3 Ka     = uMaterial.Mtl0.xyz;   // ambient color
+    // float Ni  = uMaterial.Mtl0.w;    // index of refraction if needed
 
-	else {
-		color = vec4(1.0, 0.0, 0.0, 1.0);
-	}
-	//vec4 ambientColor = texture(uTexAmbient, v_TexCoord);
+    vec3 Kd     = uMaterial.Mtl1.xyz;   // diffuse color
+    float alpha = uMaterial.Mtl1.w;     // overall alpha/opacity
 
-    //if (texColor.a < 0.5)
-        //discard;
-	//color = texture(uTexAlbedo, v_TexCoord);
+    vec3 Ks     = uMaterial.Mtl2.xyz;   // specular color
+    float Ns    = uMaterial.Mtl2.w;     // specular exponent (shininess)
+
+    vec3 Ke     = uMaterial.Mtl3.xyz;   // emissive color (if used)
+    // float extra= uMaterial.Mtl3.w;   // any extra param
+
+
+	if (HasTexture(0)) {
+        vec3 albedoSample = texture(uTexAlbedo, uv).rgb;
+        Kd *= albedoSample;
+    }
+
+	vec3 N = normalize(wNormal);
+
+	//vec3 ambientEnv = texture(u_Texture, N).rgb;
+    
+    // Compute the ambient term by modulating the sampled color with the material property
+    //vec3 ambient = Ka * ambientEnv;
+
+	vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+	float diff = max(dot(N, lightDir), 0.0);
+    vec3 diffuse = Kd * diff;
+
+    //vec3 finalColor = ambient + diffuse;
+    
+    color = vec4(diffuse, 1.0);
 	return;
 }

@@ -35,6 +35,8 @@ void TestBistro::OnEnter() {
         return;
     }
 
+    m_Scene->SetBSkybox(true);
+
     // Initialize Materials
     //auto& materialManager = MaterialManager::GetInstance();
     //if (!materialManager.GetMaterial("objMaterial")) {
