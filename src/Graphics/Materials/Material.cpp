@@ -1,7 +1,7 @@
 #include "Material.h"
 #include "Utilities/Logger.h"
 #include <glm/gtc/type_ptr.hpp>
-
+#include "Resources/TextureManager.h"
 // --------------------------------------------------------
 //  MAPPING TEXTURE TYPE => GLSL Uniform Names
 //  and binding slots
@@ -162,6 +162,13 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const
     shader->SetUniform("uMaterial.Mtl1", m_PackedParams.Mtl1);
     shader->SetUniform("uMaterial.Mtl2", m_PackedParams.Mtl2);
     shader->SetUniform("uMaterial.Mtl3", m_PackedParams.Mtl3);
+
+    if (m_Layout.textures.contains(TextureType::BRDFLut)) {
+        int slot = GetTextureBindingSlot(TextureType::BRDFLut);
+        auto& textureManager = TextureManager::GetInstance();
+        auto brdf = textureManager.GetTexture("brdfLut");
+        brdf->Bind(slot);
+    }
 
     // 3) Bind standard textures
     for (auto& [texType, texPtr] : m_Textures)

@@ -28,4 +28,5 @@ private:
     int m_Height;
     std::vector<std::unique_ptr<RenderPass>> m_RenderPasses;
     std::shared_ptr<Scene> m_CurrentScene;
+    std::shared_ptr<FrameBuffer> m_Framebuffer;
 };

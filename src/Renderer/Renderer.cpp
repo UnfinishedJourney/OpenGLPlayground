@@ -34,6 +34,11 @@ void Renderer::RenderScene(const std::shared_ptr<Scene>& scene)
     {
         PROFILE_BLOCK("Clear Framebuffer", Yellow);
         Clear();
+        if (m_Framebuffer) {
+            m_Framebuffer->Bind();
+            Clear();
+            m_Framebuffer->Unbind();
+        }
     }
 
     // If scene changed, re-init passes
@@ -66,6 +71,7 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
 
     auto framebuffer = CreateFramebufferForScene(scene, m_Width, m_Height);
 
+    m_Framebuffer = framebuffer;
 
     if (scene->GetBSkybox()) {
         m_RenderPasses.push_back(std::make_unique<SkyBoxPass>(framebuffer, scene));

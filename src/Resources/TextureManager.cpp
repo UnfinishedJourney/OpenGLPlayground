@@ -1,7 +1,9 @@
 #include "TextureManager.h"
 #include "Graphics/Textures/OpenGLTexture.h"
 #include "Graphics/Textures/OpenGLCubeMapTexture.h"
-// ... plus your other includes for arrays, etc.
+#include "Resources/ShaderManager.h"
+#include "Graphics/Shaders/ComputeShader.h"
+#include "Graphics/Buffers/ShaderStorageBuffer.h"
 
 #include <fstream>
 #include <stdexcept>
@@ -40,35 +42,35 @@ bool TextureManager::LoadConfig(const std::filesystem::path& configPath)
         return false;
     }
 
-    // The root object expects: { "textures": { "2d": {}, "cubeMaps": {}, ... } }
+
     if (!jsonData.contains("textures")) {
         Logger::GetLogger()->error("JSON config missing 'textures' object.");
         return false;
     }
     auto texturesJson = jsonData["textures"];
 
-    // 2D
+
     if (texturesJson.contains("2d")) {
         if (!Load2DTextures(texturesJson["2d"])) {
             return false;
         }
     }
 
-    // Cubemaps
+
     if (texturesJson.contains("cubeMaps")) {
         if (!LoadCubeMaps(texturesJson["cubeMaps"])) {
             return false;
         }
     }
 
-    // (Optionally) 2D Arrays
+
     if (texturesJson.contains("arrays")) {
         if (!LoadTextureArrays(texturesJson["arrays"])) {
             return false;
         }
     }
 
-    // (Optionally) computed textures
+
     if (texturesJson.contains("computed")) {
         if (!LoadComputedTextures(texturesJson["computed"])) {
             return false;
@@ -136,9 +138,20 @@ bool TextureManager::LoadCubeMaps(const nlohmann::json& json)
             faces[i] = arr[i];
         }
 
-        TextureConfig config;
+        // Create a specific TextureConfig for cube maps
+        TextureConfig cubeMapConfig;
+        cubeMapConfig.internalFormat = GL_RGBA8; // You can adjust this if needed
+        cubeMapConfig.wrapS = GL_CLAMP_TO_EDGE;
+        cubeMapConfig.wrapT = GL_CLAMP_TO_EDGE;
+        cubeMapConfig.wrapR = GL_CLAMP_TO_EDGE;
+        cubeMapConfig.minFilter = GL_LINEAR_MIPMAP_LINEAR;
+        cubeMapConfig.magFilter = GL_LINEAR;
+        cubeMapConfig.generateMips = true;
+        cubeMapConfig.useAnisotropy = true;
+        cubeMapConfig.useBindless = false; // Set to true if you plan to use bindless textures
+
         try {
-            auto cubeMap = std::make_shared<OpenGLCubeMapTexture>(faces, config);
+            auto cubeMap = std::make_shared<OpenGLCubeMapTexture>(faces, cubeMapConfig);
             m_Textures[name] = cubeMap;
             Logger::GetLogger()->info("Loaded cube map '{}'.", name);
         }
@@ -156,21 +169,118 @@ bool TextureManager::LoadTextureArrays(const nlohmann::json& json)
     return true;
 }
 
-bool TextureManager::LoadComputedTextures(const nlohmann::json& json)
-{
-    // e.g., "computed": {
-    //   "brdfLUT": { "type": "compute", "width":256, "height":256, "numSamples":1024 }
-    // }
-    Logger::GetLogger()->info("LoadComputedTextures() not implemented for brevity here.");
+bool TextureManager::LoadComputedTextures(const nlohmann::json& json) {
+    for (auto& [name, info] : json.items()) {
+        std::string type = info.value("type", "");
+        if (type == "compute") {
+            int width = info.value("width", 256);
+            int height = info.value("height", 256);
+            unsigned int samples = info.value("numSamples", 1024);
+            auto tex = CreateBRDFLUT(width, height, samples);
+            if (tex) {
+                m_Textures[name] = tex;
+                Logger::GetLogger()->info("Computed texture '{}' created.", name);
+            }
+        }
+        else {
+            Logger::GetLogger()->error("Unknown computed texture type '{}' for '{}'.", type, name);
+        }
+    }
     return true;
 }
 
 std::shared_ptr<ITexture> TextureManager::CreateBRDFLUT(int width, int height, unsigned int numSamples)
 {
-    // Example of a specialized compute-based BRDF LUT creation.
-    // Omitted for brevity; reference your existing code if needed.
-    return nullptr;
+    auto& shaderManager = ShaderManager::GetInstance();
+    auto computeShader = shaderManager.GetComputeShader("brdfCompute");
+    if (!computeShader) {
+        Logger::GetLogger()->error("Compute shader 'brdfCompute' not found!");
+        return nullptr;
+    }
+
+
+    std::unique_ptr<ShaderStorageBuffer> ssbo;
+    try {
+
+        ssbo = std::make_unique<ShaderStorageBuffer>(1, width * height * sizeof(glm::vec2), GL_DYNAMIC_COPY);
+    }
+    catch (const std::exception& e) {
+        Logger::GetLogger()->error("Failed to create SSBO: {}", e.what());
+        return nullptr;
+    }
+
+    computeShader->Bind();
+    computeShader->SetUniform("NUM_SAMPLES", numSamples);
+
+
+    GLuint groupX = (width + 15) / 16;
+    GLuint groupY = (height + 15) / 16;
+    computeShader->Dispatch(groupX, groupY, 1);
+
+
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    computeShader->Unbind();
+
+
+    GLuint brdfLUTID;
+    glGenTextures(1, &brdfLUTID);
+    glBindTexture(GL_TEXTURE_2D, brdfLUTID);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, width, height, 0, GL_RG, GL_FLOAT, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Read back from SSBO into CPU memory (mapped), then send to the texture
+    ssbo->Bind();
+    glm::vec2* ptr = (glm::vec2*)glMapBufferRange(
+        GL_SHADER_STORAGE_BUFFER,
+        0,
+        width * height * sizeof(glm::vec2),
+        GL_MAP_READ_BIT
+    );
+
+    if (!ptr) {
+        Logger::GetLogger()->error("Failed to map SSBO for BRDF LUT.");
+        ssbo->Unbind();
+        glDeleteTextures(1, &brdfLUTID);
+        return nullptr;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, brdfLUTID);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RG, GL_FLOAT, ptr);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    ssbo->Unbind();
+
+
+    class ExistingOpenGLTexture : public ITexture {
+    public:
+        ExistingOpenGLTexture(GLuint id, int w, int h)
+            : m_TextureID(id), m_Width(w), m_Height(h) {}
+        ~ExistingOpenGLTexture() {
+            if (m_TextureID) glDeleteTextures(1, &m_TextureID);
+        }
+        void Bind(uint32_t unit) const override { glBindTextureUnit(unit, m_TextureID); }
+        void Unbind(uint32_t unit) const override { glBindTextureUnit(unit, 0); }
+        uint32_t GetWidth() const override { return m_Width; }
+        uint32_t GetHeight() const override { return m_Height; }
+        uint64_t GetBindlessHandle() const override { return 0; }
+        bool IsBindless() const override { return false; }
+
+    private:
+        GLuint m_TextureID;
+        int m_Width, m_Height;
+    };
+
+
+    return std::make_shared<ExistingOpenGLTexture>(brdfLUTID, width, height);
 }
+
 
 std::shared_ptr<ITexture> TextureManager::LoadTexture(const std::string& name, const std::string& path)
 {

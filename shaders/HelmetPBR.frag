@@ -60,6 +60,8 @@ void main()
     // BRDF LUT (optional advanced usage)
     vec3 brdfSample = texture(texBRDF_LUT, tc).rgb; // might be used later
 
+    out_FragColor = vec4(brdfSample, 1.0);
+    return;
     // Convert normal map from [0..1] to [-1..1], then transform to world space
     vec3 N = normalMap * 2.0 - 1.0;
     N = normalize(TBN * N);
