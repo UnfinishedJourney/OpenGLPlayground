@@ -30,8 +30,13 @@ void TestBistro::OnEnter() {
     camera->SetFarPlane(150.0);
     camera->SetNearPlane(1.0);
     //if (!m_Scene->LoadModelIntoScene("bistro", "basicTextured", "objMaterial", 0.01)) {
-    if (!m_Scene->LoadModelIntoScene("bistro", "bistroShader", "bistroMaterial", 0.01)) {
-        Logger::GetLogger()->error("Failed to load 'bistro' model into the scene.");
+    //if (!m_Scene->LoadModelIntoScene("bistro", "bistroShader", "bistroMaterial", 0.01)) {
+    //    Logger::GetLogger()->error("Failed to load 'bistro' model into the scene.");
+    //    return;
+    //}
+
+    if (!m_Scene->LoadStaticModelIntoScene("bistro", "bistroShader", 0.01)) {
+        Logger::GetLogger()->error("Failed to load 'bistro' model in TestDamagedHelmet");
         return;
     }
 

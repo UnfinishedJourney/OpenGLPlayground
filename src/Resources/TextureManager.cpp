@@ -18,6 +18,11 @@ TextureManager& TextureManager::GetInstance()
     return instance;
 }
 
+TextureManager::TextureManager(const std::filesystem::path configPath)
+{
+    LoadConfig(configPath);
+}
+
 bool TextureManager::LoadConfig(const std::filesystem::path& configPath)
 {
     std::lock_guard<std::mutex> lock(m_Mutex);

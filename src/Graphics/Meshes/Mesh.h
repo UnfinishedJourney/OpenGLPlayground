@@ -25,10 +25,10 @@ struct Mesh
     std::vector<MeshLOD> lods;
 
     // Basic bounding volume info
-    glm::vec3 localCenter = glm::vec3(0.0f);
+    glm::vec3 localCenter       = glm::vec3(0.0f);
+    glm::vec3 minBounds         = glm::vec3(FLT_MAX);
+    glm::vec3 maxBounds         = glm::vec3(-FLT_MAX);
     float boundingSphereRadius = 1.0f;
-    glm::vec3 minBounds = glm::vec3(FLT_MAX);
-    glm::vec3 maxBounds = glm::vec3(-FLT_MAX);
 
     size_t GetLODCount() const { return lods.size(); }
 };

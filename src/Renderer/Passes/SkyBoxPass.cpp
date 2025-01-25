@@ -13,12 +13,6 @@ SkyBoxPass::SkyBoxPass(std::shared_ptr<FrameBuffer> framebuffer,
     const std::shared_ptr<Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
-    // If needed, load any texture paths. (If your textures are already loaded, this is optional.)
-    if (!TextureManager::GetInstance().LoadConfig("../assets/resource_paths.json"))
-    {
-        Logger::GetLogger()->error("Failed to load texture config for SkyBoxPass");
-        // Handle error ...
-    }
 
     InitializeSceneResources(scene);
 }

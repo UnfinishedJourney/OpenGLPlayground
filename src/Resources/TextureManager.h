@@ -13,7 +13,7 @@ class TextureManager {
 public:
     // Singleton
     static TextureManager& GetInstance();
-
+    TextureManager(const std::filesystem::path configPath = "../assets/resource_paths.json");
     // Load from JSON config
     bool LoadConfig(const std::filesystem::path& configPath);
 
@@ -27,7 +27,6 @@ public:
     void Clear();
 
 private:
-    TextureManager() = default;
     ~TextureManager() = default;
 
     // Helpers

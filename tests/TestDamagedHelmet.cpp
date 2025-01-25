@@ -19,7 +19,7 @@ void TestDamagedHelmet::OnEnter() {
       { aiTextureType_EMISSIVE, TextureType::Emissive    }
     };
 
-    if (!m_Scene->LoadModelIntoScene("helmet", "helmetPBR", "helmetMaterial", 1.0, aiToMyType)) {
+    if (!m_Scene->LoadStaticModelIntoScene("helmet", "helmetPBR", 1.0, aiToMyType)) {
         Logger::GetLogger()->error("Failed to load 'helmet' model in TestDamagedHelmet");
         return;
     }
