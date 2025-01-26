@@ -1,2 +1,0 @@
-#include <crtdbg.h>
-on pause call stack view all threads
