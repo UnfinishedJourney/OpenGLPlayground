@@ -70,10 +70,10 @@ OpenGLTextureArray::OpenGLTextureArray(const std::vector<std::string>& filePaths
     GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_T, config.wrapT));
     GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_R, config.wrapR));
 
-    if (config.useAnisotropy && GLAD_GL_EXT_texture_filter_anisotropic) {
+    if (config.useAnisotropy) {
         GLfloat maxAniso;
-        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
-        GLCall(glTextureParameterf(m_TextureID, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAniso));
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
+        GLCall(glTextureParameterf(m_TextureID, GL_TEXTURE_MAX_ANISOTROPY, maxAniso));
     }
 
     if (config.useBindless && GLAD_GL_ARB_bindless_texture) {

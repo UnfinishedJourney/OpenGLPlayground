@@ -34,10 +34,10 @@ OpenGLCubeMapTexture::OpenGLCubeMapTexture(const std::array<std::filesystem::pat
     glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_T, config.wrapT);
     glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_R, config.wrapR);
 
-    if (config.useAnisotropy && GLAD_GL_EXT_texture_filter_anisotropic) {
+    if (config.useAnisotropy) {
         GLfloat maxAniso;
-        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
-        glTextureParameterf(m_TextureID, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAniso);
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
+        glTextureParameterf(m_TextureID, GL_TEXTURE_MAX_ANISOTROPY, maxAniso);
     }
 
     if (config.useBindless && GLAD_GL_ARB_bindless_texture) {

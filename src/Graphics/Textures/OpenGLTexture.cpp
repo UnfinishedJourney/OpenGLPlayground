@@ -38,10 +38,10 @@ OpenGLTexture::OpenGLTexture(const TextureData& data, const TextureConfig& confi
     glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_T, config.wrapT);
 
     // 6) Optional anisotropy
-    if (config.useAnisotropy && GLAD_GL_EXT_texture_filter_anisotropic) {
+    if (config.useAnisotropy) {
         GLfloat maxAniso = 0.0f;
-        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
-        glTextureParameterf(m_TextureID, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAniso);
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
+        glTextureParameterf(m_TextureID, GL_TEXTURE_MAX_ANISOTROPY, maxAniso);
     }
 
     // 7) Optional bindless
