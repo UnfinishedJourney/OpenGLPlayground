@@ -30,6 +30,11 @@ void runAlphaTest(float alpha, float alphaThreshold)
 
 void main()
 {
+
+	//float depthValue = gl_FragCoord.z;
+    //color = vec4(vec3(depthValue), 1.0);
+	//return;
+
 	vec3 Ka     = uMaterial.Mtl0.xyz;   // ambient color
     // float Ni  = uMaterial.Mtl0.w;    // index of refraction if needed
 
@@ -46,7 +51,14 @@ void main()
 	if (HasTexture(0)) {
         vec3 albedoSample = texture(uTexAlbedo, uv).rgb;
         Kd *= albedoSample;
+		color = vec4(albedoSample, 1.0);
+		return;
     }
+
+	else {
+		color = vec4(Kd, 1.0);
+		return;
+	}
 
 	vec3 N = normalize(wNormal);
 
