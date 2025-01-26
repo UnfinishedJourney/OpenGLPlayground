@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 
-class RenderObject;
+class BaseRenderObject;
 class Camera;
 
 /**
@@ -14,8 +14,8 @@ class Camera;
 class LODEvaluator {
 public:
     // Evaluate LOD for each object based on camera position and return new LOD indices.
-    std::unordered_map<RenderObject*, size_t> EvaluateLODs(
-        const std::vector<std::shared_ptr<RenderObject>>& objects,
+    std::unordered_map<BaseRenderObject*, size_t> EvaluateLODs(
+        const std::vector<std::shared_ptr<BaseRenderObject>>& objects,
         const std::shared_ptr<Camera>& camera);
 
 private:

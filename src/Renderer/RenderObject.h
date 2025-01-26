@@ -9,6 +9,18 @@
 
 class BaseRenderObject {
 public:
+
+    BaseRenderObject(const std::shared_ptr<Mesh>& mesh,
+        const MeshLayout& meshLayout,
+        int materialID,
+        const std::string& shaderName)
+        : m_ShaderName(shaderName),
+        m_MaterialID(materialID),
+        m_Mesh(mesh),
+        m_MeshLayout(meshLayout),
+        m_CurrentLOD(0)
+    { }
+
     virtual ~BaseRenderObject() = default;
 
     // Accessor methods
@@ -43,16 +55,6 @@ public:
 
 protected:
     // Constructor is protected to enforce inheritance
-    BaseRenderObject(const std::shared_ptr<Mesh>& mesh,
-        const MeshLayout& meshLayout,
-        int materialID,
-        const std::string& shaderName)
-        : m_ShaderName(shaderName),
-        m_MaterialID(materialID),
-        m_Mesh(mesh),
-        m_MeshLayout(meshLayout),
-        m_CurrentLOD(0)
-    { }
 
     std::string m_ShaderName;
     int m_MaterialID;
@@ -132,4 +134,40 @@ public:
 private:
     std::shared_ptr<Transform> m_Transform;
     bool m_IsStatic = true;
+};
+
+class StaticRenderObject : public BaseRenderObject
+{
+public:
+    StaticRenderObject(const std::shared_ptr<Mesh>& mesh,
+        const MeshLayout& meshLayout,
+        int materialID,
+        const std::string& shaderName)
+        : BaseRenderObject(mesh, meshLayout, materialID, shaderName)
+    {
+        // No transform
+    }
+
+    ~StaticRenderObject() override = default;
+
+    // World-space center is just the mesh’s local center, because it is already “baked” into place.
+    // The bounding sphere is also already correct for world space.
+    glm::vec3 GetWorldCenter() const
+    {
+        // For static geometry, local == world
+        return GetCenter();
+    }
+
+    // If you do culling, you can keep the bounding sphere as is:
+    float GetBoundingSphereRadius() const override
+    {
+        return m_Mesh->boundingSphereRadius;
+    }
+
+    // Distance to a point:
+    float ComputeDistanceTo(const glm::vec3& pos) const override
+    {
+        float distance = glm::distance(pos, GetCenter()) - GetBoundingSphereRadius();
+        return distance > 0.0f ? distance : 0.0f;
+    }
 };

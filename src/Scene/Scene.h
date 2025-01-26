@@ -132,7 +132,7 @@ private:
      * “Static” objects (transforms baked in). We store them simply
      * as a list of RenderObjects with identity transforms or single transforms.
      */
-    std::vector<RenderObject> m_StaticObjects;
+    std::vector<std::shared_ptr<BaseRenderObject>> m_StaticObjects;
 
     /**
      * The batch manager for static geometry. If you want to batch

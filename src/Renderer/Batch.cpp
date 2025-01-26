@@ -5,11 +5,9 @@
 #include "Resources/ResourceManager.h"
 
 Batch::Batch(const std::string& shaderName,
-    int materialID,
-    const Transform transform)
+    int materialID)
     : m_ShaderName(shaderName)
     , m_MaterialID(materialID)
-    , m_Transform(transform)
     , m_VAO(std::make_unique<VertexArray>())
     , m_IsDirty(true)
 {
@@ -21,13 +19,13 @@ Batch::~Batch()
 {
 }
 
-void Batch::AddRenderObject(const std::shared_ptr<RenderObject>& renderObject)
+void Batch::AddRenderObject(const std::shared_ptr<BaseRenderObject>& renderObject)
 {
     m_RenderObjects.push_back(renderObject);
     m_IsDirty = true;
 }
 
-const std::vector<std::shared_ptr<RenderObject>>& Batch::GetRenderObjects() const
+const std::vector<std::shared_ptr<BaseRenderObject>>& Batch::GetRenderObjects() const
 {
     return m_RenderObjects;
 }
@@ -45,11 +43,6 @@ int Batch::GetMaterialID() const
 const MeshLayout& Batch::GetMeshLayout() const
 {
     return m_MeshLayout;
-}
-
-const Transform& Batch::GetTransform() const
-{
-    return m_Transform;
 }
 
 void Batch::BuildBatches()

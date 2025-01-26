@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <unordered_map>
 
-// Add a RenderObject and mark the batches as needing rebuild.
-void BatchManager::AddRenderObject(const std::shared_ptr<RenderObject>& ro)
+// Add a BaseRenderObject and mark the batches as needing rebuild.
+void BatchManager::AddRenderObject(const std::shared_ptr<BaseRenderObject>& ro)
 {
     m_RenderObjects.push_back(ro);
     m_Built = false;
@@ -22,7 +22,7 @@ void BatchManager::Clear()
     m_Built = false;
 }
 
-// Build batches from RenderObjects.
+// Build batches from BaseRenderObjects.
 void BatchManager::BuildBatches()
 {
     if (m_Built) {
@@ -41,42 +41,38 @@ void BatchManager::BuildBatches()
 // Group render objects by (ShaderName, MaterialName, Transform) and build batches.
 // Adjust the grouping scheme if you need to include MeshLayout or other parameters.
 std::vector<std::shared_ptr<Batch>> BatchManager::BuildBatchesFromRenderObjects(
-    const std::vector<std::shared_ptr<RenderObject>>& ros)
+    const std::vector<std::shared_ptr<BaseRenderObject>>& ros)
 {
     std::vector<std::shared_ptr<Batch>> batches;
 
     // We'll group as:
-    //   ShaderName -> MaterialName -> Transform -> vector<RenderObject>
-    using TransformMap = std::unordered_map<Transform, std::vector<std::shared_ptr<RenderObject>>>;
-    using MaterialMap = std::unordered_map<int, TransformMap>;
+    //   ShaderName -> MaterialID -> vector<BaseRenderObject>
+    using ObjectVec = std::vector<std::shared_ptr<BaseRenderObject>>;
+    using MaterialMap = std::unordered_map<int, ObjectVec>;
     std::unordered_map<std::string, MaterialMap> bigMap;
 
     for (auto& ro : ros) {
-        // Note: This assumes that ro->GetTransform() returns a pointer/reference to a Transform
-        // and that Transform has valid operator== and std::hash specializations.
+        // Group render objects by ShaderName and MaterialID
         bigMap[ro->GetShaderName()]
             [ro->GetMaterialID()]
-            [*(ro->GetTransform())]
             .push_back(ro);
     }
 
     // For every group, create a Batch.
     for (auto& [shaderName, matMap] : bigMap) {
-        for (auto& [matID, transformMap] : matMap) {
-            for (auto& [transform, roVec] : transformMap) {
-                // Create a new batch.
-                // If your Batch constructor accepts a Transform (or MeshLayout) adjust accordingly.
-                auto batch = std::make_shared<Batch>(shaderName, matID, transform);
-                for (auto& ro : roVec) {
-                    batch->AddRenderObject(ro);
-                    // Populate the lookup: key is the raw pointer.
-                    m_ROBatchMap[ro.get()] = batch;
-                }
-                batch->BuildBatches();
-                batches.push_back(batch);
+        for (auto& [matID, roVec] : matMap) {
+            // Create a new batch.
+            auto batch = std::make_shared<Batch>(shaderName, matID);
+            for (auto& ro : roVec) {
+                batch->AddRenderObject(ro);
+                // Populate the lookup: key is the raw pointer.
+                m_ROBatchMap[ro.get()] = batch;
             }
+            batch->BuildBatches();
+            batches.push_back(batch);
         }
     }
+
     return batches;
 }
 
@@ -85,8 +81,8 @@ const std::vector<std::shared_ptr<Batch>>& BatchManager::GetBatches() const
     return m_AllBatches;
 }
 
-// Use the lookup map to quickly find the Batch for the given RenderObject.
-std::shared_ptr<Batch> BatchManager::FindBatchForRenderObject(const std::shared_ptr<RenderObject>& ro) const
+// Use the lookup map to quickly find the Batch for the given BaseRenderObject.
+std::shared_ptr<Batch> BatchManager::FindBatchForRenderObject(const std::shared_ptr<BaseRenderObject>& ro) const
 {
     auto it = m_ROBatchMap.find(ro.get());
     if (it != m_ROBatchMap.end()) {
@@ -95,7 +91,7 @@ std::shared_ptr<Batch> BatchManager::FindBatchForRenderObject(const std::shared_
     return nullptr;
 }
 
-void BatchManager::UpdateLOD(const std::shared_ptr<RenderObject>& ro, size_t newLOD)
+void BatchManager::UpdateLOD(const std::shared_ptr<BaseRenderObject>& ro, size_t newLOD)
 {
     auto batch = FindBatchForRenderObject(ro);
     if (!batch) return;
@@ -114,7 +110,7 @@ void BatchManager::UpdateLODs(std::shared_ptr<Camera>& camera, LODEvaluator& lod
     if (m_AllBatches.empty() || !camera) {
         return;
     }
-    // Use the LODEvaluator to determine each RenderObject’s new LOD.
+    // Use the LODEvaluator to determine each BaseRenderObject’s new LOD.
     auto lodMap = lodEvaluator.EvaluateLODs(m_RenderObjects, camera);
 
     for (auto& ro : m_RenderObjects) {
@@ -131,7 +127,7 @@ void BatchManager::UpdateLODs(std::shared_ptr<Camera>& camera, LODEvaluator& lod
 
 void BatchManager::SetLOD(size_t newLOD)
 {
-    // Force the same LOD for every RenderObject (debug feature).
+    // Force the same LOD for every BaseRenderObject (debug feature).
     for (auto& batch : m_AllBatches) {
         auto& ros = batch->GetRenderObjects();
         for (size_t i = 0; i < ros.size(); i++) {
@@ -142,7 +138,7 @@ void BatchManager::SetLOD(size_t newLOD)
     }
 }
 
-void BatchManager::CullObject(const std::shared_ptr<RenderObject>& ro)
+void BatchManager::CullObject(const std::shared_ptr<BaseRenderObject>& ro)
 {
     auto batch = FindBatchForRenderObject(ro);
     if (!batch) return;

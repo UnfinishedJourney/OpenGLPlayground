@@ -43,12 +43,11 @@ class Batch
 {
 public:
     Batch(const std::string& shaderName,
-        int materialID,
-        const Transform transform);
+        int materialID);
     ~Batch();
 
-    void AddRenderObject(const std::shared_ptr<RenderObject>& renderObject);
-    const std::vector<std::shared_ptr<RenderObject>>& GetRenderObjects() const;
+    void AddRenderObject(const std::shared_ptr<BaseRenderObject>& renderObject);
+    const std::vector<std::shared_ptr<BaseRenderObject>>& GetRenderObjects() const;
 
     /**
      * @brief Build the combined VBO/IBO for all RenderObjects.
@@ -74,17 +73,15 @@ public:
     const std::string& GetShaderName() const;
     int GetMaterialID() const;
     const MeshLayout& GetMeshLayout() const;
-    const Transform& GetTransform() const;
 
 private:
 
     const std::string                           m_ShaderName;
     int                                         m_MaterialID;
     MeshLayout                                  m_MeshLayout;
-    const Transform                             m_Transform;
 
 
-    std::vector<std::shared_ptr<RenderObject>> m_RenderObjects;
+    std::vector<std::shared_ptr<BaseRenderObject>> m_RenderObjects;
 
     std::unique_ptr<VertexArray>   m_VAO;
     std::unique_ptr<IndirectBuffer> m_DrawCommandBuffer;

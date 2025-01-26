@@ -5,11 +5,11 @@
 #include <algorithm> // for std::min, std::max
 #include <cmath>
 
-std::unordered_map<RenderObject*, size_t> LODEvaluator::EvaluateLODs(
-    const std::vector<std::shared_ptr<RenderObject>>& objects,
+std::unordered_map<BaseRenderObject*, size_t> LODEvaluator::EvaluateLODs(
+    const std::vector<std::shared_ptr<BaseRenderObject>>& objects,
     const std::shared_ptr<Camera>& camera)
 {
-    std::unordered_map<RenderObject*, size_t> lodMap;
+    std::unordered_map<BaseRenderObject*, size_t> lodMap;
 
     if (!camera) {
         // No camera => everything at LOD0
@@ -29,7 +29,7 @@ std::unordered_map<RenderObject*, size_t> LODEvaluator::EvaluateLODs(
     glm::vec3 camPos = camera->GetPosition();
 
     for (auto& ro : objects) {
-        glm::vec3 worldCenter = ro->GetWorldCenter();
+        glm::vec3 worldCenter = ro->GetCenter();
         float radius = ro->GetBoundingSphereRadius();
         float distance = glm::distance(camPos, worldCenter) - radius;
         if (distance < 0.0f) distance = 0.0f;

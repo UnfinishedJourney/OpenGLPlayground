@@ -9,13 +9,10 @@ out vec3 wPos;
 out vec3 wNormal;
 out vec2 uv;
 
-uniform mat4 u_Model;
-uniform mat3 u_NormalMatrix;
-
 void main()
 {
-    wPos = (u_Model * vec4(position, 1.0)).xyz;
+    wPos = position;
     gl_Position = u_Proj * u_View * vec4(wPos, 1.0);
-    wNormal = normalize(u_NormalMatrix * normals);
+    wNormal = normals;
     uv = texCoord;
 }

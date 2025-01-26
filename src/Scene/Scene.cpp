@@ -127,16 +127,11 @@ bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
     float scaleFactor,
     std::unordered_map<aiTextureType, TextureType> aiToMyType)
 {
-    // 1) Get mesh + material layouts based on the shader
     auto& resourceManager = ResourceManager::GetInstance();
     auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(shaderName);
-
     m_LastLayout = meshLayout;
 
-    // 2) Create the new static loader
     staticloader::ModelLoader loader(scaleFactor, aiToMyType);
-
-    // 3) Actually load the model (bakes transforms)
     bool success = loader.LoadStaticModel(modelName, meshLayout, matLayout, /*centerModel=*/true);
     if (!success)
     {
@@ -144,42 +139,25 @@ bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
         return false;
     }
 
-    // 4) Retrieve the final loaded objects (mesh + material pairs)
     const auto& loadedObjects = loader.GetLoadedObjects();
     const auto& loadedMaterials = loader.GetLoadedMaterials();
 
-    // 5) For each loaded object, create a RenderObject with identity transform
-    //    (since the transforms are already baked into the mesh positions)
     for (auto& obj : loadedObjects)
     {
-        // In your engine, you might store the material name for referencing at render time
         int materialID = obj.materialIndex;
+        m_LoadedMaterials.push_back(materialID);
 
-        // Keep track of this material name (for debugging or listing)
-        m_LoadedMaterials.push_back(obj.materialIndex);
-
-        // Create a minimal transform with identity (the mesh is already in final space)
-        auto transform = std::make_shared<Transform>();
-        transform->SetModelMatrix(glm::mat4(1.0f));
-
-        // Build a RenderObject
-        RenderObject ro(
-            obj.mesh,         // the baked mesh
-            meshLayout,       // layout from the chosen shader
-            materialID,     // material name
-            shaderName,       // which shader to use at render
-            transform
+        // Create a *StaticRenderObject* (no transform):
+        auto ro = std::make_shared<StaticRenderObject>(
+            obj.mesh,
+            meshLayout,
+            materialID,
+            shaderName
         );
-
-        // Push into our “static” container
         m_StaticObjects.push_back(ro);
     }
 
-    // We might not strictly need to store the layouts here,
-    // but if you do, store them so you can reuse them later
     m_LastShader = shaderName;
-
-    // Mark that we need to rebuild static batches
     m_StaticBatchesDirty = true;
 
     Logger::GetLogger()->info("Loaded static model '{}' => {} sub-meshes, {} materials",
@@ -328,8 +306,7 @@ void Scene::BuildStaticBatchesIfNeeded()
     for (auto& ro : m_StaticObjects)
     {
         // We wrap it in a shared_ptr because the BatchManager interface expects that
-        auto roPtr = std::make_shared<RenderObject>(ro);
-        m_StaticBatchManager.AddRenderObject(roPtr);
+        m_StaticBatchManager.AddRenderObject(ro);
     }
 
     // 4) Let the BatchManager build final GPU buffers

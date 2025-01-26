@@ -5,6 +5,7 @@ layout (location = 1) in vec3 normals;
 layout (location = 2) in vec3 tangents;
 layout (location = 3) in vec2 uvs;
 
+uniform mat4 u_Model;
 
 out vec2 tc;           // Texture coordinates
 out vec3 fragPos;      // Fragment position in world space
@@ -17,13 +18,14 @@ void main()
 {
     tc = uvs;
 
-    vec4 worldPosition = vec4(positions, 1.0);
-    fragPos = positions;
+    vec4 worldPosition = u_Model * vec4(positions, 1.0);
+    fragPos = worldPosition.xyz;
 
-    normal = normals;
+    // Transform normal to world space
+    normal = normalize(mat3(transpose(inverse(u_Model))) * normals);
 
     // Compute Tangent, Bitangent, Normal (TBN) matrix
-    vec3 T = normalize(tangents);
+    vec3 T = normalize(mat3(u_Model) * tangents);
     vec3 N = normal;
     vec3 B = cross(N, T);
     TBN = mat3(T, B, N); 
