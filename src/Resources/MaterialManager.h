@@ -27,6 +27,7 @@ public:
 
     // Binding
     void BindMaterial(const std::string& name, const std::shared_ptr<BaseShader>& shader);
+    void BindMaterial(int id, const std::shared_ptr<BaseShader>& shader);
     void UnbindMaterial();
 
     //Pre-load some standard materials

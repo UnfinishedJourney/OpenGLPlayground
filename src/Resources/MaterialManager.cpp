@@ -68,6 +68,17 @@ void MaterialManager::BindMaterial(const std::string& name, const std::shared_pt
     m_CurrentlyBoundMaterial = name;
 }
 
+void MaterialManager::BindMaterial(int id, const std::shared_ptr<BaseShader>& shader)
+{
+    auto mat = GetMaterialByID(id);
+    if (!mat) {
+        Logger::GetLogger()->error("Cannot bind unknown material '{}'.", id);
+        return;
+    }
+    mat->Bind(shader);
+    m_CurrentlyBoundMaterial = mat->GetName();
+}
+
 void MaterialManager::UnbindMaterial()
 {
     if (!m_CurrentlyBoundMaterial.empty()) {

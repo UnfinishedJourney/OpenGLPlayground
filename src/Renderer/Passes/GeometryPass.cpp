@@ -66,7 +66,7 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
             shader->Bind();
 
             // Material
-            materialManager.BindMaterial(batch->GetMaterialName(), shader);
+            materialManager.BindMaterial(batch->GetMaterialID(), shader);
 
             // Model matrix from first object if all merged
             auto roTransform = batch->GetTransform();

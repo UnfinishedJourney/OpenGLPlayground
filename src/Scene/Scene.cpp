@@ -152,15 +152,11 @@ bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
     //    (since the transforms are already baked into the mesh positions)
     for (auto& obj : loadedObjects)
     {
-        // The Material pointer from the loader
-
-        auto matPtr = MaterialManager::GetInstance().GetMaterialByID(obj.materialIndex);
-
         // In your engine, you might store the material name for referencing at render time
-        std::string materialName = matPtr ? matPtr->GetName() : "UnnamedMaterial";
+        int materialID = obj.materialIndex;
 
         // Keep track of this material name (for debugging or listing)
-        m_LoadedMaterials.push_back(materialName);
+        m_LoadedMaterials.push_back(obj.materialIndex);
 
         // Create a minimal transform with identity (the mesh is already in final space)
         auto transform = std::make_shared<Transform>();
@@ -170,7 +166,7 @@ bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
         RenderObject ro(
             obj.mesh,         // the baked mesh
             meshLayout,       // layout from the chosen shader
-            materialName,     // material name
+            materialID,     // material name
             shaderName,       // which shader to use at render
             transform
         );
@@ -198,67 +194,67 @@ bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
 //    Uses the original ModelLoader that populates the SceneGraph, etc.
 //    If you do NOT need the SceneGraph, you can remove this method entirely.
 //------------------------------------------------------------------------------------
-bool Scene::LoadModelIntoScene(const std::string& modelName,
-    const std::string& defaultShaderName,
-    const std::string& defaultMaterialName,
-    float scaleFactor,
-    std::unordered_map<aiTextureType, TextureType> aiToMyType)
-{
-    auto& resourceManager = ResourceManager::GetInstance();
-
-    // The ResourceManager knows how to get the correct layouts from a shader name
-    auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(defaultShaderName);
-
-    m_LastLayout = meshLayout;
-    // The old ModelLoader that populates a SceneGraph
-    ModelLoader loader(scaleFactor, aiToMyType);
-
-    // Build path from the old ModelLoader’s registry
-    std::string modelPath = ModelLoader::GetModelPath(modelName);
-    if (modelPath.empty())
-    {
-        Logger::GetLogger()->error("Unknown model name '{}'. Check your path registry.", modelName);
-        return false;
-    }
-
-    // Load with hierarchical approach (SceneGraph will be populated)
-    if (!loader.LoadModel(modelPath, meshLayout, matLayout, m_SceneGraph, true))
-    {
-        Logger::GetLogger()->error("Failed to load model '{}'.", modelName);
-        return false;
-    }
-
-    // Grab the final loaded data
-    const auto& data = loader.GetModelData();
-
-    // Transfer mesh data to our local vector (these indices tie to SceneGraph node->mesh references)
-    for (auto& md : data.meshesData)
-    {
-        MeshInfo info;
-        info.mesh = md.mesh;
-        // We do not necessarily know the material index here, so set 0 or do a lookup
-        info.materialIndex = 0;
-        m_LoadedMeshes.push_back(info);
-    }
-
-    // Keep track of created materials
-    for (auto& matName : data.createdMaterials)
-    {
-        m_LoadedMaterials.push_back(matName);
-    }
-
-    // Keep the last used shader
-    m_LastShader = defaultShaderName;
-
-    // We’ll rebuild static batches only if you want the SceneGraph objects batched,
-    // but typically these might be “dynamic.” Up to you:
-    m_StaticBatchesDirty = true;
-
-    // Make sure our node->RenderObject array is large enough to hold the new nodes
-    m_NodeToRenderObjects.resize(m_SceneGraph.GetNodes().size());
-
-    return true;
-}
+//bool Scene::LoadModelIntoScene(const std::string& modelName,
+//    const std::string& defaultShaderName,
+//    const std::string& defaultMaterialName,
+//    float scaleFactor,
+//    std::unordered_map<aiTextureType, TextureType> aiToMyType)
+//{
+//    auto& resourceManager = ResourceManager::GetInstance();
+//
+//    // The ResourceManager knows how to get the correct layouts from a shader name
+//    auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(defaultShaderName);
+//
+//    m_LastLayout = meshLayout;
+//    // The old ModelLoader that populates a SceneGraph
+//    ModelLoader loader(scaleFactor, aiToMyType);
+//
+//    // Build path from the old ModelLoader’s registry
+//    std::string modelPath = ModelLoader::GetModelPath(modelName);
+//    if (modelPath.empty())
+//    {
+//        Logger::GetLogger()->error("Unknown model name '{}'. Check your path registry.", modelName);
+//        return false;
+//    }
+//
+//    // Load with hierarchical approach (SceneGraph will be populated)
+//    if (!loader.LoadModel(modelPath, meshLayout, matLayout, m_SceneGraph, true))
+//    {
+//        Logger::GetLogger()->error("Failed to load model '{}'.", modelName);
+//        return false;
+//    }
+//
+//    // Grab the final loaded data
+//    const auto& data = loader.GetModelData();
+//
+//    // Transfer mesh data to our local vector (these indices tie to SceneGraph node->mesh references)
+//    for (auto& md : data.meshesData)
+//    {
+//        MeshInfo info;
+//        info.mesh = md.mesh;
+//        // We do not necessarily know the material index here, so set 0 or do a lookup
+//        info.materialIndex = 0;
+//        m_LoadedMeshes.push_back(info);
+//    }
+//
+//    // Keep track of created materials
+//    for (auto& matName : data.createdMaterials)
+//    {
+//        m_LoadedMaterials.push_back(matName);
+//    }
+//
+//    // Keep the last used shader
+//    m_LastShader = defaultShaderName;
+//
+//    // We’ll rebuild static batches only if you want the SceneGraph objects batched,
+//    // but typically these might be “dynamic.” Up to you:
+//    m_StaticBatchesDirty = true;
+//
+//    // Make sure our node->RenderObject array is large enough to hold the new nodes
+//    m_NodeToRenderObjects.resize(m_SceneGraph.GetNodes().size());
+//
+//    return true;
+//}
 
 //------------------------------------------------------------------------------------
 // Batching: We combine geometry with the same material/shader into bigger GPU buffers
@@ -306,7 +302,7 @@ void Scene::BuildStaticBatchesIfNeeded()
             }
             auto& meshInfo = m_LoadedMeshes[meshIdx];
             auto meshPtr = meshInfo.mesh;
-            std::string matName = m_LoadedMaterials[matIdx];
+            int matID = m_LoadedMaterials[matIdx];
 
             // Create a transform based on the node’s global transform
             auto transform = std::make_shared<Transform>();
@@ -316,7 +312,7 @@ void Scene::BuildStaticBatchesIfNeeded()
             auto ro = std::make_shared<RenderObject>(
                 meshPtr,
                 m_LastLayout, // or m_MeshLayout if you store it
-                matName,
+                matID,
                 m_LastShader,
                 transform
             );

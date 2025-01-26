@@ -48,25 +48,25 @@ std::vector<std::shared_ptr<Batch>> BatchManager::BuildBatchesFromRenderObjects(
     // We'll group as:
     //   ShaderName -> MaterialName -> Transform -> vector<RenderObject>
     using TransformMap = std::unordered_map<Transform, std::vector<std::shared_ptr<RenderObject>>>;
-    using MaterialMap = std::unordered_map<std::string, TransformMap>;
+    using MaterialMap = std::unordered_map<int, TransformMap>;
     std::unordered_map<std::string, MaterialMap> bigMap;
 
     for (auto& ro : ros) {
         // Note: This assumes that ro->GetTransform() returns a pointer/reference to a Transform
         // and that Transform has valid operator== and std::hash specializations.
         bigMap[ro->GetShaderName()]
-            [ro->GetMaterialName()]
+            [ro->GetMaterialID()]
             [*(ro->GetTransform())]
             .push_back(ro);
     }
 
     // For every group, create a Batch.
     for (auto& [shaderName, matMap] : bigMap) {
-        for (auto& [matName, transformMap] : matMap) {
+        for (auto& [matID, transformMap] : matMap) {
             for (auto& [transform, roVec] : transformMap) {
                 // Create a new batch.
                 // If your Batch constructor accepts a Transform (or MeshLayout) adjust accordingly.
-                auto batch = std::make_shared<Batch>(shaderName, matName, transform);
+                auto batch = std::make_shared<Batch>(shaderName, matID, transform);
                 for (auto& ro : roVec) {
                     batch->AddRenderObject(ro);
                     // Populate the lookup: key is the raw pointer.

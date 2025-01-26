@@ -5,10 +5,10 @@
 #include "Resources/ResourceManager.h"
 
 Batch::Batch(const std::string& shaderName,
-    const std::string& materialName,
+    int materialID,
     const Transform transform)
     : m_ShaderName(shaderName)
-    , m_MaterialName(materialName)
+    , m_MaterialID(materialID)
     , m_Transform(transform)
     , m_VAO(std::make_unique<VertexArray>())
     , m_IsDirty(true)
@@ -37,9 +37,9 @@ const std::string& Batch::GetShaderName() const
     return m_ShaderName;
 }
 
-const std::string& Batch::GetMaterialName() const
+int Batch::GetMaterialID() const
 {
-    return m_MaterialName;
+    return m_MaterialID;
 }
 
 const MeshLayout& Batch::GetMeshLayout() const
@@ -56,7 +56,7 @@ void Batch::BuildBatches()
 {
     if (m_RenderObjects.empty()) {
         Logger::GetLogger()->warn("No RenderObjects to batch for shader '{}' material '{}'.",
-            m_ShaderName, m_MaterialName);
+            m_ShaderName, m_MaterialID);
         return;
     }
 

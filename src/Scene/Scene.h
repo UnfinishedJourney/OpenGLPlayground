@@ -69,18 +69,18 @@ public:
      * @param scaleFactor   Scales the model
      * @param aiToMyType    Map from Assimp texture types to your engine’s texture types
      */
-    bool LoadModelIntoScene(const std::string& modelName,
-        const std::string& defaultShaderName,
-        const std::string& defaultMaterialName,
-        float scaleFactor = 1.0f,
-        std::unordered_map<aiTextureType, TextureType> aiToMyType =
-        {
-            { aiTextureType_DIFFUSE,   TextureType::Albedo       },
-            { aiTextureType_NORMALS,   TextureType::Normal       },
-            { aiTextureType_SPECULAR,  TextureType::MetalRoughness },
-            { aiTextureType_EMISSIVE,  TextureType::Emissive     },
-            { aiTextureType_AMBIENT,   TextureType::Emissive     },
-        });
+    //bool LoadModelIntoScene(const std::string& modelName,
+    //    const std::string& defaultShaderName,
+    //    const std::string& defaultMaterialName,
+    //    float scaleFactor = 1.0f,
+    //    std::unordered_map<aiTextureType, TextureType> aiToMyType =
+    //    {
+    //        { aiTextureType_DIFFUSE,   TextureType::Albedo       },
+    //        { aiTextureType_NORMALS,   TextureType::Normal       },
+    //        { aiTextureType_SPECULAR,  TextureType::MetalRoughness },
+    //        { aiTextureType_EMISSIVE,  TextureType::Emissive     },
+    //        { aiTextureType_AMBIENT,   TextureType::Emissive     },
+    //    });
 
     /**
      * @brief Loads a model using the **new** staticloader::ModelLoader (no SceneGraph).
@@ -114,7 +114,7 @@ public:
     void CullAndLODUpdate();
 
     // Accessors
-    const std::vector<std::string>& GetMaterials() const { return m_LoadedMaterials; }
+    const std::vector<int>& GetMaterials() const { return m_LoadedMaterials; }
 
     void SetBGrid(bool bGrid) { m_BGrid = bGrid; }
     bool GetBGrid() const { return m_BGrid; }
@@ -147,7 +147,7 @@ private:
     bool m_BDebugLights = false;
 
     // Materials and Meshes loaded (both dynamic and static)
-    std::vector<std::string> m_LoadedMaterials; // For reference
+    std::vector<int> m_LoadedMaterials; // For reference
     std::vector<MeshInfo>    m_LoadedMeshes;    // For the old approach (SceneGraph indexing)
 
     // For dynamic->node referencing

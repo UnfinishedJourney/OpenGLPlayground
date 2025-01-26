@@ -43,7 +43,7 @@ class Batch
 {
 public:
     Batch(const std::string& shaderName,
-        const std::string& materialName,
+        int materialID,
         const Transform transform);
     ~Batch();
 
@@ -72,14 +72,14 @@ public:
 
     // Accessors
     const std::string& GetShaderName() const;
-    const std::string& GetMaterialName() const;
+    int GetMaterialID() const;
     const MeshLayout& GetMeshLayout() const;
     const Transform& GetTransform() const;
 
 private:
 
     const std::string                           m_ShaderName;
-    const std::string                           m_MaterialName;
+    int                                         m_MaterialID;
     MeshLayout                                  m_MeshLayout;
     const Transform                             m_Transform;
 

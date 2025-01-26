@@ -18,7 +18,7 @@ void TestLights::OnEnter()
     m_Scene->SetCamera(cam);
 
     // Load a model into the scene
-    if (!m_Scene->LoadModelIntoScene("pig", "simplelights", "Gold")) {
+    if (!m_Scene->LoadStaticModelIntoScene("pig", "simplelights")) {
         Logger::GetLogger()->error("Failed to load 'pig' model in TestLights");
         return;
     }
@@ -34,8 +34,8 @@ void TestLights::OnEnter()
     // Modify the first material
     auto& materials = m_Scene->GetMaterials();
     if (!materials.empty()) {
-        m_MatName = materials[0];
-        auto existingMat = MaterialManager::GetInstance().GetMaterialByName(m_MatName);
+        m_MatID = materials[0];
+        auto existingMat = MaterialManager::GetInstance().GetMaterialByID(m_MatID);
         if (existingMat) {
             existingMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.9f, 0.1f, 0.3f));
         }

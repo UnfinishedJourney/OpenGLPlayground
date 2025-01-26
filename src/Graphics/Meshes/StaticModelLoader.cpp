@@ -1,19 +1,24 @@
 #include "StaticModelLoader.h"
-#include <meshoptimizer.h>
-#include <filesystem>
-#include <cfloat>
+
 #include <assimp/Importer.hpp>
-#include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/scene.h>
+#include <filesystem>
+#include <meshoptimizer.h>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include "Utilities/Logger.h"
+#include "Resources/MaterialManager.h"
+#include "Resources/TextureManager.h"
 
 namespace staticloader {
 
-
-    ModelLoader::ModelLoader(float scaleFactor, std::unordered_map<aiTextureType, TextureType> aiToMyType)
-        : m_FallbackMaterialCounter(0),
-        m_ScaleFactor(scaleFactor),
-        m_AiToMyType(aiToMyType)
+    ModelLoader::ModelLoader(
+        float scaleFactor,
+        std::unordered_map<aiTextureType, TextureType> aiToMyType
+    )
+        : m_ScaleFactor(scaleFactor)
+        , m_AiToMyType(std::move(aiToMyType))
     {
     }
 
@@ -26,42 +31,51 @@ namespace staticloader {
         const MaterialLayout& matLayout,
         bool centerModel)
     {
+        // Clear previous data
         m_Objects.clear();
         m_Materials.clear();
         m_FallbackMaterialCounter = 0;
+        m_UnnamedMaterialCounter = 0;
 
+        // Configure Assimp import flags
         Assimp::Importer importer;
         unsigned int importFlags = aiProcess_JoinIdenticalVertices |
             aiProcess_Triangulate |
             aiProcess_RemoveRedundantMaterials |
             aiProcess_FindInvalidData |
-            aiProcess_OptimizeMeshes;
+            aiProcess_OptimizeMeshes; // merges small meshes
 
         if (meshLayout.hasNormals) {
+            // If your mesh layout wants normals, let Assimp compute them if missing
             importFlags |= aiProcess_GenSmoothNormals;
         }
-
-        //maybe i don't need binormals at all
         if (meshLayout.hasTangents || meshLayout.hasBitangents) {
+            // If your mesh layout wants tangents/bitangents, let Assimp compute them
             importFlags |= aiProcess_CalcTangentSpace;
         }
 
-        auto filePath = ModelLoader::GetModelPath(modelName);
-        if (filePath == "")
-        {
+        // Look up file path
+        std::string filePath = GetModelPath(modelName);
+        if (filePath.empty()) {
+            Logger::GetLogger()->error("No path found for model '{}'.", modelName);
             return false;
         }
 
+        // Load with Assimp
         const aiScene* scene = importer.ReadFile(filePath, importFlags);
-        if (!scene || !scene->HasMeshes())
-        {
+        if (!scene || !scene->HasMeshes()) {
             Logger::GetLogger()->error("Assimp failed to load model from '{}'.", filePath);
             return false;
         }
 
+        // Build the directory path to load textures from
         std::string directory = std::filesystem::path(filePath).parent_path().string();
+
+        // First, load materials from the scene
         LoadSceneMaterials(scene, matLayout, directory);
 
+        // We will do an iterative traversal of the node hierarchy using a stack.
+        // Each stack entry holds (node pointer, accumulated transform).
         std::vector<std::pair<aiNode*, glm::mat4>> stack;
         stack.push_back({ scene->mRootNode, glm::mat4(1.0f) });
 
@@ -109,6 +123,13 @@ namespace staticloader {
             }
         }
 
+        // Optionally recenter all meshes so the bounding box is at origin
+        //if (centerModel) {
+        //    CenterMeshes();
+        //}
+
+        Logger::GetLogger()->info("Loaded static model '{}' with {} meshes, {} materials.",
+            modelName, m_Objects.size(), m_Materials.size());
         return true;
     }
 
@@ -117,8 +138,8 @@ namespace staticloader {
         const std::string& directory)
     {
         m_Materials.reserve(scene->mNumMaterials);
-        for (unsigned int i = 0; i < scene->mNumMaterials; i++)
-        {
+
+        for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
             aiMaterial* aiMat = scene->mMaterials[i];
             std::shared_ptr<Material> mat = CreateMaterialForAssimpMat(aiMat, matLayout, directory);
             m_Materials.push_back(mat);
@@ -129,40 +150,44 @@ namespace staticloader {
         const MaterialLayout& matLayout,
         const std::string& directory)
     {
+        // Get the name from Assimp
         aiString aiName;
-        if (AI_SUCCESS != aiMat->Get(AI_MATKEY_NAME, aiName))
-        {
-            aiName = aiString("UnnamedMaterial" + std::to_string(m_UnnamedMaterialCounter++)); //maybe should rename it somehow to model name + counter, probably should check other names for uniqueness
+        if (AI_SUCCESS != aiMat->Get(AI_MATKEY_NAME, aiName)) {
+            // If unnamed, create a unique name
+            aiName = aiString(("UnnamedMaterial_" + std::to_string(m_UnnamedMaterialCounter++)).c_str());
         }
 
         std::string matName = aiName.C_Str();
+        // If there's already a material with this name, reuse it
         auto existingMat = MaterialManager::GetInstance().GetMaterialByName(matName);
         if (existingMat) {
-            // Material already exists, reuse
             return existingMat;
         }
 
+        // Otherwise, create a new material
         auto mat = std::make_shared<Material>(matLayout);
         mat->SetName(matName);
+
+        // Load various color/floats
         LoadMaterialProperties(aiMat, mat, matLayout);
+        // Load any textures
         LoadMaterialTextures(aiMat, mat, matLayout, directory);
 
+        // Register with your global material manager
         MaterialManager::GetInstance().AddMaterial(mat);
         return mat;
     }
-
 
     void ModelLoader::LoadMaterialProperties(const aiMaterial* aiMat,
         std::shared_ptr<Material> mat,
         const MaterialLayout& matLayout)
     {
-        // Example for Ambient
+        // Example usage of aiMaterial fields:
         if (matLayout.params.count(MaterialParamType::Ambient)) {
             aiColor3D color(0.2f, 0.2f, 0.2f);
             aiMat->Get(AI_MATKEY_COLOR_AMBIENT, color);
             mat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(color.r, color.g, color.b));
         }
-        // Similarly for Diffuse, Specular, Shininess, etc.
         if (matLayout.params.count(MaterialParamType::Diffuse)) {
             aiColor3D color(0.8f, 0.8f, 0.8f);
             aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, color);
@@ -185,25 +210,32 @@ namespace staticloader {
         const MaterialLayout& matLayout,
         const std::string& directory)
     {
+        // For each AI texture type you have mapped to your engine's type
         for (auto& [aiType, myType] : m_AiToMyType) {
             unsigned int texCount = aiMat->GetTextureCount(aiType);
             for (unsigned int i = 0; i < texCount; i++) {
                 aiString str;
                 if (aiMat->GetTexture(aiType, i, &str) == AI_SUCCESS) {
+                    // Build the full path
                     std::filesystem::path relativePath(str.C_Str());
                     relativePath = relativePath.lexically_normal();
                     std::filesystem::path fullPath = std::filesystem::path(directory) / relativePath;
                     fullPath = fullPath.lexically_normal();
 
-                    auto texName = relativePath.filename().string(); // short name
+                    // Load the texture
+                    auto texName = relativePath.filename().string(); // e.g. "diffuse.png"
                     auto loadedTex = TextureManager::GetInstance().LoadTexture(texName, fullPath.string());
+
                     if (!loadedTex) {
                         Logger::GetLogger()->error("Failed to load texture '{}' for type '{}'.",
                             fullPath.string(), (int)myType);
                         continue;
                     }
+                    // Attach to the material
                     mat->SetTexture(myType, loadedTex);
-                    Logger::GetLogger()->info("Texture '{}' loaded (type {}).", fullPath.string(), (int)myType);
+
+                    Logger::GetLogger()->info("Texture '{}' loaded (type {}).",
+                        fullPath.string(), (int)myType);
                 }
             }
         }
@@ -432,14 +464,47 @@ namespace staticloader {
         }
     }
 
+    //void ModelLoader::CenterMeshes()
+    //{
+    //    if (m_Objects.empty()) {
+    //        return;
+    //    }
+
+    //    // Compute overall bounding box
+    //    glm::vec3 sceneMin(FLT_MAX);
+    //    glm::vec3 sceneMax(-FLT_MAX);
+
+    //    for (auto& obj : m_Objects) {
+    //        auto& mesh = obj.mesh;
+    //        sceneMin = glm::min(sceneMin, mesh->minBounds);
+    //        sceneMax = glm::max(sceneMax, mesh->maxBounds);
+    //    }
+
+    //    glm::vec3 center = 0.5f * (sceneMin + sceneMax);
+
+    //    // Shift every mesh by -center
+    //    for (auto& obj : m_Objects) {
+    //        auto& mesh = obj.mesh;
+    //        for (auto& p : mesh->positions) {
+    //            p -= center;
+    //        }
+    //        mesh->minBounds -= center;
+    //        mesh->maxBounds -= center;
+    //        mesh->localCenter = 0.5f * (mesh->minBounds + mesh->maxBounds);
+    //    }
+    //}
+
     glm::mat4 ModelLoader::AiToGlm(const aiMatrix4x4& m)
     {
-        glm::mat4 r;
-        r[0][0] = m.a1; r[1][0] = m.b1; r[2][0] = m.c1; r[3][0] = m.d1;
-        r[0][1] = m.a2; r[1][1] = m.b2; r[2][1] = m.c2; r[3][1] = m.d2;
-        r[0][2] = m.a3; r[1][2] = m.b3; r[2][2] = m.c3; r[3][2] = m.d3;
-        r[0][3] = m.a4; r[1][3] = m.b4; r[2][3] = m.c4; r[3][3] = m.d4;
-        return glm::transpose(r);
+        // Assimp's aiMatrix4x4 is row-major, glm is column-major.
+        glm::mat4 result;
+        result[0][0] = m.a1; result[1][0] = m.b1; result[2][0] = m.c1; result[3][0] = m.d1;
+        result[0][1] = m.a2; result[1][1] = m.b2; result[2][1] = m.c2; result[3][1] = m.d2;
+        result[0][2] = m.a3; result[1][2] = m.b3; result[2][2] = m.c3; result[3][2] = m.d3;
+        result[0][3] = m.a4; result[1][3] = m.b4; result[2][3] = m.c4; result[3][3] = m.d4;
+
+        // glm uses column-major indexing, so we transpose
+        return glm::transpose(result);
     }
 
     std::string ModelLoader::GetModelPath(const std::string& modelName)
@@ -448,9 +513,8 @@ namespace staticloader {
         if (it != m_ModelPaths.end()) {
             return it->second;
         }
-        else {
-            Logger::GetLogger()->error("Unknown model name '{}'. Check your path registry.", modelName);
-        }
+        Logger::GetLogger()->error("Unknown model name '{}'. Check your path registry.", modelName);
         return "";
     }
-}
+
+} 
