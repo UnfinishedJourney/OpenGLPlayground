@@ -9,15 +9,17 @@
  * @brief Describes a texture attachment for a FrameBuffer.
  */
 struct FrameBufferTextureAttachment {
-    GLenum attachmentType; // e.g., GL_COLOR_ATTACHMENT0
-    GLenum internalFormat; // e.g., GL_RGBA8
-    GLenum format;         // e.g., GL_RGBA
-    GLenum type;           // e.g., GL_UNSIGNED_BYTE
+    GLenum attachmentType; ///< e.g., GL_COLOR_ATTACHMENT0
+    GLenum internalFormat; ///< e.g., GL_RGBA8
+    GLenum format;         ///< e.g., GL_RGBA
+    GLenum type;           ///< e.g., GL_UNSIGNED_BYTE
 };
 
 /**
  * @brief A class encapsulating an OpenGL Framebuffer.
- *        Supports both single-sample and multisample attachments.
+ *
+ * Provides RAII management of the framebuffer, color attachments,
+ * and an optional depth renderbuffer (or multisample attachments).
  */
 class FrameBuffer {
 public:
@@ -36,44 +38,53 @@ public:
 
     ~FrameBuffer();
 
-    // Non-copyable, move-only
     FrameBuffer(const FrameBuffer&) = delete;
     FrameBuffer& operator=(const FrameBuffer&) = delete;
 
     FrameBuffer(FrameBuffer&&) noexcept = default;
     FrameBuffer& operator=(FrameBuffer&&) noexcept = default;
 
-    // Bind/unbind
+    /**
+     * @brief Binds this framebuffer as the current draw/read target.
+     */
     void Bind() const;
+
+    /**
+     * @brief Unbinds any bound framebuffer (i.e., binds the default FBO).
+     */
     void Unbind() const;
 
     /**
      * @brief Returns the texture ID for a specific attachment.
-     *        Only valid for single-sample attachments. For multisample, see note below.
+     * @note  Valid typically for single-sample attachments or if you want
+     *        the multisample texture handle directly (not for sampling).
+     * @param attachment The attachment (e.g. GL_COLOR_ATTACHMENT0)
      */
     GLuint GetTexture(GLenum attachment) const;
 
     /**
-     * @brief Resizes the FBO attachments to the new width/height.
+     * @brief Resizes the framebuffer attachments to the new width/height.
+     *        This will internally re-create all attachments.
      */
     void Resize(int newWidth, int newHeight);
 
     /**
      * @brief Blit/resolve from this FBO to a target FBO (e.g. single-sample).
      *        Used to resolve MSAA color into a non-multisample texture if needed.
-     * @param targetFBO   The destination FBO (e.g., a single-sample FBO).
-     * @param mask        Which buffers to blit (GL_COLOR_BUFFER_BIT, etc.).
-     * @param filter      Typically GL_NEAREST or GL_LINEAR for color.
+     *
+     * @param targetFBO  The destination FBO (e.g., a single-sample FBO).
+     * @param mask       Which buffers to blit (GL_COLOR_BUFFER_BIT, etc.).
+     * @param filter     Typically GL_NEAREST or GL_LINEAR for color.
      */
     void BlitTo(FrameBuffer& targetFBO,
         GLbitfield mask = GL_COLOR_BUFFER_BIT,
-        GLenum filter = GL_LINEAR) const;
+        GLenum    filter = GL_LINEAR) const;
 
-    [[nodiscard]] GLuint GetRendererID() const { return *m_RendererIDPtr; }
-    [[nodiscard]] int GetWidth()      const { return m_Width; }
-    [[nodiscard]] int GetHeight()     const { return m_Height; }
-    [[nodiscard]] int GetSamples()    const { return m_Samples; }
-    [[nodiscard]] bool HasDepth()     const { return m_HasDepth; }
+    [[nodiscard]] GLuint GetRendererID() const { return m_RendererIDPtr ? *m_RendererIDPtr : 0; }
+    [[nodiscard]] int    GetWidth()      const { return m_Width; }
+    [[nodiscard]] int    GetHeight()     const { return m_Height; }
+    [[nodiscard]] int    GetSamples()    const { return m_Samples; }
+    [[nodiscard]] bool   HasDepth()      const { return m_HasDepth; }
 
 private:
     void Initialize(int width,
@@ -81,15 +92,19 @@ private:
         const std::vector<FrameBufferTextureAttachment>& attachments,
         bool hasDepth,
         int samples);
+
+    /**
+     * @brief Frees all GPU resources (textures, RBO, FBO).
+     *        Called from destructor and also from Resize() before re-init.
+     */
     void Cleanup();
 
-    std::unique_ptr<GLuint, FrameBufferDeleter>    m_RendererIDPtr;
-    std::vector<std::unique_ptr<GLuint, TextureDeleter>> m_Textures; // For color attachments
-    std::unique_ptr<GLuint, RenderBufferDeleter>   m_DepthRenderBufferPtr;
+private:
+    std::unique_ptr<GLuint, FrameBufferDeleter>          m_RendererIDPtr;
+    std::vector<std::unique_ptr<GLuint, TextureDeleter>> m_Textures; ///< Color/etc. attachments
+    std::unique_ptr<GLuint, RenderBufferDeleter>         m_DepthRenderBufferPtr;
 
-    // Store attachments for resizing
     std::vector<FrameBufferTextureAttachment> m_Attachments;
-
     int  m_Width = 0;
     int  m_Height = 0;
     bool m_HasDepth = false;

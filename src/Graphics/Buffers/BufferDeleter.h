@@ -2,6 +2,9 @@
 
 #include <glad/glad.h>
 
+/**
+ * @brief A functor for use with std::unique_ptr to delete OpenGL buffers.
+ */
 struct BufferDeleter {
     void operator()(GLuint* id) const {
         if (id && *id != 0) {
@@ -11,6 +14,9 @@ struct BufferDeleter {
     }
 };
 
+/**
+ * @brief A functor for use with std::unique_ptr to delete OpenGL vertex arrays.
+ */
 struct VertexArrayDeleter {
     void operator()(GLuint* id) const {
         if (id && *id != 0) {
@@ -20,6 +26,9 @@ struct VertexArrayDeleter {
     }
 };
 
+/**
+ * @brief A functor for use with std::unique_ptr to delete OpenGL framebuffers.
+ */
 struct FrameBufferDeleter {
     void operator()(GLuint* id) const {
         if (id && *id != 0) {
@@ -29,6 +38,9 @@ struct FrameBufferDeleter {
     }
 };
 
+/**
+ * @brief A functor for use with std::unique_ptr to delete OpenGL textures.
+ */
 struct TextureDeleter {
     void operator()(GLuint* id) const {
         if (id && *id != 0) {
@@ -38,6 +50,9 @@ struct TextureDeleter {
     }
 };
 
+/**
+ * @brief A functor for use with std::unique_ptr to delete OpenGL renderbuffers.
+ */
 struct RenderBufferDeleter {
     void operator()(GLuint* id) const {
         if (id && *id != 0) {
