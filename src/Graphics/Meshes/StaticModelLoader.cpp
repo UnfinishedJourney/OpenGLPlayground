@@ -3,26 +3,26 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+
 #include <filesystem>
 #include <meshoptimizer.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_inverse.hpp> // if needed
 
-#include "Utilities/Logger.h"
 #include "Resources/MaterialManager.h"
 #include "Resources/TextureManager.h"
+#include "Graphics/Materials/Material.h"
+#include "Utilities/Logger.h"
+#include "MeshInfo.h"
 
 namespace staticloader {
 
-    ModelLoader::ModelLoader(
-        float scaleFactor,
-        std::unordered_map<aiTextureType, TextureType> aiToMyType
-    )
+    ModelLoader::ModelLoader(float scaleFactor,
+        std::unordered_map<aiTextureType, TextureType> aiToMyType,
+        uint8_t maxLODs)
         : m_ScaleFactor(scaleFactor)
         , m_AiToMyType(std::move(aiToMyType))
-    {
-    }
-
-    ModelLoader::~ModelLoader()
+        , m_MaxLODs(maxLODs)
     {
     }
 
@@ -37,69 +37,65 @@ namespace staticloader {
         m_FallbackMaterialCounter = 0;
         m_UnnamedMaterialCounter = 0;
 
-        // Configure Assimp import flags
+        // Configure Assimp
         Assimp::Importer importer;
-        unsigned int importFlags = aiProcess_JoinIdenticalVertices |
+        unsigned importFlags = aiProcess_JoinIdenticalVertices |
             aiProcess_Triangulate |
             aiProcess_RemoveRedundantMaterials |
             aiProcess_FindInvalidData |
             aiProcess_OptimizeMeshes; // merges small meshes
 
         if (meshLayout.hasNormals) {
-            // If your mesh layout wants normals, let Assimp compute them if missing
             importFlags |= aiProcess_GenSmoothNormals;
         }
         if (meshLayout.hasTangents || meshLayout.hasBitangents) {
-            // If your mesh layout wants tangents/bitangents, let Assimp compute them
             importFlags |= aiProcess_CalcTangentSpace;
         }
 
-        // Look up file path
+        // Look up path
         std::string filePath = GetModelPath(modelName);
         if (filePath.empty()) {
-            Logger::GetLogger()->error("No path found for model '{}'.", modelName);
+            Logger::GetLogger()->error("ModelLoader: No path for model '{}'.", modelName);
             return false;
         }
 
-        // Load with Assimp
+        // Load scene
         const aiScene* scene = importer.ReadFile(filePath, importFlags);
         if (!scene || !scene->HasMeshes()) {
-            Logger::GetLogger()->error("Assimp failed to load model from '{}'.", filePath);
+            Logger::GetLogger()->error("ModelLoader: Failed to load '{}'.", filePath);
             return false;
         }
 
-        // Build the directory path to load textures from
+        // Directory for textures
         std::string directory = std::filesystem::path(filePath).parent_path().string();
 
-        // First, load materials from the scene
+        // 1) Load materials from the scene
         LoadSceneMaterials(scene, matLayout, directory);
 
-        // We will do an iterative traversal of the node hierarchy using a stack.
-        // Each stack entry holds (node pointer, accumulated transform).
+        // 2) Traverse node hierarchy iteratively
         std::vector<std::pair<aiNode*, glm::mat4>> stack;
         stack.push_back({ scene->mRootNode, glm::mat4(1.0f) });
 
         while (!stack.empty()) {
-            auto [node, parentTransform] = stack.back();
+            auto [node, parentXform] = stack.back();
             stack.pop_back();
 
-            // Convert node's local transform to glm
-            glm::mat4 localTransform = AiToGlm(node->mTransformation);
-            glm::mat4 globalTransform = parentTransform * localTransform;
+            glm::mat4 local = AiToGlm(node->mTransformation);
+            glm::mat4 global = parentXform * local;
 
-            // Process each mesh referenced by this node
-            for (unsigned int i = 0; i < node->mNumMeshes; i++) {
+            // For each mesh index in this node
+            for (unsigned i = 0; i < node->mNumMeshes; i++) {
                 unsigned meshIndex = node->mMeshes[i];
                 aiMesh* aimesh = scene->mMeshes[meshIndex];
 
-                // Bake the node's global transform into the final vertex data
-                std::shared_ptr<Mesh> newMesh = ProcessAssimpMesh(aimesh, meshLayout, globalTransform);
+                // Bake transform
+                auto newMesh = ProcessAssimpMesh(aimesh, meshLayout, global);
 
-                // Find or create the material for this mesh
+                // Material
                 int matIndex = aimesh->mMaterialIndex;
                 std::shared_ptr<Material> matPtr;
-                if (matIndex < 0 || matIndex >= static_cast<int>(m_Materials.size())) {
-                    // If out of range, create a fallback material
+                if (matIndex < 0 || matIndex >= (int)m_Materials.size()) {
+                    // fallback
                     auto fallbackMat = std::make_shared<Material>(matLayout);
                     fallbackMat->SetName("FallbackMat_" + std::to_string(++m_FallbackMaterialCounter));
                     MaterialManager::GetInstance().AddMaterial(fallbackMat);
@@ -110,25 +106,25 @@ namespace staticloader {
                     matPtr = m_Materials[matIndex];
                 }
 
-                // Store the new mesh + material
-                MeshInfo info;
-                info.mesh = newMesh;
-                info.materialIndex = matPtr->GetID();
-                m_Objects.push_back(info);
+                // Store
+                MeshInfo mi;
+                mi.mesh = newMesh;
+                mi.materialIndex = matPtr->GetID();
+                m_Objects.push_back(mi);
             }
 
-            // Push children with the updated transform
-            for (unsigned int c = 0; c < node->mNumChildren; c++) {
-                stack.push_back({ node->mChildren[c], globalTransform });
+            // Push children
+            for (unsigned c = 0; c < node->mNumChildren; c++) {
+                stack.push_back({ node->mChildren[c], global });
             }
         }
 
-        // Optionally recenter all meshes so the bounding box is at origin
-        //if (centerModel) {
-        //    CenterMeshes();
-        //}
+        // 3) Optionally recenter geometry
+        if (centerModel) {
+            CenterMeshes();
+        }
 
-        Logger::GetLogger()->info("Loaded static model '{}' with {} meshes, {} materials.",
+        Logger::GetLogger()->info("ModelLoader: Loaded '{}' => {} meshes, {} materials.",
             modelName, m_Objects.size(), m_Materials.size());
         return true;
     }
@@ -138,10 +134,9 @@ namespace staticloader {
         const std::string& directory)
     {
         m_Materials.reserve(scene->mNumMaterials);
-
-        for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
-            aiMaterial* aiMat = scene->mMaterials[i];
-            std::shared_ptr<Material> mat = CreateMaterialForAssimpMat(aiMat, matLayout, directory);
+        for (unsigned i = 0; i < scene->mNumMaterials; i++) {
+            aiMaterial* aimat = scene->mMaterials[i];
+            auto mat = CreateMaterialForAssimpMat(aimat, matLayout, directory);
             m_Materials.push_back(mat);
         }
     }
@@ -150,92 +145,85 @@ namespace staticloader {
         const MaterialLayout& matLayout,
         const std::string& directory)
     {
-        // Get the name from Assimp
         aiString aiName;
         if (AI_SUCCESS != aiMat->Get(AI_MATKEY_NAME, aiName)) {
-            // If unnamed, create a unique name
-            aiName = aiString(("UnnamedMaterial_" + std::to_string(m_UnnamedMaterialCounter++)).c_str());
+            aiName = aiString(("UnnamedMat_" + std::to_string(m_UnnamedMaterialCounter++)).c_str());
+        }
+        std::string matName(aiName.C_Str());
+
+        // Possibly reuse existing material
+        auto existing = MaterialManager::GetInstance().GetMaterialByName(matName);
+        if (existing) {
+            return existing;
         }
 
-        std::string matName = aiName.C_Str();
-        // If there's already a material with this name, reuse it
-        auto existingMat = MaterialManager::GetInstance().GetMaterialByName(matName);
-        if (existingMat) {
-            return existingMat;
-        }
+        auto material = std::make_shared<Material>(matLayout);
+        material->SetName(matName);
 
-        // Otherwise, create a new material
-        auto mat = std::make_shared<Material>(matLayout);
-        mat->SetName(matName);
+        // Load color/floats
+        LoadMaterialProperties(aiMat, material, matLayout);
 
-        // Load various color/floats
-        LoadMaterialProperties(aiMat, mat, matLayout);
-        // Load any textures
-        LoadMaterialTextures(aiMat, mat, matLayout, directory);
+        // Load texture references
+        LoadMaterialTextures(aiMat, material, matLayout, directory);
 
-        // Register with your global material manager
-        MaterialManager::GetInstance().AddMaterial(mat);
-        return mat;
+        // Register
+        MaterialManager::GetInstance().AddMaterial(material);
+        return material;
     }
 
     void ModelLoader::LoadMaterialProperties(const aiMaterial* aiMat,
-        std::shared_ptr<Material> mat,
+        const std::shared_ptr<Material>& mat,
         const MaterialLayout& matLayout)
     {
-        // Example usage of aiMaterial fields:
+        // E.g. ambient, diffuse, specular, shininess
         if (matLayout.params.count(MaterialParamType::Ambient)) {
-            aiColor3D color(0.2f, 0.2f, 0.2f);
+            aiColor3D color(0.2f);
             aiMat->Get(AI_MATKEY_COLOR_AMBIENT, color);
             mat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(color.r, color.g, color.b));
         }
         if (matLayout.params.count(MaterialParamType::Diffuse)) {
-            aiColor3D color(0.8f, 0.8f, 0.8f);
+            aiColor3D color(0.8f);
             aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, color);
             mat->AssignToPackedParams(MaterialParamType::Diffuse, glm::vec3(color.r, color.g, color.b));
         }
         if (matLayout.params.count(MaterialParamType::Specular)) {
-            aiColor3D color(0.0f, 0.0f, 0.0f);
+            aiColor3D color(0.0f);
             aiMat->Get(AI_MATKEY_COLOR_SPECULAR, color);
             mat->AssignToPackedParams(MaterialParamType::Specular, glm::vec3(color.r, color.g, color.b));
         }
         if (matLayout.params.count(MaterialParamType::Shininess)) {
-            float shininessVal = 32.0f;
-            aiMat->Get(AI_MATKEY_SHININESS, shininessVal);
-            mat->AssignToPackedParams(MaterialParamType::Shininess, shininessVal);
+            float shininess = 32.0f;
+            aiMat->Get(AI_MATKEY_SHININESS, shininess);
+            mat->AssignToPackedParams(MaterialParamType::Shininess, shininess);
         }
     }
 
     void ModelLoader::LoadMaterialTextures(const aiMaterial* aiMat,
-        std::shared_ptr<Material> mat,
+        const std::shared_ptr<Material>& mat,
         const MaterialLayout& matLayout,
         const std::string& directory)
     {
-        // For each AI texture type you have mapped to your engine's type
         for (auto& [aiType, myType] : m_AiToMyType) {
-            unsigned int texCount = aiMat->GetTextureCount(aiType);
-            for (unsigned int i = 0; i < texCount; i++) {
-                aiString str;
-                if (aiMat->GetTexture(aiType, i, &str) == AI_SUCCESS) {
-                    // Build the full path
-                    std::filesystem::path relativePath(str.C_Str());
-                    relativePath = relativePath.lexically_normal();
-                    std::filesystem::path fullPath = std::filesystem::path(directory) / relativePath;
-                    fullPath = fullPath.lexically_normal();
+            unsigned count = aiMat->GetTextureCount(aiType);
+            for (unsigned i = 0; i < count; i++) {
+                aiString texPath;
+                if (aiMat->GetTexture(aiType, i, &texPath) == AI_SUCCESS) {
+                    // Build path
+                    std::filesystem::path rel(texPath.C_Str());
+                    rel = rel.lexically_normal();
+                    std::filesystem::path full = std::filesystem::path(directory) / rel;
+                    full = full.lexically_normal();
 
-                    // Load the texture
-                    auto texName = relativePath.filename().string(); // e.g. "diffuse.png"
-                    auto loadedTex = TextureManager::GetInstance().LoadTexture(texName, fullPath.string());
-
+                    // Load
+                    auto textureName = rel.filename().string();
+                    auto loadedTex = TextureManager::GetInstance().LoadTexture(textureName, full.string());
                     if (!loadedTex) {
-                        Logger::GetLogger()->error("Failed to load texture '{}' for type '{}'.",
-                            fullPath.string(), (int)myType);
+                        Logger::GetLogger()->error("Failed to load texture '{}' for type={}.",
+                            full.string(), (int)myType);
                         continue;
                     }
-                    // Attach to the material
                     mat->SetTexture(myType, loadedTex);
-
-                    Logger::GetLogger()->info("Texture '{}' loaded (type {}).",
-                        fullPath.string(), (int)myType);
+                    Logger::GetLogger()->info("Loaded texture '{}' (type={}).", full.string(), (int)myType);
                 }
             }
         }
@@ -245,59 +233,52 @@ namespace staticloader {
         const MeshLayout& meshLayout,
         const glm::mat4& transform)
     {
-        auto newMesh = std::make_shared<Mesh>();
+        auto mesh = std::make_shared<Mesh>();
 
         // Positions
         if (meshLayout.hasPositions && aimesh->HasPositions()) {
-            newMesh->positions.reserve(aimesh->mNumVertices);
-
-            // Precompute scale+transform factor
-            // We'll multiply each vertex by (transform * scaleFactor)
+            mesh->positions.reserve(aimesh->mNumVertices);
+            glm::vec4 tmp;
             for (unsigned v = 0; v < aimesh->mNumVertices; v++) {
-                glm::vec4 originalPos(m_ScaleFactor * aimesh->mVertices[v].x,
-                    m_ScaleFactor * aimesh->mVertices[v].y,
-                    m_ScaleFactor * aimesh->mVertices[v].z,
-                    1.0f);
-                // apply transform & global scale
-                glm::vec4 transformedPos = transform * (originalPos);
+                tmp.x = m_ScaleFactor * aimesh->mVertices[v].x;
+                tmp.y = m_ScaleFactor * aimesh->mVertices[v].y;
+                tmp.z = m_ScaleFactor * aimesh->mVertices[v].z;
+                tmp.w = 1.0f;
+                glm::vec4 worldPos = transform * tmp;
+                glm::vec3 finalPos(worldPos.x, worldPos.y, worldPos.z);
 
-                glm::vec3 pos(transformedPos.x, transformedPos.y, transformedPos.z);
-                newMesh->positions.push_back(pos);
+                mesh->positions.push_back(finalPos);
 
-                newMesh->minBounds = glm::min(newMesh->minBounds, pos);
-                newMesh->maxBounds = glm::max(newMesh->maxBounds, pos);
+                // Update bounding box
+                mesh->minBounds = glm::min(mesh->minBounds, finalPos);
+                mesh->maxBounds = glm::max(mesh->maxBounds, finalPos);
             }
         }
 
         // Normals
         if (meshLayout.hasNormals && aimesh->HasNormals()) {
-            newMesh->normals.reserve(aimesh->mNumVertices);
-
-            // For correct normal transform, we use the inverse transpose of the 3x3 part
+            mesh->normals.reserve(aimesh->mNumVertices);
             glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(transform)));
-
             for (unsigned v = 0; v < aimesh->mNumVertices; v++) {
-                glm::vec3 normal(aimesh->mNormals[v].x,
+                glm::vec3 n(aimesh->mNormals[v].x,
                     aimesh->mNormals[v].y,
                     aimesh->mNormals[v].z);
-                normal = normalMat * normal;
-                normal = glm::normalize(normal);
-
-                newMesh->normals.push_back(normal);
+                n = glm::normalize(normalMat * n);
+                mesh->normals.push_back(n);
             }
         }
 
-        // Tangents / Bitangents
+        // Tangents/Bitangents
         if ((meshLayout.hasTangents || meshLayout.hasBitangents) &&
             aimesh->HasTangentsAndBitangents())
         {
             glm::mat3 tbMat = glm::mat3(glm::transpose(glm::inverse(transform)));
 
             if (meshLayout.hasTangents) {
-                newMesh->tangents.reserve(aimesh->mNumVertices);
+                mesh->tangents.reserve(aimesh->mNumVertices);
             }
             if (meshLayout.hasBitangents) {
-                newMesh->bitangents.reserve(aimesh->mNumVertices);
+                mesh->bitangents.reserve(aimesh->mNumVertices);
             }
 
             for (unsigned v = 0; v < aimesh->mNumVertices; v++) {
@@ -306,215 +287,202 @@ namespace staticloader {
                         aimesh->mTangents[v].y,
                         aimesh->mTangents[v].z);
                     t = glm::normalize(tbMat * t);
-                    newMesh->tangents.push_back(t);
+                    mesh->tangents.push_back(t);
                 }
-
                 if (meshLayout.hasBitangents) {
                     glm::vec3 b(aimesh->mBitangents[v].x,
                         aimesh->mBitangents[v].y,
                         aimesh->mBitangents[v].z);
                     b = glm::normalize(tbMat * b);
-                    newMesh->bitangents.push_back(b);
+                    mesh->bitangents.push_back(b);
                 }
             }
         }
 
-        // Texture coordinates
-        // For simplicity, replicate the first UV set across each requested texture channel
+        // UVs (just replicate channel 0 to all requested texture sets)
         if (!meshLayout.textureTypes.empty() && aimesh->HasTextureCoords(0)) {
             std::vector<glm::vec2> uvSet(aimesh->mNumVertices);
             for (unsigned v = 0; v < aimesh->mNumVertices; v++) {
                 uvSet[v] = glm::vec2(aimesh->mTextureCoords[0][v].x,
                     aimesh->mTextureCoords[0][v].y);
             }
-            // Copy this uvSet to each requested texture channel
-            for (auto texType : meshLayout.textureTypes) {
-                newMesh->uvs[texType] = uvSet;
+            for (auto txType : meshLayout.textureTypes) {
+                mesh->uvs[txType] = uvSet;
             }
         }
 
-        // Gather all indices
+        // Indices
         std::vector<uint32_t> srcIndices;
         srcIndices.reserve(aimesh->mNumFaces * 3);
         for (unsigned f = 0; f < aimesh->mNumFaces; f++) {
             const aiFace& face = aimesh->mFaces[f];
-            // Typically each face is a triangle after aiProcess_Triangulate
+            // Triangulated => 3 indices
             for (unsigned idx = 0; idx < face.mNumIndices; idx++) {
                 srcIndices.push_back(face.mIndices[idx]);
             }
         }
 
-        // Basic bounding data
-        newMesh->localCenter = 0.5f * (newMesh->minBounds + newMesh->maxBounds);
-        newMesh->boundingSphereRadius = glm::length(newMesh->maxBounds - newMesh->localCenter);
+        // bounding volume
+        mesh->localCenter = 0.5f * (mesh->minBounds + mesh->maxBounds);
+        mesh->boundingSphereRadius = glm::length(mesh->maxBounds - mesh->localCenter);
 
-        // Prepare for meshoptimizer LOD generation
+        // Prepare for LOD generation
         std::vector<float> floatPositions;
-        floatPositions.reserve(newMesh->positions.size() * 3);
-        for (auto& pos : newMesh->positions) {
+        floatPositions.reserve(mesh->positions.size() * 3);
+        for (auto& pos : mesh->positions) {
             floatPositions.push_back(pos.x);
             floatPositions.push_back(pos.y);
             floatPositions.push_back(pos.z);
         }
 
-        // Generate multiple LOD index buffers
+        // LOD creation
         std::vector<std::vector<uint32_t>> lodIndices;
-        GenerateLODs(srcIndices, floatPositions, lodIndices);
+        GenerateLODs(std::move(srcIndices), floatPositions, lodIndices);
 
-        // Move the final indices/LODs into the Mesh
-        newMesh->indices.clear();
-        newMesh->lods.clear();
+        mesh->indices.clear();
+        mesh->lods.clear();
 
         for (auto& singleLOD : lodIndices) {
             MeshLOD lod;
-            lod.indexOffset = static_cast<uint32_t>(newMesh->indices.size());
+            lod.indexOffset = static_cast<uint32_t>(mesh->indices.size());
             lod.indexCount = static_cast<uint32_t>(singleLOD.size());
-
-            newMesh->indices.insert(newMesh->indices.end(), singleLOD.begin(), singleLOD.end());
-            newMesh->lods.push_back(lod);
+            mesh->indices.insert(mesh->indices.end(), singleLOD.begin(), singleLOD.end());
+            mesh->lods.push_back(lod);
         }
 
-        return newMesh;
+        return mesh;
     }
 
-    void ModelLoader::GenerateLODs(const std::vector<uint32_t>& srcIndices,
+    void ModelLoader::GenerateLODs(std::vector<uint32_t> srcIndices,
         const std::vector<float>& vertices3f,
         std::vector<std::vector<uint32_t>>& outLods) const
     {
-        // If we have no data, return a single "LOD0" = original
         if (srcIndices.empty() || vertices3f.empty()) {
-            outLods.emplace_back(srcIndices);
+            outLods.push_back(std::move(srcIndices));
             return;
         }
 
-        size_t vertexCount = vertices3f.size() / 3;
-        size_t currentIndexCount = srcIndices.size();
+        const size_t vertexCount = vertices3f.size() / 3;
+        size_t       currentIndexCount = srcIndices.size();
 
-        // LOD0 = full-res
+        // LOD0 => original
         outLods.emplace_back(srcIndices);
 
-        // Attempt to create LOD1..LOD7
-        uint8_t lodLevel = 1;
-        while (currentIndexCount > 1024 && lodLevel < 8) {
+        // Attempt LOD1.. up to m_MaxLODs
+        size_t lodLevel = 1;
+        while (lodLevel < m_MaxLODs && currentIndexCount > 1024) {
             size_t targetCount = currentIndexCount / 2;
 
-            // Start from the previous LOD's indices
-            const std::vector<uint32_t>& prevLOD = outLods.back();
+            const auto& prevLOD = outLods.back();
             std::vector<uint32_t> simplified(prevLOD);
 
-            // meshoptimizer simplify
-            size_t numOptIndices = meshopt_simplify(
+            // Simplify
+            size_t numOpt = meshopt_simplify(
                 simplified.data(),
                 simplified.data(),
                 static_cast<uint32_t>(simplified.size()),
                 vertices3f.data(),
-                vertexCount,
+                static_cast<uint32_t>(vertexCount),
                 sizeof(float) * 3,
                 targetCount,
                 0.02f
             );
 
             bool sloppy = false;
-            // If we didn't gain much reduction, try sloppy for subsequent LODs
-            if (numOptIndices > simplified.size() * 0.9f) {
+            // if no improvement, try sloppy
+            if (numOpt > simplified.size() * 0.9f) {
                 if (lodLevel > 1) {
-                    numOptIndices = meshopt_simplifySloppy(
+                    numOpt = meshopt_simplifySloppy(
                         simplified.data(),
                         simplified.data(),
                         static_cast<uint32_t>(simplified.size()),
                         vertices3f.data(),
-                        vertexCount,
+                        static_cast<uint32_t>(vertexCount),
                         sizeof(float) * 3,
                         targetCount,
                         FLT_MAX,
                         nullptr
                     );
                     sloppy = true;
-
-                    // If STILL no improvement, break
-                    if (numOptIndices == simplified.size()) {
-                        Logger::GetLogger()->warn("LOD{}: No further simplification possible.", lodLevel);
+                    if (numOpt == simplified.size()) {
+                        Logger::GetLogger()->warn("LOD{}: no further simplification possible.", lodLevel);
                         break;
                     }
                 }
                 else {
-                    Logger::GetLogger()->warn("LOD{}: Simplification didn't reduce enough.", lodLevel);
+                    Logger::GetLogger()->warn("LOD{}: simplification not effective.", lodLevel);
                     break;
                 }
             }
+            simplified.resize(numOpt);
 
-            simplified.resize(numOptIndices);
-
-            // Optimize vertex cache
+            // optimize for cache
             meshopt_optimizeVertexCache(
                 simplified.data(),
                 simplified.data(),
-                static_cast<uint32_t>(numOptIndices),
-                vertexCount
+                static_cast<uint32_t>(numOpt),
+                static_cast<uint32_t>(vertexCount)
             );
 
-            // Accept LOD
-            currentIndexCount = numOptIndices;
-            outLods.emplace_back(simplified);
+            currentIndexCount = numOpt;
+            outLods.push_back(std::move(simplified));
 
             Logger::GetLogger()->info("LOD{} => {} indices {}",
-                lodLevel, numOptIndices,
+                lodLevel, numOpt,
                 sloppy ? "[sloppy]" : "");
+
             lodLevel++;
         }
     }
 
-    //void ModelLoader::CenterMeshes()
-    //{
-    //    if (m_Objects.empty()) {
-    //        return;
-    //    }
-
-    //    // Compute overall bounding box
-    //    glm::vec3 sceneMin(FLT_MAX);
-    //    glm::vec3 sceneMax(-FLT_MAX);
-
-    //    for (auto& obj : m_Objects) {
-    //        auto& mesh = obj.mesh;
-    //        sceneMin = glm::min(sceneMin, mesh->minBounds);
-    //        sceneMax = glm::max(sceneMax, mesh->maxBounds);
-    //    }
-
-    //    glm::vec3 center = 0.5f * (sceneMin + sceneMax);
-
-    //    // Shift every mesh by -center
-    //    for (auto& obj : m_Objects) {
-    //        auto& mesh = obj.mesh;
-    //        for (auto& p : mesh->positions) {
-    //            p -= center;
-    //        }
-    //        mesh->minBounds -= center;
-    //        mesh->maxBounds -= center;
-    //        mesh->localCenter = 0.5f * (mesh->minBounds + mesh->maxBounds);
-    //    }
-    //}
-
-    glm::mat4 ModelLoader::AiToGlm(const aiMatrix4x4& m)
+    void ModelLoader::CenterMeshes()
     {
-        // Assimp's aiMatrix4x4 is row-major, glm is column-major.
-        glm::mat4 result;
-        result[0][0] = m.a1; result[1][0] = m.b1; result[2][0] = m.c1; result[3][0] = m.d1;
-        result[0][1] = m.a2; result[1][1] = m.b2; result[2][1] = m.c2; result[3][1] = m.d2;
-        result[0][2] = m.a3; result[1][2] = m.b3; result[2][2] = m.c3; result[3][2] = m.d3;
-        result[0][3] = m.a4; result[1][3] = m.b4; result[2][3] = m.c4; result[3][3] = m.d4;
+        if (m_Objects.empty()) {
+            return;
+        }
+        glm::vec3 sceneMin(FLT_MAX);
+        glm::vec3 sceneMax(-FLT_MAX);
 
-        // glm uses column-major indexing, so we transpose
-        return glm::transpose(result);
+        // compute global bounding box
+        for (auto& obj : m_Objects) {
+            auto& mesh = obj.mesh;
+            sceneMin = glm::min(sceneMin, mesh->minBounds);
+            sceneMax = glm::max(sceneMax, mesh->maxBounds);
+        }
+
+        glm::vec3 center = 0.5f * (sceneMin + sceneMax);
+
+        // shift every mesh
+        for (auto& obj : m_Objects) {
+            auto& mesh = obj.mesh;
+            for (auto& p : mesh->positions) {
+                p -= center;
+            }
+            mesh->minBounds -= center;
+            mesh->maxBounds -= center;
+            mesh->localCenter = 0.5f * (mesh->minBounds + mesh->maxBounds);
+        }
     }
 
-    std::string ModelLoader::GetModelPath(const std::string& modelName)
+    glm::mat4 ModelLoader::AiToGlm(const aiMatrix4x4& m) const
+    {
+        glm::mat4 ret;
+        ret[0][0] = m.a1; ret[1][0] = m.b1; ret[2][0] = m.c1; ret[3][0] = m.d1;
+        ret[0][1] = m.a2; ret[1][1] = m.b2; ret[2][1] = m.c2; ret[3][1] = m.d2;
+        ret[0][2] = m.a3; ret[1][2] = m.b3; ret[2][2] = m.c3; ret[3][2] = m.d3;
+        ret[0][3] = m.a4; ret[1][3] = m.b4; ret[2][3] = m.c4; ret[3][3] = m.d4;
+
+        return glm::transpose(ret);
+    }
+
+    std::string ModelLoader::GetModelPath(const std::string& modelName) const
     {
         auto it = m_ModelPaths.find(modelName);
         if (it != m_ModelPaths.end()) {
             return it->second;
         }
-        Logger::GetLogger()->error("Unknown model name '{}'. Check your path registry.", modelName);
+        Logger::GetLogger()->error("Unknown modelName '{}'. Check m_ModelPaths or add a new entry.", modelName);
         return "";
     }
 
-} 
+} // namespace staticloader
