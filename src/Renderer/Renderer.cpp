@@ -147,7 +147,7 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
     // in the pass's `SetSourceFramebuffer(...)` method or constructor.
 
     // 1) Skybox pass (if needed)
-    if (scene->GetBSkybox()) {
+    if (scene->GetSkyboxEnabled()) {
         m_GeometryPasses.push_back(std::make_unique<SkyBoxPass>(m_MsaaFBO, scene));
     }
 
@@ -155,12 +155,12 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
     m_GeometryPasses.push_back(std::make_unique<GeometryPass>(m_MsaaFBO, scene));
 
     // 3) Grid pass
-    if (scene->GetBGrid()) {
+    if (scene->GetShowGrid()) {
         m_GeometryPasses.push_back(std::make_unique<GridPass>(m_MsaaFBO, scene));
     }
 
     // 4) Debug lights
-    if (scene->GetBDebugLights()) {
+    if (scene->GetShowDebugLights()) {
         m_GeometryPasses.push_back(std::make_unique<DebugLightsPass>(m_MsaaFBO, scene));
     }
 

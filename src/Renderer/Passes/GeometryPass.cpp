@@ -1,4 +1,5 @@
 #include "GeometryPass.h"
+#include "Renderer/Batch.h"
 #include "Resources/ShaderManager.h"
 #include "Resources/MaterialManager.h"
 #include "Utilities/Logger.h"

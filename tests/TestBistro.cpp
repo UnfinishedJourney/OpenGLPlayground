@@ -40,7 +40,7 @@ void TestBistro::OnEnter() {
         return;
     }
 
-    m_Scene->SetBSkybox(true);
+    m_Scene->SetSkyboxEnabled(true);
 
     // Initialize Materials
     //auto& materialManager = MaterialManager::GetInstance();

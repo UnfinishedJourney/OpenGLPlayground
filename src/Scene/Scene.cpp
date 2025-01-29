@@ -1,10 +1,29 @@
 #include "Scene.h"
 
+// Include only what's necessary
 #include <glad/glad.h>
 #include <stdexcept>
+#include <algorithm>
+
+// For your uniform struct (could keep this internal or in a header)
 #include <glm/gtc/matrix_transform.hpp>
 
-// Example struct for frame data UBO
+// Local includes
+#include "Renderer/BatchManager.h"
+#include "Renderer/RenderObject.h"
+#include "Graphics/Buffers/UniformBuffer.h"
+#include "Graphics/Buffers/ShaderStorageBuffer.h"
+#include "Scene/Camera.h"
+#include "Scene/SceneGraph.h"
+#include "Scene/Lights.h"
+#include "Scene/FrustumCuller.h"
+#include "Scene/LODEvaluator.h"
+#include "Utilities/Logger.h"
+#include "Resources/MaterialManager.h"
+#include "Graphics/Meshes/StaticModelLoader.h"
+#include "Resources/ResourceManager.h"
+
+// Example for the frame data
 struct FrameCommonData
 {
     glm::mat4 view;
@@ -12,14 +31,18 @@ struct FrameCommonData
     glm::vec4 cameraPos;
 };
 
-// Binding points, must match your shader
-constexpr GLuint FRAME_DATA_BINDING_POINT = 0;
-constexpr GLuint LIGHTS_DATA_BINDING_POINT = 1;
-static const size_t MAX_LIGHTS = 32; // Example limit
+// Max lights in your scene
+static constexpr size_t MAX_LIGHTS = 32;
+
+// Binding points
+static constexpr GLuint FRAME_DATA_BINDING_POINT = 0;
+static constexpr GLuint LIGHTS_DATA_BINDING_POINT = 1;
 
 Scene::Scene()
 {
-    // Default camera
+    // Possibly create your scene graph if you still want hierarchical
+    m_SceneGraph = std::make_unique<SceneGraph>();
+
     m_Camera = std::make_shared<Camera>();
 
     // Create the UBO for frame data
@@ -31,20 +54,22 @@ Scene::Scene()
 
     // Create the Lights SSBO
     GLsizeiptr bufferSize = sizeof(glm::vec4) + MAX_LIGHTS * sizeof(LightData);
-    uint32_t numLights = 0;
     m_LightsSSBO = std::make_unique<ShaderStorageBuffer>(
         LIGHTS_DATA_BINDING_POINT,
         bufferSize,
         GL_DYNAMIC_DRAW
     );
-    // First 16 bytes = vec4 storing number of lights
+    // Initialize lights count to zero
+    uint32_t numLights = 0;
     m_LightsSSBO->SetData(&numLights, sizeof(glm::vec4), 0);
-    m_LightsSSBO->BindBase();
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    m_LightsSSBO->BindBase(); // optional
 
-    // LOD + Culling
-    m_LODEvaluator = std::make_shared<LODEvaluator>();
-    m_FrustumCuller = std::make_shared<FrustumCuller>();
+    // Setup LOD/culling
+    m_LODEvaluator = std::make_unique<LODEvaluator>();
+    m_FrustumCuller = std::make_unique<FrustumCuller>();
+
+    // Batch manager
+    m_StaticBatchManager = std::make_unique<BatchManager>();
 }
 
 Scene::~Scene()
@@ -54,18 +79,17 @@ Scene::~Scene()
 
 void Scene::Clear()
 {
-    // Clear everything so we can load a new scene
+    // Clear any stored objects, lights, etc.
     m_LightsData.clear();
 
-    m_StaticBatchManager.Clear();
-    m_SceneGraph = SceneGraph(); // re-init
+    if (m_StaticBatchManager) {
+        m_StaticBatchManager->Clear();
+    }
+
+    // If you keep a scene graph:
+    m_SceneGraph = std::make_unique<SceneGraph>(); // or reset if you want
+
     m_StaticObjects.clear();
-
-    m_LoadedMeshes.clear();
-    m_LoadedMaterials.clear();
-    m_NodeToRenderObjects.clear();
-
-    m_LastShader.clear();
     m_StaticBatchesDirty = true;
 }
 
@@ -77,7 +101,7 @@ void Scene::SetCamera(const std::shared_ptr<Camera>& camera)
 void Scene::AddLight(const LightData& light)
 {
     if (m_LightsData.size() >= MAX_LIGHTS) {
-        Logger::GetLogger()->warn("Max number of lights ({}) reached!", MAX_LIGHTS);
+        Logger::GetLogger()->warn("Scene::AddLight: exceeded MAX_LIGHTS = {}", MAX_LIGHTS);
         return;
     }
     m_LightsData.push_back(light);
@@ -86,25 +110,22 @@ void Scene::AddLight(const LightData& light)
 
 void Scene::UpdateLightsData()
 {
-    if (m_LightsData.size() > MAX_LIGHTS) {
-        throw std::runtime_error("Too many lights in the scene!");
-    }
-
-    // The first vec4 in the SSBO is the number of lights
+    // Number of lights is the first vec4
     uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
     m_LightsSSBO->SetData(&numLights, sizeof(glm::vec4), 0);
 
-    // Followed by the array of LightData
-    m_LightsSSBO->SetData(
-        m_LightsData.data(),
-        m_LightsData.size() * sizeof(LightData),
-        sizeof(glm::vec4)
-    );
+    // Then the array of LightData
+    if (!m_LightsData.empty()) {
+        size_t dataSize = m_LightsData.size() * sizeof(LightData);
+        m_LightsSSBO->SetData(m_LightsData.data(), dataSize, sizeof(glm::vec4));
+    }
 }
 
 void Scene::BindLightSSBO() const
 {
-    m_LightsSSBO->Bind();
+    // Usually you call BindBase() once, but if you want to 
+    // ensure it's bound, you can call:
+    m_LightsSSBO->BindBase();
 }
 
 void Scene::SetPostProcessingEffect(PostProcessingEffectType effect)
@@ -118,9 +139,7 @@ PostProcessingEffectType Scene::GetPostProcessingEffect() const
 }
 
 //------------------------------------------------------------------------------------
-// 1) NEW STATIC-LOADER-BASED METHOD
-//    Loads a model whose node hierarchy is baked into final vertex positions.
-//    We store each resulting mesh as a "static" RenderObject in m_StaticObjects.
+//  Static model loading
 //------------------------------------------------------------------------------------
 bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
     const std::string& shaderName,
@@ -129,116 +148,40 @@ bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
 {
     auto& resourceManager = ResourceManager::GetInstance();
     auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(shaderName);
-    m_LastLayout = meshLayout;
 
     staticloader::ModelLoader loader(scaleFactor, aiToMyType);
     bool success = loader.LoadStaticModel(modelName, meshLayout, matLayout, /*centerModel=*/true);
-    if (!success)
-    {
+    if (!success) {
         Logger::GetLogger()->error("Failed to load static model '{}'.", modelName);
         return false;
     }
 
-    const auto& loadedObjects = loader.GetLoadedObjects();
-    const auto& loadedMaterials = loader.GetLoadedMaterials();
+    // Retrieve the baked objects from the loader
+    const auto& objects = loader.GetLoadedObjects();
+    const auto& materials = loader.GetLoadedMaterials();
 
-    for (auto& obj : loadedObjects)
-    {
-        int materialID = obj.materialIndex;
-        m_LoadedMaterials.push_back(materialID);
+    for (auto& mi : objects) {
+        int materialID = mi.materialIndex;
 
-        // Create a *StaticRenderObject* (no transform):
+        // Create a static (baked) render object
         auto ro = std::make_shared<StaticRenderObject>(
-            obj.mesh,
+            mi.mesh,
             meshLayout,
             materialID,
             shaderName
         );
+
         m_StaticObjects.push_back(ro);
     }
 
-    m_LastShader = shaderName;
+    m_LastShaderName = shaderName;
     m_StaticBatchesDirty = true;
 
-    Logger::GetLogger()->info("Loaded static model '{}' => {} sub-meshes, {} materials",
-        modelName,
-        loadedObjects.size(),
-        loadedMaterials.size());
+    Logger::GetLogger()->info("Loaded static model '{}' => {} sub-meshes, {} materials.",
+        modelName, objects.size(), materials.size());
     return true;
 }
 
-//------------------------------------------------------------------------------------
-// 2) OLD "HIERARCHICAL" LOADING METHOD
-//    Uses the original ModelLoader that populates the SceneGraph, etc.
-//    If you do NOT need the SceneGraph, you can remove this method entirely.
-//------------------------------------------------------------------------------------
-//bool Scene::LoadModelIntoScene(const std::string& modelName,
-//    const std::string& defaultShaderName,
-//    const std::string& defaultMaterialName,
-//    float scaleFactor,
-//    std::unordered_map<aiTextureType, TextureType> aiToMyType)
-//{
-//    auto& resourceManager = ResourceManager::GetInstance();
-//
-//    // The ResourceManager knows how to get the correct layouts from a shader name
-//    auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(defaultShaderName);
-//
-//    m_LastLayout = meshLayout;
-//    // The old ModelLoader that populates a SceneGraph
-//    ModelLoader loader(scaleFactor, aiToMyType);
-//
-//    // Build path from the old ModelLoader’s registry
-//    std::string modelPath = ModelLoader::GetModelPath(modelName);
-//    if (modelPath.empty())
-//    {
-//        Logger::GetLogger()->error("Unknown model name '{}'. Check your path registry.", modelName);
-//        return false;
-//    }
-//
-//    // Load with hierarchical approach (SceneGraph will be populated)
-//    if (!loader.LoadModel(modelPath, meshLayout, matLayout, m_SceneGraph, true))
-//    {
-//        Logger::GetLogger()->error("Failed to load model '{}'.", modelName);
-//        return false;
-//    }
-//
-//    // Grab the final loaded data
-//    const auto& data = loader.GetModelData();
-//
-//    // Transfer mesh data to our local vector (these indices tie to SceneGraph node->mesh references)
-//    for (auto& md : data.meshesData)
-//    {
-//        MeshInfo info;
-//        info.mesh = md.mesh;
-//        // We do not necessarily know the material index here, so set 0 or do a lookup
-//        info.materialIndex = 0;
-//        m_LoadedMeshes.push_back(info);
-//    }
-//
-//    // Keep track of created materials
-//    for (auto& matName : data.createdMaterials)
-//    {
-//        m_LoadedMaterials.push_back(matName);
-//    }
-//
-//    // Keep the last used shader
-//    m_LastShader = defaultShaderName;
-//
-//    // We’ll rebuild static batches only if you want the SceneGraph objects batched,
-//    // but typically these might be “dynamic.” Up to you:
-//    m_StaticBatchesDirty = true;
-//
-//    // Make sure our node->RenderObject array is large enough to hold the new nodes
-//    m_NodeToRenderObjects.resize(m_SceneGraph.GetNodes().size());
-//
-//    return true;
-//}
-
-//------------------------------------------------------------------------------------
-// Batching: We combine geometry with the same material/shader into bigger GPU buffers
-//           for performance.  We do so for either the SceneGraph-based objects or
-//           the new “static” objects. Adjust as needed.
-//------------------------------------------------------------------------------------
 void Scene::BuildStaticBatchesIfNeeded()
 {
     if (!m_StaticBatchesDirty) {
@@ -246,76 +189,24 @@ void Scene::BuildStaticBatchesIfNeeded()
     }
     m_StaticBatchesDirty = false;
 
-    // 1) Clear old references
-    m_StaticBatchManager.Clear();
+    // Clear old data
+    m_StaticBatchManager->Clear();
 
-    // 2) If you still want to handle SceneGraph-based objects, recalc transforms:
-    m_SceneGraph.RecalculateGlobalTransforms();
+    // If you want to handle hierarchical objects in SceneGraph, do so here
+    // For each node, gather meshes -> create RenderObjects
+    // Then add them to m_StaticBatchManager
 
-    // Rebuild the node->RenderObjects array
-    auto& nodes = m_SceneGraph.GetNodes();
-    if (m_NodeToRenderObjects.size() < nodes.size()) {
-        m_NodeToRenderObjects.resize(nodes.size());
-    }
-    for (auto& roVec : m_NodeToRenderObjects) {
-        roVec.clear();
+    // Add “static” baked objects
+    for (auto& ro : m_StaticObjects) {
+        m_StaticBatchManager->AddRenderObject(ro);
     }
 
-    // For each node in the SceneGraph, create a RenderObject referencing the mesh
-    for (size_t i = 0; i < nodes.size(); i++)
-    {
-        const auto& node = nodes[i];
-        for (size_t k = 0; k < node.meshIndices.size(); k++)
-        {
-            int meshIdx = node.meshIndices[k];
-            int matIdx = node.materialIndices[k];
-
-            if (meshIdx < 0 || meshIdx >= (int)m_LoadedMeshes.size()) {
-                Logger::GetLogger()->error("Invalid mesh index {} in node {}", meshIdx, i);
-                continue;
-            }
-            if (matIdx < 0 || matIdx >= (int)m_LoadedMaterials.size()) {
-                Logger::GetLogger()->warn("Invalid material index {} in node {}", matIdx, i);
-                matIdx = 0; // fallback
-            }
-            auto& meshInfo = m_LoadedMeshes[meshIdx];
-            auto meshPtr = meshInfo.mesh;
-            int matID = m_LoadedMaterials[matIdx];
-
-            // Create a transform based on the node’s global transform
-            auto transform = std::make_shared<Transform>();
-            transform->SetModelMatrix(node.globalTransform);
-
-            // Build the RenderObject
-            auto ro = std::make_shared<RenderObject>(
-                meshPtr,
-                m_LastLayout, // or m_MeshLayout if you store it
-                matID,
-                m_LastShader,
-                transform
-            );
-            // Add to node->RenderObjects
-            m_NodeToRenderObjects[i].push_back(ro);
-
-            // Also add to batch manager
-            m_StaticBatchManager.AddRenderObject(ro);
-        }
-    }
-
-    // 3) Also batch the new “static” objects (the ones loaded with transforms baked in)
-    for (auto& ro : m_StaticObjects)
-    {
-        // We wrap it in a shared_ptr because the BatchManager interface expects that
-        m_StaticBatchManager.AddRenderObject(ro);
-    }
-
-    // 4) Let the BatchManager build final GPU buffers
-    m_StaticBatchManager.BuildBatches();
+    m_StaticBatchManager->BuildBatches();
 }
 
 const std::vector<std::shared_ptr<Batch>>& Scene::GetStaticBatches() const
 {
-    return m_StaticBatchManager.GetBatches();
+    return m_StaticBatchManager->GetBatches();
 }
 
 //------------------------------------------------------------------------------------
@@ -323,20 +214,14 @@ const std::vector<std::shared_ptr<Batch>>& Scene::GetStaticBatches() const
 //------------------------------------------------------------------------------------
 void Scene::UpdateFrameDataUBO() const
 {
+    if (!m_Camera) {
+        return;
+    }
     FrameCommonData data{};
-    if (m_Camera)
-    {
-        data.view = m_Camera->GetViewMatrix();
-        data.proj = m_Camera->GetProjectionMatrix();
-        data.cameraPos = glm::vec4(m_Camera->GetPosition(), 1.f);
-    }
-    else
-    {
-        data.view = glm::mat4(1.f);
-        data.proj = glm::mat4(1.f);
-        data.cameraPos = glm::vec4(0.f, 0.f, 0.f, 1.f);
-    }
-    // Update the uniform buffer
+    data.view = m_Camera->GetViewMatrix();
+    data.proj = m_Camera->GetProjectionMatrix();
+    data.cameraPos = glm::vec4(m_Camera->GetPosition(), 1.0f);
+
     m_FrameDataUBO->SetData(&data, sizeof(FrameCommonData));
 }
 
@@ -350,20 +235,17 @@ void Scene::BindFrameDataUBO() const
 //------------------------------------------------------------------------------------
 void Scene::CullAndLODUpdate()
 {
-    if (!m_Camera)
+    if (!m_Camera) {
         return;
+    }
 
-    // 1) Build the view-projection matrix
+    // Extract frustum planes
     glm::mat4 VP = m_Camera->GetProjectionMatrix() * m_Camera->GetViewMatrix();
-    // Extract planes for frustum culling
     m_FrustumCuller->ExtractFrustumPlanes(VP);
 
-    // 2) LOD evaluation
-    //    We pass each RenderObject to LOD logic. If you do per-object culling or bounding volumes,
-    //    you can do that here or inside the batch manager. For a typical approach:
-    m_StaticBatchManager.UpdateLODs(m_Camera, *m_LODEvaluator);
+    // Possibly cull out-of-frustum objects
+    // (Currently disabled if you do not need culling.)
 
-    // If you want to do hierarchical culling with the SceneGraph, you can do a DFS that checks
-    // bounding volumes at each node.  The new “static” objects do not have a node hierarchy,
-    // so you can do bounding checks individually if desired.
+    // Evaluate LOD for each object in the batch manager
+    m_StaticBatchManager->UpdateLODs(m_Camera, *m_LODEvaluator);
 }

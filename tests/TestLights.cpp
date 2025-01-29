@@ -28,17 +28,12 @@ void TestLights::OnEnter()
     m_Scene->AddLight(light1);
 
     // Enable debug lights and grid
-    m_Scene->SetBDebugLights(true);
-    m_Scene->SetBGrid(true);
+    m_Scene->SetShowGrid(true);
+    m_Scene->SetShowDebugLights(true);
 
-    // Modify the first material
-    auto& materials = m_Scene->GetMaterials();
-    if (!materials.empty()) {
-        m_MatID = materials[0];
-        auto existingMat = MaterialManager::GetInstance().GetMaterialByID(m_MatID);
-        if (existingMat) {
-            existingMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.9f, 0.1f, 0.3f));
-        }
+    auto existingMat = MaterialManager::GetInstance().GetMaterialByID(0);
+    if (existingMat) {
+        existingMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.9f, 0.1f, 0.3f));
     }
 }
 

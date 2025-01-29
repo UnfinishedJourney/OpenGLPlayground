@@ -24,7 +24,7 @@ void TestDamagedHelmet::OnEnter() {
         return;
     }
 
-    m_Scene->SetBSkybox(true);
+    m_Scene->SetSkyboxEnabled(true);
 }
 
 void TestDamagedHelmet::OnExit() {
