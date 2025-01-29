@@ -1,222 +1,242 @@
 #include "BaseShader.h"
-#include "Utilities/Logger.h"
+
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+
+// GLM
 #include <glm/gtc/type_ptr.hpp>
 
+// Internal utilities/log
+#include "Utilities/Logger.h"
+
 BaseShader::BaseShader(const std::filesystem::path& binaryPath)
-    : m_BinaryPath(binaryPath) {
-    m_RendererIDPtr = std::unique_ptr<GLuint, ShaderDeleter>(new GLuint(0), ShaderDeleter());
+    : m_BinaryPath(binaryPath),
+    m_RendererIDPtr(new GLuint(0), ShaderDeleter())
+{
 }
 
-void BaseShader::Bind() const {
+void BaseShader::Bind() const noexcept
+{
     glUseProgram(*m_RendererIDPtr);
 }
 
-void BaseShader::Unbind() const {
+void BaseShader::Unbind() const noexcept
+{
     glUseProgram(0);
 }
 
-GLint BaseShader::GetUniformLocation(std::string_view name) const {
-    std::string nameStr(name);
-    if (auto it = m_UniformLocationCache.find(nameStr); it != m_UniformLocationCache.end()) {
+GLint BaseShader::GetUniformLocation(std::string_view name) const
+{
+    std::string uniformName(name);
+
+    // Check cache
+    if (auto it = m_UniformLocationCache.find(uniformName);
+        it != m_UniformLocationCache.end())
+    {
         return it->second;
     }
 
-    GLint location = glGetUniformLocation(*m_RendererIDPtr, nameStr.c_str());
+    // Query from GL
+    GLint location = glGetUniformLocation(*m_RendererIDPtr, uniformName.c_str());
     if (location == -1) {
-        Logger::GetLogger()->warn("Uniform '{}' not found in shader program ID {}.", nameStr, *m_RendererIDPtr);
+        Logger::GetLogger()->warn("Uniform '{}' not found in shader program ID {}.",
+            uniformName, *m_RendererIDPtr);
     }
 
-    m_UniformLocationCache[nameStr] = location;
+    m_UniformLocationCache[uniformName] = location;
     return location;
 }
 
-GLuint BaseShader::CompileShader(GLenum shaderType, const std::string& source) const {
-    std::string shaderTypeStr;
-    switch (shaderType) {
-    case GL_VERTEX_SHADER: shaderTypeStr = "vertex"; break;
-    case GL_FRAGMENT_SHADER: shaderTypeStr = "fragment"; break;
-    case GL_GEOMETRY_SHADER: shaderTypeStr = "geometry"; break;
-    case GL_TESS_CONTROL_SHADER: shaderTypeStr = "tess_control"; break;
-    case GL_TESS_EVALUATION_SHADER: shaderTypeStr = "tess_evaluation"; break;
-    case GL_COMPUTE_SHADER: shaderTypeStr = "compute"; break;
-    default: shaderTypeStr = "unknown"; break;
-    }
-
+GLuint BaseShader::CompileShader(GLenum shaderType, const std::string& source) const
+{
+    // Create and compile
     GLuint shader = glCreateShader(shaderType);
-    const char* src = source.c_str();
-    glShaderSource(shader, 1, &src, nullptr);
+    const char* srcPtr = source.c_str();
+    glShaderSource(shader, 1, &srcPtr, nullptr);
     glCompileShader(shader);
 
-    GLint success = GL_FALSE;
+    // Check result
+    GLint success = 0;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (success == GL_FALSE) {
-        GLint maxLength = 0;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-        std::string infoLog(static_cast<size_t>(maxLength), '\0');
-        glGetShaderInfoLog(shader, maxLength, &maxLength, infoLog.data());
-
+    if (!success) {
+        GLint infoLen = 0;
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLen);
+        std::string infoLog(static_cast<size_t>(infoLen), '\0');
+        glGetShaderInfoLog(shader, infoLen, &infoLen, infoLog.data());
         glDeleteShader(shader);
-        Logger::GetLogger()->error("{} shader compilation failed:\n{}", shaderTypeStr, infoLog);
-        throw std::runtime_error(shaderTypeStr + " shader compilation failed:\n" + infoLog);
+
+        // Derive a human-readable shader type string
+        std::string typeStr = "UNKNOWN";
+        switch (shaderType) {
+        case GL_VERTEX_SHADER:          typeStr = "VERTEX"; break;
+        case GL_FRAGMENT_SHADER:        typeStr = "FRAGMENT"; break;
+        case GL_GEOMETRY_SHADER:        typeStr = "GEOMETRY"; break;
+        case GL_TESS_CONTROL_SHADER:    typeStr = "TESS_CONTROL"; break;
+        case GL_TESS_EVALUATION_SHADER: typeStr = "TESS_EVALUATION"; break;
+        case GL_COMPUTE_SHADER:         typeStr = "COMPUTE"; break;
+        default: break;
+        }
+
+        Logger::GetLogger()->error("{} shader compilation failed:\n{}", typeStr, infoLog);
+        throw std::runtime_error(typeStr + " shader compilation failed:\n" + infoLog);
     }
 
-    Logger::GetLogger()->info("{} shader compiled successfully.", shaderTypeStr);
     return shader;
 }
 
-GLuint BaseShader::LinkProgram(const std::vector<GLuint>& shaders) const {
+GLuint BaseShader::LinkProgram(const std::vector<GLuint>& shaders) const
+{
     GLuint program = glCreateProgram();
     for (auto shader : shaders) {
         glAttachShader(program, shader);
     }
     glLinkProgram(program);
 
-    GLint success = GL_FALSE;
+    // Check link status
+    GLint success = 0;
     glGetProgramiv(program, GL_LINK_STATUS, &success);
-    if (success == GL_FALSE) {
-        GLint maxLength = 0;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
-        std::string infoLog(static_cast<size_t>(maxLength), '\0');
-        glGetProgramInfoLog(program, maxLength, &maxLength, infoLog.data());
+    if (!success) {
+        GLint infoLen = 0;
+        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLen);
+        std::string infoLog(static_cast<size_t>(infoLen), '\0');
+        glGetProgramInfoLog(program, infoLen, &infoLen, infoLog.data());
 
         glDeleteProgram(program);
         for (auto shader : shaders) {
             glDeleteShader(shader);
         }
-        Logger::GetLogger()->error("Program linking failed:\n{}", infoLog);
-        throw std::runtime_error("Program linking failed:\n" + infoLog);
+
+        Logger::GetLogger()->error("Shader program linking failed:\n{}", infoLog);
+        throw std::runtime_error("Shader program linking failed:\n" + infoLog);
     }
 
+    // Detach & delete once linked
     for (auto shader : shaders) {
         glDetachShader(program, shader);
         glDeleteShader(shader);
     }
-
-    Logger::GetLogger()->info("Shader program linked successfully with ID: {}", program);
     return program;
 }
 
-std::string BaseShader::ReadFile(const std::filesystem::path& filepath) const {
+std::string BaseShader::ReadFile(const std::filesystem::path& filepath) const
+{
     if (!std::filesystem::exists(filepath)) {
         Logger::GetLogger()->error("Shader file does not exist: {}", filepath.string());
         throw std::runtime_error("Shader file does not exist: " + filepath.string());
     }
 
     std::ifstream file(filepath, std::ios::in);
-    if (!file) {
+    if (!file.is_open()) {
         Logger::GetLogger()->error("Failed to open shader file: {}", filepath.string());
         throw std::runtime_error("Failed to open shader file: " + filepath.string());
     }
 
-    std::ostringstream contents;
-    contents << file.rdbuf();
-    Logger::GetLogger()->info("Shader file '{}' read successfully.", filepath.string());
-    return contents.str();
+    std::ostringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
 }
 
 std::string BaseShader::ResolveIncludes(const std::string& source,
     const std::filesystem::path& directory,
-    std::unordered_set<std::string>& includedFiles) const {
+    std::unordered_set<std::string>& includedFiles) const
+{
     std::istringstream stream(source);
-    std::ostringstream processedSource;
+    std::ostringstream output;
     std::string line;
     bool inBlockComment = false;
 
     while (std::getline(stream, line)) {
         std::string originalLine = line;
-        std::string trimmedLine = line;
-
-        // Remove leading whitespace
-        trimmedLine.erase(0, trimmedLine.find_first_not_of(" \t"));
+        std::string trimmed = line;
 
         // Handle block comments
         if (inBlockComment) {
-            size_t endComment = trimmedLine.find("*/");
-            if (endComment != std::string::npos) {
+            size_t endPos = trimmed.find("*/");
+            if (endPos != std::string::npos) {
                 inBlockComment = false;
-                trimmedLine = trimmedLine.substr(endComment + 2);
+                trimmed = trimmed.substr(endPos + 2);
             }
             else {
+                // Entire line is in block comment
                 continue;
             }
         }
 
-        // Check for block comment start
-        size_t startBlockComment = trimmedLine.find("/*");
-        if (startBlockComment != std::string::npos) {
+        // Check start of block comment
+        size_t startBlock = trimmed.find("/*");
+        if (startBlock != std::string::npos) {
             inBlockComment = true;
-            trimmedLine = trimmedLine.substr(0, startBlockComment);
+            trimmed = trimmed.substr(0, startBlock);
         }
 
-        // Remove single-line comments
-        size_t singleLineComment = trimmedLine.find("//");
-        if (singleLineComment != std::string::npos) {
-            trimmedLine = trimmedLine.substr(0, singleLineComment);
+        // Strip single-line comments
+        size_t commentPos = trimmed.find("//");
+        if (commentPos != std::string::npos) {
+            trimmed = trimmed.substr(0, commentPos);
         }
 
-        // Trim again after removing comments
-        trimmedLine.erase(0, trimmedLine.find_first_not_of(" \t"));
-        if (!trimmedLine.empty()) {
-            trimmedLine.erase(trimmedLine.find_last_not_of(" \t\r\n") + 1);
+        // Trim trailing whitespace
+        while (!trimmed.empty() && (trimmed.back() == ' ' || trimmed.back() == '\t')) {
+            trimmed.pop_back();
         }
 
-        // Process includes
-        if (trimmedLine.find("#include") == 0) {
-            size_t start = trimmedLine.find_first_of("\"<");
-            size_t end = trimmedLine.find_first_of("\">", start + 1);
-            if (start == std::string::npos || end == std::string::npos) {
+        // Process #include
+        const std::string includeDirective = "#include";
+        if (trimmed.find(includeDirective) != std::string::npos) {
+            // Example: #include "myfile.glsl"
+            size_t startQuote = trimmed.find_first_of("\"<");
+            size_t endQuote = trimmed.find_first_of("\">", startQuote + 1);
+            if (startQuote == std::string::npos || endQuote == std::string::npos) {
                 Logger::GetLogger()->error("Invalid #include syntax: {}", originalLine);
                 throw std::runtime_error("Invalid #include syntax: " + originalLine);
             }
 
-            std::string includePathStr = trimmedLine.substr(start + 1, end - start - 1);
-            std::filesystem::path includePath = directory / includePathStr;
+            std::string includeRelPath = trimmed.substr(startQuote + 1, endQuote - (startQuote + 1));
+            auto includePath = (directory / includeRelPath).lexically_normal();
 
-            includePath = std::filesystem::weakly_canonical(includePath);
-
-            // Check if the file has already been included
-            if (includedFiles.find(includePath.string()) != includedFiles.end()) {
-                continue;
+            // If not already included
+            if (!includedFiles.count(includePath.string())) {
+                includedFiles.insert(includePath.string());
+                std::string includedSource = ReadFile(includePath);
+                includedSource = ResolveIncludes(includedSource, includePath.parent_path(), includedFiles);
+                output << includedSource << "\n";
             }
-            includedFiles.insert(includePath.string());
-
-            Logger::GetLogger()->debug("Including file: {}", includePath.string());
-
-            std::string includedSource = ReadFile(includePath);
-            includedSource = ResolveIncludes(includedSource, includePath.parent_path(), includedFiles);
-            processedSource << includedSource << '\n';
         }
         else {
-            processedSource << originalLine << '\n';
+            output << originalLine << "\n";
         }
     }
 
-    return processedSource.str();
+    return output.str();
 }
 
-bool BaseShader::LoadBinary() {
-    if (m_BinaryPath.empty()) {
+bool BaseShader::LoadBinary()
+{
+    if (m_BinaryPath.empty()) { // Ensure m_BinaryPath is std::filesystem::path
         return false;
     }
-
     if (!std::filesystem::exists(m_BinaryPath)) {
         Logger::GetLogger()->warn("Shader binary file does not exist: {}", m_BinaryPath.string());
         return false;
     }
 
     std::ifstream inStream(m_BinaryPath, std::ios::binary);
-    if (!inStream) {
+    if (!inStream.good()) {
         Logger::GetLogger()->error("Failed to open shader binary file: {}", m_BinaryPath.string());
         return false;
     }
 
-    GLenum binaryFormat;
+    // Read format
+    GLenum binaryFormat = 0;
     inStream.read(reinterpret_cast<char*>(&binaryFormat), sizeof(GLenum));
 
-    std::vector<GLubyte> binaryData((std::istreambuf_iterator<char>(inStream)), std::istreambuf_iterator<char>());
+    // Read binary data
+    std::vector<GLubyte> binaryData{
+        std::istreambuf_iterator<char>(inStream),
+        std::istreambuf_iterator<char>()
+    };
+
     if (binaryData.empty()) {
         Logger::GetLogger()->error("Shader binary file is empty: {}", m_BinaryPath.string());
         return false;
@@ -227,15 +247,16 @@ bool BaseShader::LoadBinary() {
 
     GLint success = GL_FALSE;
     glGetProgramiv(*m_RendererIDPtr, GL_LINK_STATUS, &success);
-    if (success == GL_FALSE) {
-        GLint maxLength = 0;
-        glGetProgramiv(*m_RendererIDPtr, GL_INFO_LOG_LENGTH, &maxLength);
-        std::string infoLog(static_cast<size_t>(maxLength), '\0');
-        glGetProgramInfoLog(*m_RendererIDPtr, maxLength, &maxLength, infoLog.data());
+    if (!success) {
+        GLint maxLen = 0;
+        glGetProgramiv(*m_RendererIDPtr, GL_INFO_LOG_LENGTH, &maxLen);
+
+        std::string infoLog(static_cast<size_t>(maxLen), '\0');
+        glGetProgramInfoLog(*m_RendererIDPtr, maxLen, &maxLen, infoLog.data());
 
         glDeleteProgram(*m_RendererIDPtr);
         *m_RendererIDPtr = 0;
-        Logger::GetLogger()->error("Failed to load shader binary from '{}':\n{}", m_BinaryPath.string(), infoLog);
+        Logger::GetLogger()->error("Failed to load shader binary '{}':\n{}", m_BinaryPath.string(), infoLog);
         return false;
     }
 
@@ -243,36 +264,43 @@ bool BaseShader::LoadBinary() {
     return true;
 }
 
-void BaseShader::SaveBinary() const {
+void BaseShader::SaveBinary() const
+{
     if (m_BinaryPath.empty()) {
         return;
     }
-
-    GLint formats = 0;
-    glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &formats);
-    if (formats == 0) {
+    GLint numFormats = 0;
+    glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &numFormats);
+    if (numFormats == 0) {
         Logger::GetLogger()->error("Driver does not support program binary formats.");
         return;
     }
 
     GLint binaryLength = 0;
     glGetProgramiv(*m_RendererIDPtr, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
-    std::vector<GLubyte> binary(static_cast<size_t>(binaryLength));
-    GLenum binaryFormat = 0;
-
-    glGetProgramBinary(*m_RendererIDPtr, binaryLength, nullptr, &binaryFormat, binary.data());
-
-    std::ofstream outStream(m_BinaryPath, std::ios::binary);
-    if (!outStream) {
-        Logger::GetLogger()->error("Failed to open file for writing shader binary: {}", m_BinaryPath.string());
+    if (binaryLength <= 0) {
+        Logger::GetLogger()->warn("Shader program has no binary length. Not saving to '{}'.", m_BinaryPath.string());
         return;
     }
 
-    outStream.write(reinterpret_cast<const char*>(&binaryFormat), sizeof(GLenum));
-    outStream.write(reinterpret_cast<const char*>(binary.data()), binary.size());
+    std::vector<GLubyte> binary(static_cast<size_t>(binaryLength));
+    GLenum binaryFormat = 0;
+    glGetProgramBinary(*m_RendererIDPtr, binaryLength, nullptr, &binaryFormat, binary.data());
+
+    std::ofstream outFile(m_BinaryPath, std::ios::binary);
+    if (!outFile.is_open()) {
+        Logger::GetLogger()->error("Failed to open '{}' for writing shader binary.", m_BinaryPath.string());
+        return;
+    }
+
+    outFile.write(reinterpret_cast<const char*>(&binaryFormat), sizeof(GLenum));
+    outFile.write(reinterpret_cast<const char*>(binary.data()), binary.size());
     Logger::GetLogger()->info("Shader binary saved to '{}'.", m_BinaryPath.string());
 }
 
+// ----------------------------------------------------------------------
+// Uniform Setters
+// ----------------------------------------------------------------------
 void BaseShader::SetUniform(std::string_view name, float value) const {
     glProgramUniform1f(*m_RendererIDPtr, GetUniformLocation(name), value);
 }
