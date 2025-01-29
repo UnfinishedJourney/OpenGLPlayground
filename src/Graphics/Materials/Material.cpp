@@ -1,15 +1,14 @@
 #include "Material.h"
-#include "Utilities/Logger.h"
 #include <glm/gtc/type_ptr.hpp>
 #include "Resources/TextureManager.h"
+#include "Utilities/Logger.h"
+
 // --------------------------------------------------------
-//  MAPPING TEXTURE TYPE => GLSL Uniform Names
-//  and binding slots
+//  Helper: map a TextureType to the uniform name in GLSL
 // --------------------------------------------------------
 static std::string GetTextureUniformName(TextureType type)
 {
-    switch (type)
-    {
+    switch (type) {
     case TextureType::Albedo:         return "uTexAlbedo";
     case TextureType::Normal:         return "uTexNormal";
     case TextureType::MetalRoughness: return "uTexMetalRoughness";
@@ -22,11 +21,12 @@ static std::string GetTextureUniformName(TextureType type)
     }
 }
 
+// --------------------------------------------------------
+//  Helper: map a TextureType to a texture binding slot
+// --------------------------------------------------------
 static int GetTextureBindingSlot(TextureType type)
 {
-    // You can assign them however you like:
-    switch (type)
-    {
+    switch (type) {
     case TextureType::Albedo:         return 1;
     case TextureType::Normal:         return 2;
     case TextureType::MetalRoughness: return 3;
@@ -40,96 +40,118 @@ static int GetTextureBindingSlot(TextureType type)
 }
 
 // --------------------------------------------------------
-//  Assign a param to the correct packed slot
+//  Material constructor
+// --------------------------------------------------------
+Material::Material(const MaterialLayout& layout)
+    : m_Layout(layout)
+{
+    // Initialize ID or any default fields if needed
+}
+
+// --------------------------------------------------------
+//  Basic name & ID
+// --------------------------------------------------------
+void Material::SetName(const std::string& name)
+{
+    m_Name = name;
+}
+
+const std::string& Material::GetName() const
+{
+    return m_Name;
+}
+
+void Material::SetID(MaterialID id)
+{
+    m_ID = id;
+}
+
+MaterialID Material::GetID() const
+{
+    return m_ID;
+}
+
+const MaterialLayout& Material::GetLayout() const
+{
+    return m_Layout;
+}
+
+// --------------------------------------------------------
+//  AssignToPackedParams => fill PackedMtlParams
 // --------------------------------------------------------
 void Material::AssignToPackedParams(MaterialParamType type, const UniformValue& value)
 {
-    // We interpret the variant as either float or vec3, etc.
-    switch (type)
-    {
-    case MaterialParamType::Ambient: // Ka => Mtl0.xyz
-    {
-        // Usually user sets a vec3
-        if (std::holds_alternative<glm::vec3>(value)) {
-            glm::vec3 c = std::get<glm::vec3>(value);
-            m_PackedParams.Mtl0.x = c.r;
-            m_PackedParams.Mtl0.y = c.g;
-            m_PackedParams.Mtl0.z = c.b;
+    // We interpret the variant and put the data in the right part of m_PackedParams
+    switch (type) {
+    case MaterialParamType::Ambient: { // Ka => Mtl0.xyz
+        if (auto vec3ptr = std::get_if<glm::vec3>(&value)) {
+            m_PackedParams.Mtl0.x = vec3ptr->x;
+            m_PackedParams.Mtl0.y = vec3ptr->y;
+            m_PackedParams.Mtl0.z = vec3ptr->z;
         }
         else {
-            Logger::GetLogger()->warn("Ambient must be vec3");
+            Logger::GetLogger()->warn("[Material: {}] Ambient must be glm::vec3!", m_Name);
         }
+        break;
     }
-    break;
-
-    case MaterialParamType::Diffuse: // Kd => Mtl1.xyz
-    {
-        if (std::holds_alternative<glm::vec3>(value)) {
-            glm::vec3 c = std::get<glm::vec3>(value);
-            m_PackedParams.Mtl1.x = c.r;
-            m_PackedParams.Mtl1.y = c.g;
-            m_PackedParams.Mtl1.z = c.b;
+    case MaterialParamType::Diffuse: { // Kd => Mtl1.xyz
+        if (auto vec3ptr = std::get_if<glm::vec3>(&value)) {
+            m_PackedParams.Mtl1.x = vec3ptr->x;
+            m_PackedParams.Mtl1.y = vec3ptr->y;
+            m_PackedParams.Mtl1.z = vec3ptr->z;
         }
         else {
-            Logger::GetLogger()->warn("Diffuse must be vec3");
+            Logger::GetLogger()->warn("[Material: {}] Diffuse must be glm::vec3!", m_Name);
         }
+        break;
     }
-    break;
-
-    case MaterialParamType::Specular: // Ks => Mtl2.xyz
-    {
-        if (std::holds_alternative<glm::vec3>(value)) {
-            glm::vec3 c = std::get<glm::vec3>(value);
-            m_PackedParams.Mtl2.x = c.r;
-            m_PackedParams.Mtl2.y = c.g;
-            m_PackedParams.Mtl2.z = c.b;
+    case MaterialParamType::Specular: { // Ks => Mtl2.xyz
+        if (auto vec3ptr = std::get_if<glm::vec3>(&value)) {
+            m_PackedParams.Mtl2.x = vec3ptr->x;
+            m_PackedParams.Mtl2.y = vec3ptr->y;
+            m_PackedParams.Mtl2.z = vec3ptr->z;
         }
         else {
-            Logger::GetLogger()->warn("Specular must be vec3");
+            Logger::GetLogger()->warn("[Material: {}] Specular must be glm::vec3!", m_Name);
         }
+        break;
     }
-    break;
-
-    case MaterialParamType::Shininess: // Ns => Mtl2.w
-    {
-        if (std::holds_alternative<float>(value)) {
-            float shininess = std::get<float>(value);
-            m_PackedParams.Mtl2.w = shininess;
+    case MaterialParamType::Shininess: { // Ns => Mtl2.w
+        if (auto fptr = std::get_if<float>(&value)) {
+            m_PackedParams.Mtl2.w = *fptr;
         }
         else {
-            Logger::GetLogger()->warn("Shininess must be float");
+            Logger::GetLogger()->warn("[Material: {}] Shininess must be float!", m_Name);
         }
+        break;
     }
-    break;
-
     default:
-        Logger::GetLogger()->warn("Unhandled MaterialParamType in AssignToPackedParams");
+        Logger::GetLogger()->warn("[Material: {}] Unhandled MaterialParamType {} in AssignToPackedParams.",
+            m_Name, static_cast<int>(type));
         break;
     }
 }
 
-
 // --------------------------------------------------------
-//  SetTexture => set bit in m_TextureUsage
+//  Set / Get texture
 // --------------------------------------------------------
 void Material::SetTexture(TextureType type, const std::shared_ptr<ITexture>& texture)
 {
     if (!texture) {
-        Logger::GetLogger()->warn("SetTexture: Null texture for type {}", (int)type);
+        Logger::GetLogger()->warn("[Material: {}] SetTexture: Null texture for type={}", m_Name, (int)type);
         return;
     }
-
-    // Check if layout includes that texture type
-    if (m_Layout.textures.find(type) == m_Layout.textures.end()) {
-        Logger::GetLogger()->warn("SetTexture: TextureType {} not in layout for material '{}'.",
-            (int)type, m_Name);
+    // Check if layout actually includes that texture
+    if (!m_Layout.textures.count(type)) {
+        Logger::GetLogger()->warn("[Material: {}] TextureType={} not in layout; ignoring.",
+            m_Name, (int)type);
         return;
     }
 
     m_Textures[type] = texture;
 
-    // set the bit
-    m_TextureUsage |= (1 << static_cast<std::size_t>(type));
+    // set the bit in the usage mask
+    m_TextureUsage |= (1 << static_cast<size_t>(type));
 }
 
 std::shared_ptr<ITexture> Material::GetTexture(TextureType type) const
@@ -142,18 +164,33 @@ std::shared_ptr<ITexture> Material::GetTexture(TextureType type) const
 }
 
 // --------------------------------------------------------
-//  Bind
+//  Custom param / custom texture
+// --------------------------------------------------------
+void Material::SetCustomParam(const std::string& paramName, UniformValue value)
+{
+    m_CustomParams[paramName] = std::move(value);
+}
+
+void Material::SetCustomTexture(const std::string& uniformName, const std::shared_ptr<ITexture>& texture)
+{
+    if (!texture) {
+        Logger::GetLogger()->warn("[Material: {}] SetCustomTexture: Null texture for '{}'.", m_Name, uniformName);
+        return;
+    }
+    m_CustomTextures[uniformName] = texture;
+}
+
+// --------------------------------------------------------
+//  Bind / Unbind
 // --------------------------------------------------------
 void Material::Bind(const std::shared_ptr<BaseShader>& shader) const
 {
     if (!shader) {
-        Logger::GetLogger()->error("Bind: No shader provided for material '{}'.", m_Name);
+        Logger::GetLogger()->error("[Material: {}] Bind: No shader provided.", m_Name);
         return;
     }
 
     // 1) Send the bitmask
-    auto t = m_TextureUsage;
-
     shader->SetUniform("uMaterial_textureUsageFlags", (int)m_TextureUsage);
 
     // 2) Send the packed MTL parameters
@@ -163,16 +200,8 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const
     shader->SetUniform("uMaterial.Mtl2", m_PackedParams.Mtl2);
     shader->SetUniform("uMaterial.Mtl3", m_PackedParams.Mtl3);
 
-    if (m_Layout.textures.contains(TextureType::BRDFLut)) {
-        int slot = GetTextureBindingSlot(TextureType::BRDFLut);
-        auto& textureManager = TextureManager::GetInstance();
-        auto brdf = textureManager.GetTexture("brdfLut");
-        brdf->Bind(slot);
-    }
-
     // 3) Bind standard textures
-    for (auto& [texType, texPtr] : m_Textures)
-    {
+    for (const auto& [texType, texPtr] : m_Textures) {
         if (!texPtr) continue;
         int slot = GetTextureBindingSlot(texType);
         texPtr->Bind(slot);
@@ -181,40 +210,38 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const
         shader->SetUniform(uniformName, slot);
     }
 
-    // 4) Bind custom textures (beyond known texture types)
-    //    We'll pick some starting slot after standard ones
+    // 4) Bind custom textures
+    //    We'll pick some starting slot after standard ones. 
     int customSlot = 10;
-    for (auto& [customName, texPtr] : m_CustomTextures)
-    {
+    for (const auto& [customName, texPtr] : m_CustomTextures) {
         if (!texPtr) continue;
         texPtr->Bind(customSlot);
         shader->SetUniform(customName, customSlot);
-        customSlot++;
+        ++customSlot;
     }
 
-    // 5) Bind custom param uniforms (int, float, vec2, etc.)
-    for (auto& [customParamName, customVal] : m_CustomParams)
-    {
-        // Use a visitor to set the uniform
+    // 5) Bind custom uniform params (int, float, vec*, mat*)
+    for (const auto& [paramName, paramVal] : m_CustomParams) {
+        // Use a lambda with std::visit to handle each type
         std::visit([&](auto&& arg) {
-            shader->SetUniform(customParamName, arg);
-            }, customVal);
+            shader->SetUniform(paramName, arg);
+            }, paramVal);
     }
 }
 
 void Material::Unbind() const
 {
     // For a simple scenario, just unbind the known texture slots
-    for (auto& [texType, texPtr] : m_Textures) {
+    for (const auto& [texType, texPtr] : m_Textures) {
         if (!texPtr) continue;
         int slot = GetTextureBindingSlot(texType);
         texPtr->Unbind(slot);
     }
-    // Also unbind the custom textures
+
     int customSlot = 10;
-    for (auto& [customName, texPtr] : m_CustomTextures) {
+    for (const auto& [name, texPtr] : m_CustomTextures) {
         if (!texPtr) continue;
         texPtr->Unbind(customSlot);
-        customSlot++;
+        ++customSlot;
     }
 }

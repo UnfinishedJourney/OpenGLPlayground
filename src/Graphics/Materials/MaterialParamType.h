@@ -1,17 +1,17 @@
 #pragma once
-#include <bitset>
-#include <cstdint>
+
 #include <cstddef>
 #include <functional>
-//constexpr std::size_t MAX_MATERIAL_PARAMS = 32;
-//constexpr std::size_t MAX_TEXTURE_TYPES = 32;
 
+/**
+ * @brief Enumerate standard parameter types for a material (like MTL).
+ */
 enum class MaterialParamType : std::size_t {
-    Ambient = 0, // Bit 0
-    Diffuse = 1, // Bit 1
-    Specular = 2, // Bit 2
-    Shininess = 3, // Bit 3
-    COUNT = 4  // Number of parameters
+    Ambient = 0, // Ka
+    Diffuse = 1, // Kd
+    Specular = 2, // Ks
+    Shininess = 3, // Ns
+    COUNT = 4
 };
 
 namespace std {
@@ -23,22 +23,23 @@ namespace std {
     };
 }
 
+/**
+ * @brief Enumerate texture types for the material (e.g. albedo, normal).
+ *        In code, these can be used as bits in a usage mask.
+ */
 enum class TextureType : std::size_t {
-    Albedo          = 0,            // bit 0
-    Normal          = 1,            // bit 1
-    MetalRoughness  = 2,            // bit 2
-    AO              = 3,            // bit 3
-    Emissive        = 4,            // bit 4
-    Ambient         = 5,
-    Height          = 6,
+    Albedo = 0,
+    Normal = 1,
+    MetalRoughness = 2,
+    AO = 3,
+    Emissive = 4,
+    Ambient = 5,
+    Height = 6,
+    BRDFLut = 7,
+    Unknown = 8,
 
-    BRDFLut         = 7,            // NEW: dedicated slot for BRDF LUT
-
-    Unknown         = 8,
-
-    COUNT           = 9
+    COUNT = 9
 };
-
 
 namespace std {
     template <>
