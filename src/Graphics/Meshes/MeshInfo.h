@@ -1,14 +1,17 @@
 #pragma once
 
 #include <memory>
-#include "Graphics/Meshes/Mesh.h"
+
+#include "Mesh.h"
 
 /**
- * @brief Basic container referencing a Mesh plus optional material index.
+ * @brief A small struct referencing a Mesh plus an associated material index.
+ *
+ * If your system uses MaterialID (int), store that here so you know
+ * which Material to bind for rendering.
  */
-struct MeshInfo
-{
+struct MeshInfo {
     std::shared_ptr<Mesh> mesh;
     int                   materialIndex = -1;
-    // If you have additional data (e.g., textures) store them here
+    // Additional data if desired (e.g. transform, layer, etc.)
 };

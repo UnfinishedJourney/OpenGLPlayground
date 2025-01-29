@@ -1,9 +1,11 @@
 #pragma once
 
 #include "Mesh.h"
-#include <glm/glm.hpp>
 
+/**
+ * @brief A simple 2D quad in the XY plane (Z=0),
+ *        with corners at (-1, -1), (1, 1).
+ */
 struct Quad : public Mesh {
-public:
     Quad();
 };

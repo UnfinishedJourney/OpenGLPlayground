@@ -1,11 +1,15 @@
 #include "Cube.h"
+#include <glm/glm.hpp>
+#include <algorithm> // for std::max, etc.
 
-// Optional: Include additional headers if needed
-#include <stdexcept>
-
-Cube::Cube() {
-    // Initialize positions as std::vector<glm::vec3>
-    positions = std::vector<glm::vec3>{
+/**
+ * @brief Constructs a cube of side length=1, centered at (0,0,0).
+ *        Each face has 2 triangles, total 36 indices, 8 vertices.
+ */
+Cube::Cube()
+{
+    // 8 corners
+    positions = {
         { -0.5f, -0.5f, -0.5f },
         {  0.5f, -0.5f, -0.5f },
         {  0.5f,  0.5f, -0.5f },
@@ -16,7 +20,7 @@ Cube::Cube() {
         { -0.5f,  0.5f,  0.5f }
     };
 
-    // Initialize UVs for Albedo texture
+    // We'll provide at least Albedo UVs
     uvs[TextureType::Albedo] = {
         { 0.0f, 0.0f },
         { 1.0f, 0.0f },
@@ -28,7 +32,7 @@ Cube::Cube() {
         { 0.0f, 1.0f }
     };
 
-    // Initialize indices for cube faces
+    // 12 triangles => 36 indices
     indices = {
         // Front face
         0, 1, 2,
@@ -57,33 +61,36 @@ Cube::Cube() {
 
     // Calculate normals
     normals.resize(positions.size(), glm::vec3(0.0f));
-
     for (size_t i = 0; i < indices.size(); i += 3) {
-        uint32_t idx0 = indices[i];
-        uint32_t idx1 = indices[i + 1];
-        uint32_t idx2 = indices[i + 2];
+        uint32_t i0 = indices[i + 0];
+        uint32_t i1 = indices[i + 1];
+        uint32_t i2 = indices[i + 2];
 
-        glm::vec3 v0 = positions[idx0];
-        glm::vec3 v1 = positions[idx1];
-        glm::vec3 v2 = positions[idx2];
+        glm::vec3 v0 = positions[i0];
+        glm::vec3 v1 = positions[i1];
+        glm::vec3 v2 = positions[i2];
 
         glm::vec3 edge1 = v1 - v0;
         glm::vec3 edge2 = v2 - v0;
-        glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
+        glm::vec3 faceNormal = glm::normalize(glm::cross(edge1, edge2));
 
-        normals[idx0] += normal;
-        normals[idx1] += normal;
-        normals[idx2] += normal;
+        normals[i0] += faceNormal;
+        normals[i1] += faceNormal;
+        normals[i2] += faceNormal;
+    }
+    for (auto& n : normals) {
+        n = glm::normalize(n);
     }
 
-    for (auto& normal : normals) {
-        normal = glm::normalize(normal);
-    }
+    // Basic bounding box
+    minBounds = { -0.5f, -0.5f, -0.5f };
+    maxBounds = { 0.5f,  0.5f,  0.5f };
+    localCenter = 0.5f * (minBounds + maxBounds);
+    boundingSphereRadius = glm::length(maxBounds - localCenter);
 
-    if (lods.empty()) {
-        MeshLOD defaultLOD;
-        defaultLOD.indexOffset = 0;
-        defaultLOD.indexCount = static_cast<uint32_t>(indices.size());
-        lods.push_back(defaultLOD);
-    }
+    // Single LOD
+    MeshLOD lod0;
+    lod0.indexOffset = 0;
+    lod0.indexCount = static_cast<uint32_t>(indices.size());
+    lods.push_back(lod0);
 }
