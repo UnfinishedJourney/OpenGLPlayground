@@ -227,6 +227,14 @@ void Material::Bind(const std::shared_ptr<BaseShader>& shader) const
             shader->SetUniform(paramName, arg);
             }, paramVal);
     }
+
+    // 5) Bind BRDFLut
+    if (m_Layout.textures.contains(TextureType::BRDFLut)) {
+        int slot = GetTextureBindingSlot(TextureType::BRDFLut);
+        auto& textureManager = TextureManager::GetInstance();
+        auto brdf = textureManager.GetTexture("brdfLut");
+        brdf->Bind(slot);
+    }
 }
 
 void Material::Unbind() const
