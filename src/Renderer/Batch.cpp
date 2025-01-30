@@ -1,23 +1,26 @@
 ﻿#include "Batch.h"
-#include "Utilities/Logger.h"
-#include <numeric>
+
 #include <span>
+#include <numeric>
+#include <stdexcept>
+
+#include "Utilities/Logger.h"
 #include "Resources/ResourceManager.h"
 
-Batch::Batch(const std::string& shaderName,
-    int materialID)
+Batch::Batch(const std::string& shaderName, int materialID)
     : m_ShaderName(shaderName)
     , m_MaterialID(materialID)
     , m_VAO(std::make_unique<VertexArray>())
     , m_IsDirty(true)
 {
-    auto [mel, mal] = ResourceManager::GetInstance().getLayoutsFromShader(shaderName);
-    m_MeshLayout = mel;
+    // Use ResourceManager to retrieve the mesh layout
+    // from the given shader name. This might also yield a material layout,
+    // but we only need the mesh layout here.
+    auto [meshLayout, materialLayout] = ResourceManager::GetInstance().getLayoutsFromShader(shaderName);
+    m_MeshLayout = meshLayout;
 }
 
-Batch::~Batch()
-{
-}
+Batch::~Batch() = default;
 
 void Batch::AddRenderObject(const std::shared_ptr<BaseRenderObject>& renderObject)
 {
@@ -30,161 +33,161 @@ const std::vector<std::shared_ptr<BaseRenderObject>>& Batch::GetRenderObjects() 
     return m_RenderObjects;
 }
 
-const std::string& Batch::GetShaderName() const
-{
-    return m_ShaderName;
-}
-
-int Batch::GetMaterialID() const
-{
-    return m_MaterialID;
-}
-
-const MeshLayout& Batch::GetMeshLayout() const
-{
-    return m_MeshLayout;
-}
-
 void Batch::BuildBatches()
 {
     if (m_RenderObjects.empty()) {
-        Logger::GetLogger()->warn("No RenderObjects to batch for shader '{}' material '{}'.",
+        Logger::GetLogger()->warn("Batch::BuildBatches: no RenderObjects in batch (shader='{}', matID={}).",
             m_ShaderName, m_MaterialID);
         return;
     }
 
-    // 1) Create a VertexBufferLayout based on the MeshLayout
-    VertexBufferLayout vertexBufferLayout;
+    // 1) Build the VertexBufferLayout from m_MeshLayout
+    VertexBufferLayout vertexLayout;
     GLuint attribIndex = 0;
 
-    if (m_MeshLayout.hasPositions)   vertexBufferLayout.Push<float>(3, attribIndex++);
-    if (m_MeshLayout.hasNormals)     vertexBufferLayout.Push<float>(3, attribIndex++);
-    if (m_MeshLayout.hasTangents)    vertexBufferLayout.Push<float>(3, attribIndex++);
-    if (m_MeshLayout.hasBitangents)  vertexBufferLayout.Push<float>(3, attribIndex++);
+    // Positions
+    if (m_MeshLayout.hasPositions)
+        vertexLayout.Push<float>(3, attribIndex++);
+    if (m_MeshLayout.hasNormals)
+        vertexLayout.Push<float>(3, attribIndex++);
+    if (m_MeshLayout.hasTangents)
+        vertexLayout.Push<float>(3, attribIndex++);
+    if (m_MeshLayout.hasBitangents)
+        vertexLayout.Push<float>(3, attribIndex++);
 
-    for (auto& texType : m_MeshLayout.textureTypes) {
-        (void)texType; // we just know each texture set => 2 floats
-        vertexBufferLayout.Push<float>(2, attribIndex++);
+    // For each textureType => 2 floats for uv
+    for (auto texType : m_MeshLayout.textureTypes) {
+        (void)texType; // not used except for counting
+        vertexLayout.Push<float>(2, attribIndex++);
     }
 
-    // 2) Combine all vertex data and index data
+    // 2) We need to combine all vertex & index data
     std::vector<float>  combinedVertexData;
     std::vector<GLuint> combinedIndices;
+
+    // LOD & draw commands
     m_LODInfos.clear();
     m_DrawCommands.clear();
+    m_LODInfos.reserve(m_RenderObjects.size());
+    m_DrawCommands.reserve(m_RenderObjects.size());
 
-    // For multi-draw, each RenderObject will create 1 command
-    combinedVertexData.reserve(m_RenderObjects.size() * 500); // heuristic
+    // Enough capacity for many objects
+    combinedVertexData.reserve(m_RenderObjects.size() * 500);
     combinedIndices.reserve(m_RenderObjects.size() * 1000);
 
-    GLuint baseVertex = 0; // running count of total vertices so far
+    GLuint baseVertex = 0; // offset for indexing
 
-    for (auto& ro : m_RenderObjects)
-    {
+    for (auto& ro : m_RenderObjects) {
         auto mesh = ro->GetMesh();
-        size_t vtxCount = mesh->positions.size();
+        size_t vCount = mesh->positions.size();
 
-        // Append vertex data
-        for (size_t i = 0; i < vtxCount; i++)
-        {
+        // 2a) Append vertex data
+        for (size_t i = 0; i < vCount; i++) {
+            // positions
             if (m_MeshLayout.hasPositions && i < mesh->positions.size()) {
-                auto& pos = mesh->positions[i];
+                const auto& pos = mesh->positions[i];
                 combinedVertexData.insert(combinedVertexData.end(), { pos.x, pos.y, pos.z });
             }
-
+            // normals
             if (m_MeshLayout.hasNormals && i < mesh->normals.size()) {
-                auto& n = mesh->normals[i];
-                combinedVertexData.insert(combinedVertexData.end(), { n.x, n.y, n.z });
+                const auto& nor = mesh->normals[i];
+                combinedVertexData.insert(combinedVertexData.end(), { nor.x, nor.y, nor.z });
             }
-
+            // tangents
             if (m_MeshLayout.hasTangents && i < mesh->tangents.size()) {
-                auto& t = mesh->tangents[i];
-                combinedVertexData.insert(combinedVertexData.end(), { t.x, t.y, t.z });
+                const auto& tan = mesh->tangents[i];
+                combinedVertexData.insert(combinedVertexData.end(), { tan.x, tan.y, tan.z });
             }
-
+            // bitangents
             if (m_MeshLayout.hasBitangents && i < mesh->bitangents.size()) {
-                auto& b = mesh->bitangents[i];
-                combinedVertexData.insert(combinedVertexData.end(), { b.x, b.y, b.z });
+                const auto& bitan = mesh->bitangents[i];
+                combinedVertexData.insert(combinedVertexData.end(), { bitan.x, bitan.y, bitan.z });
             }
-
-            // for each requested texture channel, add 2 floats
+            // texture coords for each textureType => 2 floats
             for (auto texType : m_MeshLayout.textureTypes) {
                 auto uvIt = mesh->uvs.find(texType);
                 if (uvIt != mesh->uvs.end() && i < uvIt->second.size()) {
-                    auto& uv = uvIt->second[i];
+                    const auto& uv = uvIt->second[i];
                     combinedVertexData.insert(combinedVertexData.end(), { uv.x, uv.y });
                 }
                 else {
-                    // no uv => fallback 0,0
+                    // fallback
                     combinedVertexData.insert(combinedVertexData.end(), { 0.f, 0.f });
                 }
             }
         }
 
-        // Build LODInfos
+        // 2b) Build LODInfo array for this object
         std::vector<LODInfo> lodInfos;
         lodInfos.reserve(mesh->lods.size());
-        for (auto& lod : mesh->lods)
-        {
-            LODInfo lodInfo;
-            lodInfo.indexOffsetInCombinedBuffer = combinedIndices.size();
-            lodInfo.indexCount = lod.indexCount;
 
-            // copy indices
+        for (auto& lod : mesh->lods) {
+            LODInfo info;
+            info.indexOffsetInCombinedBuffer = combinedIndices.size();
+            info.indexCount = lod.indexCount;
+
+            // Copy over the index data
             for (size_t idx = 0; idx < lod.indexCount; ++idx) {
-                GLuint index = mesh->indices[lod.indexOffset + idx];
-                combinedIndices.push_back(index + baseVertex);
+                GLuint oldIndex = mesh->indices[lod.indexOffset + idx];
+                // shift by baseVertex
+                combinedIndices.push_back(oldIndex + baseVertex);
             }
-            lodInfos.push_back(lodInfo);
+            lodInfos.push_back(info);
         }
-        m_LODInfos.push_back(lodInfos);
+        m_LODInfos.push_back(std::move(lodInfos));
 
-        // the command uses the current LOD to decide which indices
-        size_t initialLOD = ro->GetCurrentLOD();
-        if (initialLOD >= lodInfos.size()) {
-            initialLOD = 0;
+        // 2c) Create an indirect draw command for this object.
+        size_t lodUsed = ro->GetCurrentLOD();
+        if (lodUsed >= m_LODInfos.back().size()) {
+            lodUsed = 0; // fallback
         }
-        auto& lodRef = lodInfos[initialLOD];
+        auto& usedLOD = m_LODInfos.back()[lodUsed];
 
         DrawElementsIndirectCommand cmd{};
-        cmd.count = static_cast<GLuint>(lodRef.indexCount);
-        cmd.instanceCount = 1;
-        cmd.firstIndex = static_cast<GLuint>(lodRef.indexOffsetInCombinedBuffer);
-        cmd.baseVertex = 0; // We added baseVertex to the indices themselves
+        cmd.count = static_cast<GLuint>(usedLOD.indexCount);
+        cmd.instanceCount = 1;        // 1 instance
+        cmd.firstIndex = static_cast<GLuint>(usedLOD.indexOffsetInCombinedBuffer);
+        cmd.baseVertex = 0;        // we offset in the actual indices
         cmd.baseInstance = 0;
-
         m_DrawCommands.push_back(cmd);
 
-        baseVertex += static_cast<GLuint>(vtxCount);
+        baseVertex += static_cast<GLuint>(vCount);
     }
 
-    // 3) Create/Update GPU buffers
-    std::span<const std::byte> vertSpan(
-        reinterpret_cast<const std::byte*>(combinedVertexData.data()),
-        combinedVertexData.size() * sizeof(float)
-    );
+    // 3) Create the combined VBO, IBO, and IndirectBuffer
+    {
+        // Create vertex buffer
+        std::span<const std::byte> vertexSpan(
+            reinterpret_cast<const std::byte*>(combinedVertexData.data()),
+            combinedVertexData.size() * sizeof(float)
+        );
+        auto vb = std::make_unique<VertexBuffer>(vertexSpan, GL_STATIC_DRAW);
 
-    auto m_VBO = std::make_unique<VertexBuffer>(vertSpan, GL_STATIC_DRAW);
-    std::span<const GLuint> idxSpan(combinedIndices.data(), combinedIndices.size());
-    auto m_IBO = std::make_unique<IndexBuffer>(idxSpan, GL_STATIC_DRAW);
+        // Create index buffer
+        std::span<const GLuint> idxSpan(
+            combinedIndices.data(),
+            combinedIndices.size()
+        );
+        auto ib = std::make_unique<IndexBuffer>(idxSpan, GL_STATIC_DRAW);
 
-    // Indirect command buffer
-    std::span<const std::byte> cmdSpan(
-        reinterpret_cast<const std::byte*>(m_DrawCommands.data()),
-        m_DrawCommands.size() * sizeof(DrawElementsIndirectCommand)
-    );
-    if (!m_DrawCommandBuffer) {
-        m_DrawCommandBuffer = std::make_unique<IndirectBuffer>(cmdSpan, GL_DYNAMIC_DRAW);
+        // Indirect buffer
+        std::span<const std::byte> cmdSpan(
+            reinterpret_cast<const std::byte*>(m_DrawCommands.data()),
+            m_DrawCommands.size() * sizeof(DrawElementsIndirectCommand)
+        );
+        if (!m_DrawCommandBuffer) {
+            m_DrawCommandBuffer = std::make_unique<IndirectBuffer>(cmdSpan, GL_DYNAMIC_DRAW);
+        }
+        else {
+            m_DrawCommandBuffer->UpdateData(cmdSpan);
+        }
+
+        // Build the VAO
+        m_VAO->Bind();
+        m_VAO->AddBuffer(*vb, vertexLayout);
+        m_VAO->SetIndexBuffer(*ib);
+        m_VAO->Unbind();
     }
-    else {
-        m_DrawCommandBuffer->UpdateData(cmdSpan);
-    }
-
-    // 4) Set up the VAO
-    m_VAO->Bind();
-    m_VAO->AddBuffer(*m_VBO, vertexBufferLayout);
-    m_VAO->SetIndexBuffer(*m_IBO);
-    m_VAO->Unbind();
 
     m_IsDirty = false;
 }
@@ -198,9 +201,11 @@ void Batch::Update()
 
 void Batch::Render() const
 {
-    if (m_DrawCommands.empty()) return;
-
+    if (m_DrawCommands.empty()) {
+        return;
+    }
     m_VAO->Bind();
+
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_DrawCommandBuffer->GetRendererID());
     glMultiDrawElementsIndirect(
         GL_TRIANGLES,
@@ -210,30 +215,29 @@ void Batch::Render() const
         0
     );
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
+
     m_VAO->Unbind();
 }
 
 void Batch::CullObject(size_t objectIndex)
 {
     if (objectIndex >= m_DrawCommands.size()) {
-        Logger::GetLogger()->error("CullObject: invalid index {}", objectIndex);
+        Logger::GetLogger()->error("Batch::CullObject: objectIndex={} out of range.", objectIndex);
         return;
     }
+    // Simply set count=0 => that object won't draw
     auto& cmd = m_DrawCommands[objectIndex];
-    if (cmd.count == 0) {
-        // Already culled
-        return;
+    if (cmd.count != 0) {
+        cmd.count = 0;
+
+        // Update GPU indirect buffer for that command
+        std::span<const std::byte> cmdSpan(
+            reinterpret_cast<const std::byte*>(&cmd),
+            sizeof(DrawElementsIndirectCommand)
+        );
+        GLintptr offset = objectIndex * sizeof(DrawElementsIndirectCommand);
+        m_DrawCommandBuffer->UpdateData(cmdSpan, offset);
     }
-
-    cmd.count = 0; // zeroing out means "draw nothing"
-
-    // Update GPU
-    std::span<const std::byte> cmdSpan(
-        reinterpret_cast<const std::byte*>(&cmd),
-        sizeof(DrawElementsIndirectCommand)
-    );
-    GLintptr offset = objectIndex * sizeof(DrawElementsIndirectCommand);
-    m_DrawCommandBuffer->UpdateData(cmdSpan, offset);
 }
 
 void Batch::UpdateLOD(size_t objectIndex, size_t newLOD)
@@ -241,28 +245,27 @@ void Batch::UpdateLOD(size_t objectIndex, size_t newLOD)
     if (objectIndex >= m_RenderObjects.size() ||
         objectIndex >= m_LODInfos.size())
     {
-        Logger::GetLogger()->error("UpdateLOD: invalid index {}.", objectIndex);
+        Logger::GetLogger()->error("Batch::UpdateLOD: invalid objectIndex={}.", objectIndex);
         return;
     }
     auto ro = m_RenderObjects[objectIndex];
-    const auto& lods = m_LODInfos[objectIndex];
-
-    if (newLOD >= lods.size()) {
-        Logger::GetLogger()->warn("LOD {} out of range for object index {}. Skipped.", newLOD, objectIndex);
+    if (!ro->SetLOD(newLOD)) {
+        // No actual change
         return;
     }
-    if (ro->GetCurrentLOD() == newLOD) {
-        return; // no change
+    // Retrieve the new LOD
+    size_t lodUsed = ro->GetCurrentLOD();
+    if (lodUsed >= m_LODInfos[objectIndex].size()) {
+        lodUsed = 0;
     }
-    ro->SetLOD(newLOD);
+    auto& lodRef = m_LODInfos[objectIndex][lodUsed];
 
+    // Update the draw command
     auto& cmd = m_DrawCommands[objectIndex];
-    const LODInfo& lodRef = lods[newLOD];
-
     cmd.count = static_cast<GLuint>(lodRef.indexCount);
     cmd.firstIndex = static_cast<GLuint>(lodRef.indexOffsetInCombinedBuffer);
 
-    // Update GPU
+    // Write back to the GPU
     std::span<const std::byte> cmdSpan(
         reinterpret_cast<const std::byte*>(&cmd),
         sizeof(DrawElementsIndirectCommand)

@@ -1,116 +1,108 @@
 ﻿#include "BatchManager.h"
-#include "Renderer/Batch.h"
-#include "Scene/LODEvaluator.h"
+#include "Batch.h"
 #include "Renderer/RenderObject.h"
+#include "Scene/LODEvaluator.h"
+#include "Scene/Camera.h"
 #include "Utilities/Logger.h"
-#include <algorithm>
-#include <unordered_map>
 
-// Add a BaseRenderObject and mark the batches as needing rebuild.
+#include <algorithm>
+
 void BatchManager::AddRenderObject(const std::shared_ptr<BaseRenderObject>& ro)
 {
     m_RenderObjects.push_back(ro);
     m_Built = false;
 }
 
-// Clear render objects, batches, and the lookup map.
 void BatchManager::Clear()
 {
     m_RenderObjects.clear();
-    m_AllBatches.clear();
-    m_ROBatchMap.clear();
+    m_Batches.clear();
+    m_ObjToBatch.clear();
     m_Built = false;
 }
 
-// Build batches from BaseRenderObjects.
+const std::vector<std::shared_ptr<Batch>>& BatchManager::GetBatches() const
+{
+    return m_Batches;
+}
+
 void BatchManager::BuildBatches()
 {
     if (m_Built) {
         return;
     }
-    m_AllBatches.clear();
-    m_ROBatchMap.clear();
+    m_Batches.clear();
+    m_ObjToBatch.clear();
 
     if (!m_RenderObjects.empty()) {
-        auto newBatches = BuildBatchesFromRenderObjects(m_RenderObjects);
-        m_AllBatches.insert(m_AllBatches.end(), newBatches.begin(), newBatches.end());
+        auto built = BuildBatchesFromObjects(m_RenderObjects);
+        m_Batches.insert(m_Batches.end(), built.begin(), built.end());
     }
     m_Built = true;
 }
 
-// Group render objects by (ShaderName, MaterialName, Transform) and build batches.
-// Adjust the grouping scheme if you need to include MeshLayout or other parameters.
-std::vector<std::shared_ptr<Batch>> BatchManager::BuildBatchesFromRenderObjects(
-    const std::vector<std::shared_ptr<BaseRenderObject>>& ros)
+// Groups objects by (shaderName, materialID) => new Batch for each group
+std::vector<std::shared_ptr<Batch>> BatchManager::BuildBatchesFromObjects(
+    const std::vector<std::shared_ptr<BaseRenderObject>>& objs)
 {
-    std::vector<std::shared_ptr<Batch>> batches;
+    // (shaderName) -> (materialID) -> vector of objects
+    using RenderObjVec = std::vector<std::shared_ptr<BaseRenderObject>>;
+    using MaterialMap = std::unordered_map<int, RenderObjVec>;
+    std::unordered_map<std::string, MaterialMap> grouping;
 
-    // We'll group as:
-    //   ShaderName -> MaterialID -> vector<BaseRenderObject>
-    using ObjectVec = std::vector<std::shared_ptr<BaseRenderObject>>;
-    using MaterialMap = std::unordered_map<int, ObjectVec>;
-    std::unordered_map<std::string, MaterialMap> bigMap;
-
-    for (auto& ro : ros) {
-        // Group render objects by ShaderName and MaterialID
-        bigMap[ro->GetShaderName()]
-            [ro->GetMaterialID()]
-            .push_back(ro);
+    for (auto& ro : objs) {
+        grouping[ro->GetShaderName()][ro->GetMaterialID()].push_back(ro);
     }
 
-    // For every group, create a Batch.
-    for (auto& [shaderName, matMap] : bigMap) {
-        for (auto& [matID, roVec] : matMap) {
-            // Create a new batch.
-            auto batch = std::make_shared<Batch>(shaderName, matID);
-            for (auto& ro : roVec) {
+    std::vector<std::shared_ptr<Batch>> result;
+    result.reserve(grouping.size());
+
+    // For each group => create a Batch
+    for (auto& [shader, matMap] : grouping) {
+        for (auto& [matID, objVec] : matMap) {
+            auto batch = std::make_shared<Batch>(shader, matID);
+            for (auto& ro : objVec) {
                 batch->AddRenderObject(ro);
-                // Populate the lookup: key is the raw pointer.
-                m_ROBatchMap[ro.get()] = batch;
+                m_ObjToBatch[ro.get()] = batch;
             }
+            // Build GPU data
             batch->BuildBatches();
-            batches.push_back(batch);
+            result.push_back(batch);
         }
     }
-
-    return batches;
+    return result;
 }
 
-const std::vector<std::shared_ptr<Batch>>& BatchManager::GetBatches() const
+std::shared_ptr<Batch> BatchManager::FindBatchForObject(const std::shared_ptr<BaseRenderObject>& ro) const
 {
-    return m_AllBatches;
-}
-
-// Use the lookup map to quickly find the Batch for the given BaseRenderObject.
-std::shared_ptr<Batch> BatchManager::FindBatchForRenderObject(const std::shared_ptr<BaseRenderObject>& ro) const
-{
-    auto it = m_ROBatchMap.find(ro.get());
-    if (it != m_ROBatchMap.end()) {
+    auto it = m_ObjToBatch.find(ro.get());
+    if (it != m_ObjToBatch.end()) {
         return it->second;
     }
     return nullptr;
 }
 
+// Called when an external LOD evaluator says "object X => newLOD".
 void BatchManager::UpdateLOD(const std::shared_ptr<BaseRenderObject>& ro, size_t newLOD)
 {
-    auto batch = FindBatchForRenderObject(ro);
+    auto batch = FindBatchForObject(ro);
     if (!batch) return;
 
-    // Find the render object’s index within the batch.
-    auto& ros = batch->GetRenderObjects();
-    auto it = std::find(ros.begin(), ros.end(), ro);
-    if (it == ros.end()) return;
+    // find the index of this object in the batch
+    auto& objects = batch->GetRenderObjects();
+    auto it = std::find(objects.begin(), objects.end(), ro);
+    if (it == objects.end()) return; // not found
 
-    size_t idx = std::distance(ros.begin(), it);
+    size_t idx = std::distance(objects.begin(), it);
     batch->UpdateLOD(idx, newLOD);
 }
 
+// Evaluate LOD for each object using the LODEvaluator
 void BatchManager::UpdateLODs(std::shared_ptr<Camera>& camera, LODEvaluator& lodEvaluator)
 {
-    if (m_AllBatches.empty() || !camera) {
+    if (!m_Built || !camera) {
         return;
     }
-    // Use the LODEvaluator to determine each BaseRenderObject’s new LOD.
     auto lodMap = lodEvaluator.EvaluateLODs(m_RenderObjects, camera);
 
     for (auto& ro : m_RenderObjects) {
@@ -118,29 +110,33 @@ void BatchManager::UpdateLODs(std::shared_ptr<Camera>& camera, LODEvaluator& lod
         if (it != lodMap.end()) {
             size_t newLOD = it->second;
             if (newLOD != ro->GetCurrentLOD()) {
-                // Update the corresponding batch.
                 UpdateLOD(ro, newLOD);
             }
         }
     }
 }
 
-void BatchManager::SetLOD(size_t newLOD)
+// Force all objects to the same LOD
+void BatchManager::SetLOD(size_t forcedLOD)
 {
-    // Force the same LOD for every BaseRenderObject (debug feature).
-    for (auto& batch : m_AllBatches) {
+    if (!m_Built) {
+        return;
+    }
+    for (auto& batch : m_Batches) {
         auto& ros = batch->GetRenderObjects();
         for (size_t i = 0; i < ros.size(); i++) {
-            if (ros[i]->SetLOD(newLOD)) {
-                batch->UpdateLOD(i, newLOD);
+            auto ro = ros[i];
+            if (ro->SetLOD(forcedLOD)) {
+                batch->UpdateLOD(i, forcedLOD);
             }
         }
     }
 }
 
+// Mark an object as culled => set draw count=0
 void BatchManager::CullObject(const std::shared_ptr<BaseRenderObject>& ro)
 {
-    auto batch = FindBatchForRenderObject(ro);
+    auto batch = FindBatchForObject(ro);
     if (!batch) return;
 
     auto& ros = batch->GetRenderObjects();

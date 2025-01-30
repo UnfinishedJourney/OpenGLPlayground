@@ -3,48 +3,60 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
-#include "Renderer/Batch.h"
-#include "Scene/Camera.h"
 
+class BaseRenderObject;
+class Batch;
+class Camera;
 class LODEvaluator;
-class RenderObject;  // forward declaration
 
 /**
- * @brief BatchManager accumulates RenderObjects and groups them by (Shader, Material, MeshLayout, Transform).
- *        Then it builds a list of Batches. Each Batch can issue a multi-draw.
+ * @brief Manages a list of RenderObjects, grouping them into Batches
+ *        based on shared (shaderName, materialID).
  */
 class BatchManager {
 public:
+    BatchManager() = default;
+    ~BatchManager() = default;
+
+    /**
+     * @brief Add a RenderObject to the internal list, marking the batch list as stale.
+     */
     void AddRenderObject(const std::shared_ptr<BaseRenderObject>& ro);
+
+    /**
+     * @brief Build (or rebuild) the batches from the current objects if needed.
+     */
     void BuildBatches();
+
+    /**
+     * @brief Clear all objects and batches.
+     */
     void Clear();
 
+    /**
+     * @return The final set of Batches after building.
+     */
     const std::vector<std::shared_ptr<Batch>>& GetBatches() const;
 
-    // LOD updates
+    // LOD / culling
     void UpdateLOD(const std::shared_ptr<BaseRenderObject>& ro, size_t newLOD);
     void UpdateLODs(std::shared_ptr<Camera>& camera, LODEvaluator& lodEvaluator);
-
-    // Optional: force setting LOD for all objects (debug/dev tool)
-    void SetLOD(size_t newLOD);
-
-    // Culling
+    void SetLOD(size_t forcedLOD); // for debug (force all objects to this LOD)
     void CullObject(const std::shared_ptr<BaseRenderObject>& ro);
 
 private:
-    // Stores all RenderObjects that have been added.
-    std::vector<std::shared_ptr<BaseRenderObject>> m_RenderObjects;
-    // All built batches.
-    std::vector<std::shared_ptr<Batch>> m_AllBatches;
-    // Lookup mapping: RenderObject raw pointer -> Batch that contains it.
-    std::unordered_map<BaseRenderObject*, std::shared_ptr<Batch>> m_ROBatchMap;
+    std::vector<std::shared_ptr<BaseRenderObject>> m_RenderObjects; // All objects
+    std::vector<std::shared_ptr<Batch>>            m_Batches;       // Final grouping
+
+    // Lookups: object -> the batch that it belongs to
+    std::unordered_map<BaseRenderObject*, std::shared_ptr<Batch>> m_ObjToBatch;
+
     bool m_Built = false;
 
 private:
-    // Build batches from a vector of RenderObjects, grouping by (ShaderName, MaterialName, Transform)
-    std::vector<std::shared_ptr<Batch>> BuildBatchesFromRenderObjects(
-        const std::vector<std::shared_ptr<BaseRenderObject>>& ros);
+    std::vector<std::shared_ptr<Batch>> BuildBatchesFromObjects(
+        const std::vector<std::shared_ptr<BaseRenderObject>>& objs
+    );
 
-    // Quickly find the Batch that contains the given RenderObject.
-    std::shared_ptr<Batch> FindBatchForRenderObject(const std::shared_ptr<BaseRenderObject>& ro) const;
+    std::shared_ptr<Batch> FindBatchForObject(const std::shared_ptr<BaseRenderObject>& ro) const;
 };
