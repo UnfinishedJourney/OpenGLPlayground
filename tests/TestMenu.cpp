@@ -6,29 +6,38 @@
 TestMenu::TestMenu(TestManager& testManager)
     : m_TestManager(testManager)
 {
+    // Constructor body
 }
 
 void TestMenu::RegisterTest(const std::string& name, std::function<std::shared_ptr<Test>()> createFunc)
 {
+    // Store locally for UI display
     m_Tests.emplace_back(name, createFunc);
+
     // Also register with the TestManager
     m_TestManager.RegisterTest(name, createFunc);
+
+    Logger::GetLogger()->info("TestMenu: Registered '{}' with both the menu and TestManager.", name);
 }
 
 void TestMenu::OnImGuiRender()
 {
     ImGui::Begin("Test Menu");
-    for (auto& [testName, createFunc] : m_Tests) {
-        if (ImGui::Button(testName.c_str())) {
+    ImGui::Text("Available Tests:");
+    // Display a button for each test in our local list
+    for (auto& [testName, createFunc] : m_Tests)
+    {
+        if (ImGui::Button(testName.c_str()))
+        {
             m_TestManager.SwitchTest(testName);
         }
     }
     ImGui::End();
 }
 
-// ------------------------------
-//  TestMenuTest Implementation
-// ------------------------------
+// -----------------------------
+//     TestMenuTest
+// -----------------------------
 
 TestMenuTest::TestMenuTest(std::weak_ptr<TestMenu> testMenu)
     : Test()
@@ -45,46 +54,46 @@ TestMenuTest::~TestMenuTest()
 void TestMenuTest::OnEnter()
 {
     Logger::GetLogger()->info("TestMenuTest OnEnter called.");
-    // Setup if needed
+    // Any additional setup needed when we switch to the menu test
 }
 
 void TestMenuTest::OnExit()
 {
     Logger::GetLogger()->info("TestMenuTest OnExit called.");
-    // Cleanup
-    m_Renderer.reset();
-    if (m_Scene) {
-        m_Scene->Clear();
-    }
+    // Use the parent Test's cleanup routine
+    Test::OnExit();
 }
 
 void TestMenuTest::OnUpdate(float /*deltaTime*/)
 {
-    // No special logic needed
+    // No scene or gameplay logic for a simple menu
 }
 
 void TestMenuTest::OnRender()
 {
-    // Usually no scene-based rendering for the menu
+    // Typically no 3D/scene-based rendering for the menu
 }
 
 void TestMenuTest::OnImGuiRender()
 {
-    if (auto menu = m_TestMenu.lock()) {
+    if (auto menu = m_TestMenu.lock())
+    {
+        // Render the test menu's UI if it still exists
         menu->OnImGuiRender();
     }
-    else {
+    else
+    {
         Logger::GetLogger()->warn("TestMenuTest: The TestMenu no longer exists.");
     }
 }
 
 void TestMenuTest::OnWindowResize(int /*width*/, int /*height*/)
 {
-    // Typically no special handling needed
+    // Menu doesn't need a special resize routine
 }
 
 std::shared_ptr<Camera> TestMenuTest::GetCamera() const
 {
-    // No camera needed for the menu
+    // No camera needed for the menu test
     return nullptr;
 }
