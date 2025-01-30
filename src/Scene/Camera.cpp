@@ -1,5 +1,6 @@
 #include "Camera.h"
 #include "Scene/Screen.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <cmath>
@@ -18,7 +19,10 @@ Camera::Camera(const glm::vec3& position,
     , m_NearPlane(0.01f)
     , m_FarPlane(500.0f)
 {
+    // Compute the initial orientation vectors
     UpdateCameraVectors();
+
+    // Set the initial projection matrix
     float aspect = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
     m_ProjectionMatrix = glm::perspective(glm::radians(m_FOV), aspect, m_NearPlane, m_FarPlane);
 }
@@ -40,28 +44,50 @@ float Camera::GetFOV() const
 
 void Camera::SetFOV(float fov)
 {
+    // Clamp the FOV range to prevent extreme distortions
     m_FOV = glm::clamp(fov, 1.0f, 120.0f);
-    UpdateProjectionMatrix(static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height));
+
+    float aspect = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
+    UpdateProjectionMatrix(aspect);
 }
 
 void Camera::Move(CameraMovement direction, float deltaTime)
 {
     float velocity = m_Speed * deltaTime;
-    switch (direction) {
-    case CameraMovement::Forward:  m_Position += m_Front * velocity; break;
-    case CameraMovement::Backward: m_Position -= m_Front * velocity; break;
-    case CameraMovement::Left:     m_Position -= m_Right * velocity; break;
-    case CameraMovement::Right:    m_Position += m_Right * velocity; break;
-    case CameraMovement::Up:       m_Position += m_WorldUp * velocity; break;
-    case CameraMovement::Down:     m_Position -= m_WorldUp * velocity; break;
+
+    switch (direction)
+    {
+    case CameraMovement::Forward:
+        m_Position += m_Front * velocity;
+        break;
+    case CameraMovement::Backward:
+        m_Position -= m_Front * velocity;
+        break;
+    case CameraMovement::Left:
+        m_Position -= m_Right * velocity;
+        break;
+    case CameraMovement::Right:
+        m_Position += m_Right * velocity;
+        break;
+    case CameraMovement::Up:
+        m_Position += m_WorldUp * velocity;
+        break;
+    case CameraMovement::Down:
+        m_Position -= m_WorldUp * velocity;
+        break;
     }
 }
 
 void Camera::Rotate(float xOffset, float yOffset)
 {
+    // Update yaw and pitch
     m_Yaw += xOffset;
     m_Pitch += yOffset;
+
+    // Constrain the pitch to avoid flipping
     m_Pitch = glm::clamp(m_Pitch, -89.0f, 89.0f);
+
+    // Recompute the front/right/up vectors
     UpdateCameraVectors();
 }
 
@@ -77,8 +103,11 @@ float Camera::GetNearPlane() const
 
 void Camera::SetNearPlane(float nearPlane)
 {
+    // Prevent near plane from going below a minimum threshold
     m_NearPlane = std::max(0.01f, nearPlane);
-    UpdateProjectionMatrix(static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height));
+
+    float aspect = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
+    UpdateProjectionMatrix(aspect);
 }
 
 float Camera::GetFarPlane() const
@@ -88,18 +117,25 @@ float Camera::GetFarPlane() const
 
 void Camera::SetFarPlane(float farPlane)
 {
+    // Ensure the far plane is always beyond the near plane
     m_FarPlane = std::max(farPlane, m_NearPlane + 0.1f);
-    UpdateProjectionMatrix(static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height));
+
+    float aspect = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
+    UpdateProjectionMatrix(aspect);
 }
 
 void Camera::UpdateFOV()
 {
-    float displayHeight = Screen::s_DisplayHeight;
-    float viewerDistance = Screen::s_ViewerDistance;
+    // Dynamically compute a physical FOV based on real-world screen parameters
+    float displayHeight = Screen::s_DisplayHeight;  // e.g., in cm
+    float viewerDistance = Screen::s_ViewerDistance; // e.g., in cm
     float physicalFOV = 2.0f * glm::degrees(std::atan((displayHeight / 2.0f) / viewerDistance));
 
+    // Clamp to avoid extreme angles
     m_FOV = glm::clamp(physicalFOV, 1.0f, 120.0f);
-    UpdateProjectionMatrix(static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height));
+
+    float aspect = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
+    UpdateProjectionMatrix(aspect);
 }
 
 void Camera::UpdateProjectionMatrix(float aspectRatio)
@@ -109,12 +145,15 @@ void Camera::UpdateProjectionMatrix(float aspectRatio)
 
 void Camera::UpdateCameraVectors()
 {
+    // Calculate the new Front vector
     glm::vec3 front;
     front.x = std::cos(glm::radians(m_Yaw)) * std::cos(glm::radians(m_Pitch));
     front.y = std::sin(glm::radians(m_Pitch));
     front.z = std::sin(glm::radians(m_Yaw)) * std::cos(glm::radians(m_Pitch));
+
     m_Front = glm::normalize(front);
 
+    // Recalculate Right and Up vectors
     m_Right = glm::normalize(glm::cross(m_Front, m_WorldUp));
     m_Up = glm::normalize(glm::cross(m_Right, m_Front));
 }
