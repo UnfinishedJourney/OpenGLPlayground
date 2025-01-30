@@ -2,52 +2,93 @@
 
 #include <memory>
 #include <string>
-
+#include <spdlog/spdlog.h>
+#include <imgui_impl_glfw.h>
 #include "Scene/CameraController.h"
 #include "Application/InputManager.h"
 #include "TestManager.h"
 #include "TestMenu.h"
-#include "Utilities/Logger.h"
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
 
 /**
- * @brief Main Application class. Handles core initialization, the run loop, and cleanup.
+ * @class Application
+ * @brief Handles core initialization, the main run loop, and cleanup of the OpenGL application.
  */
 class Application
 {
 public:
+    /**
+     * @brief Default constructor that sets up the logger and configures the camera controller.
+     */
     Application();
+
+    /**
+     * @brief Destructor that ensures proper cleanup.
+     */
     ~Application();
 
-    void Init();
+    /**
+     * @brief Initializes the application (GLFW window, OpenGL context, ImGui, tests, etc.).
+     * @return True if initialization was successful, false otherwise.
+     */
+    bool Init();
+
+    /**
+     * @brief Enters the main run loop of the application.
+     */
     void Run();
 
 private:
-    // Helpers
+    // --------------------------------------------------
+    // Helper methods
+    // --------------------------------------------------
+
+    /**
+     * @brief Registers various GLFW callbacks for input handling and window events.
+     */
     void RegisterCallbacks();
+
+    /**
+     * @brief Initializes the Dear ImGui library.
+     */
     void InitializeImGui();
+
+    /**
+     * @brief Shuts down the Dear ImGui library.
+     */
     void ShutdownImGui();
-    //void InitializeGpuQueries();
-    //void ShutdownGpuQueries();
+
+    /**
+     * @brief Processes per-frame logic: input handling, test updates, rendering, etc.
+     */
     void UpdateAndRenderFrame();
+
+    /**
+     * @brief Processes keyboard/mouse input each frame.
+     * @param deltaTime The elapsed time since the previous frame, in seconds.
+     */
     void ProcessInput(double deltaTime);
+
+    /**
+     * @brief Synchronizes the current camera from the active test with the CameraController.
+     */
     void SynchronizeCameraController();
+
+    /**
+     * @brief Updates the window title with FPS and CPU frame time information.
+     * @param cpuFrameTimeMs The time the CPU spent on the last frame, in milliseconds.
+     */
     void ShowFpsAndFrameTimes(double cpuFrameTimeMs);
 
 private:
-    GLFWwindow* m_Window = nullptr;
-    CameraController            m_CameraController;
-    InputManager                m_InputManager;
-    TestManager                 m_TestManager;
-    std::shared_ptr<TestMenu>   m_TestMenu = nullptr;
-    double                      m_LastFrameTime = 0.0;
+    // --------------------------------------------------
+    // Member variables
+    // --------------------------------------------------
+    GLFWwindow*                 m_Window = nullptr;   ///< Pointer to the GLFW window.
+    CameraController            m_CameraController;              ///< Controls the active camera.
+    InputManager                m_InputManager;                  ///< Manages keyboard & mouse input.
+    TestManager                 m_TestManager;                   ///< Manages the currently active test scene.
+    std::shared_ptr<TestMenu>   m_TestMenu = nullptr;   ///< Menu that allows switching between tests.
+    double                      m_LastFrameTime = 0.0;       ///< Time of the last frame, used for deltaTime.
 
-    // GPU Queries to measure GPU frame time
-    //GLuint                      m_GpuQueryStart = 0;
-    //GLuint                      m_GpuQueryEnd = 0;
-
-    // Logging
-    std::shared_ptr<spdlog::logger> m_Logger;
+    std::shared_ptr<spdlog::logger> m_Logger;                    ///< The local logger (obtained from global Logger).
 };
