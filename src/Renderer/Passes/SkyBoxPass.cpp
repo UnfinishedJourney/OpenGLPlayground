@@ -6,6 +6,7 @@
 #include "Resources/ResourceManager.h"
 #include "Utilities/Logger.h"
 #include "Utilities/Utility.h"
+#include "Graphics/Shaders/Shader.h"
 
 #include <glad/glad.h>
 

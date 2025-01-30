@@ -10,10 +10,9 @@
 #include <nlohmann/json.hpp>
 
 // Forward-declared to avoid including entire header
-// (But you can include them if you wish)
-#include "Graphics/Shaders/BaseShader.h"
-#include "Graphics/Shaders/Shader.h"
-#include "Graphics/Shaders/ComputeShader.h"
+class BaseShader;
+class ComputeShader;
+class Shader;
 
 /**
  * @struct GlobalMetadata

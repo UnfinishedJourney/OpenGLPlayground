@@ -5,6 +5,7 @@
 #include "Scene/Screen.h"
 #include "Utilities/Utility.h"
 #include <GLFW/glfw3.h>
+#include "Graphics/Shaders/Shader.h"
 
 FlipbookEffect::FlipbookEffect(std::shared_ptr<MeshBuffer> quadMeshBuffer)
     : m_QuadMeshBuffer(quadMeshBuffer)

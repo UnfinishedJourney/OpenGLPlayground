@@ -11,6 +11,10 @@
 // Your engine/logging
 #include "Utilities/Logger.h"
 
+#include "Graphics/Shaders/BaseShader.h"
+#include "Graphics/Shaders/Shader.h"
+#include "Graphics/Shaders/ComputeShader.h"
+
 // If needed, include <glad/glad.h> or ensure it's included in the PCH
 
 ShaderManager::ShaderManager(const std::filesystem::path& metadataPath,

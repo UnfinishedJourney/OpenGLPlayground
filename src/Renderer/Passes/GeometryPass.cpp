@@ -5,6 +5,7 @@
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
 #include "Utilities/ProfilerMacros.h"
+#include "Graphics/Shaders/Shader.h"
 
 GeometryPass::GeometryPass(std::shared_ptr<FrameBuffer> framebuffer,
     const std::shared_ptr<Scene>& scene)
