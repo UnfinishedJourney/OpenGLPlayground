@@ -7,9 +7,11 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 
-#include "Graphics/Textures/ITexture.h"
-#include "Graphics/Textures/TextureConfig.h"
+// Forward declarations
+class ITexture;
+struct TextureConfig;
 
+// TextureManager Class Definition
 /**
  * @brief A singleton manager for loading, storing, and retrieving textures.
  *
@@ -17,7 +19,7 @@
  */
 class TextureManager {
 public:
-    // Singleton
+    // Singleton Access
     static TextureManager& GetInstance();
 
     /**
@@ -40,8 +42,7 @@ public:
      * @brief Explicitly load a single 2D texture by path and store it under `name`.
      * @return The created texture, or nullptr on failure.
      */
-    std::shared_ptr<ITexture> LoadTexture(const std::string& name, const std::string& path,
-        bool isHDR = false, bool isSRGB = false);
+    std::shared_ptr<ITexture> LoadTexture(const std::string& name, const std::string& path);
 
     /**
      * @brief Remove all textures from the cache.
@@ -49,18 +50,28 @@ public:
     void Clear();
 
 private:
+    // Private Destructor
     ~TextureManager() = default;
+    TextureManager(const TextureManager&) = delete;
+    TextureManager& operator=(const TextureManager&) = delete;
 
+    // Loading Functions
     bool Load2DTextures(const nlohmann::json& json);
     bool LoadCubeMaps(const nlohmann::json& json);
     bool LoadTextureArrays(const nlohmann::json& json);
     bool LoadComputedTextures(const nlohmann::json& json);
 
     /**
-     * @brief Example: Create a BRDF LUT texture via compute shader.
+     * @brief Create a BRDF LUT texture via compute shader.
      */
     std::shared_ptr<ITexture> CreateBRDFLUT(int width, int height, unsigned int numSamples);
 
+    // Utility Functions
+    std::string ToLower(const std::string& str);
+    bool IsHDRTexture(const std::filesystem::path& path);
+    bool DetermineSRGB(const std::string& pathStr);
+
 private:
+    // Texture Storage
     std::unordered_map<std::string, std::shared_ptr<ITexture>> m_Textures;
 };

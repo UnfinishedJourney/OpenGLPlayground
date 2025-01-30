@@ -90,7 +90,7 @@ public:
     }
 
     /**
-     * @brief Retrieves the camera used by this test’s scene.
+     * @brief Retrieves the camera used by this testâ€™s scene.
      *
      * @return A shared pointer to the camera, or nullptr if none.
      */

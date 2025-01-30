@@ -1,4 +1,6 @@
 #include "TextureManager.h"
+
+// Include necessary headers
 #include "Graphics/Textures/OpenGLTexture.h"
 #include "Graphics/Textures/OpenGLCubeMapTexture.h"
 #include "Graphics/Textures/OpenGLTextureArray.h" // if you have it
@@ -10,19 +12,45 @@
 #include <stdexcept>
 #include "Utilities/Logger.h"
 
-TextureManager& TextureManager::GetInstance()
-{
+// Include OpenGL and GLM headers
+#include <glad/glad.h>
+#include <glm/glm.hpp>
+
+#include <stb_image.h>
+
+// Utility function to convert string to lowercase
+std::string TextureManager::ToLower(const std::string& str) {
+    std::string lowerStr = str;
+    std::transform(str.begin(), str.end(), lowerStr.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+    return lowerStr;
+}
+
+// Utility function to determine if a texture is HDR based on its file extension
+bool TextureManager::IsHDRTexture(const std::filesystem::path& path) {
+    static const std::vector<std::string> hdrExtensions = { ".hdr", ".exr", ".tif", ".tiff" };
+    std::string ext = ToLower(path.extension().string());
+    return std::find(hdrExtensions.begin(), hdrExtensions.end(), ext) != hdrExtensions.end();
+}
+
+// Placeholder
+bool TextureManager::DetermineSRGB(const std::string& pathStr) {
+    return false;
+}
+
+// Singleton Access
+TextureManager& TextureManager::GetInstance() {
     static TextureManager instance;
     return instance;
 }
 
-TextureManager::TextureManager(const std::filesystem::path& configPath)
-{
+// Constructor
+TextureManager::TextureManager(const std::filesystem::path& configPath) {
     LoadConfig(configPath);
 }
 
-bool TextureManager::LoadConfig(const std::filesystem::path& configPath)
-{
+// Load Configuration from JSON
+bool TextureManager::LoadConfig(const std::filesystem::path& configPath) {
     if (!std::filesystem::exists(configPath)) {
         Logger::GetLogger()->error("Texture config file '{}' does not exist.", configPath.string());
         return false;
@@ -74,22 +102,20 @@ bool TextureManager::LoadConfig(const std::filesystem::path& configPath)
     return true;
 }
 
-// Example: "2d": { "cuteDog": { "path": "assets/dog.png", "isHDR": false, "isSRGB": false } }
-bool TextureManager::Load2DTextures(const nlohmann::json& json)
-{
+// Load 2D Textures
+bool TextureManager::Load2DTextures(const nlohmann::json& json) {
     for (auto& [name, pathOrObject] : json.items()) {
         std::string path;
-        bool isHDR = false;
-        bool isSRGB = false;
 
-        // Check if user gave a simple string or an object with more info
         if (pathOrObject.is_string()) {
             path = pathOrObject.get<std::string>();
         }
         else if (pathOrObject.is_object()) {
             path = pathOrObject.value("path", "");
-            isHDR = pathOrObject.value("isHDR", false);
-            isSRGB = pathOrObject.value("isSRGB", false);
+            // You can still allow overrides if needed
+            // bool isHDR = pathOrObject.value("isHDR", false);
+            // bool isSRGB = pathOrObject.value("isSRGB", false);
+            // For this implementation, we ignore them and infer automatically
         }
 
         if (path.empty()) {
@@ -97,8 +123,8 @@ bool TextureManager::Load2DTextures(const nlohmann::json& json)
             continue;
         }
 
-        // Load texture
-        auto tex = LoadTexture(name, path, isHDR, isSRGB);
+        // Load texture with inferred isHDR and isSRGB
+        auto tex = LoadTexture(name, path); // Updated to remove extra parameters
         if (!tex) {
             Logger::GetLogger()->error("Failed loading 2D texture '{}'.", name);
         }
@@ -109,25 +135,41 @@ bool TextureManager::Load2DTextures(const nlohmann::json& json)
     return true;
 }
 
-// Example: "cubeMaps": { "pisaCube": [ "posx.png", "negx.png", ... ] }
-bool TextureManager::LoadCubeMaps(const nlohmann::json& json)
-{
+// Load Cube Maps
+bool TextureManager::LoadCubeMaps(const nlohmann::json& json) {
     for (auto& [name, arrVal] : json.items()) {
         // Expect exactly 6 faces
-        auto arr = arrVal.get<std::vector<std::string>>();
-        if (arr.size() != 6) {
+        std::vector<std::string> facePaths;
+        if (arrVal.is_array()) {
+            facePaths = arrVal.get<std::vector<std::string>>();
+        }
+        else {
+            Logger::GetLogger()->error("Cubemap '{}' should be an array of 6 face paths.", name);
+            continue;
+        }
+
+        if (facePaths.size() != 6) {
             Logger::GetLogger()->error("Cubemap '{}' must have exactly 6 faces.", name);
             continue;
         }
 
         std::array<std::filesystem::path, 6> faces;
         for (size_t i = 0; i < 6; i++) {
-            faces[i] = arr[i];
+            faces[i] = facePaths[i];
         }
 
         // Example config for a cubemap
         TextureConfig cubeMapConfig;
-        // Possibly read from JSON if needed, e.g. isHDR, isSRGB, etc.
+        // Automatically determine if any face is HDR
+        bool anyHDR = false;
+        bool anySRGB = false;
+        for (const auto& face : faces) {
+            anyHDR = anyHDR || IsHDRTexture(face);
+            anySRGB = anySRGB || DetermineSRGB(face.string());
+        }
+        cubeMapConfig.isHDR = anyHDR;
+        cubeMapConfig.isSRGB = anySRGB;
+
         try {
             auto cubeMap = std::make_shared<OpenGLCubeMapTexture>(faces, cubeMapConfig);
             m_Textures[name] = cubeMap;
@@ -140,17 +182,16 @@ bool TextureManager::LoadCubeMaps(const nlohmann::json& json)
     return true;
 }
 
-bool TextureManager::LoadTextureArrays(const nlohmann::json& json)
-{
+// Load Texture Arrays
+bool TextureManager::LoadTextureArrays(const nlohmann::json& json) {
     // Implement if you have 2D texture arrays or sprite sheets.
     Logger::GetLogger()->info("LoadTextureArrays() is a stub implementation.");
-    // e.g. parse { "spriteSheet": { "path": "...", "frames": 64, "gridX": 8, "gridY": 8, "isHDR": false, "isSRGB": false } }
+    // Example: Parse { "spriteSheet": { "path": "...", "frames": 64, "gridX": 8, "gridY": 8 } }
     return true;
 }
 
-// Example "computed": { "brdfLut": { "type": "compute", "width": 256, "height": 256, "numSamples": 1024 } }
-bool TextureManager::LoadComputedTextures(const nlohmann::json& json)
-{
+// Load Computed Textures
+bool TextureManager::LoadComputedTextures(const nlohmann::json& json) {
     for (auto& [name, info] : json.items()) {
         std::string type = info.value("type", "");
         if (type == "compute") {
@@ -171,8 +212,8 @@ bool TextureManager::LoadComputedTextures(const nlohmann::json& json)
     return true;
 }
 
-std::shared_ptr<ITexture> TextureManager::GetTexture(const std::string& name)
-{
+// Retrieve Texture by Name
+std::shared_ptr<ITexture> TextureManager::GetTexture(const std::string& name) {
     auto it = m_Textures.find(name);
     if (it != m_Textures.end()) {
         return it->second;
@@ -181,24 +222,28 @@ std::shared_ptr<ITexture> TextureManager::GetTexture(const std::string& name)
     return nullptr;
 }
 
-std::shared_ptr<ITexture> TextureManager::LoadTexture(const std::string& name,
-    const std::string& path,
-    bool isHDR,
-    bool isSRGB)
-{
-
+// Load a Single Texture with Automatic Inference
+std::shared_ptr<ITexture> TextureManager::LoadTexture(const std::string& name, const std::string& pathStr) {
     // If already loaded, return it
     auto it = m_Textures.find(name);
     if (it != m_Textures.end()) {
         return it->second;
     }
 
-    // Otherwise, load fresh
+    std::filesystem::path path(pathStr);
+
+    // Determine HDR based on file extension
+    bool isHDR = IsHDRTexture(path);
+
+    // Load texture
     TextureData data;
-    if (!data.LoadFromFile(path, /*flipY*/true, /*force4Ch*/true, /*isHDR*/isHDR)) {
-        Logger::GetLogger()->error("Failed to load texture '{}' from '{}'.", name, path);
+    if (!data.LoadFromFile(pathStr, /*flipY*/ true, /*force4Ch*/ true, isHDR)) {
+        Logger::GetLogger()->error("Failed to load texture '{}' from '{}'.", name, pathStr);
         return nullptr;
     }
+
+    // Determine sRGB based on conventions
+    bool isSRGB = DetermineSRGB(pathStr);
 
     TextureConfig config;
     config.isHDR = isHDR;
@@ -206,10 +251,16 @@ std::shared_ptr<ITexture> TextureManager::LoadTexture(const std::string& name,
     // Optionally tweak config for minFilter, etc.
 
     try {
-        auto tex = std::make_shared<OpenGLTexture>(data, config);
+        std::shared_ptr<ITexture> tex;
+        if (isHDR) {
+            tex = std::make_shared<OpenGLTexture>(data, config); // Ensure OpenGLTexture can handle HDR
+        }
+        else {
+            tex = std::make_shared<OpenGLTexture>(data, config);
+        }
         m_Textures[name] = tex;
         Logger::GetLogger()->info("Loaded texture '{}' from '{}'. (HDR={}, sRGB={})",
-            name, path, isHDR, isSRGB);
+            name, pathStr, isHDR, isSRGB);
         return tex;
     }
     catch (const std::exception& e) {
@@ -218,15 +269,14 @@ std::shared_ptr<ITexture> TextureManager::LoadTexture(const std::string& name,
     }
 }
 
-void TextureManager::Clear()
-{
+// Clear All Textures
+void TextureManager::Clear() {
     m_Textures.clear();
     Logger::GetLogger()->info("Cleared all textures in TextureManager.");
 }
 
-// Example function to create a BRDF LUT using a compute shader
-std::shared_ptr<ITexture> TextureManager::CreateBRDFLUT(int width, int height, unsigned int numSamples)
-{
+// Create BRDF LUT via Compute Shader
+std::shared_ptr<ITexture> TextureManager::CreateBRDFLUT(int width, int height, unsigned int numSamples) {
     auto& shaderManager = ShaderManager::GetInstance();
     auto computeShader = shaderManager.GetComputeShader("brdfCompute");
     if (!computeShader) {

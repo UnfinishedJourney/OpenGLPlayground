@@ -67,7 +67,7 @@ public:
     /**
      * @brief Retrieves the camera associated with the current test (if any).
      *
-     * @return A shared pointer to the test’s camera, or nullptr if none.
+     * @return A shared pointer to the testâ€™s camera, or nullptr if none.
      */
     std::shared_ptr<Camera> GetCurrentCamera() const;
 
