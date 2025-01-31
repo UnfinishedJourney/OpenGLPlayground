@@ -95,55 +95,16 @@ bool Application::Init()
 
     m_Logger->info("Application initialized successfully.");
 
-    //try
-    //{
-    //    Bitmap eq = EnvMapProcessor::LoadEquirectangular("../assets/HDRI/kloofendal_overcast_puresky_4k.hdr");
-    //    Bitmap cross = EnvMapProcessor::EquirectangularToVerticalCross(eq);
-    //    EnvMapProcessor::SaveAsHDR(cross, "../assets/HDRI/overcast_puresky_cross.hdr");
-    //    Bitmap cube = EnvMapProcessor::VerticalCrossToCubemapFaces(cross);
+    try
+    {
+        EnvMapPreprocessor preprocessor;
+        preprocessor.SaveAsVerticalCross("../assets/HDRI/kloofendal_overcast_puresky_4k.hdr", "../assets/HDRI/kloofendal_overcast_puresky_vertCross.hdr");
 
-    //    for (int face = 0; face < 6; face++)
-    //    {
-    //        Bitmap faceImg(cube.w_, cube.h_, cube.comp_, cube.fmt_);
-    //        for (int j = 0; j < faceImg.h_; j++)
-    //        {
-    //            for (int i = 0; i < faceImg.w_; i++)
-    //            {
-    //                glm::vec4 c = cube.getPixel3D(i, j, face);
-    //                faceImg.setPixel(i, j, c);
-    //            }
-    //        }
-    //        char filename[64];
-    //        sprintf(filename, "../assets/HDRI/overcast_puresky_face_%d.hdr", face);
-    //        EnvMapProcessor::SaveAsHDR(faceImg, filename);
-    //    }
-
-    //    int irradianceWidth = 64;    // Example width (can be adjusted)
-    //    int irradianceHeight = 32;   // Example height (can be adjusted)
-    //    int numSamples = 512;        // Number of Monte Carlo samples (can be adjusted)
-
-    //    Bitmap irradianceCube = EnvMapProcessor::ComputeIrradianceCubemap(eq, irradianceWidth, irradianceHeight, numSamples);
-    //    for (int face = 0; face < 6; face++)
-    //    {
-    //        Bitmap faceImg(irradianceCube.w_, irradianceCube.h_, irradianceCube.comp_, irradianceCube.fmt_);
-    //        for (int j = 0; j < faceImg.h_; j++)
-    //        {
-    //            for (int i = 0; i < faceImg.w_; i++)
-    //            {
-    //                glm::vec4 c = irradianceCube.getPixel3D(i, j, face);
-    //                faceImg.setPixel(i, j, c);
-    //            }
-    //        }
-    //        char filename[64];
-    //        sprintf(filename, "../assets/HDRI/overcast_puresky_irradiance_face_%d.hdr", face);
-    //        EnvMapProcessor::SaveAsHDR(faceImg, filename);
-    //    }
-
-
-    //}
-    //catch (const std::exception& e)
-    //{
-    //}
+    }
+    catch (const std::exception& e)
+    {
+        m_Logger->error("An error occurred: {}", e.what());
+    }
 
     return true;
 }
