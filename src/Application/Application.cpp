@@ -97,8 +97,8 @@ bool Application::Init()
 
     try
     {
-        EnvMapPreprocessor preprocessor;
-        preprocessor.SaveAsVerticalCross("../assets/HDRI/kloofendal_overcast_puresky_4k.hdr", "../assets/HDRI/kloofendal_overcast_puresky_vertCross.hdr");
+        //EnvMapPreprocessor preprocessor;
+        //preprocessor.SaveAsVerticalCross("../assets/HDRI/kloofendal_overcast_puresky_4k.hdr", "../assets/HDRI/kloofendal_overcast_puresky_vertCross.hdr");
 
     }
     catch (const std::exception& e)

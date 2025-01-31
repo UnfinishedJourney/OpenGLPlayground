@@ -121,18 +121,18 @@ void EnvMapPreprocessor::ConvolveDiffuse(const vec3* data, int srcW, int srcH, i
 
 void EnvMapPreprocessor::SaveAsVerticalCross(const std::filesystem::path& texturePath, const std::filesystem::path& outPath) const
 {
-	Bitmap bm = LoadEquirectangularTexture(texturePath);
+	Bitmap bm = LoadTexture(texturePath);
 	Bitmap vcbm = ConvertEquirectangularMapToVerticalCross(bm);
 	SaveAsHDR(vcbm, outPath);
 }
 
-Bitmap EnvMapPreprocessor::LoadEquirectangularTexture(const std::filesystem::path& texturePath) const
+Bitmap EnvMapPreprocessor::LoadTexture(const std::filesystem::path& texturePath) const
 {
 	int w, h, comp;
 	const float* img = stbi_loadf(texturePath.string().c_str(), &w, &h, &comp, 3);
-	Bitmap equirectangular(w, h, comp, eBitmapFormat_Float, img);
+	Bitmap tex(w, h, comp, eBitmapFormat_Float, img);
 
-	return equirectangular;
+	return tex;
 }
 
 Bitmap EnvMapPreprocessor::ConvertEquirectangularMapToVerticalCross(const Bitmap& b) const

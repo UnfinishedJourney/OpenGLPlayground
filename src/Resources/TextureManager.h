@@ -11,11 +11,13 @@
 class ITexture;
 struct TextureConfig;
 
-// TextureManager Class Definition
 /**
  * @brief A singleton manager for loading, storing, and retrieving textures.
  *
- * Supports 2D textures, cube maps, array textures, and computed textures.
+ * Supports:
+ *   - 2D textures
+ *   - Cube maps (either 6-face paths or single equirect .hdr that is converted)
+ *   - Computed textures (like BRDF LUT)
  */
 class TextureManager {
 public:
@@ -55,23 +57,29 @@ private:
     TextureManager(const TextureManager&) = delete;
     TextureManager& operator=(const TextureManager&) = delete;
 
-    // Loading Functions
+    // Main JSON loading routines
     bool Load2DTextures(const nlohmann::json& json);
     bool LoadCubeMaps(const nlohmann::json& json);
     bool LoadTextureArrays(const nlohmann::json& json);
     bool LoadComputedTextures(const nlohmann::json& json);
 
     /**
+     * @brief If we detect a single .hdr path in the cubeMap array, handle it here:
+     *        Convert from equirect to 6 faces to create OpenGLCubeMapTexture.
+     */
+    bool ConvertAndLoadEquirectHDR(const std::string& cubeMapName, const std::string& equirectPath);
+
+    /**
      * @brief Create a BRDF LUT texture via compute shader.
      */
     std::shared_ptr<ITexture> CreateBRDFLUT(int width, int height, unsigned int numSamples);
 
-    // Utility Functions
+    // Utility
     std::string ToLower(const std::string& str);
     bool IsHDRTexture(const std::filesystem::path& path);
     bool DetermineSRGB(const std::string& pathStr);
 
 private:
-    // Texture Storage
+    // Storage for all loaded textures (2D, cubemap, computed, etc.)
     std::unordered_map<std::string, std::shared_ptr<ITexture>> m_Textures;
 };
