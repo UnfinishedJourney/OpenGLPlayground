@@ -91,6 +91,8 @@ OpenGLCubeMapTexture::OpenGLCubeMapTexture(const std::array<std::filesystem::pat
     GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_T, config.wrapT));
     GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_R, config.wrapR));
 
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
     if (config.useAnisotropy) {
         GLfloat maxAniso = 0.0f;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);

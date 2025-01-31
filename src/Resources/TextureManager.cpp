@@ -160,6 +160,15 @@ bool TextureManager::LoadCubeMaps(const nlohmann::json& json) {
 
         // Example config for a cubemap
         TextureConfig cubeMapConfig;
+        cubeMapConfig.internalFormat = GL_RGB32F;
+        cubeMapConfig.wrapS = GL_CLAMP_TO_EDGE;
+        cubeMapConfig.wrapT = GL_CLAMP_TO_EDGE;
+        cubeMapConfig.wrapR = GL_CLAMP_TO_EDGE;
+        cubeMapConfig.minFilter = GL_LINEAR_MIPMAP_LINEAR;
+        cubeMapConfig.magFilter = GL_LINEAR;
+        cubeMapConfig.generateMips = true;
+        cubeMapConfig.useAnisotropy = true;
+        cubeMapConfig.useBindless = false; // Set to true if you plan to use bindless textures
         // Automatically determine if any face is HDR
         bool anyHDR = false;
         bool anySRGB = false;
