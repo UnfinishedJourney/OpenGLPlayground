@@ -1,10 +1,10 @@
 #pragma once
 
 #include "ITexture.h"
-#include "TextureData.h"
 #include "TextureConfig.h"
 #include <array>
 #include <filesystem>
+#include <vector>
 #include <glad/glad.h>
 
 /**
@@ -13,10 +13,17 @@
 class OpenGLCubeMapTexture : public ITexture {
 public:
     /**
-     * @param faces  Array of 6 file paths (posX, negX, posY, negY, posZ, negZ).
-     * @param config Texture creation parameters (internal format, wrap, etc.).
+     * @brief Constructs a cube map texture from 6 file paths (one for each face).
      */
     OpenGLCubeMapTexture(const std::array<std::filesystem::path, 6>& faces,
+        TextureConfig config);
+
+    /**
+     * @brief Constructs a cube map texture with multiple mip levels.
+     * @param mipFaces A vector where each element is an array of 6 file paths corresponding to one mip level.
+     * @param config Texture creation parameters.
+     */
+    OpenGLCubeMapTexture(const std::vector<std::array<std::filesystem::path, 6>>& mipFaces,
         TextureConfig config);
 
     ~OpenGLCubeMapTexture() override;

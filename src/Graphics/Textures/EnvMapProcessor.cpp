@@ -62,6 +62,66 @@ vec3 faceCoordsToXYZ(int i, int j, int faceID, int faceSize)
 	return vec3();
 }
 
+glm::vec3 ImportanceSampleGGX(const glm::vec2 Xi, const glm::vec3& N, float roughness)
+{
+	// Convert roughness to alpha (here we use a simple square: alpha = roughness^2)
+	float a = roughness * roughness;
+
+	// Sample spherical coordinates with the GGX distribution.
+	float phi = 2.0f * Math::PI * Xi.x;
+	// Compute cosine of theta using the inverse CDF of the GGX distribution.
+	float cosTheta = sqrt((1.0f - Xi.y) / (1.0f + (a * a - 1.0f) * Xi.y));
+	float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
+
+	// In tangent space, H points along:
+	glm::vec3 H;
+	H.x = sinTheta * cos(phi);
+	H.y = sinTheta * sin(phi);
+	H.z = cosTheta;
+
+	// Transform H from tangent space to world space.
+	// Build an orthonormal basis (N, tangentX, tangentY) around N.
+	glm::vec3 up = fabs(N.z) < 0.999f ? glm::vec3(0.0f, 0.0f, 1.0f)
+		: glm::vec3(1.0f, 0.0f, 0.0f);
+	glm::vec3 tangentX = glm::normalize(glm::cross(up, N));
+	glm::vec3 tangentY = glm::cross(N, tangentX);
+	return glm::normalize(tangentX * H.x + tangentY * H.y + N * H.z);
+}
+
+// Sample the equirectangular environment map.
+// This function converts a 3D direction into (u,v) coordinates and fetches a bilinearly
+// interpolated color from the input Bitmap.
+glm::vec3 SampleEquirectangular(const Bitmap& envMap, const glm::vec3& dir)
+{
+	// Convert the 3D direction to spherical coordinates.
+	// (Note: adjust the formulas if your equirectangular mapping is different.)
+	float u = 0.5f + atan2(dir.z, dir.x) / (2.0f * Math::PI);
+	float v = acos(glm::clamp(dir.y, -1.0f, 1.0f)) / Math::PI;
+
+	// Convert to pixel coordinates.
+	float xf = u * envMap.w_;
+	float yf = v * envMap.h_;
+	int clampW = envMap.w_ - 1;
+	int clampH = envMap.h_ - 1;
+	int x0 = clamp((int)floor(xf), 0, clampW);
+	int y0 = clamp((int)floor(yf), 0, clampH);
+	int x1 = clamp(x0 + 1, 0, clampW);
+	int y1 = clamp(y0 + 1, 0, clampH);
+
+	float s = xf - x0;
+	float t = yf - y0;
+
+	glm::vec4 A = envMap.getPixel(x0, y0);
+	glm::vec4 B = envMap.getPixel(x1, y0);
+	glm::vec4 C = envMap.getPixel(x0, y1);
+	glm::vec4 D = envMap.getPixel(x1, y1);
+
+	glm::vec4 color = A * (1.0f - s) * (1.0f - t) +
+		B * s * (1.0f - t) +
+		C * (1.0f - s) * t +
+		D * s * t;
+	return glm::vec3(color);
+}
 
 void EnvMapPreprocessor::ConvolveDiffuse(const vec3* data, int srcW, int srcH, int dstW, int dstH, vec3* output, int numMonteCarloSamples) const
 {
@@ -341,4 +401,73 @@ void EnvMapPreprocessor::SaveAsHDR(const Bitmap& image, const std::filesystem::p
 	if (!stbi_write_hdr(outPath.string().c_str(), w, h, c, ptr)) {
 		throw std::runtime_error("stbi_write_hdr failed!");
 	}
+}
+
+
+std::vector<Bitmap> EnvMapPreprocessor::ComputePrefilteredCubemap(const Bitmap& inEquirect, int baseFaceSize, int numSamples) const
+{
+	// Determine number of mip levels (including level 0).
+	int mipLevels = (int)floor(log2((float)baseFaceSize)) + 1;
+	std::vector<Bitmap> mipMaps;
+	mipMaps.reserve(mipLevels);
+
+	// For each mip level...
+	for (int mip = 0; mip < mipLevels; mip++)
+	{
+		int faceSize = baseFaceSize >> mip; // faceSize = baseFaceSize / 2^mip
+		// Allocate a cubemap Bitmap for this mip level.
+		// (Assumes Bitmap(w, h, numFaces, comp, fmt) constructs a cube-map image.)
+		Bitmap mipCubemap(faceSize, faceSize, 6, inEquirect.comp_, inEquirect.fmt_);
+		mipCubemap.type_ = eBitmapType_Cube;
+
+		// Roughness increases with mip level.
+		float roughness = (mipLevels > 1) ? float(mip) / float(mipLevels - 1) : 0.0f;
+
+		// For each face of the cubemap...
+		for (int face = 0; face < 6; face++)
+		{
+			// Loop over every texel in the face.
+			for (int y = 0; y < faceSize; y++)
+			{
+				for (int x = 0; x < faceSize; x++)
+				{
+					// Convert pixel coordinates to a 3D direction vector.
+					// (Your existing faceCoordsToXYZ function maps (x,y,face) to a direction.)
+					glm::vec3 R = faceCoordsToXYZ(x, y, face, faceSize);
+					R = glm::normalize(R);
+
+					// Perform Monte Carlo integration over the hemisphere around R.
+					glm::vec3 prefilteredColor(0.0f);
+					float totalWeight = 0.0f;
+					for (int i = 0; i < numSamples; i++)
+					{
+						// Generate a 2D Hammersley point.
+						glm::vec2 Xi = hammersley2d(i, numSamples);
+						// Importance-sample a half-vector H with the GGX distribution.
+						glm::vec3 H = ImportanceSampleGGX(Xi, R, roughness);
+						// Compute the reflected direction L.
+						glm::vec3 L = glm::normalize(2.0f * glm::dot(R, H) * H - R);
+
+						// Weight by the cosine of the angle between R (which acts as the normal) and L.
+						float NdotL = glm::max(glm::dot(R, L), 0.0f);
+						if (NdotL > 0.0f)
+						{
+							// Sample the input environment map along direction L.
+							glm::vec3 sampleColor = SampleEquirectangular(inEquirect, L);
+							prefilteredColor += sampleColor * NdotL;
+							totalWeight += NdotL;
+						}
+					}
+					// Average the contribution.
+					prefilteredColor /= totalWeight;
+
+					// Store the result into the cubemap.
+					// (Assumes setPixel(x, y, face, color) writes the color for a given face.)
+					mipCubemap.setPixel(x, y, face, glm::vec4(prefilteredColor, 1.0f));
+				}
+			}
+		}
+		mipMaps.push_back(mipCubemap);
+	}
+	return mipMaps;
 }

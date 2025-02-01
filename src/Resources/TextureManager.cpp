@@ -345,6 +345,68 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
         Logger::GetLogger()->info("Irradiance faces already exist for '{}'.", equirectPath);
     }
 
+    // Check for existence of mip level 0 (face 0)
+    std::array<std::filesystem::path, 6> prefilteredFaces0 = {
+        outDir / "prefiltered_0_face_0.hdr",
+        outDir / "prefiltered_0_face_1.hdr",
+        outDir / "prefiltered_0_face_2.hdr",
+        outDir / "prefiltered_0_face_3.hdr",
+        outDir / "prefiltered_0_face_4.hdr",
+        outDir / "prefiltered_0_face_5.hdr"
+    };
+
+    bool alreadyPrefiltered = std::filesystem::exists(prefilteredFaces0[0]);
+
+    EnvMapPreprocessor preprocessor; // Reuse for prefiltering
+    std::vector<Bitmap> mipPrefiltered; // This will hold one Bitmap per mip level
+
+    if (!alreadyPrefiltered)
+    {
+        Logger::GetLogger()->info("Generating prefiltered cubemap for '{}'.", equirectPath);
+
+        // 1) Load the original equirectangular HDR image.
+        Bitmap equirect = preprocessor.LoadTexture(srcPath);
+
+        // 2) Compute the prefiltered cubemap.
+        //    For example, use a base face size of 512 and 1024 Monte Carlo samples.
+        mipPrefiltered = preprocessor.ComputePrefilteredCubemap(equirect, 512, 128);
+
+
+        // 3) For each mip level, save the 6 faces to disk.
+        for (size_t mip = 0; mip < mipPrefiltered.size(); mip++)
+        {
+            int faceW = mipPrefiltered[mip].w_;
+            int faceH = mipPrefiltered[mip].h_;
+            int comp = mipPrefiltered[mip].comp_;
+            int pixelSize = comp * Bitmap::getBytesPerComponent(mipPrefiltered[mip].fmt_);
+            int faceSizeBytes = faceW * faceH * pixelSize;
+
+            for (int face = 0; face < 6; face++)
+            {
+                // Create a Bitmap for the current face.
+                Bitmap faceBmp(faceW, faceH, comp, mipPrefiltered[mip].fmt_);
+                const uint8_t* src = mipPrefiltered[mip].data_.data() + face * faceSizeBytes;
+                std::memcpy(faceBmp.data_.data(), src, faceSizeBytes);
+
+                // Build an output filename, e.g. "prefiltered_0_face_0.hdr"
+                std::filesystem::path outPath = outDir / ("prefiltered_" + std::to_string(mip) +
+                    "_face_" + std::to_string(face) + ".hdr");
+                try {
+                    preprocessor.SaveAsHDR(faceBmp, outPath);
+                }
+                catch (const std::exception& e) {
+                    Logger::GetLogger()->error("Error saving prefiltered face (mip {}, face {}): {}",
+                        mip, face, e.what());
+                }
+            }
+        }
+        Logger::GetLogger()->info("Created prefiltered cubemap faces for '{}'.", equirectPath);
+    }
+    else
+    {
+        Logger::GetLogger()->info("Prefiltered cubemap faces already exist for '{}'.", equirectPath);
+    }
+
     // Finally, load the environment faces as an OpenGLCubeMapTexture (the “main” environment).
     TextureConfig envCfg = MakeSomeCubeMapConfig(/*HDR=*/true);
     try
