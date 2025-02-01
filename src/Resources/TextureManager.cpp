@@ -247,7 +247,7 @@ TextureConfig TextureManager::MakeSomeCubeMapConfig(bool isHDR)
  * @brief Convert a single equirect HDR path into 6 faces on disk, then load as OpenGLCubeMapTexture.
  */
 bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
-    const std::string& equirectPath)
+                                               const std::string& equirectPath)
 {
     std::filesystem::path srcPath(equirectPath);
     if (!std::filesystem::exists(srcPath))
@@ -279,8 +279,22 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
         outDir / "irr_5.hdr"
     };
 
-    bool alreadyConverted = std::filesystem::exists(envFaces[0]);
-    bool alreadyIrr = std::filesystem::exists(irrFaces[0]);
+    bool alreadyConverted = std::filesystem::exists(envFaces[0]); 
+    bool alreadyIrr       = std::filesystem::exists(irrFaces[0]);
+    bool alreadyFolder = std::filesystem::exists(outDir);
+
+    if (!alreadyFolder)
+    {
+        std::error_code ec;
+        std::filesystem::create_directories(outDir, ec);
+        if (ec)
+        {
+            Logger::GetLogger()->error("Cannot create directory '{}': {}",
+                outDir.string(), ec.message());
+            return false;
+        }
+    }
+
 
     if (!alreadyConverted)
     {

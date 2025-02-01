@@ -58,7 +58,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene>& scene)
     scene->BindFrameDataUBO();
 
     // Bind the cubemap texture (assume it is named "pisaCube" in your TextureManager)
-    std::string skyBoxName = "overcastSky";
+    std::string skyBoxName = "overcastSky_irr";
     auto cubeMap = TextureManager::GetInstance().GetTexture(skyBoxName);
     if (!cubeMap)
     {
