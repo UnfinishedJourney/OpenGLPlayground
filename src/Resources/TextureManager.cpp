@@ -369,7 +369,7 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
 
         // 2) Compute the prefiltered cubemap.
         //    For example, use a base face size of 512 and 1024 Monte Carlo samples.
-        mipPrefiltered = preprocessor.ComputePrefilteredCubemap(equirect, 512, 128);
+        mipPrefiltered = preprocessor.ComputePrefilteredCubemap(equirect, 512, 256);
 
 
         // 3) For each mip level, save the 6 faces to disk.

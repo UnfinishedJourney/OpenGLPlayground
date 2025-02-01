@@ -53,5 +53,7 @@ bool TextureData::LoadFromFile(const std::string& filePath,
         stbi_image_free(dataU8);
     }
 
+    stbi_set_flip_vertically_on_load(0);
+
     return true;
 }
