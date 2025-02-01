@@ -18,6 +18,11 @@ public:
 		return ConvertVerticalCrossToCubeMapFaces(ConvertEquirectangularMapToVerticalCross(b));
 	}
 
+	Bitmap ComputeIrradianceEquirect(const Bitmap& inEquirect,
+		int outWidth,
+		int outHeight,
+		int samples) const;
+
 	void ConvolveDiffuse(const glm::vec3* data, int srcW, int srcH, int dstW, int dstH, glm::vec3* output, int numMonteCarloSamples) const;
 
 	void SaveAsHDR(const Bitmap& image, const std::filesystem::path& outPath) const;

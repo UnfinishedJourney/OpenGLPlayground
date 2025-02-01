@@ -278,6 +278,46 @@ Bitmap EnvMapPreprocessor::ConvertVerticalCrossToCubeMapFaces(const Bitmap& b) c
 	return cubemap;
 }
 
+Bitmap EnvMapPreprocessor::ComputeIrradianceEquirect(const Bitmap& inEquirect,
+	int outW,
+	int outH,
+	int samples) const
+{
+	// Must be float, 3 or 4 components, w=2*h, etc.
+	if (inEquirect.fmt_ != eBitmapFormat_Float) {
+		throw std::runtime_error("ComputeIrradianceEquirect: input must be float format!");
+	}
+	if (inEquirect.data_.empty()) {
+		throw std::runtime_error("ComputeIrradianceEquirect: input is empty!");
+	}
+
+	int srcW = inEquirect.w_;
+	int srcH = inEquirect.h_;
+	if (srcW != 2 * srcH) {
+		throw std::runtime_error("ComputeIrradianceEquirect: equirect input should have width=2*height!");
+	}
+
+	// We’ll store the result in a float, 3-component eBitmapType_2D
+	Bitmap outBmp(outW, outH, 3, eBitmapFormat_Float);
+
+	// We re-use your `ConvolveDiffuse(...)`, which expects raw pointers:
+	//    ConvolveDiffuse(const vec3* data, int srcW, int srcH, int dstW, int dstH,
+	//                    vec3* output, int numMonteCarloSamples)
+	// So let's just cast the data pointers.
+
+	// Convert input data_ to `vec3*`
+	// (If comp==3, it’s direct, if comp==4, we skip alpha. For simplicity, assume comp=3.)
+	const vec3* srcData = reinterpret_cast<const vec3*>(inEquirect.data_.data());
+	// The output is outBmp.data_.data() => also float, 3 channels
+	vec3* dstData = reinterpret_cast<vec3*>(outBmp.data_.data());
+
+	ConvolveDiffuse(srcData, srcW, srcH, outW, outH, dstData, samples);
+
+	// Mark it eBitmapType_2D
+	outBmp.type_ = eBitmapType_2D;
+	return outBmp;
+}
+
 void EnvMapPreprocessor::SaveAsHDR(const Bitmap& image, const std::filesystem::path& outPath) const
 {
 	// Must be float

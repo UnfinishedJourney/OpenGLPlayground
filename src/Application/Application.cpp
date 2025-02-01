@@ -95,17 +95,6 @@ bool Application::Init()
 
     m_Logger->info("Application initialized successfully.");
 
-    try
-    {
-        //EnvMapPreprocessor preprocessor;
-        //preprocessor.SaveAsVerticalCross("../assets/HDRI/kloofendal_overcast_puresky_4k.hdr", "../assets/HDRI/kloofendal_overcast_puresky_vertCross.hdr");
-
-    }
-    catch (const std::exception& e)
-    {
-        m_Logger->error("An error occurred: {}", e.what());
-    }
-
     return true;
 }
 

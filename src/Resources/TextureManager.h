@@ -6,6 +6,7 @@
 #include <mutex>
 #include <filesystem>
 #include <nlohmann/json.hpp>
+#include "Graphics/Textures/BitMap.h"
 
 // Forward declarations
 class ITexture;
@@ -78,8 +79,12 @@ private:
     std::string ToLower(const std::string& str);
     bool IsHDRTexture(const std::filesystem::path& path);
     bool DetermineSRGB(const std::string& pathStr);
+    void SaveFacesToDisk(const Bitmap& cubeMap,
+        const std::array<std::filesystem::path, 6>& facePaths,
+        const std::string& prefix);
 
 private:
+    TextureConfig MakeSomeCubeMapConfig(bool isHDR);
     // Storage for all loaded textures (2D, cubemap, computed, etc.)
     std::unordered_map<std::string, std::shared_ptr<ITexture>> m_Textures;
 };

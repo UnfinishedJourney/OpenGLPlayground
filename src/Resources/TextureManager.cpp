@@ -227,103 +227,8 @@ bool TextureManager::LoadCubeMaps(const nlohmann::json& json)
     return true;
 }
 
-/**
- * @brief Convert a single equirect HDR path into 6 faces on disk, then load as OpenGLCubeMapTexture.
- */
-bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
-    const std::string& equirectPath)
+TextureConfig TextureManager::MakeSomeCubeMapConfig(bool isHDR)
 {
-    // 1. Check file existence
-    std::filesystem::path srcPath(equirectPath);
-    if (!std::filesystem::exists(srcPath)) {
-        Logger::GetLogger()->error("Equirect HDR '{}' does not exist.", equirectPath);
-        return false;
-    }
-
-    // 2. Decide on output folder
-    // e.g. if equirectPath = "../assets/HDRI/env.hdr",
-    // then outDir = "../assets/HDRI/env/"
-    std::string stem = srcPath.stem().string(); // e.g. "env"
-    std::filesystem::path outDir = srcPath.parent_path() / stem;
-
-    // Face filenames
-    // We'll define them as face_0, face_1, ..., face_5
-    // The actual face order depends on your ConvertVerticalCrossToCubeMapFaces function
-    std::array<std::filesystem::path, 6> facePaths = {
-        outDir / "face_0.hdr",
-        outDir / "face_1.hdr",
-        outDir / "face_2.hdr",
-        outDir / "face_3.hdr",
-        outDir / "face_4.hdr",
-        outDir / "face_5.hdr"
-    };
-
-    // 3. If the first face already exists, assume all do => skip CPU conversion
-    if (std::filesystem::exists(facePaths[0])) {
-        Logger::GetLogger()->info("Equirect '{}' already converted in '{}'.", equirectPath, outDir.string());
-    }
-    else {
-        // Need to do the CPU conversion
-        Logger::GetLogger()->info("Converting equirect '{}' => 6 faces in '{}'.",
-            equirectPath, outDir.string());
-
-        std::error_code ec;
-        std::filesystem::create_directories(outDir, ec);
-        if (ec) {
-            Logger::GetLogger()->error("Cannot create directory '{}': {}", outDir.string(), ec.message());
-            return false;
-        }
-
-        // Use your EnvMapPreprocessor to convert
-        EnvMapPreprocessor preprocessor;
-
-        // 1) Load as equirect
-        Bitmap equirect = preprocessor.LoadTexture(srcPath);
-        if (equirect.data_.empty()) {
-            Logger::GetLogger()->error("Failed to load equirect '{}'.", equirectPath);
-            return false;
-        }
-
-        // 2) Equirect -> vertical cross
-        Bitmap vCross = preprocessor.ConvertEquirectangularMapToVerticalCross(equirect);
-        if (vCross.data_.empty()) {
-            Logger::GetLogger()->error("convertEquirect -> verticalCross failed for '{}'.", equirectPath);
-            return false;
-        }
-
-        // 3) Vertical cross -> 6 faces in a single cubemap bitmap (d_=6)
-        Bitmap faceCube = preprocessor.ConvertVerticalCrossToCubeMapFaces(vCross);
-        if (faceCube.data_.empty() || faceCube.d_ != 6) {
-            Logger::GetLogger()->error("verticalCross -> cubeMapFaces failed for '{}'.", equirectPath);
-            return false;
-        }
-
-        // 4) Extract each face, save as .hdr
-        const int faceW = faceCube.w_;
-        const int faceH = faceCube.h_;
-        const int comp = faceCube.comp_;
-        const eBitmapFormat fmt = faceCube.fmt_;
-
-        int pixelSize = comp * Bitmap::getBytesPerComponent(fmt);
-        int faceSizeBytes = faceW * faceH * pixelSize;
-
-        for (int i = 0; i < 6; i++) {
-            Bitmap faceBmp(faceW, faceH, comp, fmt);
-            const uint8_t* src = faceCube.data_.data() + i * faceSizeBytes;
-            std::memcpy(faceBmp.data_.data(), src, faceSizeBytes);
-
-            try {
-                preprocessor.SaveAsHDR(faceBmp, facePaths[i]);
-            }
-            catch (const std::exception& ex) {
-                Logger::GetLogger()->error("Failed to save face_{} for '{}': {}", i, cubeMapName, ex.what());
-                return false;
-            }
-        }
-        Logger::GetLogger()->info("Created 6 faces for '{}'.", equirectPath);
-    }
-
-    // 4. Now we load those 6 faces as a normal cubemap
     TextureConfig cfg;
     cfg.internalFormat = GL_RGB32F;
     cfg.wrapS = GL_CLAMP_TO_EDGE;
@@ -333,33 +238,164 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
     cfg.magFilter = GL_LINEAR;
     cfg.generateMips = true;
     cfg.useAnisotropy = true;
-    cfg.useBindless = false;
+    cfg.isHDR = isHDR;
+    cfg.isSRGB = false; // or check
+    return cfg;
+}
 
-    // Check if any is HDR / sRGB
-    bool anyHDR = false, anySRGB = false;
-    for (auto& fp : facePaths) {
-        if (IsHDRTexture(fp)) {
-            anyHDR = true;
-        }
-        if (DetermineSRGB(fp.string())) {
-            anySRGB = true;
-        }
-    }
-    cfg.isHDR = anyHDR;
-    cfg.isSRGB = anySRGB;
-
-    try {
-        auto cubeMap = std::make_shared<OpenGLCubeMapTexture>(facePaths, cfg);
-        m_Textures[cubeMapName] = cubeMap;
-        Logger::GetLogger()->info("Successfully created cubemap '{}' from equirect '{}'.",
-            cubeMapName, equirectPath);
-    }
-    catch (const std::exception& e) {
-        Logger::GetLogger()->error("Exception while creating cubemap '{}': {}", cubeMapName, e.what());
+/**
+ * @brief Convert a single equirect HDR path into 6 faces on disk, then load as OpenGLCubeMapTexture.
+ */
+bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
+    const std::string& equirectPath)
+{
+    std::filesystem::path srcPath(equirectPath);
+    if (!std::filesystem::exists(srcPath))
+    {
+        Logger::GetLogger()->error("Equirect HDR '{}' does not exist.", equirectPath);
         return false;
     }
 
+    std::string stem = srcPath.stem().string(); // e.g. "kloofendal_overcast_puresky_4k"
+    std::filesystem::path outDir = srcPath.parent_path() / stem;
+
+    // The environment faces:
+    std::array<std::filesystem::path, 6> envFaces = {
+        outDir / "face_0.hdr",
+        outDir / "face_1.hdr",
+        outDir / "face_2.hdr",
+        outDir / "face_3.hdr",
+        outDir / "face_4.hdr",
+        outDir / "face_5.hdr"
+    };
+
+    // The irradiance faces:
+    std::array<std::filesystem::path, 6> irrFaces = {
+        outDir / "irr_0.hdr",
+        outDir / "irr_1.hdr",
+        outDir / "irr_2.hdr",
+        outDir / "irr_3.hdr",
+        outDir / "irr_4.hdr",
+        outDir / "irr_5.hdr"
+    };
+
+    bool alreadyConverted = std::filesystem::exists(envFaces[0]);
+    bool alreadyIrr = std::filesystem::exists(irrFaces[0]);
+
+    if (!alreadyConverted)
+    {
+        // 1) Load equirect
+        EnvMapPreprocessor preprocessor;
+        Bitmap equirect = preprocessor.LoadTexture(srcPath);
+
+        // 2) Convert to vertical cross
+        Bitmap vCross = preprocessor.ConvertEquirectangularMapToVerticalCross(equirect);
+
+        // 3) verticalCross -> 6-face cube
+        Bitmap faceCube = preprocessor.ConvertVerticalCrossToCubeMapFaces(vCross);
+
+        // Save each face_*
+        SaveFacesToDisk(faceCube, envFaces, /*prefix=*/"face_");
+        Logger::GetLogger()->info("Created environment faces for '{}'.", equirectPath);
+    }
+    else
+    {
+        Logger::GetLogger()->info("Env faces already exist for '{}'. Skipping conversion.", equirectPath);
+    }
+
+    // Next, check if we have the irradiance faces
+    if (!alreadyIrr)
+    {
+        Logger::GetLogger()->info("Generating IRRADIANCE for '{}'.", equirectPath);
+
+        EnvMapPreprocessor preprocessor;
+        // 1) Load equirect again
+        Bitmap equirect = preprocessor.LoadTexture(srcPath);
+
+        // 2) Convolve to get smaller blurred equirect, e.g. 256x128 with 1024 samples
+        //    The size is up to you. 128x64 also works, etc.
+        Bitmap equirectIrr = preprocessor.ComputeIrradianceEquirect(equirect, 256, 128, 1024);
+
+        // 3) Convert that irradiance equirect to vertical cross
+        Bitmap vCrossIrr = preprocessor.ConvertEquirectangularMapToVerticalCross(equirectIrr);
+
+        // 4) Cross -> 6-face
+        Bitmap faceCubeIrr = preprocessor.ConvertVerticalCrossToCubeMapFaces(vCrossIrr);
+
+        // 5) Save as irr_0.hdr..irr_5.hdr
+        SaveFacesToDisk(faceCubeIrr, irrFaces, /*prefix=*/"irr_");
+        Logger::GetLogger()->info("Created irradiance faces for '{}'.", equirectPath);
+    }
+    else
+    {
+        Logger::GetLogger()->info("Irradiance faces already exist for '{}'.", equirectPath);
+    }
+
+    // Finally, load the environment faces as an OpenGLCubeMapTexture (the “main” environment).
+    TextureConfig envCfg = MakeSomeCubeMapConfig(/*HDR=*/true);
+    try
+    {
+        auto cubeMap = std::make_shared<OpenGLCubeMapTexture>(envFaces, envCfg);
+        m_Textures[cubeMapName] = cubeMap;
+    }
+    catch (const std::exception& e)
+    {
+        Logger::GetLogger()->error("Exception creating env cubemap '{}': {}", cubeMapName, e.what());
+        return false;
+    }
+
+    // Optionally also load the IRR cube map and store it as "cubeMapName_irr" or something
+    // so you can get it later with GetTexture("overcastSky_irr").
+    TextureConfig irrCfg = MakeSomeCubeMapConfig(/*HDR=*/true);
+    try
+    {
+        auto irrCube = std::make_shared<OpenGLCubeMapTexture>(irrFaces, irrCfg);
+        std::string irrName = cubeMapName + "_irr";
+        m_Textures[irrName] = irrCube;
+        Logger::GetLogger()->info("Created irradiance cubemap '{}'.", irrName);
+    }
+    catch (const std::exception& e)
+    {
+        Logger::GetLogger()->warn("Failed to create irradiance cubemap for '{}': {}", cubeMapName, e.what());
+        // Not necessarily fatal
+    }
+
     return true;
+}
+
+void TextureManager::SaveFacesToDisk(const Bitmap& cubeMap,
+    const std::array<std::filesystem::path, 6>& facePaths,
+    const std::string& prefix)
+{
+    if (cubeMap.d_ != 6) {
+        Logger::GetLogger()->error("SaveFacesToDisk: expected 6 faces in depth, found d_={}", cubeMap.d_);
+        return;
+    }
+
+    int faceW = cubeMap.w_;
+    int faceH = cubeMap.h_;
+    int comp = cubeMap.comp_;
+    eBitmapFormat fmt = cubeMap.fmt_;
+
+    int pixelSize = comp * Bitmap::getBytesPerComponent(fmt);
+    int faceSizeBytes = faceW * faceH * pixelSize;
+
+    EnvMapPreprocessor prep; // for SaveAsHDR
+
+    for (int i = 0; i < 6; i++)
+    {
+        Bitmap faceBmp(faceW, faceH, comp, fmt);
+        const uint8_t* src = cubeMap.data_.data() + i * faceSizeBytes;
+        std::memcpy(faceBmp.data_.data(), src, faceSizeBytes);
+
+        try {
+            prep.SaveAsHDR(faceBmp, facePaths[i]);
+        }
+        catch (const std::exception& e)
+        {
+            Logger::GetLogger()->error("SaveFacesToDisk: face {}: {}", prefix + std::to_string(i), e.what());
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
