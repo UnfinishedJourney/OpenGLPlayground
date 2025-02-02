@@ -19,16 +19,19 @@ out vec4 out_FragColor;
 // -----------------------------------------------------------------------------
 // Texture Samplers
 // -----------------------------------------------------------------------------
+layout(binding = 0) uniform samplerCube u_EnvironmentMap;
 layout(binding = 1) uniform sampler2D texAlbedo;
 layout(binding = 2) uniform sampler2D texNormal;
-layout(binding = 3) uniform sampler2D texMetalRoughness; // .g = metallic, .r or .x = roughness (here we use .g for metal, .r for rough)
+layout(binding = 3) uniform sampler2D texMetalRoughness; // .g = metallic, .r = roughness (here: .g = metallic, .r = roughness)
 layout(binding = 4) uniform sampler2D texAO;
 layout(binding = 5) uniform sampler2D texEmissive;
-// (Optional: a BRDF LUT sampler if you add a specular IBL later)
-// layout(binding = 8) uniform sampler2D texBRDF_LUT;
 
-// The irradiance cubemap for diffuse IBL (bound at unit 0)
-layout(binding = 0) uniform samplerCube u_EnvironmentMap;
+// BRDF LUT for specular IBL:
+layout(binding = 8) uniform sampler2D texBRDF_LUT;
+
+// Environment maps for IBL:
+layout(binding = 9) uniform samplerCube u_EnvironmentMapDiffuse;   // Diffuse irradiance map
+layout(binding = 10) uniform samplerCube u_EnvironmentMapSpecular;  // Prefiltered (specular) cubemap
 
 // -----------------------------------------------------------------------------
 // Constants
@@ -43,74 +46,54 @@ void main()
     // ----- STEP 1: Texture Sampling -----
     vec3 albedo     = texture(texAlbedo, tc).rgb;
     vec3 normalMap  = texture(texNormal, tc).rgb;
-    vec2 metalRough = texture(texMetalRoughness, tc).bg;  // Note: .b = metallic, .g = roughness 
+    vec2 metalRough = texture(texMetalRoughness, tc).bg; // .b = metallic, .g = roughness
     float metallic  = metalRough.y;
-    float roughness = metalRough.x;  
+    float roughness = metalRough.x;
     float ao        = texture(texAO, tc).r;
     vec3 emissive   = texture(texEmissive, tc).rgb;
 
     // ----- STEP 2: Normal Mapping -----
-    // Transform normal from [0,1] to [-1,1] then into world space using the TBN matrix.
+    // Convert normal from [0,1] to [-1,1] then into world space via TBN.
     vec3 N = normalize(TBN * (normalMap * 2.0 - 1.0));
 
     // ----- STEP 3: View Vector -----
     vec3 V = normalize(u_CameraPos.xyz - fragPos);
 
-    // ----- STEP 4: Direct Lighting from Scene Lights -----
     vec3 color = vec3(0.0);
-    for (uint i = 0; i < numLights; ++i)
-    {
-        // Calculate light direction and other vectors.
-        vec3 L = normalize(lightsData[i].position.xyz - fragPos);
-        vec3 lightColor = lightsData[i].color.rgb * lightsData[i].color.a;
-        vec3 H = normalize(V + L);
-
-        // Dot products.
-        float NdotL = max(dot(N, L), 0.0);
-        float NdotV = max(dot(N, V), 0.0);
-        float NdotH = max(dot(N, H), 0.0);
-        float VdotH = max(dot(V, H), 0.0);
-
-        // Fresnel using Schlick’s approximation.
-        vec3 F0 = mix(vec3(0.04), albedo, metallic);
-        vec3 F = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
-
-        // Normal Distribution Function (GGX).
-        float alpha = roughness * roughness;
-        float alpha2 = alpha * alpha;
-        float denom = (NdotH * NdotH) * (alpha2 - 1.0) + 1.0;
-        float D = alpha2 / (PI * denom * denom);
-
-        // Geometry function (Schlick-GGX).
-        float k = (roughness + 1.0) * (roughness + 1.0) / 8.0;
-        float G1 = NdotV / (NdotV * (1.0 - k) + k);
-        float G2 = NdotL / (NdotL * (1.0 - k) + k);
-        float G = G1 * G2;
-
-        // Specular term.
-        vec3 numerator = D * G * F;
-        float denominator = 4.0 * NdotV * NdotL + 0.0001;
-        vec3 specular = numerator / denominator;
-
-        // Diffuse term (Lambertian).
-        vec3 kd = (1.0 - F) * (1.0 - metallic);
-        vec3 diffuse = kd * albedo / PI;
-
-        // Accumulate the lighting contribution.
-        color += (diffuse + specular) * NdotL * lightColor;
-    }
 
     // ----- STEP 5: Ambient (IBL) Diffuse Lighting -----
-    // Since we do not have a specular cubemap, we only sample the irradiance map
-    // for the diffuse ambient contribution.
-    vec3 irradiance = texture(u_EnvironmentMap, N).rgb;
+    vec3 irradiance = texture(u_EnvironmentMapDiffuse, N).rgb;
     vec3 ambientDiffuse = (1.0 - metallic) * albedo * irradiance;
-
     color += ambientDiffuse;
 
-    // ----- STEP 6: Apply Ambient Occlusion and Emissive -----
+    // ----- STEP 6: Ambient (IBL) Specular Lighting -----
+    // Compute reflection vector.
+    vec3 R = reflect(-V, N);
+    //vec3 R = reflect(V, N);
+    // Fresnel for environment reflection.
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    float VdotN = max(dot(V, N), 0.0);
+    vec3 F_env = F0 + (1.0 - F0) * pow(1.0 - VdotN, 5.0);
+
+    // Sample prefiltered (specular) environment.
+    // We choose a maximum mip level count that should match the mip chain in the prefiltered cubemap.
+    float maxMipLevels = 5.0;
+    //vec3 prefilteredSpec = textureLod(u_EnvironmentMapSpecular, R, roughness * maxMipLevels).rgb;
+
+    vec3 prefilteredSpec = texture(u_EnvironmentMap, R).rgb;
+
+
+    // --- BRDF LUT Integration ---
+    // Sample the BRDF LUT using the dot product N·V and the roughness.
+    vec2 envBRDF = texture(texBRDF_LUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    // Combine the specular environment with the BRDF LUT:
+    vec3 specularIBL = prefilteredSpec * (F_env * envBRDF.x + envBRDF.y);
+
+    color += specularIBL;
+
+    // ----- STEP 7: Apply Ambient Occlusion and Emissive -----
     color = color * ao + emissive;
 
-    // ----- STEP 7: Output Final Color -----
+    // ----- STEP 8: Output Final Color -----
     out_FragColor = vec4(color, 1.0);
 }

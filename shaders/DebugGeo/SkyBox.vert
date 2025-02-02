@@ -9,5 +9,5 @@ out vec3 Vec;
 void main() {
     Vec = position;
     mat4 noTranslationView = mat4(mat3(u_View));
-    gl_Position = u_Proj * noTranslationView * vec4(100.0*position , 1.0);
+    gl_Position = u_Proj * noTranslationView * vec4(10.0*position, 1.0);
 }

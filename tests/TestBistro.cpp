@@ -27,7 +27,7 @@ void TestBistro::OnEnter() {
     // Load the "bistro" model into the scene
 
     auto camera = GetCamera();
-    camera->SetFarPlane(150.0);
+    camera->SetFarPlane(250.0);
     camera->SetNearPlane(1.0);
     //if (!m_Scene->LoadModelIntoScene("bistro", "basicTextured", "objMaterial", 0.01)) {
     //if (!m_Scene->LoadModelIntoScene("bistro", "bistroShader", "bistroMaterial", 0.01)) {

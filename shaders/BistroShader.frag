@@ -1,6 +1,7 @@
 #version 460 core
 
 #include "Common/Material.shader"
+#include "Common/Common.shader"
 
 layout(location = 0) out vec4 color;
 
@@ -10,69 +11,105 @@ in vec3 wPos;
 in vec3 wNormal;
 in vec2 uv;
 
-void runAlphaTest(float alpha, float alphaThreshold)
-{
-	if (alphaThreshold > 0.0)
-	{
-		mat4 thresholdMatrix = mat4(
-			1.0  / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0,
-			13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0,
-			4.0  / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0,
-			16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0
-		);
-
-		alpha = clamp(alpha - 0.5 * thresholdMatrix[int(mod(gl_FragCoord.x, 4.0))][int(mod(gl_FragCoord.y, 4.0))], 0.0, 1.0);
-
-		if (alpha < alphaThreshold)
-			discard;
-	}
-}
-
 void main()
 {
 
-	//float depthValue = gl_FragCoord.z;
-    //color = vec4(vec3(depthValue), 1.0);
-	//return;
+	vec3 uLightDirection = vec3(1.0, -1.0, 1.0);
+	uLightDirection = normalize(uLightDirection);
+	vec3 uLightColor = vec3(1.0);
+	float PI = 3.14;
+    // --- STEP 1: Base Material Properties ---
+    vec3 Ka = uMaterial.Mtl0.xyz; // Ambient color fallback
+    vec3 Kd = uMaterial.Mtl1.xyz; // Diffuse color fallback
+    float alpha = uMaterial.Mtl1.w; // Opacity
+    vec3 Ks = uMaterial.Mtl2.xyz; // Specular color fallback
+    float Ns = uMaterial.Mtl2.w;  // Shininess
+    vec3 Ke = uMaterial.Mtl3.xyz; // Emissive color fallback
 
-	vec3 Ka     = uMaterial.Mtl0.xyz;   // ambient color
-    // float Ni  = uMaterial.Mtl0.w;    // index of refraction if needed
-
-    vec3 Kd     = uMaterial.Mtl1.xyz;   // diffuse color
-    float alpha = uMaterial.Mtl1.w;     // overall alpha/opacity
-
-    vec3 Ks     = uMaterial.Mtl2.xyz;   // specular color
-    float Ns    = uMaterial.Mtl2.w;     // specular exponent (shininess)
-
-    vec3 Ke     = uMaterial.Mtl3.xyz;   // emissive color (if used)
-    // float extra= uMaterial.Mtl3.w;   // any extra param
-
-
-	if (HasTexture(0)) {
-        vec3 albedoSample = texture(uTexAlbedo, uv).rgb;
-        Kd *= albedoSample;
-		color = vec4(albedoSample, 1.0);
-		return;
+    // --- STEP 2: Sample Textures (if available) ---
+    // Albedo texture (bit 0)
+    vec3 albedo = Kd;
+    if (HasTexture(0))
+    {
+        albedo = texture(uTexAlbedo, uv).rgb;
     }
 
-	else {
-		color = vec4(Kd, 1.0);
-		return;
-	}
+    // Normal mapping (bit 1): use texture if available, else use wNormal
+    vec3 N = normalize(wNormal);
+    //if (HasTexture(1))
+    //{
+    //    vec3 normalTex = texture(uTexNormal, uv).rgb;
+    //    // Remap from [0,1] to [-1,1] and transform using the TBN matrix.
+    //    N = normalize(TBN * (normalTex * 2.0 - 1.0));
+    //}
 
-	vec3 N = normalize(wNormal);
+    // Metalness and Roughness (bit 2): assume red channel is roughness, green channel is metallic.
+    float metallic = 0.0;
+    float roughness = 1.0;
+    if (HasTexture(2))
+    {
+        vec2 mr = texture(uTexMetalRoughness, uv).rg;
+        roughness = mr.r;
+        metallic = mr.g;
+    }
 
-	//vec3 ambientEnv = texture(u_Texture, N).rgb;
-    
-    // Compute the ambient term by modulating the sampled color with the material property
-    //vec3 ambient = Ka * ambientEnv;
+    // Ambient Occlusion (bit 3)
+    float ao = 1.0;
+    if (HasTexture(3))
+    {
+        ao = texture(uTexAO, uv).r;
+    }
 
-	vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
-	float diff = max(dot(N, lightDir), 0.0);
-    vec3 diffuse = Kd * diff;
+    // Emissive (bit 4)
+    vec3 emissive = Ke;
+    if (HasTexture(4))
+    {
+        emissive = texture(uTexEmissive, uv).rgb;
+    }
 
-    //vec3 finalColor = ambient + diffuse;
-    
-    color = vec4(diffuse, 1.0);
-	return;
+    // --- STEP 3: Compute View Vector ---
+    vec3 V = normalize(u_CameraPos.xyz - wPos);
+
+    // --- STEP 4: Direct Lighting (using a single directional light) ---
+    vec3 L = normalize(-uLightDirection); // Light comes from uLightDirection
+    vec3 H = normalize(V + L);
+    float NdotL = max(dot(N, L), 0.0);
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotH = max(dot(N, H), 0.0);
+    float VdotH = max(dot(V, H), 0.0);
+
+    // Fresnel (Schlick’s approximation)
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    vec3 F = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
+
+    // GGX normal distribution function (NDF)
+    float alphaSquared = roughness * roughness * roughness * roughness;
+    float denom = (NdotH * NdotH) * (alphaSquared - 1.0) + 1.0;
+    float D = alphaSquared / (PI * denom * denom);
+
+    // Geometry function (Schlick-GGX)
+    float k = (roughness + 1.0) * (roughness + 1.0) / 8.0;
+    float G_V = NdotV / (NdotV * (1.0 - k) + k);
+    float G_L = NdotL / (NdotL * (1.0 - k) + k);
+    float G = G_V * G_L;
+
+    // Specular and diffuse components for direct lighting:
+    vec3 specularDirect = (D * G * F) / (4.0 * NdotV * NdotL + 0.001);
+    vec3 diffuseDirect = (1.0 - F) * (1.0 - metallic) * albedo / PI;
+
+    vec3 directLighting = (diffuseDirect + specularDirect) * NdotL * uLightColor;
+
+    // --- STEP 5: Image-Based Lighting (IBL) Diffuse ---
+    // Here we use only a diffuse irradiance cubemap (u_EnvironmentMapDiffuse)
+    vec3 irradiance = texture(u_EnvironmentMapDiffuse, N).rgb;
+    vec3 ambientDiffuse = (1.0 - metallic) * albedo * irradiance;
+
+    // --- STEP 6: Combine Lighting ---
+    vec3 finalColor = directLighting + ambientDiffuse;
+    finalColor = finalColor * ao + emissive;
+
+    // --- STEP 7: Gamma Correction ---
+    //finalColor = pow(finalColor, vec3(1.0 / 2.2));
+
+    color = vec4(finalColor, alpha);
 }

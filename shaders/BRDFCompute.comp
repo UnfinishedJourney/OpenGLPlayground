@@ -2,17 +2,20 @@
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-uniform uint NUM_SAMPLES;
+// We pass this in as a uniform
+uniform uint NUM_SAMPLES;  // e.g., 1024
 
-layout (binding = 1) buffer DST {
+// We’ll store final results in an SSBO or similar:
+layout(binding = 1) buffer DST {
     vec2 data[];
 } dst;
 
-const uint BRDF_W = 256u;
+const uint BRDF_W = 256u;  // Must match the "width" in JSON
 const uint BRDF_H = 256u;
 const float PI = 3.1415926536;
 
-// Hash function
+// -----------------------------------
+// Hash function (not strictly needed if using hammersley2d, but OK)
 float random(uint seed)
 {
     uint bits = (seed << 16u) | (seed >> 16u);
@@ -24,8 +27,9 @@ float random(uint seed)
     return fract(sin(rdi) * 43758.5453);
 }
 
-// Hammersley sequence 
-vec2 hammersley2d(uint i, uint N) 
+// -----------------------------------
+// Hammersley sequence
+vec2 hammersley2d(uint i, uint N)
 {
     uint bits = (i << 16u) | (i >> 16u);
     bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
@@ -36,73 +40,85 @@ vec2 hammersley2d(uint i, uint N)
     return vec2(float(i) / float(N), rdi);
 }
 
-// Importance sampling GGX 
-vec3 importanceSample_GGX(vec2 Xi, float roughness, vec3 normal) 
+// -----------------------------------
+// Importance sampling GGX
+vec3 importanceSample_GGX(vec2 Xi, float roughness, vec3 normal)
 {
     float alpha = roughness * roughness;
     float phi = 2.0 * PI * Xi.x;
-    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (alpha * alpha - 1.0) * Xi.y));
-    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
-    vec3 H = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (alpha*alpha - 1.0)*Xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
+    vec3 Ht = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
 
-    vec3 up = abs(normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    // transform from tangent space to world space
+    vec3 up = (abs(normal.z) < 0.999) ? vec3(0,0,1) : vec3(1,0,0);
     vec3 tangentX = normalize(cross(up, normal));
     vec3 tangentY = normalize(cross(normal, tangentX));
 
-    return normalize(tangentX * H.x + tangentY * H.y + normal * H.z);
+    return normalize(tangentX * Ht.x + tangentY * Ht.y + normal * Ht.z);
 }
 
+// -----------------------------------
 // Schlick-Smith GGX geometry
 float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
 {
-    float k = (roughness * roughness) / 2.0;
+    float k = (roughness * roughness) * 0.5;
     float GL = dotNL / (dotNL * (1.0 - k) + k);
     float GV = dotNV / (dotNV * (1.0 - k) + k);
     return GL * GV;
 }
 
-// BRDF calculation
-vec2 BRDF(float NoV, float roughness)
+// -----------------------------------
+// The BRDF integrated part
+vec2 BRDF_Integrate(float NoV, float roughness)
 {
-    const vec3 N = vec3(0.0, 0.0, 1.0);
-    vec3 V = vec3(sqrt(1.0 - NoV * NoV), 0.0, NoV);
+    vec3 N = vec3(0,0,1);
+    vec3 V = normalize(vec3(sqrt(1.0 - NoV*NoV), 0.0, NoV));
 
     vec2 LUT = vec2(0.0);
-    for(uint i = 0u; i < NUM_SAMPLES; i++)
+
+    for(uint i=0u; i<NUM_SAMPLES; i++)
     {
         vec2 Xi = hammersley2d(i, NUM_SAMPLES);
-        vec3 H = importanceSample_GGX(Xi, roughness, N);
-        vec3 L = 2.0 * dot(V, H) * H - V;
+        vec3 H  = importanceSample_GGX(Xi, roughness, N);
+        vec3 L  = normalize(2.0 * dot(V,H) * H - V);
 
-        float dotNL = max(dot(N, L), 0.0);
-        float dotNV = max(dot(N, V), 0.0);
-        float dotVH = max(dot(V, H), 0.0); 
-        float dotNH = max(dot(H, N), 0.0);
+        float dotNL = max(dot(N,L), 0.0);
+        float dotNV = max(dot(N,V), 0.0);
+        float dotVH = max(dot(V,H), 0.0);
+        float dotNH = max(dot(N,H), 0.0);
 
-        if (dotNL > 0.0)
+        if(dotNL > 0.0)
         {
             float G = G_SchlicksmithGGX(dotNL, dotNV, roughness);
-            float G_Vis = (G * dotVH) / (dotNH * dotNV);
+            float G_Vis = (G * dotVH) / (dotNH * dotNV + 1e-5);
             float Fc = pow(1.0 - dotVH, 5.0);
-            LUT += vec2((1.0 - Fc) * G_Vis, Fc * G_Vis);
+            LUT += vec2((1.0 - Fc)*G_Vis, Fc*G_Vis);
         }
     }
     return LUT / float(NUM_SAMPLES);
 }
 
-void main() 
+// -----------------------------------
+// Main Dispatch
+void main()
 {
     uint x = gl_GlobalInvocationID.x;
     uint y = gl_GlobalInvocationID.y;
 
-    if (x >= BRDF_W || y >= BRDF_H)
+    if(x >= BRDF_W || y >= BRDF_H)
         return;
 
+    // For convenience, we let x vary from 0..BRDF_W-1 for NoV
+    // and y vary from 0..BRDF_H-1 for roughness
     float NoV = (float(x) + 0.5) / float(BRDF_W);
-    float roughness = 1.0 - (float(y) + 0.5) / float(BRDF_H);
+    //float roughness = (float(y) + 0.5) / float(BRDF_H); // 0..1
 
-    vec2 v = BRDF(NoV, roughness);
+    // If you want to invert roughness:
+    float roughness = 1.0 - ((float(y)+0.5)/float(BRDF_H));
 
-    uint offset = y * BRDF_W + x;
-    dst.data[offset] = v;
+    vec2 result = BRDF_Integrate(NoV, roughness);
+
+    uint index = y * BRDF_W + x;
+    dst.data[index] = result;
 }

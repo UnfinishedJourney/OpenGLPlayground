@@ -247,7 +247,7 @@ TextureConfig TextureManager::MakeSomeCubeMapConfig(bool isHDR)
  * @brief Convert a single equirect HDR path into 6 faces on disk, then load as OpenGLCubeMapTexture.
  */
 bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
-                                               const std::string& equirectPath)
+    const std::string& equirectPath)
 {
     std::filesystem::path srcPath(equirectPath);
     if (!std::filesystem::exists(srcPath))
@@ -259,7 +259,7 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
     std::string stem = srcPath.stem().string(); // e.g. "kloofendal_overcast_puresky_4k"
     std::filesystem::path outDir = srcPath.parent_path() / stem;
 
-    // The environment faces:
+    // The environment faces (base level):
     std::array<std::filesystem::path, 6> envFaces = {
         outDir / "face_0.hdr",
         outDir / "face_1.hdr",
@@ -279,8 +279,8 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
         outDir / "irr_5.hdr"
     };
 
-    bool alreadyConverted = std::filesystem::exists(envFaces[0]); 
-    bool alreadyIrr       = std::filesystem::exists(irrFaces[0]);
+    bool alreadyConverted = std::filesystem::exists(envFaces[0]);
+    bool alreadyIrr = std::filesystem::exists(irrFaces[0]);
     bool alreadyFolder = std::filesystem::exists(outDir);
 
     if (!alreadyFolder)
@@ -295,49 +295,31 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
         }
     }
 
-
+    // --- ENVIRONMENT CUBEMAP FACES ---
     if (!alreadyConverted)
     {
-        // 1) Load equirect
         EnvMapPreprocessor preprocessor;
         Bitmap equirect = preprocessor.LoadTexture(srcPath);
-
-        // 2) Convert to vertical cross
         Bitmap vCross = preprocessor.ConvertEquirectangularMapToVerticalCross(equirect);
-
-        // 3) verticalCross -> 6-face cube
         Bitmap faceCube = preprocessor.ConvertVerticalCrossToCubeMapFaces(vCross);
-
-        // Save each face_*
-        SaveFacesToDisk(faceCube, envFaces, /*prefix=*/"face_");
+        SaveFacesToDisk(faceCube, envFaces, "face_");
         Logger::GetLogger()->info("Created environment faces for '{}'.", equirectPath);
     }
     else
     {
-        Logger::GetLogger()->info("Env faces already exist for '{}'. Skipping conversion.", equirectPath);
+        Logger::GetLogger()->info("Environment faces already exist for '{}'. Skipping conversion.", equirectPath);
     }
 
-    // Next, check if we have the irradiance faces
+    // --- IRRADIANCE CUBEMAP FACES ---
     if (!alreadyIrr)
     {
         Logger::GetLogger()->info("Generating IRRADIANCE for '{}'.", equirectPath);
-
         EnvMapPreprocessor preprocessor;
-        // 1) Load equirect again
         Bitmap equirect = preprocessor.LoadTexture(srcPath);
-
-        // 2) Convolve to get smaller blurred equirect, e.g. 256x128 with 1024 samples
-        //    The size is up to you. 128x64 also works, etc.
         Bitmap equirectIrr = preprocessor.ComputeIrradianceEquirect(equirect, 256, 128, 1024);
-
-        // 3) Convert that irradiance equirect to vertical cross
         Bitmap vCrossIrr = preprocessor.ConvertEquirectangularMapToVerticalCross(equirectIrr);
-
-        // 4) Cross -> 6-face
         Bitmap faceCubeIrr = preprocessor.ConvertVerticalCrossToCubeMapFaces(vCrossIrr);
-
-        // 5) Save as irr_0.hdr..irr_5.hdr
-        SaveFacesToDisk(faceCubeIrr, irrFaces, /*prefix=*/"irr_");
+        SaveFacesToDisk(faceCubeIrr, irrFaces, "irr_");
         Logger::GetLogger()->info("Created irradiance faces for '{}'.", equirectPath);
     }
     else
@@ -345,7 +327,10 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
         Logger::GetLogger()->info("Irradiance faces already exist for '{}'.", equirectPath);
     }
 
-    // Check for existence of mip level 0 (face 0)
+    // --- PREFILTERED (SPECULAR) CUBEMAP FACES ---
+    // We'll generate a mip chain for specular IBL.
+    // In this example, we compute the mip chain (using base face size 512 and 256 samples)
+    // and save each mip level's 6 faces to disk.
     std::array<std::filesystem::path, 6> prefilteredFaces0 = {
         outDir / "prefiltered_0_face_0.hdr",
         outDir / "prefiltered_0_face_1.hdr",
@@ -357,22 +342,17 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
 
     bool alreadyPrefiltered = std::filesystem::exists(prefilteredFaces0[0]);
 
-    EnvMapPreprocessor preprocessor; // Reuse for prefiltering
-    std::vector<Bitmap> mipPrefiltered; // This will hold one Bitmap per mip level
+    EnvMapPreprocessor preprocessorForPrefilter;
+    std::vector<Bitmap> mipPrefiltered; // One Bitmap per mip level
 
     if (!alreadyPrefiltered)
     {
         Logger::GetLogger()->info("Generating prefiltered cubemap for '{}'.", equirectPath);
+        Bitmap equirect = preprocessorForPrefilter.LoadTexture(srcPath);
+        // Here, we choose a base face size of 512 and use 256 samples (adjust as needed)
+        mipPrefiltered = preprocessorForPrefilter.ComputePrefilteredCubemap(equirect, 512, 4);
 
-        // 1) Load the original equirectangular HDR image.
-        Bitmap equirect = preprocessor.LoadTexture(srcPath);
-
-        // 2) Compute the prefiltered cubemap.
-        //    For example, use a base face size of 512 and 1024 Monte Carlo samples.
-        mipPrefiltered = preprocessor.ComputePrefilteredCubemap(equirect, 512, 256);
-
-
-        // 3) For each mip level, save the 6 faces to disk.
+        // For each mip level, save the 6 faces to disk.
         for (size_t mip = 0; mip < mipPrefiltered.size(); mip++)
         {
             int faceW = mipPrefiltered[mip].w_;
@@ -383,16 +363,14 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
 
             for (int face = 0; face < 6; face++)
             {
-                // Create a Bitmap for the current face.
                 Bitmap faceBmp(faceW, faceH, comp, mipPrefiltered[mip].fmt_);
                 const uint8_t* src = mipPrefiltered[mip].data_.data() + face * faceSizeBytes;
                 std::memcpy(faceBmp.data_.data(), src, faceSizeBytes);
 
-                // Build an output filename, e.g. "prefiltered_0_face_0.hdr"
                 std::filesystem::path outPath = outDir / ("prefiltered_" + std::to_string(mip) +
                     "_face_" + std::to_string(face) + ".hdr");
                 try {
-                    preprocessor.SaveAsHDR(faceBmp, outPath);
+                    preprocessorForPrefilter.SaveAsHDR(faceBmp, outPath);
                 }
                 catch (const std::exception& e) {
                     Logger::GetLogger()->error("Error saving prefiltered face (mip {}, face {}): {}",
@@ -407,7 +385,50 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
         Logger::GetLogger()->info("Prefiltered cubemap faces already exist for '{}'.", equirectPath);
     }
 
-    // Finally, load the environment faces as an OpenGLCubeMapTexture (the “main” environment).
+    // --- LOAD THE PREFILTERED (SPECULAR) CUBEMAP AS AN OPENGL TEXTURE ---
+    // Determine the number of mip levels by checking for the existence of files.
+    size_t mipLevels = 0;
+    while (true)
+    {
+        std::filesystem::path testFace = outDir / ("prefiltered_" + std::to_string(mipLevels) + "_face_0.hdr");
+        if (!std::filesystem::exists(testFace))
+            break;
+        mipLevels++;
+    }
+    if (mipLevels == 0)
+    {
+        Logger::GetLogger()->error("No mip levels found for prefiltered cubemap '{}'.", equirectPath);
+    }
+    else
+    {
+        // Assemble the file paths for each mip level.
+        std::vector<std::array<std::filesystem::path, 6>> mipFacesPaths(mipLevels);
+        for (size_t mip = 0; mip < mipLevels; mip++)
+        {
+            std::array<std::filesystem::path, 6> faces;
+            for (int face = 0; face < 6; face++)
+            {
+                faces[face] = outDir / ("prefiltered_" + std::to_string(mip) +
+                    "_face_" + std::to_string(face) + ".hdr");
+            }
+            mipFacesPaths[mip] = faces;
+        }
+        // Build a texture configuration for the prefiltered cubemap.
+        TextureConfig prefilterConfig = MakeSomeCubeMapConfig(/*isHDR=*/true);
+        prefilterConfig.generateMips = false; // Already computed mip chain.
+        try {
+            auto prefilteredCube = std::make_shared<OpenGLCubeMapTexture>(mipFacesPaths, prefilterConfig);
+            std::string prefilterName = cubeMapName + "_prefiltered";
+            m_Textures[prefilterName] = prefilteredCube;
+            Logger::GetLogger()->info("Loaded prefiltered cubemap '{}'.", prefilterName);
+        }
+        catch (const std::exception& e)
+        {
+            Logger::GetLogger()->error("Exception creating prefiltered cubemap '{}': {}", cubeMapName, e.what());
+        }
+    }
+
+    // --- LOAD THE MAIN ENVIRONMENT CUBEMAP ---
     TextureConfig envCfg = MakeSomeCubeMapConfig(/*HDR=*/true);
     try
     {
@@ -420,8 +441,7 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
         return false;
     }
 
-    // Optionally also load the IRR cube map and store it as "cubeMapName_irr" or something
-    // so you can get it later with GetTexture("overcastSky_irr").
+    // --- LOAD THE IRRADIANCE CUBEMAP ---
     TextureConfig irrCfg = MakeSomeCubeMapConfig(/*HDR=*/true);
     try
     {
@@ -433,7 +453,7 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
     catch (const std::exception& e)
     {
         Logger::GetLogger()->warn("Failed to create irradiance cubemap for '{}': {}", cubeMapName, e.what());
-        // Not necessarily fatal
+        // Not necessarily fatal.
     }
 
     return true;

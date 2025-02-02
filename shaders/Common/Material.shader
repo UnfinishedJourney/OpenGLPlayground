@@ -19,6 +19,7 @@ layout(binding = 5) uniform sampler2D uTexEmissive;
 layout(binding = 6) uniform sampler2D uTexAmbient;
 layout(binding = 7) uniform sampler2D uTexHeight;
 layout(binding = 8) uniform sampler2D uTexBRDFLUT; // if you want, etc.
+layout(binding = 9) uniform samplerCube u_EnvironmentMapDiffuse;   // Diffuse irradiance map
 
 // A helper to check bits in the bitmask:
 bool HasTexture(int bitIndex)
