@@ -102,14 +102,14 @@ void main()
     // --- STEP 5: Image-Based Lighting (IBL) Diffuse ---
     // Here we use only a diffuse irradiance cubemap (u_EnvironmentMapDiffuse)
     vec3 irradiance = texture(u_EnvironmentMapDiffuse, N).rgb;
-    vec3 ambientDiffuse = (1.0 - metallic) * albedo * irradiance;
+    vec3 ambientDiffuse = 1.7*(1.0 - metallic) * albedo * irradiance;
 
     // --- STEP 6: Combine Lighting ---
     vec3 finalColor = directLighting + ambientDiffuse;
     finalColor = finalColor * ao + emissive;
 
     // --- STEP 7: Gamma Correction ---
-    //finalColor = pow(finalColor, vec3(1.0 / 2.2));
+    finalColor = pow(finalColor, vec3(1.0 / 2.2));
 
     color = vec4(finalColor, alpha);
 }

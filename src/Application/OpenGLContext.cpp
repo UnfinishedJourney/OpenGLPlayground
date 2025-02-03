@@ -53,7 +53,7 @@ GLFWwindow* GLContext::InitOpenGL(int width, int height, const std::string& titl
     glViewport(0, 0, width, height);
 
     // VSync off (for potentially better performance, but more CPU/GPU usage)
-    glfwSwapInterval(0);
+    glfwSwapInterval(1);
 
     // Enable depth testing for 3D rendering
     glEnable(GL_DEPTH_TEST);

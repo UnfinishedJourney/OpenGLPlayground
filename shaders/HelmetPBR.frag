@@ -31,27 +31,38 @@ layout(binding = 8) uniform sampler2D texBRDF_LUT;
 
 // Environment maps for IBL:
 layout(binding = 9) uniform samplerCube u_EnvironmentMapDiffuse;   // Diffuse irradiance map
-layout(binding = 10) uniform samplerCube u_EnvironmentMapSpecular;  // Prefiltered (specular) cubemap
+//layout(binding = 10) uniform samplerCube u_EnvironmentMapSpecular;  // Prefiltered (specular) cubemap
 
 // -----------------------------------------------------------------------------
 // Constants
 // -----------------------------------------------------------------------------
 const float PI = 3.14159265359;
 
+vec4 SRGBtoLINEAR(vec4 srgbIn)
+{
+	vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
+
+	return vec4(linOut, srgbIn.a);
+}
+
 // -----------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------
 void main()
 {
+    vec3 lightDirection = normalize(vec3(-1.0, 1.0, -0.3));
+    vec3 lightColor = 2.0*vec3(1.0);
+
     // ----- STEP 1: Texture Sampling -----
     vec3 albedo     = texture(texAlbedo, tc).rgb;
+    //albedo = SRGBtoLINEAR(vec4(albedo, 1.0)).rgb;
     vec3 normalMap  = texture(texNormal, tc).rgb;
     vec2 metalRough = texture(texMetalRoughness, tc).bg; // .b = metallic, .g = roughness
     float metallic  = metalRough.y;
     float roughness = metalRough.x;
     float ao        = texture(texAO, tc).r;
     vec3 emissive   = texture(texEmissive, tc).rgb;
-
+    //emissive = SRGBtoLINEAR(vec4(emissive, 1.0)).rgb;
     // ----- STEP 2: Normal Mapping -----
     // Convert normal from [0,1] to [-1,1] then into world space via TBN.
     vec3 N = normalize(TBN * (normalMap * 2.0 - 1.0));
@@ -81,8 +92,9 @@ void main()
     //vec3 prefilteredSpec = textureLod(u_EnvironmentMapSpecular, R, roughness * maxMipLevels).rgb;
 
     vec3 prefilteredSpec = texture(u_EnvironmentMap, R).rgb;
+    //prefilteredSpec = SRGBtoLINEAR(vec4(prefilteredSpec, 1.0)).rgb;
 
-
+    //prefilteredSpec = pow( prefilteredSpec, vec3(1.0/2.2) );
     // --- BRDF LUT Integration ---
     // Sample the BRDF LUT using the dot product N·V and the roughness.
     vec2 envBRDF = texture(texBRDF_LUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
@@ -91,9 +103,25 @@ void main()
 
     color += specularIBL;
 
+    //directional light
+    float NdotL = max(dot(N, lightDirection), 0.0);
+    vec3 directDiffuse = (1.0 - metallic) * albedo / PI * lightColor * NdotL;
+    vec3 H = normalize(V + lightDirection);
+    float NdotH = max(dot(N, H), 0.0);
+    float specPower = mix(32.0, 1.0, roughness);
+    float specFactor = pow(NdotH, specPower);
+
+    float VdotH = max(dot(V, H), 0.0);
+    vec3 F_direct = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
+    vec3 directSpecular = F_direct * lightColor * specFactor * NdotL;
+
+    vec3 directLight = directDiffuse + directSpecular;
+    color += directLight;
+
     // ----- STEP 7: Apply Ambient Occlusion and Emissive -----
     color = color * ao + emissive;
 
     // ----- STEP 8: Output Final Color -----
-    out_FragColor = vec4(color, 1.0);
+    out_FragColor = vec4( pow( color, vec3(1.0/2.2) ), 1.0 );
+    //out_FragColor = vec4(color, 1.0);
 }

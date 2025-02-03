@@ -25,6 +25,7 @@ void TestDamagedHelmet::OnEnter() {
     }
 
     m_Scene->SetSkyboxEnabled(true);
+    //m_Scene->SetPostProcessingEffect(PostProcessingEffectType::ToneMapping);
 }
 
 void TestDamagedHelmet::OnExit() {

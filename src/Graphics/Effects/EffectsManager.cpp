@@ -5,6 +5,7 @@
 #include "Graphics/Effects/PostProcessingEffects/EdgeDetectionEffect.h"
 #include "Graphics/Effects/PostProcessingEffects/NoPostProcessingEffect.h"
 #include "Graphics/Effects/PostProcessingEffects/PresentTextureEffect.h"
+#include "Graphics/Effects/PostProcessingEffects/ToneMappingEffect.h"
 #include "Utilities/Logger.h"
 #include <fstream>
 #include <stdexcept>
@@ -48,6 +49,10 @@ std::shared_ptr<PostProcessingEffect> EffectsManager::GetEffect(PostProcessingEf
         else if (effectType == PostProcessingEffectType::None) {
             m_Effects[PostProcessingEffectType::None] = std::make_shared<NoPostProcessingEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
             return m_Effects[PostProcessingEffectType::None];
+        }
+        else if (effectType == PostProcessingEffectType::ToneMapping) {
+            m_Effects[PostProcessingEffectType::ToneMapping] = std::make_shared<ToneMappingEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
+            return m_Effects[PostProcessingEffectType::ToneMapping];
         }
     }
 

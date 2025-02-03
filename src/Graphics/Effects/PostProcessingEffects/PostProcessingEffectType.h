@@ -4,4 +4,5 @@ enum class PostProcessingEffectType {
     None,
     PresentTexture,
     EdgeDetection,
+    ToneMapping,
 };

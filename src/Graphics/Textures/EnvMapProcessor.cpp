@@ -7,6 +7,7 @@
 #include <stb_image_write.h>
 #include <stb_image.h>
 #include <stdexcept>
+#include "Utilities/Logger.h"
 
 using glm::vec2;
 using glm::vec3;
@@ -431,38 +432,44 @@ std::vector<Bitmap> EnvMapPreprocessor::ComputePrefilteredCubemap(const Bitmap& 
 			{
 				for (int x = 0; x < faceSize; x++)
 				{
-					// Convert pixel coordinates to a 3D direction vector.
-					// (Your existing faceCoordsToXYZ function maps (x,y,face) to a direction.)
-					glm::vec3 R = faceCoordsToXYZ(x, y, face, faceSize);
+					// Use pixel center coordinates:
+					float u = (2.0f * (x + 0.5f) / faceSize) - 1.0f;
+					float v = (2.0f * (y + 0.5f) / faceSize) - 1.0f;
+					// Map (u,v) to a 3D direction vector according to the face.
+					glm::vec3 R;
+					if (face == 0)       // +X
+						R = glm::vec3(1.0f, -v, -u);
+					else if (face == 1)  // -X
+						R = glm::vec3(-1.0f, -v, u);
+					else if (face == 2)  // +Y
+						R = glm::vec3(u, 1.0f, v);
+					else if (face == 3)  // -Y
+						R = glm::vec3(u, -1.0f, -v);
+					else if (face == 4)  // +Z
+						R = glm::vec3(u, -v, 1.0f);
+					else if (face == 5)  // -Z
+						R = glm::vec3(-u, -v, -1.0f);
 					R = glm::normalize(R);
 
-					// Perform Monte Carlo integration over the hemisphere around R.
 					glm::vec3 prefilteredColor(0.0f);
 					float totalWeight = 0.0f;
+					// Monte Carlo integration over the hemisphere.
 					for (int i = 0; i < numSamples; i++)
 					{
-						// Generate a 2D Hammersley point.
 						glm::vec2 Xi = hammersley2d(i, numSamples);
-						// Importance-sample a half-vector H with the GGX distribution.
+						// Importance-sample a half vector using GGX.
 						glm::vec3 H = ImportanceSampleGGX(Xi, R, roughness);
-						// Compute the reflected direction L.
+						// Compute the reflection direction using the sampled half vector.
 						glm::vec3 L = glm::normalize(2.0f * glm::dot(R, H) * H - R);
-
-						// Weight by the cosine of the angle between R (which acts as the normal) and L.
 						float NdotL = glm::max(glm::dot(R, L), 0.0f);
 						if (NdotL > 0.0f)
 						{
-							// Sample the input environment map along direction L.
 							glm::vec3 sampleColor = SampleEquirectangular(inEquirect, L);
 							prefilteredColor += sampleColor * NdotL;
 							totalWeight += NdotL;
 						}
 					}
-					// Average the contribution.
 					prefilteredColor /= totalWeight;
-
-					// Store the result into the cubemap.
-					// (Assumes setPixel(x, y, face, color) writes the color for a given face.)
 					mipCubemap.setPixel(x, y, face, glm::vec4(prefilteredColor, 1.0f));
 				}
 			}
@@ -470,4 +477,57 @@ std::vector<Bitmap> EnvMapPreprocessor::ComputePrefilteredCubemap(const Bitmap& 
 		mipMaps.push_back(mipCubemap);
 	}
 	return mipMaps;
+}
+
+void EnvMapPreprocessor::SaveAsLDR(const Bitmap& image, const std::filesystem::path& outPath) const {
+	// Assume 'image' uses floating point data in [0, ...]. We map each pixel into [0,1],
+	// apply gamma correction (simple tone mapping), then scale to [0,255] for PNG.
+	int w = image.w_;
+	int h = image.h_;
+	int comp = image.comp_;
+	std::vector<uint8_t> ldrData(w * h * comp);
+
+	// Pointer to the HDR float data.
+	const float* src = reinterpret_cast<const float*>(image.data_.data());
+	for (int i = 0; i < w * h * comp; i++) {
+		// Clamp to [0,1]. (You could apply a more sophisticated tone mapping here.)
+		float value = src[i];
+		value = glm::clamp(value, 0.0f, 1.0f);
+		// Apply a gamma curve (simple approximation, gamma=2.2)
+		value = pow(value, 1.0f / 2.2f);
+		ldrData[i] = static_cast<uint8_t>(value * 255.0f);
+	}
+
+	// Write PNG using stb_image_write.
+	if (!stbi_write_png(outPath.string().c_str(), w, h, comp, ldrData.data(), w * comp)) {
+		throw std::runtime_error("stbi_write_png failed in SaveAsLDR!");
+	}
+}
+
+// NEW: SaveFacesToDiskLDR – save 6 faces of a cube-map (contained in a Bitmap) as LDR images.
+void EnvMapPreprocessor::SaveFacesToDiskLDR(const Bitmap& cubeMap, const std::array<std::filesystem::path, 6>& facePaths, const std::string& prefix) const {
+	if (cubeMap.d_ != 6) {
+		Logger::GetLogger()->error("SaveFacesToDiskLDR: expected 6 faces (d_ == 6), got d_ = {}", cubeMap.d_);
+		return;
+	}
+
+	int faceW = cubeMap.w_;
+	int faceH = cubeMap.h_;
+	int comp = cubeMap.comp_;
+	int pixelSize = comp * Bitmap::getBytesPerComponent(cubeMap.fmt_);
+	int faceSizeBytes = faceW * faceH * pixelSize;
+
+	// For each face, extract its data and save as LDR.
+	for (int face = 0; face < 6; face++) {
+		Bitmap faceBmp(faceW, faceH, comp, cubeMap.fmt_);
+		const uint8_t* src = cubeMap.data_.data() + face * faceSizeBytes;
+		std::memcpy(faceBmp.data_.data(), src, faceSizeBytes);
+
+		try {
+			SaveAsLDR(faceBmp, facePaths[face]);
+		}
+		catch (const std::exception& e) {
+			Logger::GetLogger()->error("SaveFacesToDiskLDR: face {}: {}", prefix + std::to_string(face), e.what());
+		}
+	}
 }

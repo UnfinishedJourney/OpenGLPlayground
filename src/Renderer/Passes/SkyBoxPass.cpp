@@ -58,7 +58,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene>& scene)
     scene->BindFrameDataUBO();
 
     // Bind the cubemap texture (assume it is named "pisaCube" in your TextureManager)
-    std::string skyBoxName = "gardens";
+    std::string skyBoxName = "spiaggia_di_mondello";
     auto cubeMap = TextureManager::GetInstance().GetTexture(skyBoxName);
     if (!cubeMap)
     {
@@ -67,7 +67,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene>& scene)
     }
     cubeMap->Bind(0);
 
-    skyBoxName = "gardens_irr";
+    skyBoxName = "spiaggia_di_mondello_irr";
     auto cubeMap_irr = TextureManager::GetInstance().GetTexture(skyBoxName);
     if (!cubeMap_irr)
     {
@@ -76,14 +76,14 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene>& scene)
     }
     cubeMap_irr->Bind(9);
 
-    skyBoxName = "gardens_prefiltered";
-    auto cubeMap_pref = TextureManager::GetInstance().GetTexture(skyBoxName);
-    if (!cubeMap_pref)
-    {
-        Logger::GetLogger()->error("SkyBox cubemap skyBoxName not found.");
-        return;
-    }
-    cubeMap_pref->Bind(10);
+    //skyBoxName = "golden_bay_skybox";
+    //auto cubeMap_pref = TextureManager::GetInstance().GetTexture(skyBoxName);
+    //if (!cubeMap_pref)
+    //{
+    //    Logger::GetLogger()->error("SkyBox cubemap skyBoxName not found.");
+    //    return;
+    //}
+    //cubeMap_pref->Bind(10);
 
     // Adjust depth states so the skybox is drawn behind all other geometry
     glDepthMask(GL_FALSE);     // Don’t write to depth

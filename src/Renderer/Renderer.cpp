@@ -200,7 +200,7 @@ void Renderer::CreateFramebuffersForScene(const std::shared_ptr<Scene>& scene,
     );
 
     // sRGB enabled
-    glEnable(GL_FRAMEBUFFER_SRGB);
+    //glEnable(GL_FRAMEBUFFER_SRGB);
 
     Logger::GetLogger()->info("Renderer: Created {}x{} MSAA FBO ({}) samples + resolved FBO(1 sample).",
         width, height, samples);

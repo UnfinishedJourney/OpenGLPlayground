@@ -4,7 +4,7 @@
 #include "Graphics/Textures/OpenGLTexture.h"
 #include "Graphics/Textures/OpenGLCubeMapTexture.h"
 #include "Graphics/Textures/OpenGLTextureArray.h" // if you have it
-#include "Graphics/Textures/EnvMapProcessor.h"
+#include "Graphics/Textures/EnvMapProcessor.h"      // now includes SaveAsLDR & SaveFacesToDiskLDR
 #include "Resources/ShaderManager.h"
 #include "Graphics/Shaders/ComputeShader.h"
 #include "Graphics/Buffers/ShaderStorageBuffer.h"
@@ -18,6 +18,9 @@
 #include <glm/glm.hpp>
 
 #include <stb_image.h>
+#include <algorithm>
+#include <filesystem>
+#include <nlohmann/json.hpp>
 
 // ----------------------------------------------------------------------------
 // Small Utility Functions
@@ -89,7 +92,7 @@ bool TextureManager::LoadConfig(const std::filesystem::path& configPath) {
 
     auto& texturesJson = jsonData["textures"];
 
-    // 1) 2D
+    // 1) 2D Textures
     if (texturesJson.contains("2d")) {
         if (!Load2DTextures(texturesJson["2d"])) {
             return false;
@@ -110,7 +113,7 @@ bool TextureManager::LoadConfig(const std::filesystem::path& configPath) {
         }
     }
 
-    // 4) Computed
+    // 4) Computed Textures
     if (texturesJson.contains("computed")) {
         if (!LoadComputedTextures(texturesJson["computed"])) {
             return false;
@@ -134,7 +137,7 @@ bool TextureManager::Load2DTextures(const nlohmann::json& json) {
         }
         else if (pathOrObject.is_object()) {
             path = pathOrObject.value("path", "");
-            // We could parse overrides like isSRGB, isHDR, etc. if we wanted
+            // We could parse overrides like isSRGB, isHDR, etc.
         }
 
         if (path.empty()) {
@@ -142,7 +145,7 @@ bool TextureManager::Load2DTextures(const nlohmann::json& json) {
             continue;
         }
 
-        // Create the texture (immediately)
+        // Create the texture immediately.
         auto tex = LoadTexture(name, path);
         if (!tex) {
             Logger::GetLogger()->error("Failed loading 2D texture '{}'.", name);
@@ -158,8 +161,7 @@ bool TextureManager::Load2DTextures(const nlohmann::json& json) {
 // Cubemaps
 // ----------------------------------------------------------------------------
 
-bool TextureManager::LoadCubeMaps(const nlohmann::json& json)
-{
+bool TextureManager::LoadCubeMaps(const nlohmann::json& json) {
     for (auto& [cubeMapName, arrVal] : json.items()) {
         if (!arrVal.is_array()) {
             Logger::GetLogger()->error("Cubemap '{}' should be an array of 1 or 6 paths.", cubeMapName);
@@ -172,7 +174,7 @@ bool TextureManager::LoadCubeMaps(const nlohmann::json& json)
             continue;
         }
 
-        // Case 1: Single path => treat as equirect HDR
+        // Case 1: Single path => treat as equirectangular HDR
         if (facePaths.size() == 1) {
             const std::string& equirectPath = facePaths[0];
             if (!ConvertAndLoadEquirectHDR(cubeMapName, equirectPath)) {
@@ -180,14 +182,14 @@ bool TextureManager::LoadCubeMaps(const nlohmann::json& json)
                     equirectPath, cubeMapName);
             }
         }
-        // Case 2: Exactly 6 => already a cubemap
+        // Case 2: Exactly 6 paths => already a cubemap
         else if (facePaths.size() == 6) {
             std::array<std::filesystem::path, 6> faces;
             for (size_t i = 0; i < 6; i++) {
                 faces[i] = facePaths[i];
             }
 
-            // Build the config
+            // Build a configuration.
             TextureConfig cubeMapConfig;
             cubeMapConfig.internalFormat = GL_RGB32F;
             cubeMapConfig.wrapS = GL_CLAMP_TO_EDGE;
@@ -199,7 +201,7 @@ bool TextureManager::LoadCubeMaps(const nlohmann::json& json)
             cubeMapConfig.useAnisotropy = true;
             cubeMapConfig.useBindless = false;
 
-            // Check if any face is HDR
+            // Check for HDR and sRGB flags.
             bool anyHDR = false;
             bool anySRGB = false;
             for (const auto& face : faces) {
@@ -209,7 +211,6 @@ bool TextureManager::LoadCubeMaps(const nlohmann::json& json)
             cubeMapConfig.isHDR = anyHDR;
             cubeMapConfig.isSRGB = anySRGB;
 
-            // Create the cubemap now
             try {
                 auto cubeMap = std::make_shared<OpenGLCubeMapTexture>(faces, cubeMapConfig);
                 m_Textures[cubeMapName] = cubeMap;
@@ -227,8 +228,7 @@ bool TextureManager::LoadCubeMaps(const nlohmann::json& json)
     return true;
 }
 
-TextureConfig TextureManager::MakeSomeCubeMapConfig(bool isHDR)
-{
+TextureConfig TextureManager::MakeSomeCubeMapConfig(bool isHDR) {
     TextureConfig cfg;
     cfg.internalFormat = GL_RGB32F;
     cfg.wrapS = GL_CLAMP_TO_EDGE;
@@ -239,19 +239,19 @@ TextureConfig TextureManager::MakeSomeCubeMapConfig(bool isHDR)
     cfg.generateMips = true;
     cfg.useAnisotropy = true;
     cfg.isHDR = isHDR;
-    cfg.isSRGB = false; // or check
+    cfg.isSRGB = false; // or check for sRGB based on naming conventions
     return cfg;
 }
 
 /**
- * @brief Convert a single equirect HDR path into 6 faces on disk, then load as OpenGLCubeMapTexture.
+ * @brief Convert a single equirectangular HDR path into 6 faces on disk,
+ *        then load as an OpenGLCubeMapTexture.
+ *
+ * Now we also generate a set of LDR faces (PNG) for the skybox.
  */
-bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
-    const std::string& equirectPath)
-{
+bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName, const std::string& equirectPath) {
     std::filesystem::path srcPath(equirectPath);
-    if (!std::filesystem::exists(srcPath))
-    {
+    if (!std::filesystem::exists(srcPath)) {
         Logger::GetLogger()->error("Equirect HDR '{}' does not exist.", equirectPath);
         return false;
     }
@@ -259,7 +259,7 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
     std::string stem = srcPath.stem().string(); // e.g. "kloofendal_overcast_puresky_4k"
     std::filesystem::path outDir = srcPath.parent_path() / stem;
 
-    // The environment faces (base level):
+    // The environment faces (for lighting; HDR):
     std::array<std::filesystem::path, 6> envFaces = {
         outDir / "face_0.hdr",
         outDir / "face_1.hdr",
@@ -279,42 +279,62 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
         outDir / "irr_5.hdr"
     };
 
+    // The skybox (LDR) faces:
+    std::array<std::filesystem::path, 6> ldrFaces = {
+        outDir / "ldr_face_0.png",
+        outDir / "ldr_face_1.png",
+        outDir / "ldr_face_2.png",
+        outDir / "ldr_face_3.png",
+        outDir / "ldr_face_4.png",
+        outDir / "ldr_face_5.png"
+    };
+
     bool alreadyConverted = std::filesystem::exists(envFaces[0]);
     bool alreadyIrr = std::filesystem::exists(irrFaces[0]);
+    bool alreadyLDR = std::filesystem::exists(ldrFaces[0]);
     bool alreadyFolder = std::filesystem::exists(outDir);
 
-    if (!alreadyFolder)
-    {
+    if (!alreadyFolder) {
         std::error_code ec;
         std::filesystem::create_directories(outDir, ec);
-        if (ec)
-        {
-            Logger::GetLogger()->error("Cannot create directory '{}': {}",
-                outDir.string(), ec.message());
+        if (ec) {
+            Logger::GetLogger()->error("Cannot create directory '{}': {}", outDir.string(), ec.message());
             return false;
         }
     }
 
-    // --- ENVIRONMENT CUBEMAP FACES ---
-    if (!alreadyConverted)
-    {
-        EnvMapPreprocessor preprocessor;
+    EnvMapPreprocessor preprocessor;
+
+    // --- ENVIRONMENT CUBEMAP FACES (HDR) ---
+    if (!alreadyConverted) {
         Bitmap equirect = preprocessor.LoadTexture(srcPath);
         Bitmap vCross = preprocessor.ConvertEquirectangularMapToVerticalCross(equirect);
         Bitmap faceCube = preprocessor.ConvertVerticalCrossToCubeMapFaces(vCross);
         SaveFacesToDisk(faceCube, envFaces, "face_");
-        Logger::GetLogger()->info("Created environment faces for '{}'.", equirectPath);
+        Logger::GetLogger()->info("Created environment (HDR) faces for '{}'.", equirectPath);
     }
-    else
-    {
+    else {
         Logger::GetLogger()->info("Environment faces already exist for '{}'. Skipping conversion.", equirectPath);
     }
 
+    // --- SKYBOX FACES (LDR) ---
+    if (!alreadyLDR) {
+        Logger::GetLogger()->info("Generating LDR skybox faces for '{}'.", equirectPath);
+        // Reuse the same vertical cross conversion from the HDR data.
+        Bitmap equirect = preprocessor.LoadTexture(srcPath);
+        Bitmap vCross = preprocessor.ConvertEquirectangularMapToVerticalCross(equirect);
+        Bitmap faceCube = preprocessor.ConvertVerticalCrossToCubeMapFaces(vCross);
+        // Save faces as LDR (PNG) instead of HDR.
+        preprocessor.SaveFacesToDiskLDR(faceCube, ldrFaces, "ldr_face_");
+        Logger::GetLogger()->info("Created LDR skybox faces for '{}'.", equirectPath);
+    }
+    else {
+        Logger::GetLogger()->info("LDR skybox faces already exist for '{}'.", equirectPath);
+    }
+
     // --- IRRADIANCE CUBEMAP FACES ---
-    if (!alreadyIrr)
-    {
-        Logger::GetLogger()->info("Generating IRRADIANCE for '{}'.", equirectPath);
-        EnvMapPreprocessor preprocessor;
+    if (!alreadyIrr) {
+        Logger::GetLogger()->info("Generating irradiance for '{}'.", equirectPath);
         Bitmap equirect = preprocessor.LoadTexture(srcPath);
         Bitmap equirectIrr = preprocessor.ComputeIrradianceEquirect(equirect, 256, 128, 1024);
         Bitmap vCrossIrr = preprocessor.ConvertEquirectangularMapToVerticalCross(equirectIrr);
@@ -322,15 +342,12 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
         SaveFacesToDisk(faceCubeIrr, irrFaces, "irr_");
         Logger::GetLogger()->info("Created irradiance faces for '{}'.", equirectPath);
     }
-    else
-    {
+    else {
         Logger::GetLogger()->info("Irradiance faces already exist for '{}'.", equirectPath);
     }
 
     // --- PREFILTERED (SPECULAR) CUBEMAP FACES ---
-    // We'll generate a mip chain for specular IBL.
-    // In this example, we compute the mip chain (using base face size 512 and 256 samples)
-    // and save each mip level's 6 faces to disk.
+    // (Same as before.)
     std::array<std::filesystem::path, 6> prefilteredFaces0 = {
         outDir / "prefiltered_0_face_0.hdr",
         outDir / "prefiltered_0_face_1.hdr",
@@ -339,34 +356,25 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
         outDir / "prefiltered_0_face_4.hdr",
         outDir / "prefiltered_0_face_5.hdr"
     };
-
     bool alreadyPrefiltered = std::filesystem::exists(prefilteredFaces0[0]);
 
     EnvMapPreprocessor preprocessorForPrefilter;
     std::vector<Bitmap> mipPrefiltered; // One Bitmap per mip level
 
-    if (!alreadyPrefiltered)
-    {
+    if (!alreadyPrefiltered) {
         Logger::GetLogger()->info("Generating prefiltered cubemap for '{}'.", equirectPath);
         Bitmap equirect = preprocessorForPrefilter.LoadTexture(srcPath);
-        // Here, we choose a base face size of 512 and use 256 samples (adjust as needed)
         mipPrefiltered = preprocessorForPrefilter.ComputePrefilteredCubemap(equirect, 512, 4);
-
-        // For each mip level, save the 6 faces to disk.
-        for (size_t mip = 0; mip < mipPrefiltered.size(); mip++)
-        {
+        for (size_t mip = 0; mip < mipPrefiltered.size(); mip++) {
             int faceW = mipPrefiltered[mip].w_;
             int faceH = mipPrefiltered[mip].h_;
             int comp = mipPrefiltered[mip].comp_;
             int pixelSize = comp * Bitmap::getBytesPerComponent(mipPrefiltered[mip].fmt_);
             int faceSizeBytes = faceW * faceH * pixelSize;
-
-            for (int face = 0; face < 6; face++)
-            {
+            for (int face = 0; face < 6; face++) {
                 Bitmap faceBmp(faceW, faceH, comp, mipPrefiltered[mip].fmt_);
                 const uint8_t* src = mipPrefiltered[mip].data_.data() + face * faceSizeBytes;
                 std::memcpy(faceBmp.data_.data(), src, faceSizeBytes);
-
                 std::filesystem::path outPath = outDir / ("prefiltered_" + std::to_string(mip) +
                     "_face_" + std::to_string(face) + ".hdr");
                 try {
@@ -380,89 +388,101 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
         }
         Logger::GetLogger()->info("Created prefiltered cubemap faces for '{}'.", equirectPath);
     }
-    else
-    {
+    else {
         Logger::GetLogger()->info("Prefiltered cubemap faces already exist for '{}'.", equirectPath);
     }
 
     // --- LOAD THE PREFILTERED (SPECULAR) CUBEMAP AS AN OPENGL TEXTURE ---
-    // Determine the number of mip levels by checking for the existence of files.
     size_t mipLevels = 0;
-    while (true)
-    {
+    while (true) {
         std::filesystem::path testFace = outDir / ("prefiltered_" + std::to_string(mipLevels) + "_face_0.hdr");
         if (!std::filesystem::exists(testFace))
             break;
         mipLevels++;
     }
-    if (mipLevels == 0)
-    {
-        Logger::GetLogger()->error("No mip levels found for prefiltered cubemap '{}'.", equirectPath);
-    }
-    else
-    {
-        // Assemble the file paths for each mip level.
-        std::vector<std::array<std::filesystem::path, 6>> mipFacesPaths(mipLevels);
-        for (size_t mip = 0; mip < mipLevels; mip++)
-        {
-            std::array<std::filesystem::path, 6> faces;
-            for (int face = 0; face < 6; face++)
-            {
-                faces[face] = outDir / ("prefiltered_" + std::to_string(mip) +
-                    "_face_" + std::to_string(face) + ".hdr");
-            }
-            mipFacesPaths[mip] = faces;
-        }
-        // Build a texture configuration for the prefiltered cubemap.
-        TextureConfig prefilterConfig = MakeSomeCubeMapConfig(/*isHDR=*/true);
-        prefilterConfig.generateMips = false; // Already computed mip chain.
-        try {
-            auto prefilteredCube = std::make_shared<OpenGLCubeMapTexture>(mipFacesPaths, prefilterConfig);
-            std::string prefilterName = cubeMapName + "_prefiltered";
-            m_Textures[prefilterName] = prefilteredCube;
-            Logger::GetLogger()->info("Loaded prefiltered cubemap '{}'.", prefilterName);
-        }
-        catch (const std::exception& e)
-        {
-            Logger::GetLogger()->error("Exception creating prefiltered cubemap '{}': {}", cubeMapName, e.what());
-        }
-    }
+    //if (mipLevels == 0) {
+    //    Logger::GetLogger()->error("No mip levels found for prefiltered cubemap '{}'.", equirectPath);
+    //}
+    //else {
+    //    std::vector<std::array<std::filesystem::path, 6>> mipFacesPaths(mipLevels);
+    //    for (size_t mip = 0; mip < mipLevels; mip++) {
+    //        std::array<std::filesystem::path, 6> faces;
+    //        for (int face = 0; face < 6; face++) {
+    //            faces[face] = outDir / ("prefiltered_" + std::to_string(mip) +
+    //                "_face_" + std::to_string(face) + ".hdr");
+    //        }
+    //        mipFacesPaths[mip] = faces;
+    //    }
+    //    TextureConfig prefilterConfig = MakeSomeCubeMapConfig(true);
+    //    prefilterConfig.generateMips = false; // Already computed
+    //    try {
+    //        auto prefilteredCube = std::make_shared<OpenGLCubeMapTexture>(mipFacesPaths, prefilterConfig);
+    //        std::string prefilterName = cubeMapName + "_prefiltered";
+    //        m_Textures[prefilterName] = prefilteredCube;
+    //        Logger::GetLogger()->info("Loaded prefiltered cubemap '{}'.", prefilterName);
+    //    }
+    //    catch (const std::exception& e) {
+    //        Logger::GetLogger()->error("Exception creating prefiltered cubemap '{}': {}", cubeMapName, e.what());
+    //    }
+    //}
 
-    // --- LOAD THE MAIN ENVIRONMENT CUBEMAP ---
-    TextureConfig envCfg = MakeSomeCubeMapConfig(/*HDR=*/true);
-    try
-    {
+    // --- LOAD THE MAIN ENVIRONMENT CUBEMAP (HDR version for lighting) ---
+    TextureConfig envCfg = MakeSomeCubeMapConfig(true);
+    try {
         auto cubeMap = std::make_shared<OpenGLCubeMapTexture>(envFaces, envCfg);
         m_Textures[cubeMapName] = cubeMap;
     }
-    catch (const std::exception& e)
-    {
+    catch (const std::exception& e) {
         Logger::GetLogger()->error("Exception creating env cubemap '{}': {}", cubeMapName, e.what());
         return false;
     }
 
     // --- LOAD THE IRRADIANCE CUBEMAP ---
-    TextureConfig irrCfg = MakeSomeCubeMapConfig(/*HDR=*/true);
-    try
-    {
+    TextureConfig irrCfg = MakeSomeCubeMapConfig(true);
+    try {
         auto irrCube = std::make_shared<OpenGLCubeMapTexture>(irrFaces, irrCfg);
         std::string irrName = cubeMapName + "_irr";
         m_Textures[irrName] = irrCube;
         Logger::GetLogger()->info("Created irradiance cubemap '{}'.", irrName);
     }
-    catch (const std::exception& e)
-    {
+    catch (const std::exception& e) {
         Logger::GetLogger()->warn("Failed to create irradiance cubemap for '{}': {}", cubeMapName, e.what());
-        // Not necessarily fatal.
+    }
+
+    // --- LOAD THE SKYBOX CUBEMAP (LDR version for display) ---
+    // Build a texture config for the skybox that is not HDR.
+    TextureConfig skyboxCfg;
+    skyboxCfg.internalFormat = GL_SRGB8_ALPHA8; // 8-bit sRGB
+    skyboxCfg.wrapS = GL_CLAMP_TO_EDGE;
+    skyboxCfg.wrapT = GL_CLAMP_TO_EDGE;
+    skyboxCfg.wrapR = GL_CLAMP_TO_EDGE;
+    skyboxCfg.minFilter = GL_LINEAR_MIPMAP_LINEAR;
+    skyboxCfg.magFilter = GL_LINEAR;
+    skyboxCfg.generateMips = true;
+    skyboxCfg.useAnisotropy = true;
+    skyboxCfg.useBindless = false;
+    skyboxCfg.isHDR = false;
+    skyboxCfg.isSRGB = true;
+    try {
+        auto skyboxCube = std::make_shared<OpenGLCubeMapTexture>(ldrFaces, skyboxCfg);
+        std::string skyboxName = cubeMapName + "_skybox";
+        m_Textures[skyboxName] = skyboxCube;
+        Logger::GetLogger()->info("Loaded skybox (LDR) cubemap '{}'.", skyboxName);
+    }
+    catch (const std::exception& e) {
+        Logger::GetLogger()->error("Exception creating skybox cubemap '{}': {}", cubeMapName, e.what());
     }
 
     return true;
 }
 
+// ----------------------------------------------------------------------------
+// SaveFacesToDisk (existing version)
+// ----------------------------------------------------------------------------
+
 void TextureManager::SaveFacesToDisk(const Bitmap& cubeMap,
     const std::array<std::filesystem::path, 6>& facePaths,
-    const std::string& prefix)
-{
+    const std::string& prefix) {
     if (cubeMap.d_ != 6) {
         Logger::GetLogger()->error("SaveFacesToDisk: expected 6 faces in depth, found d_={}", cubeMap.d_);
         return;
@@ -478,28 +498,24 @@ void TextureManager::SaveFacesToDisk(const Bitmap& cubeMap,
 
     EnvMapPreprocessor prep; // for SaveAsHDR
 
-    for (int i = 0; i < 6; i++)
-    {
+    for (int i = 0; i < 6; i++) {
         Bitmap faceBmp(faceW, faceH, comp, fmt);
         const uint8_t* src = cubeMap.data_.data() + i * faceSizeBytes;
         std::memcpy(faceBmp.data_.data(), src, faceSizeBytes);
-
         try {
             prep.SaveAsHDR(faceBmp, facePaths[i]);
         }
-        catch (const std::exception& e)
-        {
+        catch (const std::exception& e) {
             Logger::GetLogger()->error("SaveFacesToDisk: face {}: {}", prefix + std::to_string(i), e.what());
         }
     }
 }
 
 // ----------------------------------------------------------------------------
-// Arrays (stub)
+// Texture Arrays (stub)
 // ----------------------------------------------------------------------------
 
 bool TextureManager::LoadTextureArrays(const nlohmann::json& json) {
-    // No changes from your old code if you had it
     Logger::GetLogger()->info("LoadTextureArrays() is a stub implementation.");
     return true;
 }
@@ -515,7 +531,6 @@ bool TextureManager::LoadComputedTextures(const nlohmann::json& json) {
             int width = info.value("width", 256);
             int height = info.value("height", 256);
             unsigned int smpls = info.value("numSamples", 1024);
-
             auto tex = CreateBRDFLUT(width, height, smpls);
             if (tex) {
                 m_Textures[name] = tex;
@@ -550,38 +565,29 @@ std::shared_ptr<ITexture> TextureManager::LoadTexture(const std::string& name, c
     }
 
     std::filesystem::path path(pathStr);
-
-    // Determine HDR based on file extension
     bool isHDR = IsHDRTexture(path);
 
-    // Load texture data (RGBA float or 8-bit)
     TextureData data;
-    if (!data.LoadFromFile(pathStr, /*flipY*/true, /*force4Ch*/true, isHDR)) {
+    if (!data.LoadFromFile(pathStr, /*flipY*/ true, /*force4Ch*/ true, isHDR)) {
         Logger::GetLogger()->error("Failed to load texture '{}' from '{}'.", name, pathStr);
         return nullptr;
     }
 
-    // Determine sRGB from naming convention or placeholder
     bool isSRGB = DetermineSRGB(pathStr);
 
-    // Build config
     TextureConfig config;
     config.isHDR = isHDR;
     config.isSRGB = isSRGB;
-    // e.g. config.minFilter = GL_LINEAR_MIPMAP_LINEAR; etc. (if you want)
 
     try {
         std::shared_ptr<ITexture> tex;
         if (isHDR) {
-            // 32-bit float
             tex = std::make_shared<OpenGLTexture>(data, config);
         }
         else {
-            // 8-bit
             tex = std::make_shared<OpenGLTexture>(data, config);
         }
         m_Textures[name] = tex;
-
         Logger::GetLogger()->info("Loaded texture '{}' from '{}'. (HDR={}, sRGB={})",
             name, pathStr, isHDR, isSRGB);
         return tex;
@@ -632,7 +638,6 @@ std::shared_ptr<ITexture> TextureManager::CreateBRDFLUT(int width, int height, u
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     computeShader->Unbind();
 
-    // Create an empty RG32F texture
     GLuint brdfLUTID = 0;
     glGenTextures(1, &brdfLUTID);
     glBindTexture(GL_TEXTURE_2D, brdfLUTID);
@@ -643,7 +648,6 @@ std::shared_ptr<ITexture> TextureManager::CreateBRDFLUT(int width, int height, u
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    // Map SSBO to CPU and copy to that texture
     ssbo->Bind();
     glm::vec2* ptr = static_cast<glm::vec2*>(
         glMapBufferRange(GL_SHADER_STORAGE_BUFFER,
@@ -665,30 +669,21 @@ std::shared_ptr<ITexture> TextureManager::CreateBRDFLUT(int width, int height, u
     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
     ssbo->Unbind();
 
-    // Return as a simple ITexture
     class ExistingOpenGLTexture : public ITexture {
     public:
         ExistingOpenGLTexture(GLuint id, int w, int h)
             : m_TextureID(id), m_Width(w), m_Height(h) {}
-
         ~ExistingOpenGLTexture() override {
             if (m_TextureID) {
                 glDeleteTextures(1, &m_TextureID);
             }
         }
-
-        void Bind(uint32_t unit) const override {
-            glBindTextureUnit(unit, m_TextureID);
-        }
-        void Unbind(uint32_t unit) const override {
-            glBindTextureUnit(unit, 0);
-        }
-
+        void Bind(uint32_t unit) const override { glBindTextureUnit(unit, m_TextureID); }
+        void Unbind(uint32_t unit) const override { glBindTextureUnit(unit, 0); }
         uint32_t GetWidth()  const override { return m_Width; }
         uint32_t GetHeight() const override { return m_Height; }
         uint64_t GetBindlessHandle() const override { return 0; }
         bool     IsBindless()        const override { return false; }
-
     private:
         GLuint m_TextureID = 0;
         int    m_Width = 0;

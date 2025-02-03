@@ -72,6 +72,13 @@
                 "fragment": "../shaders/Postprocessing/EdgeDetection.frag"
             }
         },
+        "toneMapping": {
+            "binary_path": "../shaders/bin/ToneMapping.bin",
+            "shader_stages": {
+                "vertex": "../shaders/Postprocessing/ToneMapping.vert",
+                "fragment": "../shaders/Postprocessing/ToneMapping.frag"
+            }
+        },
         "wireframeGS": {
             "binary_path": "../shaders/bin/WireframeGS.bin",
             "shader_stages": {
