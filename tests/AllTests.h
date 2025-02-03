@@ -4,6 +4,7 @@
 #include "TestTerrain.h"
 #include "TestBistro.h"
 #include "TestLights.h"
+#include "TestShadows.h"
 #include "TestSkyBox.h"
 #include "TestSkyBoxReflection.h"
 #include "TestFlipBookEffect.h"

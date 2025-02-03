@@ -41,7 +41,7 @@ void PostProcessingPass::Execute(const std::shared_ptr<Scene>& scene)
         return;
     }
 
-    // 2) The effect’s "Apply" might draw to the default FBO (ID=0) or another FBO
+    // 2) The effectâ€™s "Apply" might draw to the default FBO (ID=0) or another FBO
     //    depending on your setup.
     //    Example: output to the main screen:
     m_Effect->Apply(sceneTextureID, /*outputFramebuffer=*/0);

@@ -7,6 +7,7 @@
 #include "Renderer/Passes/RenderPass.h"
 #include "Graphics/Buffers/FrameBuffer.h"
 #include "Renderer/Passes/PostProcessingPass.h"
+#include "Renderer/Passes/ShadowPass.h"
 
 /**
  * @brief Main renderer orchestrating:
@@ -74,6 +75,8 @@ private:
 
     // We store post-processing passes (e.g. tone-map, edge-detection, etc.)
     std::vector<std::unique_ptr<PostProcessingPass>> m_PostProcessingPasses;
+
+    std::vector<std::unique_ptr<ShadowPass>>       m_ShadowPasses;
 
     // The current scene this renderer is rendering
     std::shared_ptr<Scene> m_CurrentScene;

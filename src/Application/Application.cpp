@@ -83,6 +83,7 @@ bool Application::Init()
         m_TestMenu->RegisterTest("Bistro", []() { return std::make_shared<TestBistro>(); });
         m_TestMenu->RegisterTest("Flipbook", []() { return std::make_shared<TestFlipBookEffect>(); });
         m_TestMenu->RegisterTest("PBRHelmet", []() { return std::make_shared<TestDamagedHelmet>(); });
+        m_TestMenu->RegisterTest("TestShadows", []() { return std::make_shared<TestShadows>(); });
 
         // Register the menu itself as a "test"
         m_TestManager.RegisterTest("Test Menu", [this]() {

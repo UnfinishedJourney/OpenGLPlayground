@@ -12,7 +12,7 @@ enum eBitmapType
     eBitmapType_Cube
 };
 
-// Bitmap format: unsigned byte (0–255) or float (HDR).
+// Bitmap format: unsigned byte (0â€“255) or float (HDR).
 enum eBitmapFormat
 {
     eBitmapFormat_UnsignedByte,

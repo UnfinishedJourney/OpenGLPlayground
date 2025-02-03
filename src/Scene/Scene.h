@@ -100,6 +100,9 @@ public:
     void SetSkyboxEnabled(bool enable) { m_EnableSkybox = enable; }
     bool GetSkyboxEnabled()        const { return m_EnableSkybox; }
 
+    void SetShowShadows(bool bShadows) { m_TurnOnShadows = bShadows; }
+    bool GetShowShadows()             const { return m_TurnOnShadows; }
+
 private:
     // Hierarchical approach (optional):
     std::unique_ptr<SceneGraph> m_SceneGraph; // or store by value if you prefer
@@ -134,6 +137,7 @@ private:
     bool m_EnableSkybox = false;
     bool m_ShowGrid = false;
     bool m_ShowDebugLights = false;
+    bool m_TurnOnShadows = false;
 
     // Temp store last loaded shader name, etc., if needed
     std::string m_LastShaderName;

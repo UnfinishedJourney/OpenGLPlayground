@@ -9,6 +9,7 @@
 #include "Renderer/Passes/GridPass.h"
 #include "Renderer/Passes/SkyBoxPass.h"
 #include "Renderer/Passes/DebugLightsPass.h"
+#include "Renderer/Passes/ShadowPass.h"
 
 #include "Graphics/Effects/PostProcessingEffects/EdgeDetectionEffect.h"
 #include "Graphics/Effects/EffectsManager.h"
@@ -17,6 +18,8 @@
 #include "Graphics/Buffers/FrameBuffer.h"
 #include "Renderer/Passes/PostProcessingPass.h"
 #include "Scene/Scene.h"
+
+#include <glm/gtc/matrix_transform.hpp>
 
 Renderer::Renderer()
     : m_Width(800)
@@ -54,6 +57,10 @@ void Renderer::RenderScene(const std::shared_ptr<Scene>& scene)
         PROFILE_BLOCK("Clear Screen", Yellow);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         Clear(0.3f, 0.2f, 0.8f, 1.0f);
+    }
+
+    for (auto& pass : m_ShadowPasses) {
+        pass->Execute(scene);
     }
 
     // 2) Render geometry passes into the MSAA FBO
@@ -135,6 +142,16 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
 
     // Recreate FBOs
     CreateFramebuffersForScene(scene, m_Width, m_Height);
+
+    if (scene->GetShowShadows()) {
+        glm::vec3 lightPos(10.0f, 10.0f, 10.0f);
+        glm::vec3 lightTarget(0.0f, 0.0f, 0.0f);
+        glm::mat4 lightView = glm::lookAt(lightPos, lightTarget, glm::vec3(0.0f, 1.0f, 0.0f));
+        float nearPlane = 1.0f, farPlane = 50.0f;
+        glm::mat4 lightProj = glm::perspective(glm::radians(90.0f), 1.0f, nearPlane, farPlane);
+
+        m_ShadowPasses.push_back(std::make_unique<ShadowPass>(1024, lightView, lightProj));
+    }
 
     // 1) Possibly add a skybox pass
     if (scene->GetSkyboxEnabled()) {

@@ -121,6 +121,13 @@
                 "vertex": "../shaders/Effects/Flipbook.vert",
                 "fragment": "../shaders/Effects/Flipbook.frag"
             }
+        },
+        "basicShadowMap": {
+            "binary_path": "../shaders/bin/BasicShadowMap.bin",
+            "shader_stages": {
+                "vertex": "../shaders/Shadows/BasicShadowMap.vert",
+                "fragment": "../shaders/Shadows/BasicShadowMap.frag"
+            }
         }
     }
 }

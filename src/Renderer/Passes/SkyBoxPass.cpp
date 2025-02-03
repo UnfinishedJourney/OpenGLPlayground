@@ -53,7 +53,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene>& scene)
     }
     shader->Bind();
 
-    // Bind the scene’s uniform buffer (camera matrices, etc.)
+    // Bind the sceneâ€™s uniform buffer (camera matrices, etc.)
     // The skybox vertex shader will remove translation inside the shader code itself.
     scene->BindFrameDataUBO();
 
@@ -86,7 +86,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene>& scene)
     //cubeMap_pref->Bind(10);
 
     // Adjust depth states so the skybox is drawn behind all other geometry
-    glDepthMask(GL_FALSE);     // Don’t write to depth
+    glDepthMask(GL_FALSE);     // Donâ€™t write to depth
     glDepthFunc(GL_LEQUAL);    // Pass if depth <= current depth
 
     // Draw the cube
