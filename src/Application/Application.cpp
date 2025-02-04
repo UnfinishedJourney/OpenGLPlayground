@@ -8,7 +8,7 @@
 #include "Application/OpenGLContext.h"
 #include "Renderer/Renderer.h"
 #include "Scene/Screen.h"
-#include "AllTests.h"                  // Contains the definitions for TestLights, TestClearColor, etc.
+#include "AllTests.h"                  
 #include "Resources/ResourceManager.h"
 #include "Resources/ShaderManager.h"
 #include "Utilities/Logger.h"
@@ -25,8 +25,6 @@
 Application::Application()
     : m_CameraController(m_InputManager)
 {
-    PROFILE_FUNCTION(Magenta); // Profile the constructor
-
     // Initialize the global logger once
     Logger::Init();
     m_Logger = Logger::GetLogger();
@@ -39,7 +37,6 @@ Application::Application()
  */
 Application::~Application()
 {
-    PROFILE_FUNCTION(Magenta); // Profile the destructor
     m_Logger->info("Application destructor called.");
 }
 
@@ -49,7 +46,7 @@ Application::~Application()
  */
 bool Application::Init()
 {
-    PROFILE_FUNCTION(Magenta); // Profile the Init function
+    PROFILE_FUNCTION(Magenta); 
 
     // 1. Initialize the GLFW & OpenGL context
     m_Window = GLContext::InitOpenGL(Screen::s_Width, Screen::s_Height, "OpenGL Application");
@@ -104,7 +101,7 @@ bool Application::Init()
  */
 void Application::Run()
 {
-    PROFILE_FUNCTION(Cyan); // Profile the Run function
+    PROFILE_FUNCTION(Cyan); 
 
     if (!m_Window)
     {

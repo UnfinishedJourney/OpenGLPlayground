@@ -23,6 +23,10 @@ void TestShadows::OnEnter()
         return;
     }
 
+    if (!m_Scene->LoadPrimitiveIntoScene("floor", "simplelights", 1)) {
+        Logger::GetLogger()->error("Failed to load cube primitive.");
+    }
+
     // Add a light
     LightData light1 = { glm::vec4(1.5f, 2.0f, 1.5f, 0.0f), glm::vec4(1.0f) };
     m_Scene->AddLight(light1);
@@ -31,9 +35,9 @@ void TestShadows::OnEnter()
     m_Scene->SetShowGrid(true);
     m_Scene->SetShowDebugLights(true);
     m_Scene->SetShowShadows(true);
-    auto existingMat = MaterialManager::GetInstance().GetMaterialByID(0);
+    auto existingMat = MaterialManager::GetInstance().GetMaterialByID(1);
     if (existingMat) {
-        existingMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.9f, 0.1f, 0.3f));
+        existingMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.4f, 0.5f, 0.8f));
     }
 }
 

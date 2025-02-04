@@ -28,6 +28,9 @@ std::shared_ptr<Mesh> MeshManager::GetMesh(std::string_view meshName) {
     else if (meshName == "quad") {
         mesh = std::make_shared<Quad>();
     }
+    else if (meshName == "floor") {
+        mesh = std::make_shared<Floor>();
+    }
     else if (meshName == "terrain") {
         mesh = std::make_shared<TerrainMesh>();
     }

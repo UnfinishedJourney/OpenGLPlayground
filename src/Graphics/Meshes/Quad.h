@@ -9,3 +9,7 @@
 struct Quad : public Mesh {
     Quad();
 };
+
+struct Floor : public Mesh {
+    Floor();
+};

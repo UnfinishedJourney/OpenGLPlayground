@@ -8,7 +8,7 @@
 class ShadowPass : public RenderPass {
 public:
     // shadowResolution is the width/height of the shadow map.
-    ShadowPass(GLsizei shadowResolution, const glm::mat4& lightView, const glm::mat4& lightProj);
+    ShadowPass(GLsizei shadowResolution);
     ~ShadowPass();
 
     // Render the scene from the light’s POV into the shadow map.

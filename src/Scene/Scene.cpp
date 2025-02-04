@@ -182,6 +182,26 @@ bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
     return true;
 }
 
+bool Scene::LoadPrimitiveIntoScene(const std::string& primitiveName,
+    const std::string& shaderName,
+    int materialID)
+{
+    auto& resourceManager = ResourceManager::GetInstance();
+    auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(shaderName);
+
+    auto mesh = MeshManager::GetInstance().GetMesh(primitiveName);
+    
+    auto renderObject = std::make_shared<StaticRenderObject>(mesh, meshLayout, materialID, shaderName);
+
+
+    m_StaticObjects.push_back(renderObject);
+    m_StaticBatchesDirty = true;
+
+    Logger::GetLogger()->info("Scene::LoadPrimitiveIntoScene: Loaded primitive '{}' with shader '{}'.", primitiveName, shaderName);
+    return true;
+}
+
+
 void Scene::BuildStaticBatchesIfNeeded()
 {
     if (!m_StaticBatchesDirty) {

@@ -79,6 +79,10 @@ public:
                 { aiTextureType_AMBIENT,   TextureType::Emissive     }
         });
 
+    bool LoadPrimitiveIntoScene(const std::string& primitiveName,
+        const std::string& shaderName,
+        int materialID = 0);
+
     // Batching
     void BuildStaticBatchesIfNeeded();
     const std::vector<std::shared_ptr<Batch>>& GetStaticBatches() const;

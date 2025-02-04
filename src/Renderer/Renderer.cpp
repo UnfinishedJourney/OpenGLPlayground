@@ -144,13 +144,7 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
     CreateFramebuffersForScene(scene, m_Width, m_Height);
 
     if (scene->GetShowShadows()) {
-        glm::vec3 lightPos(10.0f, 10.0f, 10.0f);
-        glm::vec3 lightTarget(0.0f, 0.0f, 0.0f);
-        glm::mat4 lightView = glm::lookAt(lightPos, lightTarget, glm::vec3(0.0f, 1.0f, 0.0f));
-        float nearPlane = 1.0f, farPlane = 50.0f;
-        glm::mat4 lightProj = glm::perspective(glm::radians(90.0f), 1.0f, nearPlane, farPlane);
-
-        m_ShadowPasses.push_back(std::make_unique<ShadowPass>(1024, lightView, lightProj));
+        m_ShadowPasses.push_back(std::make_unique<ShadowPass>(1024));
     }
 
     // 1) Possibly add a skybox pass
