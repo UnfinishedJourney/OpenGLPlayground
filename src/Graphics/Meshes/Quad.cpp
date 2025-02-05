@@ -77,12 +77,12 @@ Floor::Floor()
         0, 2, 3
     };
 
-    // Normals: +Z for all
+    // Normals: +Y for all
     normals = {
-        { 0.0f, 0.0f, 1.0f },
-        { 0.0f, 0.0f, 1.0f },
-        { 0.0f, 0.0f, 1.0f },
-        { 0.0f, 0.0f, 1.0f }
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f }
     };
 
     // Basic bounds

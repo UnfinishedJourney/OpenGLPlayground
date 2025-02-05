@@ -18,12 +18,12 @@ void TestShadows::OnEnter()
     m_Scene->SetCamera(cam);
 
     // Load a model into the scene
-    if (!m_Scene->LoadStaticModelIntoScene("pig", "simplelights")) {
+    if (!m_Scene->LoadStaticModelIntoScene("pig", "simpleLightsShadowed")) {
         Logger::GetLogger()->error("Failed to load 'pig' model in TestShadow");
         return;
     }
 
-    if (!m_Scene->LoadPrimitiveIntoScene("floor", "simplelights", 1)) {
+    if (!m_Scene->LoadPrimitiveIntoScene("floor", "simpleLightsShadowed", 1)) {
         Logger::GetLogger()->error("Failed to load cube primitive.");
     }
 
@@ -31,8 +31,6 @@ void TestShadows::OnEnter()
     LightData light1 = { glm::vec4(1.5f, 2.0f, 1.5f, 0.0f), glm::vec4(1.0f) };
     m_Scene->AddLight(light1);
 
-    // Enable debug lights and grid
-    m_Scene->SetShowGrid(true);
     m_Scene->SetShowDebugLights(true);
     m_Scene->SetShowShadows(true);
     auto existingMat = MaterialManager::GetInstance().GetMaterialByID(1);

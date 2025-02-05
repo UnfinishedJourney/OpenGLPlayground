@@ -39,6 +39,12 @@ std::pair<MeshLayout, MaterialLayout> ResourceManager::getLayoutsFromShader(std:
                 MaterialLayout{ {}, {TextureType::Albedo, TextureType::Ambient} }
             }
         },
+        {"simpleLightsShadowed",
+            {
+                MeshLayout{ true, true, false, false, {} },
+                MaterialLayout{ {MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess}, {} }
+            }
+        },
         // Add more shader layouts as needed
     };
 

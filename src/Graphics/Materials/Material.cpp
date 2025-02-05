@@ -27,17 +27,22 @@ static std::string GetTextureUniformName(TextureType type)
 static int GetTextureBindingSlot(TextureType type)
 {
     switch (type) {
-    case TextureType::Albedo:         return 1;
-    case TextureType::Normal:         return 2;
-    case TextureType::MetalRoughness: return 3;
-    case TextureType::AO:             return 4;
-    case TextureType::Emissive:       return 5;
-    case TextureType::Ambient:        return 6;
-    case TextureType::Height:         return 7;
-    case TextureType::BRDFLut:        return 8;
-    default:                          return 10; // fallback
+    case TextureType::Albedo:           return 0;
+    case TextureType::Normal:           return 1;
+    case TextureType::MetalRoughness:   return 2;
+    case TextureType::AO:               return 3;
+    case TextureType::Emissive:         return 4;
+    case TextureType::Ambient:          return 5;
+    case TextureType::Height:           return 6;
+    case TextureType::BRDFLut:          return 7;
+    case TextureType::SkyBox:           return 8;
+    case TextureType::SkyboxIrradiance: return 9;
+    case TextureType::ShadowMap:        return 10;
+    default:                            return 11; // fallback
     }
 }
+
+
 
 // --------------------------------------------------------
 //  Material constructor
@@ -45,7 +50,6 @@ static int GetTextureBindingSlot(TextureType type)
 Material::Material(const MaterialLayout& layout)
     : m_Layout(layout)
 {
-    // Initialize ID or any default fields if needed
 }
 
 // --------------------------------------------------------
@@ -61,12 +65,12 @@ const std::string& Material::GetName() const
     return m_Name;
 }
 
-void Material::SetID(MaterialID id)
+void Material::SetID(int id)
 {
     m_ID = id;
 }
 
-MaterialID Material::GetID() const
+int Material::GetID() const
 {
     return m_ID;
 }
@@ -75,6 +79,7 @@ const MaterialLayout& Material::GetLayout() const
 {
     return m_Layout;
 }
+
 
 // --------------------------------------------------------
 //  AssignToPackedParams => fill PackedMtlParams
@@ -130,6 +135,7 @@ void Material::AssignToPackedParams(MaterialParamType type, const UniformValue& 
             m_Name, static_cast<int>(type));
         break;
     }
+
 }
 
 // --------------------------------------------------------

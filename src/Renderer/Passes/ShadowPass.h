@@ -32,4 +32,5 @@ private:
     // Matrices computed from the light’s position/direction
     glm::mat4 m_LightView;
     glm::mat4 m_LightProj;
+    glm::mat4 m_Bias;
 };

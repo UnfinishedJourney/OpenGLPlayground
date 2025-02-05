@@ -21,6 +21,13 @@
                 "fragment": "../shaders/SimpleLights.frag"
             }
         },
+        "simpleLightsShadowed": {
+            "binary_path": "../shaders/bin/SimpleLightsShadowed.bin",
+            "shader_stages": {
+                "vertex": "../shaders/SimpleLightsShadowed.vert",
+                "fragment": "../shaders/SimpleLightsShadowed.frag"
+            }
+        },
         "grid": {
             "binary_path": "../shaders/bin/Grid.bin",
             "shader_stages": {

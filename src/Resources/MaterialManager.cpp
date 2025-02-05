@@ -17,7 +17,7 @@ std::shared_ptr<Material> MaterialManager::GetMaterialByName(const std::string& 
     return m_Materials[it->second].material;
 }
 
-std::shared_ptr<Material> MaterialManager::GetMaterialByID(MaterialID id) const
+std::shared_ptr<Material> MaterialManager::GetMaterialByID(int id) const
 {
     auto it = m_IDToIndex.find(id);
     if (it == m_IDToIndex.end()) {
@@ -91,7 +91,7 @@ void MaterialManager::RemoveMaterialByName(const std::string& name)
     }
 }
 
-void MaterialManager::RemoveMaterialByID(MaterialID id)
+void MaterialManager::RemoveMaterialByID(int id)
 {
     auto it = m_IDToIndex.find(id);
     if (it == m_IDToIndex.end()) {
@@ -132,7 +132,7 @@ void MaterialManager::BindMaterial(const std::string& name, const std::shared_pt
     Logger::GetLogger()->debug("[MaterialManager] Bound material '{}'.", name);
 }
 
-void MaterialManager::BindMaterial(MaterialID id, const std::shared_ptr<BaseShader>& shader)
+void MaterialManager::BindMaterial(int id, const std::shared_ptr<BaseShader>& shader)
 {
     auto mat = GetMaterialByID(id);
     if (!mat) {

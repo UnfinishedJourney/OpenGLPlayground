@@ -35,7 +35,12 @@ void DebugLightsPass::Execute(const std::shared_ptr<Scene>& scene)
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
+    //scene->BindLightSSBO();
+
+    scene->UpdateFrameDataUBO();
+    scene->BindFrameDataUBO();
     scene->BindLightSSBO();
+
     auto& resourceManager = ResourceManager::GetInstance();
     auto& shaderManager = ShaderManager::GetInstance();
     auto shader = shaderManager.GetShader("debugLights");

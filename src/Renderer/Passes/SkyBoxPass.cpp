@@ -65,7 +65,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene>& scene)
         Logger::GetLogger()->error("SkyBox cubemap skyBoxName not found.");
         return;
     }
-    cubeMap->Bind(0);
+    cubeMap->Bind(8);
 
     skyBoxName = "spiaggia_di_mondello_irr";
     auto cubeMap_irr = TextureManager::GetInstance().GetTexture(skyBoxName);

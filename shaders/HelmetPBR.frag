@@ -19,19 +19,18 @@ out vec4 out_FragColor;
 // -----------------------------------------------------------------------------
 // Texture Samplers
 // -----------------------------------------------------------------------------
-layout(binding = 0) uniform samplerCube u_EnvironmentMap;
-layout(binding = 1) uniform sampler2D texAlbedo;
-layout(binding = 2) uniform sampler2D texNormal;
-layout(binding = 3) uniform sampler2D texMetalRoughness; // .g = metallic, .r = roughness (here: .g = metallic, .r = roughness)
-layout(binding = 4) uniform sampler2D texAO;
-layout(binding = 5) uniform sampler2D texEmissive;
+
+layout(binding = 0) uniform sampler2D texAlbedo;
+layout(binding = 1) uniform sampler2D texNormal;
+layout(binding = 2) uniform sampler2D texMetalRoughness; // .g = metallic, .r = roughness (here: .g = metallic, .r = roughness)
+layout(binding = 3) uniform sampler2D texAO;
+layout(binding = 4) uniform sampler2D texEmissive;
 
 // BRDF LUT for specular IBL:
-layout(binding = 8) uniform sampler2D texBRDF_LUT;
-
+layout(binding = 7) uniform sampler2D texBRDF_LUT;
+layout(binding = 8) uniform samplerCube u_EnvironmentMap;
 // Environment maps for IBL:
 layout(binding = 9) uniform samplerCube u_EnvironmentMapDiffuse;   // Diffuse irradiance map
-//layout(binding = 10) uniform samplerCube u_EnvironmentMapSpecular;  // Prefiltered (specular) cubemap
 
 // -----------------------------------------------------------------------------
 // Constants
@@ -55,6 +54,7 @@ void main()
 
     // ----- STEP 1: Texture Sampling -----
     vec3 albedo     = texture(texAlbedo, tc).rgb;
+
     //albedo = SRGBtoLINEAR(vec4(albedo, 1.0)).rgb;
     vec3 normalMap  = texture(texNormal, tc).rgb;
     vec2 metalRough = texture(texMetalRoughness, tc).bg; // .b = metallic, .g = roughness

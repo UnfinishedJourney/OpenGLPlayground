@@ -1,13 +1,13 @@
 #include "FrameBuffer.h"
 #include "Utilities/Logger.h"
-#include "Utilities/Utility.h" // for GLCall macros, etc.
+#include "Utilities/Utility.h" // GLCall macros, etc.
 #include <stdexcept>
 
 FrameBuffer::FrameBuffer(int width,
     int height,
     const std::vector<FrameBufferTextureAttachment>& attachments,
-    bool hasDepth /*=true*/,
-    int  samples  /*=1*/)
+    bool hasDepth,
+    int samples)
     : m_RendererIDPtr(std::make_unique<GLuint>(0).release(), FrameBufferDeleter())
     , m_Width(width)
     , m_Height(height)
@@ -15,10 +15,12 @@ FrameBuffer::FrameBuffer(int width,
     , m_Samples(samples)
     , m_Attachments(attachments)
 {
+    // Depth texture is optional, create a pointer if requested
     if (m_HasDepth) {
-        m_DepthRenderBufferPtr = std::unique_ptr<GLuint, RenderBufferDeleter>(
-            std::make_unique<GLuint>(0).release(), RenderBufferDeleter());
+        m_DepthTexturePtr = std::unique_ptr<GLuint, TextureDeleter>(
+            std::make_unique<GLuint>(0).release(), TextureDeleter());
     }
+
     Initialize(m_Width, m_Height, m_Attachments, m_HasDepth, m_Samples);
 }
 
@@ -39,61 +41,57 @@ void FrameBuffer::Initialize(int width,
     std::vector<GLenum> drawBuffers;
     drawBuffers.reserve(attachments.size());
 
-    // Create textures (multisample or single-sample) for each attachment
-    for (const auto& att : attachments) {
+    // Create color textures
+    for (const auto& att : attachments)
+    {
+        // Make a new texture handle
         auto texturePtr = std::unique_ptr<GLuint, TextureDeleter>(
             std::make_unique<GLuint>(0).release(), TextureDeleter());
 
-        if (samples > 1) {
-            // Multisample texture
+        if (samples > 1)
+        {
+            // Multisample color texture
             GLCall(glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, texturePtr.get()));
             GLCall(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, *texturePtr));
-
-            GLCall(glTexImage2DMultisample(
-                GL_TEXTURE_2D_MULTISAMPLE,
+            GLCall(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
                 samples,
                 att.internalFormat,
                 width, height,
-                GL_TRUE
-            ));
+                GL_TRUE));
 
-            GLCall(glFramebufferTexture2D(
-                GL_FRAMEBUFFER,
+            GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER,
                 att.attachmentType,
                 GL_TEXTURE_2D_MULTISAMPLE,
                 *texturePtr,
-                0
-            ));
+                0));
         }
-        else {
-            // Single-sample texture
+        else
+        {
+            // Single-sample color texture
             GLCall(glCreateTextures(GL_TEXTURE_2D, 1, texturePtr.get()));
             GLCall(glBindTexture(GL_TEXTURE_2D, *texturePtr));
 
-            GLCall(glTexImage2D(
-                GL_TEXTURE_2D, 0,
+            GLCall(glTexImage2D(GL_TEXTURE_2D, 0,
                 att.internalFormat,
                 width, height, 0,
-                att.format, att.type,
-                nullptr
-            ));
+                att.format,
+                att.type,
+                nullptr));
 
-            // Typical filtering/wrapping for off-screen rendering
+            // Typical filtering/wrapping for off-screen
             GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
             GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
             GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
             GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
-            GLCall(glFramebufferTexture2D(
-                GL_FRAMEBUFFER,
+            GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER,
                 att.attachmentType,
                 GL_TEXTURE_2D,
                 *texturePtr,
-                0
-            ));
+                0));
         }
 
-        m_Textures.push_back(std::move(texturePtr));
+        m_ColorTextures.push_back(std::move(texturePtr));
 
         // Collect color attachments for glDrawBuffers
         if (att.attachmentType >= GL_COLOR_ATTACHMENT0 &&
@@ -103,14 +101,14 @@ void FrameBuffer::Initialize(int width,
         }
 
         Logger::GetLogger()->info(
-            "Attached Texture ID={} to FBO={} (attachment=0x{:X}).",
-            *m_Textures.back(), *m_RendererIDPtr, att.attachmentType
+            "Attached color Texture ID={} to FBO={} (attachment=0x{:X}).",
+            *m_ColorTextures.back(), *m_RendererIDPtr, att.attachmentType
         );
     }
 
-    // Set draw buffers for color attachments
+    // If we have color attachments, set them
     if (!drawBuffers.empty()) {
-        GLCall(glDrawBuffers(static_cast<GLsizei>(drawBuffers.size()), drawBuffers.data()));
+        GLCall(glDrawBuffers((GLsizei)drawBuffers.size(), drawBuffers.data()));
     }
     else {
         // No color attachments
@@ -118,45 +116,68 @@ void FrameBuffer::Initialize(int width,
         GLCall(glReadBuffer(GL_NONE));
     }
 
-    // Depth renderbuffer (if requested)
-    if (hasDepth && m_DepthRenderBufferPtr) {
-        GLCall(glCreateRenderbuffers(1, m_DepthRenderBufferPtr.get()));
-        GLCall(glBindRenderbuffer(GL_RENDERBUFFER, *m_DepthRenderBufferPtr));
-
-        if (samples > 1) {
-            GLCall(glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples,
+    // ---------- Create & attach Depth Texture if requested -----------
+    if (hasDepth && m_DepthTexturePtr)
+    {
+        if (samples > 1)
+        {
+            // Multisample depth texture
+            GLCall(glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, m_DepthTexturePtr.get()));
+            GLCall(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, *m_DepthTexturePtr));
+            GLCall(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+                samples,
                 GL_DEPTH_COMPONENT24,
-                width, height));
+                width, height,
+                GL_TRUE));
+
+            GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER,
+                GL_DEPTH_ATTACHMENT,
+                GL_TEXTURE_2D_MULTISAMPLE,
+                *m_DepthTexturePtr,
+                0));
         }
-        else {
-            GLCall(glRenderbufferStorage(GL_RENDERBUFFER,
+        else
+        {
+            // Single-sample depth texture
+            GLCall(glCreateTextures(GL_TEXTURE_2D, 1, m_DepthTexturePtr.get()));
+            GLCall(glBindTexture(GL_TEXTURE_2D, *m_DepthTexturePtr));
+
+            GLCall(glTexImage2D(GL_TEXTURE_2D, 0,
                 GL_DEPTH_COMPONENT24,
-                width, height));
+                width, height, 0,
+                GL_DEPTH_COMPONENT,
+                GL_UNSIGNED_INT,
+                nullptr));
+
+            // Typical depth parameters
+            GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+            GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+            GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+            GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+
+            GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER,
+                GL_DEPTH_ATTACHMENT,
+                GL_TEXTURE_2D,
+                *m_DepthTexturePtr,
+                0));
         }
 
-        GLCall(glFramebufferRenderbuffer(GL_FRAMEBUFFER,
-            GL_DEPTH_ATTACHMENT,
-            GL_RENDERBUFFER,
-            *m_DepthRenderBufferPtr));
-
-        Logger::GetLogger()->info(
-            "Attached Depth RBO ID={} to FBO={}.",
-            *m_DepthRenderBufferPtr, *m_RendererIDPtr
-        );
+        Logger::GetLogger()->info("Attached Depth Texture ID={} to FBO={}.",
+            *m_DepthTexturePtr, *m_RendererIDPtr);
     }
+    // --------------------------------------------------------------
 
     // Check FBO completeness
     GLenum status = GL_FRAMEBUFFER_COMPLETE;
     GLCall(status = glCheckFramebufferStatus(GL_FRAMEBUFFER));
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-        Logger::GetLogger()->error(
-            "FBO ID={} is incomplete! Status=0x{:X}",
-            *m_RendererIDPtr, status
-        );
-        throw std::runtime_error("Incomplete FrameBuffer: glCheckFramebufferStatus failed.");
+        Logger::GetLogger()->error("FBO ID={} is incomplete! Status=0x{:X}",
+            *m_RendererIDPtr, status);
+        throw std::runtime_error("Incomplete FrameBuffer!");
     }
 
     GLCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
     Logger::GetLogger()->info(
         "Initialized FBO (ID={}) with {} samples. Width={}, Height={}.",
         *m_RendererIDPtr, samples, width, height
@@ -165,23 +186,22 @@ void FrameBuffer::Initialize(int width,
 
 void FrameBuffer::Cleanup()
 {
-    // By resetting the unique_ptrs, we rely on their custom deleters to free GPU resources
     if (m_RendererIDPtr && *m_RendererIDPtr != 0) {
         Logger::GetLogger()->info("Deleting FBO (ID={}).", *m_RendererIDPtr);
     }
     m_RendererIDPtr.reset();
 
-    for (auto& texPtr : m_Textures) {
+    for (auto& texPtr : m_ColorTextures) {
         if (texPtr && *texPtr != 0) {
-            Logger::GetLogger()->info("Deleting Texture (ID={}).", *texPtr);
+            Logger::GetLogger()->info("Deleting Color Texture (ID={}).", *texPtr);
         }
     }
-    m_Textures.clear();
+    m_ColorTextures.clear();
 
-    if (m_DepthRenderBufferPtr && *m_DepthRenderBufferPtr != 0) {
-        Logger::GetLogger()->info("Deleting Depth RBO (ID={}).", *m_DepthRenderBufferPtr);
+    if (m_DepthTexturePtr && *m_DepthTexturePtr != 0) {
+        Logger::GetLogger()->info("Deleting Depth Texture (ID={}).", *m_DepthTexturePtr);
     }
-    m_DepthRenderBufferPtr.reset();
+    m_DepthTexturePtr.reset();
 }
 
 void FrameBuffer::Bind() const
@@ -199,11 +219,17 @@ GLuint FrameBuffer::GetTexture(GLenum attachment) const
 {
     // Expect attachments like GL_COLOR_ATTACHMENT0 + n
     int index = attachment - GL_COLOR_ATTACHMENT0;
-    if (index >= 0 && static_cast<size_t>(index) < m_Textures.size()) {
-        return *m_Textures[index];
+    if (index >= 0 && index < (int)m_ColorTextures.size()) {
+        return *m_ColorTextures[index];
     }
-    Logger::GetLogger()->error("Invalid attachment type queried: 0x{:X}", attachment);
+    Logger::GetLogger()->error("GetTexture: Invalid attachment type queried: 0x{:X}", attachment);
     return 0;
+}
+
+GLuint FrameBuffer::GetDepthTexture() const
+{
+    if (!m_DepthTexturePtr) return 0;
+    return *m_DepthTexturePtr;
 }
 
 void FrameBuffer::Resize(int newWidth, int newHeight)
@@ -216,7 +242,6 @@ void FrameBuffer::Resize(int newWidth, int newHeight)
     m_Height = newHeight;
 
     Cleanup();
-    // Re-initialize with updated dimensions
     Initialize(m_Width, m_Height, m_Attachments, m_HasDepth, m_Samples);
 
     Logger::GetLogger()->info("Resized FBO (ID={}) to {}x{}.",
@@ -229,12 +254,11 @@ void FrameBuffer::BlitTo(FrameBuffer& targetFBO, GLbitfield mask, GLenum filter)
     GLCall(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO.GetRendererID()));
 
     GLCall(glBlitFramebuffer(
-        0, 0, m_Width, m_Height,                  // src rect
-        0, 0, targetFBO.GetWidth(), targetFBO.GetHeight(), // dst rect
+        0, 0, m_Width, m_Height,                    // src rect
+        0, 0, targetFBO.GetWidth(), targetFBO.GetHeight(),  // dst rect
         mask,
         filter
     ));
 
-    // Unbind everything
-    GLCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

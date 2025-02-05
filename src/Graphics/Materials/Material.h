@@ -10,9 +10,10 @@
 #include "Graphics/Textures/ITexture.h"
 #include "Graphics/Shaders/BaseShader.h"
 #include "Utilities/Logger.h"
+#include "Graphics/Buffers/UniformBuffer.h"
 
-// The typical "material ID" type
-using MaterialID = int;
+class UniformBuffer;
+
 
 /**
  * @brief A variant holding possible uniform parameter types.
@@ -71,8 +72,8 @@ public:
     void         SetName(const std::string& name);
     const std::string& GetName() const;
 
-    void         SetID(MaterialID id);
-    MaterialID   GetID() const;
+    void         SetID(int id);
+    int   GetID() const;
 
     // The layout describing which params/textures are valid
     const MaterialLayout& GetLayout() const;
@@ -94,8 +95,9 @@ public:
 
 private:
     // The ID and name
-    MaterialID   m_ID = -1;
+    int   m_ID = -1;
     std::string  m_Name;
+
 
     // Layout (which params, which textures)
     MaterialLayout m_Layout;

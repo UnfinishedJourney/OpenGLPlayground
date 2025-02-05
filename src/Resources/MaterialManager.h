@@ -23,16 +23,16 @@ public:
 
     // Retrieve by name or ID
     std::shared_ptr<Material> GetMaterialByName(const std::string& name) const;
-    std::shared_ptr<Material> GetMaterialByID(MaterialID id) const;
+    std::shared_ptr<Material> GetMaterialByID(int id) const;
 
     // Add or remove
     void AddMaterial(const std::shared_ptr<Material>& material);
     void RemoveMaterialByName(const std::string& name);
-    void RemoveMaterialByID(MaterialID id);
+    void RemoveMaterialByID(int id);
 
     // Bind / Unbind by name or ID
     void BindMaterial(const std::string& name, const std::shared_ptr<BaseShader>& shader);
-    void BindMaterial(MaterialID id, const std::shared_ptr<BaseShader>& shader);
+    void BindMaterial(int id, const std::shared_ptr<BaseShader>& shader);
     void UnbindMaterial();
 
     // Utility
@@ -48,15 +48,15 @@ private:
 
 private:
     // Each new material gets an auto-increment ID
-    MaterialID m_LastId = 0;
+    int m_LastId = 0;
 
     // Internal storage item
     struct MaterialEntry {
         std::string name;
-        MaterialID  id;
+        int  id;
         std::shared_ptr<Material> material;
 
-        MaterialEntry(std::string nm, MaterialID mid, std::shared_ptr<Material> mat)
+        MaterialEntry(std::string nm, int mid, std::shared_ptr<Material> mat)
             : name(std::move(nm))
             , id(mid)
             , material(std::move(mat))
@@ -68,7 +68,7 @@ private:
 
     // Lookups
     std::unordered_map<std::string, size_t> m_NameToIndex;
-    std::unordered_map<MaterialID, size_t>  m_IDToIndex;
+    std::unordered_map<int, size_t>  m_IDToIndex;
 
     // Currently bound material name
     std::string m_CurrentlyBoundMaterial;

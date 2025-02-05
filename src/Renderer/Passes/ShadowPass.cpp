@@ -22,12 +22,19 @@ ShadowPass::ShadowPass(GLsizei shadowResolution)
 
     // For the projection, a 90° FOV works well if you want a symmetric frustum.
     float nearPlane = 1.0f; // Adjust based on your scene
-    float farPlane = 50.0f; // Adjust based on your scene's extent
+    float farPlane = 100.0f; // Adjust based on your scene's extent
     glm::mat4 lightProj = glm::perspective(glm::radians(90.0f), 1.0f, nearPlane, farPlane);
 
+    glm::mat4 bias = glm::mat4(
+        0.5f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.5f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.5f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f
+    );
 
     m_LightView = lightView;
     m_LightProj = lightProj;
+    m_Bias = bias;
 
 }
 
@@ -47,13 +54,8 @@ void ShadowPass::Execute(const std::shared_ptr<Scene>& scene) {
     // Build the combined light-space matrix:
     // ShadowMatrix = Bias * LightProj * LightView
     // (The bias matrix converts clip coords [-1,1] to [0,1].)
-    glm::mat4 bias = glm::mat4(
-        0.5f, 0.0f, 0.0f, 0.0f,
-        0.0f, 0.5f, 0.0f, 0.0f,
-        0.0f, 0.0f, 0.5f, 0.0f,
-        0.5f, 0.5f, 0.5f, 1.0f
-    );
-    glm::mat4 shadowMatrix = bias * m_LightProj * m_LightView;
+    
+    glm::mat4 shadowMatrix = m_LightProj * m_LightView;
     m_ShadowShader->SetUniform("u_ShadowMatrix", shadowMatrix);
 
     const auto& staticBatches = scene->GetStaticBatches();
@@ -65,4 +67,16 @@ void ShadowPass::Execute(const std::shared_ptr<Scene>& scene) {
     // Restore state: revert culling order and unbind FBO.
     glCullFace(GL_BACK);
     m_ShadowMap->Unbind();
+
+    GLuint depthTexID = m_ShadowMap->GetDepthTexture();
+    GLsizei w = m_ShadowMap->GetWidth();
+    GLsizei h = m_ShadowMap->GetHeight();
+
+    glBindTextureUnit(10, depthTexID);
+
+    // Wrap the existing GL texture ID
+    //auto texture = std::make_shared<ExistingMapTexture>(depthTexID, w, h);
+    //return texture;
+
+    //m_ShadowMap->GetDepthTexture();
 }

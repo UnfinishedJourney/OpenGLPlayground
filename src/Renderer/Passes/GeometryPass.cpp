@@ -47,6 +47,28 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
         scene->BindLightSSBO();
     }
 
+    glm::vec3 lightPos = glm::vec3(1.5f, 2.0f, 1.5f);
+    // Pick a target for the light’s view; for instance, the center of the scene:
+    glm::vec3 target = glm::vec3(0.0f);
+    // Choose a suitable up vector:
+    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    // Build the view matrix from the light's point of view:
+    glm::mat4 lightView = glm::lookAt(lightPos, target, up);
+
+    // For the projection, a 90° FOV works well if you want a symmetric frustum.
+    float nearPlane = 1.0f; // Adjust based on your scene
+    float farPlane = 100.0f; // Adjust based on your scene's extent
+    glm::mat4 lightProj = glm::perspective(glm::radians(90.0f), 1.0f, nearPlane, farPlane);
+
+    glm::mat4 bias = glm::mat4(
+        0.5f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.5f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.5f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f
+    );
+
+
     // 4) Render batches
     {
         PROFILE_BLOCK("Render Static Batches", Cyan);
@@ -54,6 +76,8 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
         auto& shaderManager = ShaderManager::GetInstance();
 
         const auto& staticBatches = scene->GetStaticBatches();
+        glm::mat4 shadowMatrix = bias * lightProj * lightView;
+
         for (auto& batch : staticBatches)
         {
             PROFILE_BLOCK("Render Batch", Purple);
@@ -70,6 +94,7 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
             // Material
             materialManager.BindMaterial(batch->GetMaterialID(), shader);
 
+            shader->SetUniform("u_ShadowMatrix", shadowMatrix);
             // Model matrix from first object if all merged
             //glm::mat4 modelMatrix = glm::mat4(1.0f);
             //glm::mat3 normalMatrix = glm::mat4(1.0f);

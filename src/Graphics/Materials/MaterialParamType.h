@@ -36,9 +36,12 @@ enum class TextureType : std::size_t {
     Ambient = 5,
     Height = 6,
     BRDFLut = 7,
-    Unknown = 8,
+    SkyBox = 8,
+    SkyboxIrradiance = 9,
+    ShadowMap = 10,
+    Unknown = 11,
 
-    COUNT = 9
+    COUNT = 12
 };
 
 namespace std {
