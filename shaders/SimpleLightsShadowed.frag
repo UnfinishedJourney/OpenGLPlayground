@@ -10,10 +10,33 @@ in vec4 PosLightMap;  // Shadow coords (after bias)
 in vec3 FragPos;
 in vec3 Normal;
 
-////////////////////////////////////////////////////////////////////////////////
-// 1) Use a shadow sampler!
-////////////////////////////////////////////////////////////////////////////////
 layout(binding = 10) uniform sampler2DShadow u_ShadowMap;
+
+float PCF(sampler2DShadow shadowMap, vec4 shadowCoord)
+{
+    float depth = 0.01;
+    // do the perspective divide manually:
+    vec3 coord = shadowCoord.xyz / shadowCoord.w;
+
+    // If outside 0..1 range -> not in shadow map => shadow=1
+    if(any(lessThan(coord, vec3(0.0))) || any(greaterThan(coord, vec3(1.0))))
+        return 1.0;
+
+    float shadowSum = 0.0;
+    const float texSize = 2048.0; // match your shadow map resolution
+    float offset = 1.0 / texSize; 
+    // 3x3 sample
+    for(int y=-1; y<=1; y++)
+    {
+        for(int x=-1; x<=1; x++)
+        {
+            vec4 offCoord = shadowCoord;
+            offCoord.xy += vec2(x, y) * offset;
+            shadowSum += textureProj(shadowMap, offCoord);
+        }
+    }
+    return shadowSum / 9.0;
+}
 
 void main()
 {
@@ -42,16 +65,7 @@ void main()
    
 
 
-    float shadowFactor = textureProj(u_ShadowMap, PosLightMap);
-
-    //if (onfloor < 0.9)
-        //shadowFactor = 1.0;
-
-    vec3 shadowCoord = PosLightMap.xyz / PosLightMap.w; // in [0..1] if bias was applied
-    if (any(lessThan(shadowCoord, vec3(0.0))) || any(greaterThan(shadowCoord, vec3(1.0))))
-    {
-        shadowFactor = 1.0;  // not in shadow map range
-    }
+    float shadowFactor = PCF(u_ShadowMap, PosLightMap);
 
     // shadowFactor typically is 1.0 if fully lit, 0.0 if in shadow,
     // or partial if the hardware does PCF.
@@ -59,7 +73,7 @@ void main()
     ////////////////////////////////////////////////////////////////////////////
     // 4) Combine lighting with the shadow factor
     ////////////////////////////////////////////////////////////////////////////
-    // For example, multiply the diffuse portion by (shadowFactor)
+    // For example, multiply the diffuse portion by (PosLightMap)
     vec3 finalColor = shadowFactor * lighting;
 
 

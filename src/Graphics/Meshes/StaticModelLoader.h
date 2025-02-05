@@ -83,6 +83,7 @@ namespace staticloader
         const std::unordered_map<std::string, std::string> m_ModelPaths = {
             {"pig",    "../assets/Objs/pig_triangulated.obj"},
             {"bunny",  "../assets/Objs/bunny.obj"},
+            {"duck",  "../assets/rubber_duck/scene.gltf"},
             {"dragon", "../assets/Objs/dragon.obj"},
             {"bistro", "../assets/AmazonBistro/Exterior/exterior.obj"},
             {"helmet", "../assets/DamagedHelmet/glTF/DamagedHelmet.gltf"}

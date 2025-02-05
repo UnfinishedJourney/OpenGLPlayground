@@ -15,4 +15,6 @@ public:
 
 private:
     std::shared_ptr<FrameBuffer> m_Framebuffer;
+    bool m_bShadowed = false;
+    glm::mat4 m_ShadowMatrix = 1.0;
 };

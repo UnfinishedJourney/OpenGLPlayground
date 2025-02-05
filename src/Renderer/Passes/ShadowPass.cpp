@@ -25,8 +25,7 @@ ShadowPass::ShadowPass(GLsizei shadowResolution)
     float farPlane = 100.0f; // Adjust based on your scene's extent
     glm::mat4 lightProj = glm::perspective(glm::radians(90.0f), 1.0f, nearPlane, farPlane);
 
-    m_LightView = lightView;
-    m_LightProj = lightProj;
+    m_ShadowMatrix = lightProj * lightView;
 
 }
 
@@ -49,8 +48,7 @@ void ShadowPass::Execute(const std::shared_ptr<Scene>& scene) {
     // ShadowMatrix = Bias * LightProj * LightView
     // (The bias matrix converts clip coords [-1,1] to [0,1].)
     
-    glm::mat4 shadowMatrix = m_LightProj * m_LightView;
-    m_ShadowShader->SetUniform("u_ShadowMatrix", shadowMatrix);
+    m_ShadowShader->SetUniform("u_ShadowMatrix", m_ShadowMatrix);
 
     const auto& staticBatches = scene->GetStaticBatches();
     for (auto& batch : staticBatches)

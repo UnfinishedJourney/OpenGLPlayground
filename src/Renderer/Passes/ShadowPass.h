@@ -20,16 +20,9 @@ public:
     // Retrieve the ShadowMap so the texture can be used in the main pass.
     std::shared_ptr<ShadowMap> GetShadowMap() const { return m_ShadowMap; }
 
-    // Set the light’s view/projection matrices and other uniforms.
-    void SetLightMatrices(const glm::mat4& lightView, const glm::mat4& lightProj) {
-        m_LightView = lightView;
-        m_LightProj = lightProj;
-    }
-
 private:
     std::shared_ptr<ShadowMap> m_ShadowMap;
     std::shared_ptr<Shader> m_ShadowShader; // used during shadow pass
     // Matrices computed from the light’s position/direction
-    glm::mat4 m_LightView;
-    glm::mat4 m_LightProj;
+    glm::mat4 m_ShadowMatrix;
 };

@@ -11,14 +11,14 @@ uniform PackedMtlParams uMaterial;       // Mtl0..Mtl3
 uniform int uMaterial_textureUsageFlags; // bitmask
 
 
-layout(binding = 1) uniform sampler2D uTexAlbedo;
-layout(binding = 2) uniform sampler2D uTexNormal;
-layout(binding = 3) uniform sampler2D uTexMetalRoughness;
-layout(binding = 4) uniform sampler2D uTexAO;
-layout(binding = 5) uniform sampler2D uTexEmissive;
-layout(binding = 6) uniform sampler2D uTexAmbient;
-layout(binding = 7) uniform sampler2D uTexHeight;
-layout(binding = 8) uniform sampler2D uTexBRDFLUT; // if you want, etc.
+layout(binding = 0) uniform sampler2D uTexAlbedo;
+layout(binding = 1) uniform sampler2D uTexNormal;
+layout(binding = 2) uniform sampler2D uTexMetalRoughness;
+layout(binding = 3) uniform sampler2D uTexAO;
+layout(binding = 4) uniform sampler2D uTexEmissive;
+layout(binding = 5) uniform sampler2D uTexAmbient;
+layout(binding = 6) uniform sampler2D uTexHeight;
+layout(binding = 7) uniform sampler2D uTexBRDFLUT; // if you want, etc.
 layout(binding = 9) uniform samplerCube u_EnvironmentMapDiffuse;   // Diffuse irradiance map
 
 // A helper to check bits in the bitmask:
