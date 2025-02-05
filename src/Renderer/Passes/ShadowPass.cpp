@@ -25,16 +25,8 @@ ShadowPass::ShadowPass(GLsizei shadowResolution)
     float farPlane = 100.0f; // Adjust based on your scene's extent
     glm::mat4 lightProj = glm::perspective(glm::radians(90.0f), 1.0f, nearPlane, farPlane);
 
-    glm::mat4 bias = glm::mat4(
-        0.5f, 0.0f, 0.0f, 0.0f,
-        0.0f, 0.5f, 0.0f, 0.0f,
-        0.0f, 0.0f, 0.5f, 0.0f,
-        0.5f, 0.5f, 0.5f, 1.0f
-    );
-
     m_LightView = lightView;
     m_LightProj = lightProj;
-    m_Bias = bias;
 
 }
 
@@ -49,6 +41,8 @@ void ShadowPass::Execute(const std::shared_ptr<Scene>& scene) {
 
     // Set face culling to front-face to reduce self-shadowing artifacts.
     glCullFace(GL_FRONT);
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(2.f, 4.f);
 
     m_ShadowShader->Bind();
     // Build the combined light-space matrix:
@@ -65,6 +59,7 @@ void ShadowPass::Execute(const std::shared_ptr<Scene>& scene) {
     }
 
     // Restore state: revert culling order and unbind FBO.
+    glDisable(GL_POLYGON_OFFSET_FILL);
     glCullFace(GL_BACK);
     m_ShadowMap->Unbind();
 

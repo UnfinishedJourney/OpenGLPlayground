@@ -33,7 +33,26 @@ void main()
     //    Because it's a sampler2DShadow, textureProj(...) returns float
     //    in [0..1], representing how much is lit vs. shadowed.
     ////////////////////////////////////////////////////////////////////////////
+
+    
+    vec3 projCoord = PosLightMap.xyz / PosLightMap.w;  // manual perspective divide
+    // This is in the [-1..1] clip space if you haven't applied the bias yet
+    // or in [0..1] if you have multiplied by the bias matrix. Adjust accordingly!
+
+   
+
+
     float shadowFactor = textureProj(u_ShadowMap, PosLightMap);
+
+    //if (onfloor < 0.9)
+        //shadowFactor = 1.0;
+
+    vec3 shadowCoord = PosLightMap.xyz / PosLightMap.w; // in [0..1] if bias was applied
+    if (any(lessThan(shadowCoord, vec3(0.0))) || any(greaterThan(shadowCoord, vec3(1.0))))
+    {
+        shadowFactor = 1.0;  // not in shadow map range
+    }
+
     // shadowFactor typically is 1.0 if fully lit, 0.0 if in shadow,
     // or partial if the hardware does PCF.
 
