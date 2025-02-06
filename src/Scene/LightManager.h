@@ -11,10 +11,16 @@ class UniformBuffer;
 class ShaderStorageBuffer;
 
 //maybe should rewrite it
+
 struct BoundingBox
 {
-    glm::vec3 min_ = glm::vec3(0.0f);
-    glm::vec3 max_ = glm::vec3(1.0f);
+    glm::vec3 min_{ 0.0f };
+    glm::vec3 max_{ 0.0f };
+
+    void combinePoint(const glm::vec3& p) {
+        min_ = glm::min(min_, p);
+        max_ = glm::max(max_, p);
+    }
 };
 
 /**

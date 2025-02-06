@@ -41,8 +41,15 @@ public:
     bool LoadStaticModelIntoScene(
         const std::string& modelName,
         const std::string& shaderName,
-        float scaleFactor = 1.0f
-    );
+        float scaleFactor = 1.0f,
+        std::unordered_map<aiTextureType, TextureType> aiToMyType = {
+                { aiTextureType_DIFFUSE,   TextureType::Albedo       },
+                { aiTextureType_NORMALS,   TextureType::Normal       },
+                { aiTextureType_SPECULAR,  TextureType::MetalRoughness },
+                { aiTextureType_EMISSIVE,  TextureType::Emissive     },
+                { aiTextureType_AMBIENT,   TextureType::Emissive     }
+        });
+
     bool LoadPrimitiveIntoScene(
         const std::string& primitiveName,
         const std::string& shaderName,
@@ -65,6 +72,8 @@ public:
     // Post-processing toggles
     void  SetPostProcessingEffect(PostProcessingEffectType effect);
     PostProcessingEffectType GetPostProcessingEffect() const;
+
+    BoundingBox ComputeWorldBoundingBox() const;
 
     // Scene toggles
     void SetShowGrid(bool bGrid) { m_ShowGrid = bGrid; }

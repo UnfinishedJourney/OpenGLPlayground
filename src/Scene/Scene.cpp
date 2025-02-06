@@ -65,12 +65,13 @@ void Scene::SetCamera(const std::shared_ptr<Camera>& camera)
 
 bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
     const std::string& shaderName,
-    float scaleFactor)
+    float scaleFactor,
+    std::unordered_map<aiTextureType, TextureType> aiToMyType)
 {
     auto& resourceManager = ResourceManager::GetInstance();
     auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(shaderName);
 
-    staticloader::ModelLoader loader(scaleFactor);
+    staticloader::ModelLoader loader(scaleFactor, aiToMyType);
     bool success = loader.LoadStaticModel(modelName, meshLayout, matLayout, /*centerModel=*/true);
     if (!success) {
         Logger::GetLogger()->error("Failed to load static model '{}'.", modelName);
@@ -138,6 +139,47 @@ void Scene::BuildStaticBatchesIfNeeded()
         }
         m_StaticBatchManager->BuildBatches();
     }
+
+    if (m_TurnOnShadows)
+    {
+        BoundingBox bb = ComputeWorldBoundingBox();
+        m_LightManager->SetBoundingBox(bb.min_, bb.max_);
+    }
+}
+
+BoundingBox Scene::ComputeWorldBoundingBox() const
+{
+    // Start with a trivial bounding box
+    BoundingBox bigBox;
+    bigBox.min_ = glm::vec3(FLT_MAX);
+    bigBox.max_ = glm::vec3(-FLT_MAX);
+
+    for (auto& ro : m_StaticObjects)
+    {
+        // If static, we assume the geometry is “baked” in world space
+        // Or we might have a transform we can apply
+        // For a “static” object that’s already in world coords,
+        // we can just gather the mesh’s bounding box directly.
+
+        // For example, if each Mesh has .minPos / .maxPos in its local space:
+        // we might do `glm::vec3 corners[8]` etc., transform them,
+        // or if it’s truly “baked,” we just combine that min/max.
+
+        if (!ro->GetMesh()) continue;
+
+        glm::vec3 localMin = ro->GetMesh()->minBounds;
+        glm::vec3 localMax = ro->GetMesh()->maxBounds;
+
+        // If truly baked in world coords, just combine directly:
+        bigBox.combinePoint(localMin);
+        bigBox.combinePoint(localMax);
+
+        // If you need a transform, do something like:
+        //   auto worldCorners = ro->ComputeCornersInWorld();
+        //   for each corner: bigBox.combinePoint(corner);
+    }
+
+    return bigBox;
 }
 
 const std::vector<std::shared_ptr<Batch>>& Scene::GetStaticBatches() const
