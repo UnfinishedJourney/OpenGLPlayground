@@ -89,6 +89,8 @@ bool Application::Init()
 
         // Switch to displaying the test menu by default
         m_TestManager.SwitchTest("Test Menu");
+        auto camera = m_TestManager.GetCurrentCamera();
+        m_CameraController.SetCamera(camera);
     }
 
     m_Logger->info("Application initialized successfully.");

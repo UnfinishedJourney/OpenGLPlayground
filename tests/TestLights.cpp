@@ -25,7 +25,8 @@ void TestLights::OnEnter()
 
     // Add a light
     LightData light1 = { glm::vec4(1.5f, 2.0f, 1.5f, 0.0f), glm::vec4(1.0f) };
-    m_Scene->AddLight(light1);
+    auto lightManager = m_Scene->GetLightManager();
+    lightManager->AddLight(light1);
 
     // Enable debug lights and grid
     m_Scene->SetShowGrid(true);

@@ -39,7 +39,8 @@ void DebugLightsPass::Execute(const std::shared_ptr<Scene>& scene)
 
     scene->UpdateFrameDataUBO();
     scene->BindFrameDataUBO();
-    scene->BindLightSSBO();
+    auto lightManager = scene->GetLightManager();
+    lightManager->BindLightsGPU();
 
     auto& resourceManager = ResourceManager::GetInstance();
     auto& shaderManager = ShaderManager::GetInstance();
@@ -58,7 +59,7 @@ void DebugLightsPass::Execute(const std::shared_ptr<Scene>& scene)
         static_cast<GLsizei>(m_LightSphereMeshBuffer->GetIndexCount()),
         GL_UNSIGNED_INT,
         nullptr,
-        static_cast<GLsizei>(scene->GetLightsData().size())
+        static_cast<GLsizei>(lightManager->GetLightsData().size())
     ));
 
     glDisable(GL_CULL_FACE);

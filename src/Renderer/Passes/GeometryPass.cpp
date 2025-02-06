@@ -73,7 +73,8 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
         PROFILE_BLOCK("Update and Bind UBOs", Yellow);
         scene->UpdateFrameDataUBO();
         scene->BindFrameDataUBO();
-        scene->BindLightSSBO();
+        auto lightManager = scene->GetLightManager();
+        lightManager->BindLightsGPU();
     }
 
     
