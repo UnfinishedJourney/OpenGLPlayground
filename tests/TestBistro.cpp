@@ -35,10 +35,19 @@ void TestBistro::OnEnter() {
     //    return;
     //}
 
-    if (!m_Scene->LoadStaticModelIntoScene("bistro", "bistroShader", 0.01)) {
+    if (!m_Scene->LoadStaticModelIntoScene("bistro", "bistroShaderShadowed", 0.01)) {
         Logger::GetLogger()->error("Failed to load 'bistro' model in TestDamagedHelmet");
         return;
     }
+
+    LightData light1 = { glm::vec4(-0.1f, -1.0f, 0.0f, 0.0f), glm::vec4(1.0f) };
+
+    auto lightManager = m_Scene->GetLightManager();
+    lightManager->AddLight(light1);
+
+    m_Scene->SetShowShadows(true);
+
+    m_Scene->BuildStaticBatchesIfNeeded();
 
     m_Scene->SetSkyboxEnabled(true);
 

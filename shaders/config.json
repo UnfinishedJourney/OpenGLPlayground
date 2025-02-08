@@ -115,6 +115,13 @@
                 "fragment": "../shaders/BistroShader.frag"
             }
         },
+        "bistroShaderShadowed": {
+            "binary_path": "../shaders/bin/BistroShaderShadowed.bin",
+            "shader_stages": {
+                "vertex": "../shaders/BistroShaderShadowed.vert",
+                "fragment": "../shaders/BistroShaderShadowed.frag"
+            }
+        },
         "brdfCompute": {
             "binary_path": "../shaders/bin/BRDFCompute.bin",
             "is_compute_shader": true,
