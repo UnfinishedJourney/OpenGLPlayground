@@ -16,6 +16,8 @@ ShadowPass::ShadowPass(const std::shared_ptr<Scene>& scene, GLsizei shadowResolu
     glm::mat4 lightView = lightManager->ComputeLightView(0);
     glm::mat4 lightProj = lightManager->ComputeLightProj(0);
 
+    glm::vec4 d = glm::vec4(0.0, 1.0, 0.0, 1.0);
+    d = lightProj * lightView * d;
     m_ShadowMatrix = lightProj * lightView;
 }
 

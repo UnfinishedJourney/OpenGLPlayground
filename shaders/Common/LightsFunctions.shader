@@ -1,124 +1,155 @@
-#include "Lights.shader"
-#include "Material.shader"
+#include "Lights.shader"     // for numLights, lightsData, etc.
+#include "Material.shader"    // for uMaterial
 
+//--------------------------------------------
+// Shared function: computeLightDir()
+//--------------------------------------------
+struct LightResult {
+    vec3 lightDir;
+    float attenuation; // =1 if directional
+};
 
-vec3 CalculatePhongLighting(vec3 normal, vec3 viewDir, vec3 fragPos) {
-    vec3 result = vec3(0.0);
+LightResult computeLightDir(in LightData ld, in vec3 fragPos)
+{
+    LightResult lr;
+    float wComp = ld.position.w;
 
-     vec3 Ka = uMaterial.Mtl0.xyz;
-    float Ni = uMaterial.Mtl0.w;  // index of refraction if wanted
-
-    vec3 Kd = uMaterial.Mtl1.xyz;
-    float alpha = uMaterial.Mtl1.w; // "d" from MTL (opacity)
-
-    vec3 Ks = uMaterial.Mtl2.xyz;
-    float Ns = uMaterial.Mtl2.w;    // shininess
-
-    for (uint i = 0; i < numLights; ++i) { // Use numLights from LightsBuffer
-        LightData light = lightsData[i];
-
-        // Extract light color and intensity
-        vec3 lightColor = light.color.xyz;
-        float intensity = light.color.w;
-
-        // Ambient component
-        vec3 ambient = Ka * lightColor * intensity;
-
-        // Diffuse component
-        vec3 lightDir = normalize(light.position.xyz - fragPos);
-        float diff = max(dot(normal, lightDir), 0.0);
-        vec3 diffuse = Kd * diff * lightColor * intensity;
-
-        // Specular component
-        vec3 reflectDir = reflect(-lightDir, normal);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), Ns);
-        vec3 specular = Ks * spec * lightColor * intensity;
-
-        result += ambient + diffuse + specular;
+    if (wComp < 0.5)
+    {
+        // directional
+        lr.lightDir     = normalize(-ld.position.xyz);
+        lr.attenuation  = 1.0; // no distance falloff
     }
-    return result;
+    else
+    {
+        // point
+        vec3 toLight = ld.position.xyz - fragPos;
+        float dist   = length(toLight);
+        lr.lightDir  = toLight / dist;
+
+        // e.g. 1/(dist^2) if you want
+        // or 1/(1 + 0.09*dist + 0.032*dist^2) etc.
+        // We'll keep it simple:
+        lr.attenuation = 1.0 / (dist*dist);
+    }
+    return lr;
 }
 
-vec3 CalculateBlinnPhongLighting(vec3 normal, vec3 viewDir, vec3 fragPos) {
-
+//--------------------------------------------
+// PHONG
+//--------------------------------------------
+vec3 CalculatePhongLighting(vec3 normal, vec3 viewDir, vec3 fragPos)
+{
     vec3 Ka = uMaterial.Mtl0.xyz;
-    float Ni = uMaterial.Mtl0.w;  // index of refraction if wanted
-
     vec3 Kd = uMaterial.Mtl1.xyz;
-    float alpha = uMaterial.Mtl1.w; // "d" from MTL (opacity)
-
     vec3 Ks = uMaterial.Mtl2.xyz;
-    float Ns = uMaterial.Mtl2.w;    // shininess
 
-    vec3 result = vec3(0.0);
-    for (uint i = 0; i < numLights; ++i) { // Use numLights from LightsBuffer
-        LightData light = lightsData[i];
+    float Ns = uMaterial.Mtl2.w;
 
-        // Extract light color and intensity
-        vec3 lightColor = light.color.xyz;
-        float intensity = light.color.w;
+    vec3 total = vec3(0.0);
 
-        // Ambient component
-        vec3 ambient = Ka * lightColor * intensity;
+    for (uint i = 0; i < numLights; i++)
+    {
+        LightData ld = lightsData[i];
 
-        // Diffuse component
-        vec3 lightDir = normalize(light.position.xyz - fragPos);
-        float diff = max(dot(normal, lightDir), 0.0);
-        vec3 diffuse = Kd * diff * lightColor * intensity;
+        // color & intensity
+        vec3  Lcol = ld.color.xyz;
+        float Lint = ld.color.w;
 
-        // Specular component (Blinn-Phong)
-        vec3 halfwayDir = normalize(lightDir + viewDir);
-        float spec = pow(max(dot(normal, halfwayDir), 0.0), Ns);
-        vec3 specular = Ks * spec * lightColor * intensity;
+        // get direction & attenuation
+        LightResult lr = computeLightDir(ld, fragPos);
 
-        result += ambient + diffuse + specular;
+        // Ambient
+        vec3 ambient = Ka * Lcol * Lint;
+
+        // Diffuse
+        float diff = max(dot(normal, lr.lightDir), 0.0);
+        vec3 diffuse = Kd * diff * Lcol * Lint * lr.attenuation;
+
+        // Specular
+        vec3 reflectDir = reflect(-lr.lightDir, normal);
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), Ns);
+        vec3 specular = Ks * spec * Lcol * Lint * lr.attenuation;
+
+        total += (ambient + diffuse + specular);
     }
-    return result;
+
+    return total;
 }
 
-uniform int levels = 3;          // Number of shading levels
-uniform float scaleFactor = 1;   // Scaling factor for intensity
-
-// Function to calculate Toon Lighting
-vec3 CalculateToonLighting(vec3 normal, vec3 viewDir, vec3 fragPos) {
-    vec3 result = vec3(0.0);
-    
-        vec3 Ka = uMaterial.Mtl0.xyz;
-    float Ni = uMaterial.Mtl0.w;  // index of refraction if wanted
-
+//--------------------------------------------
+// BLINN-PHONG
+//--------------------------------------------
+vec3 CalculateBlinnPhongLighting(vec3 normal, vec3 viewDir, vec3 fragPos)
+{
+    vec3 Ka = uMaterial.Mtl0.xyz;
     vec3 Kd = uMaterial.Mtl1.xyz;
-    float alpha = uMaterial.Mtl1.w; // "d" from MTL (opacity)
-
     vec3 Ks = uMaterial.Mtl2.xyz;
-    float Ns = uMaterial.Mtl2.w;    // shininess
-    
-    for (uint i = 0; i < numLights; ++i) { // Iterate over all lights
-        LightData light = lightsData[i];
+    float Ns = uMaterial.Mtl2.w;
 
-        // Extract light color and intensity
-        vec3 lightColor = light.color.xyz;
-        float intensity = light.color.w;
+    vec3 total = vec3(0.0);
+    for (uint i = 0; i < numLights; i++)
+    {
+        LightData ld = lightsData[i];
+        vec3  Lcol = ld.color.xyz;
+        float Lint = ld.color.w;
 
-        // Ambient component remains the same as Phong
-        vec3 ambient = Ka * lightColor * intensity;
+        LightResult lr = computeLightDir(ld, fragPos);
 
-        // Diffuse component with quantization
-        vec3 lightDir = normalize(light.position.xyz - fragPos);
-        float diff = max(dot(normal, lightDir), 0.0);
-        // Quantize the diffuse term
-        float quantDiff = floor(diff * float(levels)) / float(levels);
-        vec3 diffuse = Kd * quantDiff * lightColor * intensity * scaleFactor;
+        // Ambient
+        vec3 ambient = Ka * Lcol * Lint;
 
-        // Specular component with quantization
-        vec3 reflectDir = reflect(-lightDir, normal);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), Ns);
-        // Quantize the specular term
-        float quantSpec = floor(spec * float(levels)) / float(levels);
-        vec3 specular = Ks * quantSpec * lightColor * intensity * scaleFactor;
+        // Diffuse
+        float diff = max(dot(normal, lr.lightDir), 0.0);
+        vec3 diffuse = Kd * diff * Lcol * Lint * lr.attenuation;
 
-        // Accumulate the results
-        result += ambient + diffuse + specular;
+        // Specular (blinn-phong)
+        vec3 halfwayDir = normalize(lr.lightDir + viewDir);
+        float spec = pow(max(dot(normal, halfwayDir), 0.0), Ns);
+        vec3 specular = Ks * spec * Lcol * Lint * lr.attenuation;
+
+        total += (ambient + diffuse + specular);
     }
-    
-    return result;
+    return total;
+}
+
+//--------------------------------------------
+// TOON
+//--------------------------------------------
+uniform int levels = 3;
+uniform float scaleFactor = 1.0;
+
+vec3 CalculateToonLighting(vec3 normal, vec3 viewDir, vec3 fragPos)
+{
+    vec3 Ka = uMaterial.Mtl0.xyz;
+    vec3 Kd = uMaterial.Mtl1.xyz;
+    vec3 Ks = uMaterial.Mtl2.xyz;
+    float Ns = uMaterial.Mtl2.w;
+
+    vec3 total = vec3(0.0);
+    for (uint i=0; i<numLights; i++)
+    {
+        LightData ld = lightsData[i];
+        vec3  Lcol = ld.color.xyz;
+        float Lint = ld.color.w;
+
+        LightResult lr = computeLightDir(ld, fragPos);
+
+        // Ambient
+        vec3 ambient = Ka * Lcol * Lint;
+
+        // Diffuse (quantized)
+        float diff = max(dot(normal, lr.lightDir), 0.0);
+        float quantDiff = floor(diff * float(levels)) / float(levels);
+        vec3 diffuse = Kd * quantDiff * Lcol * Lint * lr.attenuation * scaleFactor;
+
+        // Specular (quantized)
+        vec3 reflectDir = reflect(-lr.lightDir, normal);
+        float rawSpec = pow(max(dot(viewDir, reflectDir), 0.0), Ns);
+        float quantSpec = floor(rawSpec * float(levels)) / float(levels);
+        vec3 specular = Ks * quantSpec * Lcol * Lint * lr.attenuation * scaleFactor;
+
+        total += (ambient + diffuse + specular);
+    }
+    return total;
 }

@@ -87,7 +87,7 @@ Floor::Floor()
 
     // Basic bounds
     minBounds = { -1.0f, -1.0f, 0.0f };
-    maxBounds = { 1.0f,  1.0f, 0.0f };
+    maxBounds = { 1.0f,  1.0f, 0.0f }; //not real bounds, for shadow pass temporarily
     localCenter = 0.5f * (minBounds + maxBounds);
     boundingSphereRadius = glm::length(maxBounds - localCenter);
 

@@ -17,18 +17,37 @@ void TestShadows::OnEnter()
     auto cam = std::make_shared<Camera>();
     m_Scene->SetCamera(cam);
 
+    std::string shaderName = "simpleLightsShadowed";
+
     // Load a model into the scene
-    if (!m_Scene->LoadStaticModelIntoScene("pig", "simpleLightsShadowed")) {
+    if (!m_Scene->LoadStaticModelIntoScene("pig", shaderName)) {
         Logger::GetLogger()->error("Failed to load 'pig' model in TestShadow");
         return;
     }
 
-    if (!m_Scene->LoadPrimitiveIntoScene("floor", "simpleLightsShadowed", 1)) {
+    auto& materialManager = MaterialManager::GetInstance();
+
+    auto& resourceManager = ResourceManager::GetInstance();
+    auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(shaderName);
+
+    auto floorMat = std::make_shared<Material>(matLayout);
+    floorMat->SetName("floorMat");
+
+    floorMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.0, 0.0, 1.0));
+    floorMat->AssignToPackedParams(MaterialParamType::Diffuse, glm::vec3(0.0, 1.0, 0.0));
+    floorMat->AssignToPackedParams(MaterialParamType::Specular, glm::vec3(1.0, 0.0, 0.0));
+    floorMat->AssignToPackedParams(MaterialParamType::Shininess, 100.0f);
+
+    MaterialManager::GetInstance().AddMaterial(floorMat);
+
+    if (!m_Scene->LoadPrimitiveIntoScene("floor", shaderName, floorMat->GetID())) {
         Logger::GetLogger()->error("Failed to load cube primitive.");
     }
 
     // Add a light
-    LightData light1 = { glm::vec4(1.5f, 2.0f, 1.5f, 1.0f), glm::vec4(1.0f) };
+    //LightData light1 = { glm::vec4(1.5f, 2.0f, 1.5f, 1.0f), glm::vec4(1.0f) };
+    LightData light1 = { glm::vec4(-1.0f, -1.0f, 0.0f, 0.0f), glm::vec4(1.0f) };
+
     auto lightManager = m_Scene->GetLightManager();
     lightManager->AddLight(light1);
 
@@ -38,6 +57,8 @@ void TestShadows::OnEnter()
     if (existingMat) {
         existingMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.4f, 0.5f, 0.8f));
     }
+
+    m_Scene->BuildStaticBatchesIfNeeded();
 }
 
 void TestShadows::OnExit()

@@ -117,47 +117,63 @@ glm::mat4 LightManager::ComputeLightProj(size_t id) const
 
 glm::mat4 LightManager::ComputeDirectionalLightView(const LightData& light) const
 {
-    glm::vec3 pos = light.position;
-    glm::vec3 dir = glm::normalize(pos);
-    glm::vec3 up = glm::vec3(0, 1, 0);
-    // If dir is near (0,1,0), pick a different up to avoid degeneracy
-    return glm::lookAt(glm::vec3(0), dir, up);
+    // 1) Interpret light.position.xyz as the DIRECTION
+    //    We'll normalize it. If it's near zero length, we need a fallback
+    glm::vec3 dir = glm::normalize(glm::vec3(light.position));
+
+    // 2) For "up" vector, pick something that isn't parallel to dir
+    //    We'll default to (0,0,1). If dir is near that, fallback to (0,1,0).
+    glm::vec3 up(0, 0, 1);
+    if (fabs(glm::dot(dir, up)) > 0.99f) {
+        up = glm::vec3(0, 1, 0);
+    }
+
+    // 3) Book approach: the "camera" is at the origin (0,0,0),
+    //    looking TOWARD 'dir'
+    //    So we do lookAt(0, dir, up).
+    //    That means in light space, the light "eye" is at 0, and forward is +Z
+    //    If you want forward = -Z, you can do lookAt(0, -dir, up).
+    return glm::lookAt(glm::vec3(0.0f), dir, up);
 }
 
 glm::mat4 LightManager::ComputeDirectionalLightProj(const LightData& light) const
 {
-    // We'll do the standard approach:
-    // 1) transform scene bounds into light space
-    // 2) build an ortho to enclose that bounding box
+    // 1) Build the view matrix
     glm::mat4 lightView = ComputeDirectionalLightView(light);
 
-    // gather corners
+    // 2) Transform the bounding box corners
     glm::vec3 corners[8] = {
-        {m_BBox.min_.x, m_BBox.min_.y, m_BBox.min_.z},
-        {m_BBox.min_.x, m_BBox.min_.y, m_BBox.max_.z},
-        {m_BBox.min_.x, m_BBox.max_.y, m_BBox.min_.z},
-        {m_BBox.min_.x, m_BBox.max_.y, m_BBox.max_.z},
-        {m_BBox.max_.x, m_BBox.min_.y, m_BBox.min_.z},
-        {m_BBox.max_.x, m_BBox.min_.y, m_BBox.max_.z},
-        {m_BBox.max_.x, m_BBox.max_.y, m_BBox.min_.z},
-        {m_BBox.max_.x, m_BBox.max_.y, m_BBox.max_.z},
+        { m_BBox.min_.x, m_BBox.min_.y, m_BBox.min_.z },
+        { m_BBox.min_.x, m_BBox.min_.y, m_BBox.max_.z },
+        { m_BBox.min_.x, m_BBox.max_.y, m_BBox.min_.z },
+        { m_BBox.min_.x, m_BBox.max_.y, m_BBox.max_.z },
+        { m_BBox.max_.x, m_BBox.min_.y, m_BBox.min_.z },
+        { m_BBox.max_.x, m_BBox.min_.y, m_BBox.max_.z },
+        { m_BBox.max_.x, m_BBox.max_.y, m_BBox.min_.z },
+        { m_BBox.max_.x, m_BBox.max_.y, m_BBox.max_.z },
     };
-    glm::vec3 minLS(1e9f), maxLS(-1e9f);
 
-    for (auto& corner : corners) {
-        glm::vec4 t = lightView * glm::vec4(corner, 1.0f);
-        minLS = glm::min(minLS, glm::vec3(t));
-        maxLS = glm::max(maxLS, glm::vec3(t));
+    glm::vec3 minLS(1e9f), maxLS(-1e9f);
+    for (int i = 0; i < 8; i++)
+    {
+        glm::vec4 tmp = lightView * glm::vec4(corners[i], 1.0f);
+        glm::vec3 v = glm::vec3(tmp);
+        minLS = glm::min(minLS, v);
+        maxLS = glm::max(maxLS, v);
     }
 
+    // 3) The "book approach" for z => near/far = -maxLS.z, -minLS.z
+    //    This flips the Z axis so we get a typical -Z forward camera orientation
     float left = minLS.x;
     float right = maxLS.x;
     float bottom = minLS.y;
     float top = maxLS.y;
-    float zNear = minLS.z;
-    float zFar = maxLS.z;
+    float zNear = -maxLS.z;
+    float zFar = -minLS.z;
 
-    return glm::ortho(left, right, bottom, top, zNear, zFar);
+    // 4) Build ortho
+    glm::mat4 lightProj = glm::ortho(left, right, bottom, top, zNear, zFar);
+    return lightProj;
 }
 
 glm::mat4 LightManager::ComputePointLightView(const LightData& light) const
