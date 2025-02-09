@@ -106,7 +106,7 @@ private:
     std::shared_ptr<Camera> m_Camera;
 
     // Uniform buffer for frame data
-    std::unique_ptr<UniformBuffer> m_FrameDataUBO;
+    std::unique_ptr<Graphics::UniformBuffer> m_FrameDataUBO;
 
     // LOD & culling
     std::unique_ptr<LODEvaluator>   m_LODEvaluator;

@@ -161,7 +161,7 @@ void Batch::BuildBatches()
             m_DrawCommands.size() * sizeof(DrawElementsIndirectCommand)
         );
         if (!m_DrawCommandBuffer) {
-            m_DrawCommandBuffer = std::make_unique<IndirectBuffer>();
+            m_DrawCommandBuffer = std::make_unique<Graphics::IndirectBuffer>();
             m_DrawCommandBuffer->SetData(cmdSpan, GL_DYNAMIC_DRAW);
             if (m_DrawCommandBuffer->GetRendererID() == 0) {
                 Logger::GetLogger()->error("Batch::BuildBatches: failed to create valid indirect buffer.");

@@ -1,7 +1,7 @@
 #include "LightManager.h"
 #include "Graphics/Buffers/ShaderStorageBuffer.h" // or wherever your SSBO/UBO is
 #include <glm/gtc/matrix_transform.hpp>
-
+#include "Utilities/Logger.h"
 static constexpr size_t MAX_LIGHTS = 32;
 
 static constexpr GLuint LIGHTS_DATA_BINDING_POINT = 1;
@@ -10,7 +10,7 @@ LightManager::LightManager()
 {
     // Create the Lights SSBO
     GLsizeiptr bufferSize = sizeof(glm::vec4) + MAX_LIGHTS * sizeof(LightData);
-    m_LightsSSBO = std::make_unique<ShaderStorageBuffer>(
+    m_LightsSSBO = std::make_unique<Graphics::ShaderStorageBuffer>(
         LIGHTS_DATA_BINDING_POINT,
         bufferSize,
         GL_DYNAMIC_DRAW
@@ -179,7 +179,7 @@ glm::mat4 LightManager::ComputeDirectionalLightProj(const LightData& light) cons
 glm::mat4 LightManager::ComputePointLightView(const LightData& light) const
 {
     glm::vec3 lightPos = light.position;
-    // Pick a target for the light’s view; for instance, the center of the scene:
+    // Pick a target for the lightâ€™s view; for instance, the center of the scene:
     glm::vec3 target = glm::vec3(0.0f);
     // Choose a suitable up vector:
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -192,7 +192,7 @@ glm::mat4 LightManager::ComputePointLightView(const LightData& light) const
 
 glm::mat4 LightManager::ComputePointLightProj(const LightData& light) const
 {
-    // For the projection, a 90° FOV works well if we want a symmetric frustum.
+    // For the projection, a 90Â° FOV works well if we want a symmetric frustum.
     float nearPlane = 1.0f; // Adjust based on scene
     float farPlane = 100.0f; // Adjust based on scene's extent
     glm::mat4 lightProj = glm::perspective(glm::radians(90.0f), 1.0f, nearPlane, farPlane);

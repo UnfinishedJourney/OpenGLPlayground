@@ -615,9 +615,9 @@ std::shared_ptr<ITexture> TextureManager::CreateBRDFLUT(int width, int height, u
         return nullptr;
     }
 
-    std::unique_ptr<ShaderStorageBuffer> ssbo;
+    std::unique_ptr<Graphics::ShaderStorageBuffer> ssbo;
     try {
-        ssbo = std::make_unique<ShaderStorageBuffer>(
+        ssbo = std::make_unique<Graphics::ShaderStorageBuffer>(
             /*binding point=*/1,
             width * height * sizeof(glm::vec2),
             GL_DYNAMIC_COPY

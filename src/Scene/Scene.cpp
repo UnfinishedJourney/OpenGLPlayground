@@ -21,7 +21,7 @@ Scene::Scene()
     m_Camera = std::make_shared<Camera>();
 
     // Create frame UBO
-    m_FrameDataUBO = std::make_unique<UniformBuffer>(
+    m_FrameDataUBO = std::make_unique<Graphics::UniformBuffer>(
         sizeof(FrameCommonData),
         FRAME_DATA_BINDING_POINT,
         GL_DYNAMIC_DRAW
@@ -156,14 +156,14 @@ BoundingBox Scene::ComputeWorldBoundingBox() const
 
     for (auto& ro : m_StaticObjects)
     {
-        // If static, we assume the geometry is “baked” in world space
+        // If static, we assume the geometry is â€œbakedâ€ in world space
         // Or we might have a transform we can apply
-        // For a “static” object that’s already in world coords,
-        // we can just gather the mesh’s bounding box directly.
+        // For a â€œstaticâ€ object thatâ€™s already in world coords,
+        // we can just gather the meshâ€™s bounding box directly.
 
         // For example, if each Mesh has .minPos / .maxPos in its local space:
         // we might do `glm::vec3 corners[8]` etc., transform them,
-        // or if it’s truly “baked,” we just combine that min/max.
+        // or if itâ€™s truly â€œbaked,â€ we just combine that min/max.
 
         if (!ro->GetMesh()) continue;
 

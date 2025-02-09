@@ -7,8 +7,10 @@
 #include "glm/glm.hpp"
 #include "Lights.h"
 
-class UniformBuffer; 
-class ShaderStorageBuffer;
+namespace Graphics {
+    class UniformBuffer;
+    class ShaderStorageBuffer;
+};
 
 //maybe should rewrite it
 
@@ -70,7 +72,7 @@ private:
     //std::vector<Light> m_Lights;
 
     // Store GPU buffer here :
-    std::unique_ptr<ShaderStorageBuffer> m_LightsSSBO;
+    std::unique_ptr<Graphics::ShaderStorageBuffer> m_LightsSSBO;
 
     std::vector<LightData>  m_LightsData;
 

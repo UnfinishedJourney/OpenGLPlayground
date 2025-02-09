@@ -7,7 +7,7 @@
 
 ShadowPass::ShadowPass(const std::shared_ptr<Scene>& scene, GLsizei shadowResolution)
 {
-    m_ShadowMap = std::make_shared<ShadowMap>(shadowResolution, shadowResolution);
+    m_ShadowMap = std::make_shared<Graphics::ShadowMap>(shadowResolution, shadowResolution);
     auto& shaderManager = ShaderManager::GetInstance();
     m_ShadowShader = shaderManager.GetShader("basicShadowMap");
 

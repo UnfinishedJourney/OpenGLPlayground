@@ -90,7 +90,7 @@ private:
 
     // GPU buffers for combined geometry.
     std::unique_ptr<Graphics::VertexArray> m_VAO;
-    std::unique_ptr<IndirectBuffer> m_DrawCommandBuffer;
+    std::unique_ptr<Graphics::IndirectBuffer> m_DrawCommandBuffer;
 
     // One draw command per object.
     std::vector<DrawElementsIndirectCommand> m_DrawCommands;
