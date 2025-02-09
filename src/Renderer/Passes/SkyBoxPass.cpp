@@ -2,7 +2,7 @@
 #include "Scene/Scene.h"
 #include "Graphics/Buffers/MeshBuffer.h"
 #include "Resources/ShaderManager.h"
-#include "Resources/TextureManager.h"
+#include "Graphics/Textures/TextureManager.h"
 #include "Resources/ResourceManager.h"
 #include "Utilities/Logger.h"
 #include "Utilities/Utility.h"

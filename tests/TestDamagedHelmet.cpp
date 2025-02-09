@@ -1,7 +1,7 @@
 #include "TestDamagedHelmet.h"
 #include "Resources/MaterialManager.h"
 #include "Resources/ShaderManager.h"
-#include "Resources/TextureManager.h"
+#include "Graphics/Textures/TextureManager.h"
 #include "Scene/Transform.h"
 #include "Scene/Lights.h"
 #include "Scene/Screen.h"

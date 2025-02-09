@@ -4,7 +4,7 @@
 #include <string_view>
 #include <utility>
 #include "Resources/MeshManager.h"
-#include "Resources/TextureManager.h"
+#include "Graphics/Textures/TextureManager.h"
 #include "Resources/MaterialManager.h"
 #include "Resources/ShaderManager.h"
 

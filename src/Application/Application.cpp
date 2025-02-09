@@ -13,7 +13,6 @@
 #include "Resources/ShaderManager.h"
 #include "Utilities/Logger.h"
 #include "Utilities/ProfilerMacros.h"
-#include "Graphics/Textures/EnvMapProcessor.h"
 
 // ImGui
 #include <imgui.h>

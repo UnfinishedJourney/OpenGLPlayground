@@ -10,7 +10,7 @@
 #include <glm/gtc/matrix_inverse.hpp> // if needed
 
 #include "Resources/MaterialManager.h"
-#include "Resources/TextureManager.h"
+#include "Graphics/Textures/TextureManager.h"
 #include "Graphics/Materials/Material.h"
 #include "Utilities/Logger.h"
 #include "MeshInfo.h"

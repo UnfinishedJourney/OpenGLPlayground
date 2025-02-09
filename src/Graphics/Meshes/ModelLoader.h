@@ -17,7 +17,7 @@
 #include "Scene/SceneGraph.h"
 #include "Utilities/Logger.h"
 #include "Resources/MaterialManager.h"
-#include "Resources/TextureManager.h"
+#include "Graphics/Textures/TextureManager.h"
 
 #include "MeshInfo.h"
 

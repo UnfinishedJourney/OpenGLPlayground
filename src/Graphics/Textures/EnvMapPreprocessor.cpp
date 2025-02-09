@@ -1,4 +1,4 @@
-#include "EnvMapProcessor.h"
+#include "EnvMapPreprocessor.h"
 #include "Utilities/Logger.h"
 #include <stb_image.h>
 #include <stb_image_write.h>

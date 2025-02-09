@@ -1,6 +1,6 @@
 #include "Material.h"
 #include <glm/gtc/type_ptr.hpp>
-#include "Resources/TextureManager.h"
+#include "Graphics/Textures/TextureManager.h"
 #include "Utilities/Logger.h"
 
 // --------------------------------------------------------

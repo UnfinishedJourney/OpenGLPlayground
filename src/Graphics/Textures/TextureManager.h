@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <array>
 #include <nlohmann/json.hpp>
-#include "Graphics/Textures/ITexture.h"
+#include "ITexture.h"
 
 namespace Graphics {
 
