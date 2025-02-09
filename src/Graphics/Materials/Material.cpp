@@ -141,7 +141,7 @@ void Material::AssignToPackedParams(MaterialParamType type, const UniformValue& 
 // --------------------------------------------------------
 //  Set / Get texture
 // --------------------------------------------------------
-void Material::SetTexture(TextureType type, const std::shared_ptr<ITexture>& texture)
+void Material::SetTexture(TextureType type, const std::shared_ptr<Graphics::ITexture>& texture)
 {
     if (!texture) {
         Logger::GetLogger()->warn("[Material: {}] SetTexture: Null texture for type={}", m_Name, (int)type);
@@ -160,7 +160,7 @@ void Material::SetTexture(TextureType type, const std::shared_ptr<ITexture>& tex
     m_TextureUsage |= (1 << static_cast<size_t>(type));
 }
 
-std::shared_ptr<ITexture> Material::GetTexture(TextureType type) const
+std::shared_ptr<Graphics::ITexture> Material::GetTexture(TextureType type) const
 {
     auto it = m_Textures.find(type);
     if (it != m_Textures.end()) {
@@ -177,7 +177,7 @@ void Material::SetCustomParam(const std::string& paramName, UniformValue value)
     m_CustomParams[paramName] = std::move(value);
 }
 
-void Material::SetCustomTexture(const std::string& uniformName, const std::shared_ptr<ITexture>& texture)
+void Material::SetCustomTexture(const std::string& uniformName, const std::shared_ptr<Graphics::ITexture>& texture)
 {
     if (!texture) {
         Logger::GetLogger()->warn("[Material: {}] SetCustomTexture: Null texture for '{}'.", m_Name, uniformName);

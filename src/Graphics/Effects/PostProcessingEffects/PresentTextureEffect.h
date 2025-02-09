@@ -10,6 +10,6 @@ public:
     void OnWindowResize(int width, int height) override;
     void SetParameters(const std::unordered_map<std::string, EffectParameter>& params) override;
 private:
-    std::shared_ptr<ITexture> m_Texture;
-    void SetTexture(std::shared_ptr<ITexture> texture);
+    std::shared_ptr<Graphics::ITexture> m_Texture;
+    void SetTexture(std::shared_ptr<Graphics::ITexture> texture);
 };

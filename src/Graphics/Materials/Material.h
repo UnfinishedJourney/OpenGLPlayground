@@ -82,8 +82,8 @@ public:
     void AssignToPackedParams(MaterialParamType type, const UniformValue& value);
 
     // Setting / Getting textures
-    void SetTexture(TextureType type, const std::shared_ptr<ITexture>& texture);
-    std::shared_ptr<ITexture> GetTexture(TextureType type) const;
+    void SetTexture(TextureType type, const std::shared_ptr<Graphics::ITexture>& texture);
+    std::shared_ptr<Graphics::ITexture> GetTexture(TextureType type) const;
 
     // Binding / Unbinding
     void Bind(const std::shared_ptr<BaseShader>& shader) const;
@@ -91,7 +91,7 @@ public:
 
     // (Optional) set custom param or custom texture
     void SetCustomParam(const std::string& paramName, UniformValue value);
-    void SetCustomTexture(const std::string& uniformName, const std::shared_ptr<ITexture>& texture);
+    void SetCustomTexture(const std::string& uniformName, const std::shared_ptr<Graphics::ITexture>& texture);
 
 private:
     // The ID and name
@@ -109,10 +109,10 @@ private:
     std::unordered_map<std::string, UniformValue> m_CustomParams;
 
     // For standard textures: keyed by TextureType
-    std::unordered_map<TextureType, std::shared_ptr<ITexture>> m_Textures;
+    std::unordered_map<TextureType, std::shared_ptr<Graphics::ITexture>> m_Textures;
 
     // For custom textures, keyed by a user-chosen uniform name
-    std::unordered_map<std::string, std::shared_ptr<ITexture>> m_CustomTextures;
+    std::unordered_map<std::string, std::shared_ptr<Graphics::ITexture>> m_CustomTextures;
 
     // A bitmask that says which TextureType bits are used
     uint32_t m_TextureUsage = 0;

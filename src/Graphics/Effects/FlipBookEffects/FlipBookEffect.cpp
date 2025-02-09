@@ -25,7 +25,7 @@ void FlipbookEffect::LoadConfig(const std::string& basePath, const std::string& 
     m_Loop = loop;
 
     std::string fullPath = basePath + framesFile;
-    TextureConfig config;
+    Graphics::TextureConfig config;
     config.internalFormat = GL_RGBA8;
     config.generateMips = false;
     config.wrapS = GL_CLAMP_TO_EDGE;
@@ -36,7 +36,7 @@ void FlipbookEffect::LoadConfig(const std::string& basePath, const std::string& 
     std::vector<std::string> framePaths;
     framePaths.push_back(fullPath);
 
-    m_TextureArray = std::make_shared<OpenGLTextureArray>(framePaths, config, totalFrames, gridX, gridY);
+    m_TextureArray = std::make_shared<Graphics::OpenGLTextureArray>(framePaths, config, totalFrames, gridX, gridY);
 
     Logger::GetLogger()->info("FlipbookEffect: Loaded flipbook from {} ({} frames).", fullPath, totalFrames);
 }

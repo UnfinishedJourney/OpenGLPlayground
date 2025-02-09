@@ -190,7 +190,7 @@ bool TextureManager::LoadCubeMaps(const nlohmann::json& json) {
             }
 
             // Build a configuration.
-            TextureConfig cubeMapConfig;
+            Graphics::TextureConfig cubeMapConfig;
             cubeMapConfig.internalFormat = GL_RGB32F;
             cubeMapConfig.wrapS = GL_CLAMP_TO_EDGE;
             cubeMapConfig.wrapT = GL_CLAMP_TO_EDGE;
@@ -212,7 +212,7 @@ bool TextureManager::LoadCubeMaps(const nlohmann::json& json) {
             cubeMapConfig.isSRGB = anySRGB;
 
             try {
-                auto cubeMap = std::make_shared<OpenGLCubeMapTexture>(faces, cubeMapConfig);
+                auto cubeMap = std::make_shared<Graphics::OpenGLCubeMapTexture>(faces, cubeMapConfig);
                 m_Textures[cubeMapName] = cubeMap;
                 Logger::GetLogger()->info("Loaded 6-face cube map '{}'.", cubeMapName);
             }
@@ -228,8 +228,8 @@ bool TextureManager::LoadCubeMaps(const nlohmann::json& json) {
     return true;
 }
 
-TextureConfig TextureManager::MakeSomeCubeMapConfig(bool isHDR) {
-    TextureConfig cfg;
+Graphics::TextureConfig TextureManager::MakeSomeCubeMapConfig(bool isHDR) {
+    Graphics::TextureConfig cfg;
     cfg.internalFormat = GL_RGB32F;
     cfg.wrapS = GL_CLAMP_TO_EDGE;
     cfg.wrapT = GL_CLAMP_TO_EDGE;
@@ -427,9 +427,9 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName, c
     //}
 
     // --- LOAD THE MAIN ENVIRONMENT CUBEMAP (HDR version for lighting) ---
-    TextureConfig envCfg = MakeSomeCubeMapConfig(true);
+    Graphics::TextureConfig envCfg = MakeSomeCubeMapConfig(true);
     try {
-        auto cubeMap = std::make_shared<OpenGLCubeMapTexture>(envFaces, envCfg);
+        auto cubeMap = std::make_shared<Graphics::OpenGLCubeMapTexture>(envFaces, envCfg);
         m_Textures[cubeMapName] = cubeMap;
     }
     catch (const std::exception& e) {
@@ -438,9 +438,9 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName, c
     }
 
     // --- LOAD THE IRRADIANCE CUBEMAP ---
-    TextureConfig irrCfg = MakeSomeCubeMapConfig(true);
+    Graphics::TextureConfig irrCfg = MakeSomeCubeMapConfig(true);
     try {
-        auto irrCube = std::make_shared<OpenGLCubeMapTexture>(irrFaces, irrCfg);
+        auto irrCube = std::make_shared<Graphics::OpenGLCubeMapTexture>(irrFaces, irrCfg);
         std::string irrName = cubeMapName + "_irr";
         m_Textures[irrName] = irrCube;
         Logger::GetLogger()->info("Created irradiance cubemap '{}'.", irrName);
@@ -451,7 +451,7 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName, c
 
     // --- LOAD THE SKYBOX CUBEMAP (LDR version for display) ---
     // Build a texture config for the skybox that is not HDR.
-    TextureConfig skyboxCfg;
+    Graphics::TextureConfig skyboxCfg;
     skyboxCfg.internalFormat = GL_SRGB8_ALPHA8; // 8-bit sRGB
     skyboxCfg.wrapS = GL_CLAMP_TO_EDGE;
     skyboxCfg.wrapT = GL_CLAMP_TO_EDGE;
@@ -464,7 +464,7 @@ bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName, c
     skyboxCfg.isHDR = false;
     skyboxCfg.isSRGB = true;
     try {
-        auto skyboxCube = std::make_shared<OpenGLCubeMapTexture>(ldrFaces, skyboxCfg);
+        auto skyboxCube = std::make_shared<Graphics::OpenGLCubeMapTexture>(ldrFaces, skyboxCfg);
         std::string skyboxName = cubeMapName + "_skybox";
         m_Textures[skyboxName] = skyboxCube;
         Logger::GetLogger()->info("Loaded skybox (LDR) cubemap '{}'.", skyboxName);
@@ -548,7 +548,7 @@ bool TextureManager::LoadComputedTextures(const nlohmann::json& json) {
 // Public Get / Load / Clear
 // ----------------------------------------------------------------------------
 
-std::shared_ptr<ITexture> TextureManager::GetTexture(const std::string& name) {
+std::shared_ptr<Graphics::ITexture> TextureManager::GetTexture(const std::string& name) {
     auto it = m_Textures.find(name);
     if (it != m_Textures.end()) {
         return it->second;
@@ -557,7 +557,7 @@ std::shared_ptr<ITexture> TextureManager::GetTexture(const std::string& name) {
     return nullptr;
 }
 
-std::shared_ptr<ITexture> TextureManager::LoadTexture(const std::string& name, const std::string& pathStr) {
+std::shared_ptr<Graphics::ITexture> TextureManager::LoadTexture(const std::string& name, const std::string& pathStr) {
     // If already loaded, return it
     auto it = m_Textures.find(name);
     if (it != m_Textures.end()) {
@@ -567,7 +567,7 @@ std::shared_ptr<ITexture> TextureManager::LoadTexture(const std::string& name, c
     std::filesystem::path path(pathStr);
     bool isHDR = IsHDRTexture(path);
 
-    TextureData data;
+    Graphics::TextureData data;
     if (!data.LoadFromFile(pathStr, /*flipY*/ true, /*force4Ch*/ true, isHDR)) {
         Logger::GetLogger()->error("Failed to load texture '{}' from '{}'.", name, pathStr);
         return nullptr;
@@ -575,17 +575,17 @@ std::shared_ptr<ITexture> TextureManager::LoadTexture(const std::string& name, c
 
     bool isSRGB = DetermineSRGB(pathStr);
 
-    TextureConfig config;
+    Graphics::TextureConfig config;
     config.isHDR = isHDR;
     config.isSRGB = isSRGB;
 
     try {
-        std::shared_ptr<ITexture> tex;
+        std::shared_ptr<Graphics::ITexture> tex;
         if (isHDR) {
-            tex = std::make_shared<OpenGLTexture>(data, config);
+            tex = std::make_shared<Graphics::OpenGLTexture>(data, config);
         }
         else {
-            tex = std::make_shared<OpenGLTexture>(data, config);
+            tex = std::make_shared<Graphics::OpenGLTexture>(data, config);
         }
         m_Textures[name] = tex;
         Logger::GetLogger()->info("Loaded texture '{}' from '{}'. (HDR={}, sRGB={})",
@@ -607,7 +607,7 @@ void TextureManager::Clear() {
 // BRDF LUT (Compute Example)
 // ----------------------------------------------------------------------------
 
-std::shared_ptr<ITexture> TextureManager::CreateBRDFLUT(int width, int height, unsigned int numSamples) {
+std::shared_ptr<Graphics::ITexture> TextureManager::CreateBRDFLUT(int width, int height, unsigned int numSamples) {
     auto& shaderManager = ShaderManager::GetInstance();
     auto computeShader = shaderManager.GetComputeShader("brdfCompute");
     if (!computeShader) {
@@ -669,7 +669,7 @@ std::shared_ptr<ITexture> TextureManager::CreateBRDFLUT(int width, int height, u
     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
     ssbo->Unbind();
 
-    class ExistingOpenGLTexture : public ITexture {
+    class ExistingOpenGLTexture : public Graphics::ITexture {
     public:
         ExistingOpenGLTexture(GLuint id, int w, int h)
             : m_TextureID(id), m_Width(w), m_Height(h) {}

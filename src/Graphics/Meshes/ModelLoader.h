@@ -44,7 +44,7 @@ struct BetterModelData
  */
 struct BetterMeshTextures
 {
-    std::unordered_map<TextureType, std::shared_ptr<ITexture>> textures;
+    std::unordered_map<TextureType, std::shared_ptr<Graphics::ITexture>> textures;
 };
 
 /*

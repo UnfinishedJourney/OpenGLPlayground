@@ -9,8 +9,10 @@
 #include "Graphics/Textures/BitMap.h"
 
 // Forward declarations
-class ITexture;
-struct TextureConfig;
+namespace Graphics {
+    class ITexture;
+    struct TextureConfig;
+};
 
 /**
  * @brief A singleton manager for loading, storing, and retrieving textures.
@@ -39,13 +41,13 @@ public:
     /**
      * @brief Retrieve a texture by name (as specified in the JSON or manually loaded).
      */
-    std::shared_ptr<ITexture> GetTexture(const std::string& name);
+    std::shared_ptr<Graphics::ITexture> GetTexture(const std::string& name);
 
     /**
      * @brief Explicitly load a single 2D texture by path and store it under `name`.
      * @return The created texture, or nullptr on failure.
      */
-    std::shared_ptr<ITexture> LoadTexture(const std::string& name, const std::string& path);
+    std::shared_ptr<Graphics::ITexture> LoadTexture(const std::string& name, const std::string& path);
 
     /**
      * @brief Remove all textures from the cache.
@@ -73,7 +75,7 @@ private:
     /**
      * @brief Create a BRDF LUT texture via compute shader.
      */
-    std::shared_ptr<ITexture> CreateBRDFLUT(int width, int height, unsigned int numSamples);
+    std::shared_ptr<Graphics::ITexture> CreateBRDFLUT(int width, int height, unsigned int numSamples);
 
     // Utility
     std::string ToLower(const std::string& str);
@@ -84,7 +86,7 @@ private:
         const std::string& prefix);
 
 private:
-    TextureConfig MakeSomeCubeMapConfig(bool isHDR);
+    Graphics::TextureConfig MakeSomeCubeMapConfig(bool isHDR);
     // Storage for all loaded textures (2D, cubemap, computed, etc.)
-    std::unordered_map<std::string, std::shared_ptr<ITexture>> m_Textures;
+    std::unordered_map<std::string, std::shared_ptr<Graphics::ITexture>> m_Textures;
 };

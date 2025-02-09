@@ -23,7 +23,7 @@ void PresentTextureEffect::SetParameters(const std::unordered_map<std::string, E
 {
     for (const auto& [key, value] : params) {
         if (key == "texture") {
-            if (auto tex = std::get_if<std::shared_ptr<ITexture>>(&value)) {
+            if (auto tex = std::get_if<std::shared_ptr<Graphics::ITexture>>(&value)) {
                 SetTexture(*tex);
             }
             else {
@@ -34,7 +34,7 @@ void PresentTextureEffect::SetParameters(const std::unordered_map<std::string, E
     }
 }
 
-void PresentTextureEffect::SetTexture(std::shared_ptr<ITexture> texture)
+void PresentTextureEffect::SetTexture(std::shared_ptr<Graphics::ITexture> texture)
 {
     if (texture) {
         m_Texture = texture;

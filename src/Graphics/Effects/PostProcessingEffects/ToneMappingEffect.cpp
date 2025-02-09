@@ -48,7 +48,7 @@ float ToneMappingEffect::ComputeLogAverageLuminance(GLuint hdrTexture) {
 }
 
 void ToneMappingEffect::Apply(GLuint inputTexture, GLuint outputFramebuffer) {
-    // Step 1: Compute the log–average luminance of the HDR image on the CPU.
+    // Step 1: Compute the logâ€“average luminance of the HDR image on the CPU.
     float logAvg = ComputeLogAverageLuminance(inputTexture);
 
     // Step 2: Render the final LDR image using the tone mapping shader.

@@ -20,7 +20,7 @@ using EffectParameter = std::variant<
     glm::vec2,
     glm::vec3,
     glm::vec4,
-    std::shared_ptr<ITexture>
+    std::shared_ptr<Graphics::ITexture>
 >;
 
 class PostProcessingEffect {
