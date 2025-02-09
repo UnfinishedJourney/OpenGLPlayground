@@ -16,7 +16,7 @@ namespace Graphics {
     /**
      * @brief Singleton manager for loading and retrieving textures.
      *
-     * Supports 2D textures, cube maps (from 6–face definitions or single equirect HDR
+     * Supports 2D textures, cube maps (from 6â€“face definitions or single equirect HDR
      * converted into faces), texture arrays, and computed textures such as BRDF LUTs.
      */
     class TextureManager {

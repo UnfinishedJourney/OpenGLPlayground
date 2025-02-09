@@ -1,7 +1,7 @@
 #pragma once
 #include "Test.h"
 #include "Renderer/Renderer.h"
-#include "Resources/MaterialManager.h"
+#include "Graphics/Materials/MaterialManager.h"
 #include "Resources/ShaderManager.h"
 
 class TestLights : public Test {

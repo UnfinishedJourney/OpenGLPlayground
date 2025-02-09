@@ -5,7 +5,7 @@
 #include <utility>
 #include "Resources/MeshManager.h"
 #include "Graphics/Textures/TextureManager.h"
-#include "Resources/MaterialManager.h"
+#include "Graphics/Materials/MaterialManager.h"
 #include "Resources/ShaderManager.h"
 
 class ResourceManager {

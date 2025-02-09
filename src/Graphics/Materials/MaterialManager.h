@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
-#include "Graphics/Materials/Material.h"
+#include "Material.h"
 #include "Graphics/Shaders/BaseShader.h"
 
 namespace Graphics {

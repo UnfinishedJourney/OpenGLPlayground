@@ -1,7 +1,7 @@
 #include "TestBistro.h"
 #include "Scene/Scene.h"
 #include "Scene/Scene.h"
-#include "Resources/MaterialManager.h"
+#include "Graphics/Materials/MaterialManager.h"
 #include "Resources/ShaderManager.h"
 #include "Scene/Transform.h"
 #include "Scene/Lights.h"

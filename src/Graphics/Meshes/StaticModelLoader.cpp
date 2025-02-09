@@ -9,7 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp> // if needed
 
-#include "Resources/MaterialManager.h"
+#include "Graphics/Materials/MaterialManager.h"
 #include "Graphics/Textures/TextureManager.h"
 #include "Graphics/Materials/Material.h"
 #include "Utilities/Logger.h"
