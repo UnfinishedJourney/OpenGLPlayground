@@ -13,7 +13,7 @@ layout(binding = 8) uniform samplerCube u_EnvironmentMap; // or you can rename
 layout(binding = 10) uniform sampler2DShadow u_ShadowMap;
 
 // PCF routine for directional shadow
-float PCF(sampler2DShadow shadowMap, vec4 shadowCoord)
+float PCF(sampler2DShadow shadowMap, vec4 shadowCoord, int kernelSize)
 {
     // do the perspective divide
     vec3 sc = shadowCoord.xyz / shadowCoord.w;
@@ -23,20 +23,24 @@ float PCF(sampler2DShadow shadowMap, vec4 shadowCoord)
         return 1.0;
 
     // 3x3 PCF
+    
     float sum = 0.0;
-    float texSize = 2048.0; // match your shadow map size
+    float texSize = float( textureSize(u_ShadowMap, 0 ).x ); 
     float offset = 1.0 / texSize;
+    int range = kernelSize / 2;
 
-    for(int yy=-1; yy<=1; yy++)
+    for(int yy=-range; yy<=range; yy++)
     {
-        for(int xx=-1; xx<=1; xx++)
+        for(int xx=-range; xx<=range; xx++)
         {
             vec4 offCoord = shadowCoord;
             offCoord.xy += vec2(xx, yy) * offset;
+            float bias = 0.0005;
+            offCoord.z -= 10*bias;
             sum += textureProj(shadowMap, offCoord);
         }
     }
-    return sum / 9.0;
+    return sum / (kernelSize * kernelSize);
 }
 
 // We output final color
@@ -135,8 +139,9 @@ void main()
     vec3 specularDirect = (D * G * F) / (4.0 * NdotV * NdotL + 0.001);
     vec3 diffuseDirect = (1.0 - F) * (1.0 - metallic) * albedo / PI;
 
-    float shadowFactor = PCF(u_ShadowMap, PosLightMap);
+    float shadowFactor = PCF(u_ShadowMap, PosLightMap, 3);
 
+    //shadowFactor = 1.0;
     vec3 directLighting = shadowFactor * (diffuseDirect + specularDirect) * NdotL * uLightColor;
 
     // --- STEP 5: Image-Based Lighting (IBL) Diffuse ---
@@ -148,7 +153,7 @@ void main()
     //return;
     // --- STEP 6: Combine Lighting ---
     vec3 finalColor = directLighting + 0.8*ambientDiffuse;
-    finalColor = finalColor * ao + (shadowFactor*0.3+0.7)*emissive;
+    finalColor = finalColor * ao + (shadowFactor*0.7+0.3)*emissive;
 
     // --- STEP 7: Gamma Correction ---
     finalColor = pow(finalColor, vec3(1.0 / 2.2));

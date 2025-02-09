@@ -12,30 +12,34 @@ in vec3 Normal;
 
 layout(binding = 10) uniform sampler2DShadow u_ShadowMap;
 
-float PCF(sampler2DShadow shadowMap, vec4 shadowCoord)
+float PCF(sampler2DShadow shadowMap, vec4 shadowCoord, int kernelSize)
 {
-    float depth = 0.01;
-    // do the perspective divide manually:
-    vec3 coord = shadowCoord.xyz / shadowCoord.w;
+    // do the perspective divide
+    vec3 sc = shadowCoord.xyz / shadowCoord.w;
 
-    // If outside 0..1 range -> not in shadow map => shadow=1
-    if(any(lessThan(coord, vec3(0.0))) || any(greaterThan(coord, vec3(1.0))))
+    // if out of [0..1], no shadow (treat as lit)
+    if(any(lessThan(sc, vec3(0.0))) || any(greaterThan(sc, vec3(1.0))))
         return 1.0;
 
-    float shadowSum = 0.0;
-    const float texSize = 2048.0; // match your shadow map resolution
-    float offset = 1.0 / texSize; 
-    // 3x3 sample
-    for(int y=-1; y<=1; y++)
+    // 3x3 PCF
+    
+    float sum = 0.0;
+    float texSize = float( textureSize(u_ShadowMap, 0 ).x ); 
+    float offset = 1.0 / texSize;
+    int range = kernelSize / 2;
+
+    for(int yy=-range; yy<=range; yy++)
     {
-        for(int x=-1; x<=1; x++)
+        for(int xx=-range; xx<=range; xx++)
         {
             vec4 offCoord = shadowCoord;
-            offCoord.xy += vec2(x, y) * offset;
-            shadowSum += textureProj(shadowMap, offCoord);
+            offCoord.xy += vec2(xx, yy) * offset;
+            float bias = 0.0005;
+            offCoord.z -= bias;
+            sum += textureProj(shadowMap, offCoord);
         }
     }
-    return shadowSum / 9.0;
+    return sum / (kernelSize * kernelSize);
 }
 
 void main()
@@ -65,7 +69,7 @@ void main()
    
 
 
-    float shadowFactor = PCF(u_ShadowMap, PosLightMap);
+    float shadowFactor = PCF(u_ShadowMap, PosLightMap, 3);
 
     // shadowFactor typically is 1.0 if fully lit, 0.0 if in shadow,
     // or partial if the hardware does PCF.
