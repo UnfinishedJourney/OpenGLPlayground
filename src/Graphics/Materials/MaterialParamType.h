@@ -1,16 +1,12 @@
 #pragma once
-
 #include <cstddef>
-#include <functional>
 
-/**
- * @brief Enumerate standard parameter types for a material (like MTL).
- */
 enum class MaterialParamType : std::size_t {
-    Ambient = 0, // Ka
-    Diffuse = 1, // Kd
-    Specular = 2, // Ks
+    Ambient = 0,   // Ka
+    Diffuse = 1,   // Kd
+    Specular = 2,  // Ks
     Shininess = 3, // Ns
+    // Additional parameters can be added here.
     COUNT = 4
 };
 
@@ -23,10 +19,7 @@ namespace std {
     };
 }
 
-/**
- * @brief Enumerate texture types for the material (e.g. albedo, normal).
- *        In code, these can be used as bits in a usage mask.
- */
+//maybe should move it to separate class
 enum class TextureType : std::size_t {
     Albedo = 0,
     Normal = 1,
@@ -40,7 +33,6 @@ enum class TextureType : std::size_t {
     SkyboxIrradiance = 9,
     ShadowMap = 10,
     Unknown = 11,
-
     COUNT = 12
 };
 
@@ -52,3 +44,4 @@ namespace std {
         }
     };
 }
+

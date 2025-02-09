@@ -93,12 +93,12 @@ namespace staticloader {
 
                 // Material
                 int matIndex = aimesh->mMaterialIndex;
-                std::shared_ptr<Material> matPtr;
+                std::shared_ptr<Graphics::Material> matPtr;
                 if (matIndex < 0 || matIndex >= (int)m_Materials.size()) {
                     // fallback
-                    auto fallbackMat = std::make_shared<Material>(matLayout);
+                    auto fallbackMat = std::make_shared<Graphics::Material>(matLayout);
                     fallbackMat->SetName("FallbackMat_" + std::to_string(++m_FallbackMaterialCounter));
-                    MaterialManager::GetInstance().AddMaterial(fallbackMat);
+                    Graphics::MaterialManager::GetInstance().AddMaterial(fallbackMat);
                     m_Materials.push_back(fallbackMat);
                     matPtr = fallbackMat;
                 }
@@ -141,7 +141,7 @@ namespace staticloader {
         }
     }
 
-    std::shared_ptr<Material> ModelLoader::CreateMaterialForAssimpMat(const aiMaterial* aiMat,
+    std::shared_ptr<Graphics::Material> ModelLoader::CreateMaterialForAssimpMat(const aiMaterial* aiMat,
         const MaterialLayout& matLayout,
         const std::string& directory)
     {
@@ -152,12 +152,12 @@ namespace staticloader {
         std::string matName(aiName.C_Str());
 
         // Possibly reuse existing material
-        auto existing = MaterialManager::GetInstance().GetMaterialByName(matName);
+        auto existing = Graphics::MaterialManager::GetInstance().GetMaterialByName(matName);
         if (existing) {
             return existing;
         }
 
-        auto material = std::make_shared<Material>(matLayout);
+        auto material = std::make_shared<Graphics::Material>(matLayout);
         material->SetName(matName);
 
         // Load color/floats
@@ -167,31 +167,31 @@ namespace staticloader {
         LoadMaterialTextures(aiMat, material, matLayout, directory);
 
         // Register
-        MaterialManager::GetInstance().AddMaterial(material);
+        Graphics::MaterialManager::GetInstance().AddMaterial(material);
         return material;
     }
 
     void ModelLoader::LoadMaterialProperties(const aiMaterial* aiMat,
-        const std::shared_ptr<Material>& mat,
+        const std::shared_ptr<Graphics::Material>& mat,
         const MaterialLayout& matLayout)
     {
         // E.g. ambient, diffuse, specular, shininess
-        if (matLayout.params.count(MaterialParamType::Ambient)) {
+        if (matLayout.params_.count(MaterialParamType::Ambient)) {
             aiColor3D color(0.2f);
             aiMat->Get(AI_MATKEY_COLOR_AMBIENT, color);
             mat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(color.r, color.g, color.b));
         }
-        if (matLayout.params.count(MaterialParamType::Diffuse)) {
+        if (matLayout.params_.count(MaterialParamType::Diffuse)) {
             aiColor3D color(0.8f);
             aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, color);
             mat->AssignToPackedParams(MaterialParamType::Diffuse, glm::vec3(color.r, color.g, color.b));
         }
-        if (matLayout.params.count(MaterialParamType::Specular)) {
+        if (matLayout.params_.count(MaterialParamType::Specular)) {
             aiColor3D color(0.0f);
             aiMat->Get(AI_MATKEY_COLOR_SPECULAR, color);
             mat->AssignToPackedParams(MaterialParamType::Specular, glm::vec3(color.r, color.g, color.b));
         }
-        if (matLayout.params.count(MaterialParamType::Shininess)) {
+        if (matLayout.params_.count(MaterialParamType::Shininess)) {
             float shininess = 32.0f;
             aiMat->Get(AI_MATKEY_SHININESS, shininess);
             mat->AssignToPackedParams(MaterialParamType::Shininess, shininess);
@@ -199,7 +199,7 @@ namespace staticloader {
     }
 
     void ModelLoader::LoadMaterialTextures(const aiMaterial* aiMat,
-        const std::shared_ptr<Material>& mat,
+        const std::shared_ptr<Graphics::Material>& mat,
         const MaterialLayout& matLayout,
         const std::string& directory)
     {

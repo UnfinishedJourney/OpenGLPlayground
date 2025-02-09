@@ -93,10 +93,10 @@ private:
 
     std::string EnsureUniqueMaterialName(const std::string& baseName);
     void LoadMaterialProperties(const aiMaterial* aiMat,
-        std::shared_ptr<Material> mat,
+        std::shared_ptr<Graphics::Material> mat,
         const MaterialLayout& matLayout);
     void LoadMaterialTextures(const aiMaterial* aiMat,
-        std::shared_ptr<Material> material,
+        std::shared_ptr<Graphics::Material> material,
         const MaterialLayout& matLayout,
         const std::string& directory);
 
@@ -107,7 +107,7 @@ private:
         const std::string& directory);
 
     std::string CreateFallbackMaterialName();
-    std::shared_ptr<Material> CreateFallbackMaterial(const std::string& name,
+    std::shared_ptr<Graphics::Material> CreateFallbackMaterial(const std::string& name,
         const MaterialLayout& matLayout);
 
     void ProcessAssimpNode(const aiScene* scene,

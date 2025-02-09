@@ -1,75 +1,57 @@
 #pragma once
-
-#include <vector>
-#include <unordered_map>
-#include <memory>
 #include <string>
+#include <unordered_map>
+#include <vector>
+#include <memory>
 #include "Graphics/Materials/Material.h"
 #include "Graphics/Shaders/BaseShader.h"
-#include "Utilities/Logger.h"
 
-/**
- * @brief A manager to handle all Materials by both name and ID.
- *
- * The typical usage is:
- *   - Create a Material
- *   - Add it via AddMaterial()
- *   - Then retrieve by name or ID and call BindMaterial(...).
- */
-class MaterialManager
-{
-public:
-    static MaterialManager& GetInstance();
+namespace Graphics {
 
-    // Retrieve by name or ID
-    std::shared_ptr<Material> GetMaterialByName(const std::string& name) const;
-    std::shared_ptr<Material> GetMaterialByID(int id) const;
+    /**
+     * @brief Manager for materials.
+     *
+     * Provides caching and retrieval of materials by name or ID,
+     * and functions to bind/unbind materials.
+     */
+    class MaterialManager {
+    public:
+        static MaterialManager& GetInstance();
 
-    // Add or remove
-    void AddMaterial(const std::shared_ptr<Material>& material);
-    void RemoveMaterialByName(const std::string& name);
-    void RemoveMaterialByID(int id);
+        std::shared_ptr<Material> GetMaterialByName(const std::string& name) const;
+        std::shared_ptr<Material> GetMaterialByID(int id) const;
 
-    // Bind / Unbind by name or ID
-    void BindMaterial(const std::string& name, const std::shared_ptr<BaseShader>& shader);
-    void BindMaterial(int id, const std::shared_ptr<BaseShader>& shader);
-    void UnbindMaterial();
+        void AddMaterial(const std::shared_ptr<Material>& material);
+        void RemoveMaterialByName(const std::string& name);
+        void RemoveMaterialByID(int id);
 
-    // Utility
-    std::vector<std::string> GetMaterialNames() const;
-    void InitializeStandardMaterials();
+        void BindMaterial(const std::string& name, const std::shared_ptr<BaseShader>& shader);
+        void BindMaterial(int id, const std::shared_ptr<BaseShader>& shader);
+        void UnbindMaterial();
 
-private:
-    MaterialManager() = default;
-    ~MaterialManager() = default;
+        std::vector<std::string> GetMaterialNames() const;
+        void InitializeStandardMaterials();
 
-    MaterialManager(const MaterialManager&) = delete;
-    MaterialManager& operator=(const MaterialManager&) = delete;
+    private:
+        MaterialManager() = default;
+        ~MaterialManager() = default;
+        MaterialManager(const MaterialManager&) = delete;
+        MaterialManager& operator=(const MaterialManager&) = delete;
 
-private:
-    // Each new material gets an auto-increment ID
-    int m_LastId = 0;
+        struct MaterialEntry {
+            std::string Name;
+            int ID;
+            std::shared_ptr<Material> MaterialPtr;
+            MaterialEntry(std::string nm, int mid, std::shared_ptr<Material> mat)
+                : Name(std::move(nm)), ID(mid), MaterialPtr(std::move(mat)) {}
+        };
 
-    // Internal storage item
-    struct MaterialEntry {
-        std::string name;
-        int  id;
-        std::shared_ptr<Material> material;
+        int m_LastID = 0;
+        std::vector<MaterialEntry> m_Materials;
+        std::unordered_map<std::string, size_t> m_NameToIndex;
+        std::unordered_map<int, size_t> m_IDToIndex;
 
-        MaterialEntry(std::string nm, int mid, std::shared_ptr<Material> mat)
-            : name(std::move(nm))
-            , id(mid)
-            , material(std::move(mat))
-        {}
+        std::string m_CurrentlyBoundMaterial;
     };
 
-    // Storage
-    std::vector<MaterialEntry> m_Materials;
-
-    // Lookups
-    std::unordered_map<std::string, size_t> m_NameToIndex;
-    std::unordered_map<int, size_t>  m_IDToIndex;
-
-    // Currently bound material name
-    std::string m_CurrentlyBoundMaterial;
-};
+} // namespace Graphics

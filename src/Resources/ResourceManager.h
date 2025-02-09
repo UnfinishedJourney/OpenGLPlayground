@@ -18,7 +18,7 @@ public:
     MeshManager& GetMeshManager();
     //ModelManager& GetModelManager();
     Graphics::TextureManager& GetTextureManager();
-    MaterialManager& GetMaterialManager();
+    Graphics::MaterialManager& GetMaterialManager();
     ShaderManager& GetShaderManager();
 
 private:
