@@ -6,12 +6,12 @@
 #include <variant>
 #include <glm/glm.hpp>
 
-// The CPU–assisted tone mapping effect. It reads back the HDR image to compute the
-// log–average luminance, then uses a GPU shader to perform the tone mapping operator.
+// The CPUâ€“assisted tone mapping effect. It reads back the HDR image to compute the
+// logâ€“average luminance, then uses a GPU shader to perform the tone mapping operator.
 class ToneMappingEffect : public PostProcessingEffect {
 public:
     // Constructor: Pass in the fullscreen quad mesh and initial dimensions.
-    ToneMappingEffect(std::shared_ptr<MeshBuffer> quad, int width = 800, int height = 600);
+    ToneMappingEffect(std::shared_ptr<Graphics::MeshBuffer> quad, int width = 800, int height = 600);
     virtual ~ToneMappingEffect();
 
     // Apply the tone mapping effect.
@@ -30,6 +30,6 @@ private:
     float m_Exposure; // "a" value that acts like the exposure level.
     float m_LWhite;   // The white point that helps compress very bright pixels.
 
-    // Computes the log–average luminance of the HDR image on the CPU.
+    // Computes the logâ€“average luminance of the HDR image on the CPU.
     float ComputeLogAverageLuminance(GLuint hdrTexture);
 };

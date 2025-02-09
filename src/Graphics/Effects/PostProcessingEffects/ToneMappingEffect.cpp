@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-ToneMappingEffect::ToneMappingEffect(std::shared_ptr<MeshBuffer> quad, int width, int height)
+ToneMappingEffect::ToneMappingEffect(std::shared_ptr<Graphics::MeshBuffer> quad, int width, int height)
     : PostProcessingEffect(quad, width, height),
     m_Exposure(0.18f),  // Default exposure value.
     m_LWhite(1.0f)      // Default white-point.

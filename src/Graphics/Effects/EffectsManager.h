@@ -47,6 +47,6 @@ private:
     std::unordered_map<PostProcessingEffectType, std::shared_ptr<PostProcessingEffect>> m_Effects;
     std::unordered_map<std::string, std::shared_ptr<FlipbookEffect>> m_FlipbookEffects;
 
-    std::shared_ptr<MeshBuffer> m_FullscreenQuadMeshBuffer;
-    std::shared_ptr<MeshBuffer> m_FlipbookQuadMeshBuffer;
+    std::shared_ptr<Graphics::MeshBuffer> m_FullscreenQuadMeshBuffer;
+    std::shared_ptr<Graphics::MeshBuffer> m_FlipbookQuadMeshBuffer;
 };

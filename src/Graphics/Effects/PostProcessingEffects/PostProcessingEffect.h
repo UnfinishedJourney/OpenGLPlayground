@@ -25,7 +25,7 @@ using EffectParameter = std::variant<
 
 class PostProcessingEffect {
 public:
-    PostProcessingEffect(std::shared_ptr<MeshBuffer> quad, int width = 800, int height = 600)
+    PostProcessingEffect(std::shared_ptr<Graphics::MeshBuffer> quad, int width = 800, int height = 600)
         : m_FullscreenQuadMeshBuffer(quad), m_Width(width), m_Height(height)
     {}
 
@@ -41,7 +41,7 @@ public:
     virtual void SetParameters(const std::unordered_map<std::string, EffectParameter>& params) {};
 
 protected:
-    std::shared_ptr<MeshBuffer> m_FullscreenQuadMeshBuffer;
+    std::shared_ptr<Graphics::MeshBuffer> m_FullscreenQuadMeshBuffer;
     int m_Width, m_Height;
     std::shared_ptr<Shader> m_Shader;
 };

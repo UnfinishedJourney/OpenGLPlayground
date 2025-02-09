@@ -3,7 +3,7 @@
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
 
-PresentTextureEffect::PresentTextureEffect(std::shared_ptr<MeshBuffer> quad, int width, int height)
+PresentTextureEffect::PresentTextureEffect(std::shared_ptr<Graphics::MeshBuffer> quad, int width, int height)
     : PostProcessingEffect(quad, width, height)
 {
 

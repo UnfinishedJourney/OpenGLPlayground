@@ -89,7 +89,7 @@ private:
     std::vector<std::shared_ptr<BaseRenderObject>> m_RenderObjects;
 
     // GPU buffers for combined geometry.
-    std::unique_ptr<VertexArray> m_VAO;
+    std::unique_ptr<Graphics::VertexArray> m_VAO;
     std::unique_ptr<IndirectBuffer> m_DrawCommandBuffer;
 
     // One draw command per object.

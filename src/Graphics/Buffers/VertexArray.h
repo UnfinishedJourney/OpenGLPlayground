@@ -2,57 +2,65 @@
 
 #include <glad/glad.h>
 #include <vector>
-#include <memory>
-#include "VertexBuffer.h"
-#include "VertexBufferLayout.h"
-#include "IndexBuffer.h"
-#include "BufferDeleter.h"
+#include <stdexcept>
 
-/**
- * @brief Encapsulates an OpenGL Vertex Array Object (VAO).
- *
- * Manages binding of vertex buffers, element buffers (IBO),
- * and the vertex attribute configurations.
- */
-class VertexArray {
-public:
-    VertexArray();
-    ~VertexArray() = default;
+namespace Graphics {
 
-    VertexArray(VertexArray&&) noexcept = default;
-    VertexArray& operator=(VertexArray&&) noexcept = default;
-
-    VertexArray(const VertexArray&) = delete;
-    VertexArray& operator=(const VertexArray&) = delete;
+    // Forward declarations
+    class VertexBuffer;
+    class IndexBuffer;
+    class VertexBufferLayout;
 
     /**
-     * @brief Attach a vertex buffer to this VAO with a given layout.
-     * @param vertexBuffer  The source VertexBuffer (already containing data).
-     * @param layout        The layout describing how to interpret the data.
-     * @param bindingIndex  The binding slot for this data in the VAO.
+     * @brief Encapsulates an OpenGL Vertex Array Object (VAO).
+     *
+     * Manages the association of vertex buffers and their attribute layouts.
      */
-    void AddBuffer(const VertexBuffer& vertexBuffer,
-        const VertexBufferLayout& layout,
-        GLuint bindingIndex = 0);
+    class VertexArray {
+    public:
+        VertexArray();
+        ~VertexArray();
 
-    /**
-     * @brief Set the IndexBuffer (element buffer) for this VAO.
-     */
-    void SetIndexBuffer(const IndexBuffer& indexBuffer);
+        // Non-copyable
+        VertexArray(const VertexArray&) = delete;
+        VertexArray& operator=(const VertexArray&) = delete;
 
-    /**
-     * @brief Bind this VAO as the current vertex array.
-     */
-    void Bind() const;
+        // Movable
+        VertexArray(VertexArray&& other) noexcept;
+        VertexArray& operator=(VertexArray&& other) noexcept;
 
-    /**
-     * @brief Unbind any vertex array (binds VAO=0).
-     */
-    void Unbind() const;
+        /**
+         * @brief Attaches a vertex buffer and its layout to this VAO.
+         *
+         * @param vertexBuffer  The source VertexBuffer.
+         * @param layout        The layout describing the buffer’s vertex attributes.
+         * @param bindingIndex  The binding index within the VAO (must be unique).
+         * @throws std::invalid_argument if the binding index is already in use.
+         */
+        void AddBuffer(const VertexBuffer& vertexBuffer,
+            const VertexBufferLayout& layout,
+            GLuint bindingIndex = 0);
 
-    [[nodiscard]] GLuint GetRendererID() const { return *m_RendererIDPtr; }
+        /**
+         * @brief Associates an IndexBuffer (element buffer) with this VAO.
+         */
+        void SetIndexBuffer(const IndexBuffer& indexBuffer);
 
-private:
-    std::unique_ptr<GLuint, VertexArrayDeleter> m_RendererIDPtr;
-    std::vector<GLuint>                         m_BindingIndices; ///< Tracks used binding slots
-};
+        /**
+         * @brief Binds the VAO.
+         */
+        void Bind() const;
+
+        /**
+         * @brief Unbinds any VAO.
+         */
+        void Unbind() const;
+
+        [[nodiscard]] GLuint GetRendererID() const { return m_RendererID; }
+
+    private:
+        GLuint m_RendererID{ 0 };  ///< OpenGL VAO handle
+        std::vector<GLuint> m_BindingIndices; ///< Tracks used binding indices to avoid duplicates
+    };
+
+} // namespace Graphics

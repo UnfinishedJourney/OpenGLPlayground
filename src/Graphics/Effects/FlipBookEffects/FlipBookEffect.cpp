@@ -7,7 +7,7 @@
 #include <GLFW/glfw3.h>
 #include "Graphics/Shaders/Shader.h"
 
-FlipbookEffect::FlipbookEffect(std::shared_ptr<MeshBuffer> quadMeshBuffer)
+FlipbookEffect::FlipbookEffect(std::shared_ptr<Graphics::MeshBuffer> quadMeshBuffer)
     : m_QuadMeshBuffer(quadMeshBuffer)
 {
     m_Shader = ShaderManager::GetInstance().GetShader("flipbook");

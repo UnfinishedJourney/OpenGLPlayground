@@ -10,7 +10,7 @@
 Batch::Batch(const std::string& shaderName, int materialID)
     : m_ShaderName(shaderName)
     , m_MaterialID(materialID)
-    , m_VAO(std::make_unique<VertexArray>())
+    , m_VAO(std::make_unique<Graphics::VertexArray>())
     , m_IsDirty(true)
 {
     auto [meshLayout, materialLayout] = ResourceManager::GetInstance().getLayoutsFromShader(shaderName);
@@ -43,7 +43,7 @@ void Batch::BuildBatches()
     }
 
     // 1) Build the VertexBufferLayout from the mesh layout.
-    VertexBufferLayout vertexLayout;
+    Graphics::VertexBufferLayout vertexLayout;
     GLuint attribIndex = 0;
     if (m_MeshLayout.hasPositions)
         vertexLayout.Push<float>(3, attribIndex++);
@@ -146,14 +146,14 @@ void Batch::BuildBatches()
             reinterpret_cast<const std::byte*>(combinedVertexData.data()),
             combinedVertexData.size() * sizeof(float)
         );
-        auto vb = std::make_unique<VertexBuffer>(vertexSpan, GL_STATIC_DRAW);
+        auto vb = std::make_unique<Graphics::VertexBuffer>(vertexSpan, GL_STATIC_DRAW);
 
         // Create index buffer.
         std::span<const GLuint> indexSpan(
             combinedIndices.data(),
             combinedIndices.size()
         );
-        auto ib = std::make_unique<IndexBuffer>(indexSpan, GL_STATIC_DRAW);
+        auto ib = std::make_unique<Graphics::IndexBuffer>(indexSpan, GL_STATIC_DRAW);
 
         // Create or update the indirect command buffer.
         std::span<const std::byte> cmdSpan(

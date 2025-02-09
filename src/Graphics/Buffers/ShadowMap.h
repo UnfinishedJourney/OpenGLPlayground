@@ -14,7 +14,7 @@ public:
         // Create the depth texture
         glGenTextures(1, &m_DepthTex);
         glBindTexture(GL_TEXTURE_2D, m_DepthTex);
-        // Allocate storage for the texture – one mip level, 24-bit depth
+        // Allocate storage for the texture â€“ one mip level, 24-bit depth
         glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, m_Width, m_Height);
 
         // Set texture parameters
@@ -32,7 +32,7 @@ public:
         glGenFramebuffers(1, &m_ShadowFBO);
         glBindFramebuffer(GL_FRAMEBUFFER, m_ShadowFBO);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_DepthTex, 0);
-        // We don’t need any color output
+        // We donâ€™t need any color output
         GLenum drawBuffers[] = { GL_NONE };
         glDrawBuffers(1, drawBuffers);
 

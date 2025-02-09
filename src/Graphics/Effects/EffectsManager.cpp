@@ -155,7 +155,7 @@ void EffectsManager::SetupFullscreenQuad() {
         false, // Bitangents
         { TextureType::Albedo }
     };
-    m_FullscreenQuadMeshBuffer = std::make_shared<MeshBuffer>(*quadMesh, quadMeshLayout);
+    m_FullscreenQuadMeshBuffer = std::make_shared<Graphics::MeshBuffer>(*quadMesh, quadMeshLayout);
     m_FlipbookQuadMeshBuffer = m_FullscreenQuadMeshBuffer;
 }
 

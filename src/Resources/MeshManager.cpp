@@ -47,7 +47,7 @@ bool MeshManager::DeleteMesh(std::string_view meshName) {
     return m_Meshes.erase(std::string(meshName)) > 0;
 }
 
-std::shared_ptr<MeshBuffer> MeshManager::GetMeshBuffer(std::string_view meshName, const MeshLayout& layout) {
+std::shared_ptr<Graphics::MeshBuffer> MeshManager::GetMeshBuffer(std::string_view meshName, const MeshLayout& layout) {
     MeshKey key = { std::string(meshName), layout };
 
     auto it = m_MeshBuffers.find(key);
@@ -61,7 +61,7 @@ std::shared_ptr<MeshBuffer> MeshManager::GetMeshBuffer(std::string_view meshName
         return nullptr;
     }
 
-    auto meshBuffer = std::make_shared<MeshBuffer>(*mesh, layout);
+    auto meshBuffer = std::make_shared<Graphics::MeshBuffer>(*mesh, layout);
     m_MeshBuffers[key] = meshBuffer;
     return meshBuffer;
 }

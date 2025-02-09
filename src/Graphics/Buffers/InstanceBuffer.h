@@ -11,7 +11,7 @@
 //need to revisit this class
 class InstanceBuffer {
 public:
-    InstanceBuffer(std::shared_ptr<MeshBuffer> meshBuffer, size_t instanceCount)
+    InstanceBuffer(std::shared_ptr<Graphics::MeshBuffer> meshBuffer, size_t instanceCount)
         : m_MeshBuffer(meshBuffer), m_InstanceCount(instanceCount)
     {
         InitInstanceBuffer();
@@ -29,9 +29,9 @@ public:
     }
 
 private:
-    std::shared_ptr<MeshBuffer> m_MeshBuffer;
+    std::shared_ptr<Graphics::MeshBuffer> m_MeshBuffer;
     size_t m_InstanceCount;
-    VertexArray m_InstanceVAO;
+    Graphics::VertexArray m_InstanceVAO;
 
     void InitInstanceBuffer();
 };

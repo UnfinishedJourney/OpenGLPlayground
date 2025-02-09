@@ -15,7 +15,7 @@ public:
     std::shared_ptr<Mesh> GetMesh(std::string_view meshName);
     bool DeleteMesh(std::string_view meshName);
 
-    std::shared_ptr<MeshBuffer> GetMeshBuffer(std::string_view meshName, const MeshLayout& layout);
+    std::shared_ptr<Graphics::MeshBuffer> GetMeshBuffer(std::string_view meshName, const MeshLayout& layout);
     bool DeleteMeshBuffer(std::string_view meshName, const MeshLayout& layout);
 
     void Clear();
@@ -45,5 +45,5 @@ private:
     };
 
     std::unordered_map<std::string, std::shared_ptr<Mesh>> m_Meshes;
-    std::unordered_map<MeshKey, std::shared_ptr<MeshBuffer>, MeshKeyHash> m_MeshBuffers;
+    std::unordered_map<MeshKey, std::shared_ptr<Graphics::MeshBuffer>, MeshKeyHash> m_MeshBuffers;
 };

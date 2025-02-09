@@ -10,7 +10,7 @@
 
 class FlipbookEffect {
 public:
-    FlipbookEffect(std::shared_ptr<MeshBuffer> quadMeshBuffer);
+    FlipbookEffect(std::shared_ptr<Graphics::MeshBuffer> quadMeshBuffer);
     ~FlipbookEffect() = default;
 
     // Load configuration and frames
@@ -26,7 +26,7 @@ public:
     void Render();
 
 private:
-    std::shared_ptr<MeshBuffer> m_QuadMeshBuffer;
+    std::shared_ptr<Graphics::MeshBuffer> m_QuadMeshBuffer;
     std::shared_ptr<BaseShader> m_Shader;
     std::shared_ptr<OpenGLTextureArray> m_TextureArray;
 
