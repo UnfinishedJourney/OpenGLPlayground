@@ -216,7 +216,7 @@ namespace staticloader {
 
                     // Load
                     auto textureName = rel.filename().string();
-                    auto loadedTex = TextureManager::GetInstance().LoadTexture(textureName, full.string());
+                    auto loadedTex = Graphics::TextureManager::GetInstance().LoadTexture(textureName, full.string());
                     if (!loadedTex) {
                         Logger::GetLogger()->error("Failed to load texture '{}' for type={}.",
                             full.string(), (int)myType);

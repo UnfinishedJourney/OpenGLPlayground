@@ -1,38 +1,46 @@
 #pragma once
-
-#include <glm/glm.hpp>
-#include <string>
+#include <array>
 #include <filesystem>
+#include <vector>
 #include "Bitmap.h"
+#include <glm/glm.hpp>
 
-class EnvMapPreprocessor
-{
-public:
-    void SaveAsVerticalCross(const std::filesystem::path& texturePath, const std::filesystem::path& outPath) const;
-    Bitmap LoadTexture(const std::filesystem::path& texturePath) const;
-    Bitmap ConvertEquirectangularMapToVerticalCross(const Bitmap& b) const;
-    Bitmap ConvertVerticalCrossToCubeMapFaces(const Bitmap& b) const;
+//modified
+//https://github.com/PacktPublishing/3D-Graphics-Rendering-Cookbook
 
-    inline Bitmap ConvertEquirectangularMapToCubeMapFaces(const Bitmap& b) const {
-        return ConvertVerticalCrossToCubeMapFaces(ConvertEquirectangularMapToVerticalCross(b));
-    }
+namespace Graphics {
 
-    Bitmap ComputeIrradianceEquirect(const Bitmap& inEquirect,
-        int outWidth,
-        int outHeight,
-        int samples) const;
+    class EnvMapPreprocessor {
+    public:
+        // Convert an equirectangular map into a vertical cross image.
+        void SaveAsVerticalCross(const std::filesystem::path& texturePath,
+            const std::filesystem::path& outPath) const;
 
-    void ConvolveDiffuse(const glm::vec3* data, int srcW, int srcH, int dstW, int dstH, glm::vec3* output, int numMonteCarloSamples) const;
+        // Load an HDR texture from file into a Bitmap.
+        Bitmap LoadTexture(const std::filesystem::path& texturePath) const;
 
-    void SaveAsHDR(const Bitmap& image, const std::filesystem::path& outPath) const;
+        // Convert an equirectangular map to vertical cross format.
+        Bitmap ConvertEquirectangularMapToVerticalCross(const Bitmap& input) const;
 
-    // NEW: Save as LDR (for skybox display)
-    void SaveAsLDR(const Bitmap& image, const std::filesystem::path& outPath) const;
+        // Slice a vertical cross image into cube map faces (returned as a Bitmap with depth==6).
+        Bitmap ConvertVerticalCrossToCubeMapFaces(const Bitmap& input) const;
 
-    // NEW: Save 6 cube faces as LDR images (e.g. PNG) instead of HDR
-    void SaveFacesToDiskLDR(const Bitmap& cubeMap, const std::array<std::filesystem::path, 6>& facePaths, const std::string& prefix) const;
+        // Compute an irradiance map from an equirectangular environment.
+        Bitmap ComputeIrradianceEquirect(const Bitmap& inEquirect, int outWidth, int outHeight, int samples) const;
 
-    std::vector<Bitmap> ComputePrefilteredCubemap(const Bitmap& inEquirect, int baseFaceSize, int numSamples) const;
+        // Save the image as an HDR file.
+        void SaveAsHDR(const Bitmap& image, const std::filesystem::path& outPath) const;
 
-private:
-};
+        // Save the image as an LDR (PNG) file.
+        void SaveAsLDR(const Bitmap& image, const std::filesystem::path& outPath) const;
+
+        // Save the 6 cube faces (contained in a cubemap Bitmap) as LDR images.
+        void SaveFacesToDiskLDR(const Bitmap& cubeMap,
+            const std::array<std::filesystem::path, 6>& facePaths,
+            const std::string& prefix) const;
+
+        // Compute a prefiltered cubemap (for specular IBL) from an equirectangular map.
+        std::vector<Bitmap> ComputePrefilteredCubemap(const Bitmap& inEquirect, int baseFaceSize, int numSamples) const; //does not work yet
+    };
+
+} // namespace Graphics

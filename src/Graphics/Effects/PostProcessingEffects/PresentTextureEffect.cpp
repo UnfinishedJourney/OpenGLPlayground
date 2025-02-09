@@ -13,7 +13,7 @@ PresentTextureEffect::PresentTextureEffect(std::shared_ptr<Graphics::MeshBuffer>
         Logger::GetLogger()->error("Present texture shader not found!");
     }
 
-    auto& textureManager = TextureManager::GetInstance();
+    auto& textureManager = Graphics::TextureManager::GetInstance();
 
     m_Texture = textureManager.GetTexture("brdfLUT");
     //m_Texture = textureManager.GetTexture2D("cuteDog");

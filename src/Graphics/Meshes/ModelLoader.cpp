@@ -178,7 +178,7 @@ BetterMeshTextures ModelLoader::LoadMeshTextures(const aiMaterial* material,
                 fullPath = fullPath.lexically_normal();
 
                 auto texName = relativePath.filename().string(); // short name
-                auto loadedTex = TextureManager::GetInstance().LoadTexture(texName, fullPath.string());
+                auto loadedTex = Graphics::TextureManager::GetInstance().LoadTexture(texName, fullPath.string());
                 if (!loadedTex) {
                     Logger::GetLogger()->error("Failed to load texture '{}' for type '{}'.",
                         fullPath.string(), (int)myType);

@@ -74,8 +74,8 @@ MeshManager& ResourceManager::GetMeshManager() {
 //    return ModelManager::GetInstance();
 //}
 
-TextureManager& ResourceManager::GetTextureManager() {
-    return TextureManager::GetInstance();
+Graphics::TextureManager& ResourceManager::GetTextureManager() {
+    return Graphics::TextureManager::GetInstance();
 }
 
 MaterialManager& ResourceManager::GetMaterialManager() {

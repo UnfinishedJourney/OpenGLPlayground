@@ -1,92 +1,57 @@
 #pragma once
-
 #include <string>
 #include <unordered_map>
 #include <memory>
 #include <mutex>
 #include <filesystem>
+#include <array>
 #include <nlohmann/json.hpp>
-#include "Graphics/Textures/BitMap.h"
+#include "Graphics/Textures/ITexture.h"
 
-// Forward declarations
 namespace Graphics {
-    class ITexture;
-    struct TextureConfig;
-};
 
-/**
- * @brief A singleton manager for loading, storing, and retrieving textures.
- *
- * Supports:
- *   - 2D textures
- *   - Cube maps (either 6-face paths or single equirect .hdr that is converted)
- *   - Computed textures (like BRDF LUT)
- */
-class TextureManager {
-public:
-    // Singleton Access
-    static TextureManager& GetInstance();
+    struct TextureConfig; // Forward if defined elsewhere
+    class Bitmap;
 
     /**
-     * @param configPath The JSON file containing texture definitions (optional).
+     * @brief Singleton manager for loading and retrieving textures.
+     *
+     * Supports 2D textures, cube maps (from 6–face definitions or single equirect HDR
+     * converted into faces), texture arrays, and computed textures such as BRDF LUTs.
      */
-    explicit TextureManager(const std::filesystem::path& configPath = "../assets/resource_paths.json");
+    class TextureManager {
+    public:
+        static TextureManager& GetInstance();
 
-    /**
-     * @brief Load the texture definitions from a JSON file.
-     * @return True on success, false on failure.
-     */
-    bool LoadConfig(const std::filesystem::path& configPath);
+        explicit TextureManager(const std::filesystem::path& configPath = "../assets/resource_paths.json");
+        bool LoadConfig(const std::filesystem::path& configPath);
+        std::shared_ptr<ITexture> GetTexture(const std::string& name);
+        std::shared_ptr<ITexture> LoadTexture(const std::string& name, const std::string& path);
+        void Clear();
 
-    /**
-     * @brief Retrieve a texture by name (as specified in the JSON or manually loaded).
-     */
-    std::shared_ptr<Graphics::ITexture> GetTexture(const std::string& name);
+    private:
+        ~TextureManager() = default;
+        TextureManager(const TextureManager&) = delete;
+        TextureManager& operator=(const TextureManager&) = delete;
 
-    /**
-     * @brief Explicitly load a single 2D texture by path and store it under `name`.
-     * @return The created texture, or nullptr on failure.
-     */
-    std::shared_ptr<Graphics::ITexture> LoadTexture(const std::string& name, const std::string& path);
+        bool Load2DTextures(const nlohmann::json& json);
+        bool LoadCubeMaps(const nlohmann::json& json);
+        bool LoadTextureArrays(const nlohmann::json& json);
+        bool LoadComputedTextures(const nlohmann::json& json);
+        bool ConvertAndLoadEquirectHDR(const std::string& cubeMapName, const std::string& equirectPath);
+        std::shared_ptr<ITexture> CreateBRDFLUT(int width, int height, unsigned int numSamples);
 
-    /**
-     * @brief Remove all textures from the cache.
-     */
-    void Clear();
+        std::string ToLower(const std::string& str);
+        bool IsHDRTexture(const std::filesystem::path& path);
+        bool DetermineSRGB(const std::string& pathStr);
+        void SaveFacesToDisk(const Bitmap& cubeMap,
+            const std::array<std::filesystem::path, 6>& facePaths,
+            const std::string& prefix);
 
-private:
-    // Private Destructor
-    ~TextureManager() = default;
-    TextureManager(const TextureManager&) = delete;
-    TextureManager& operator=(const TextureManager&) = delete;
+        // A simple helper for cube map config.
+        TextureConfig MakeSomeCubeMapConfig(bool isHDR);
 
-    // Main JSON loading routines
-    bool Load2DTextures(const nlohmann::json& json);
-    bool LoadCubeMaps(const nlohmann::json& json);
-    bool LoadTextureArrays(const nlohmann::json& json);
-    bool LoadComputedTextures(const nlohmann::json& json);
+        std::unordered_map<std::string, std::shared_ptr<ITexture>> textures_;
+    };
 
-    /**
-     * @brief If we detect a single .hdr path in the cubeMap array, handle it here:
-     *        Convert from equirect to 6 faces to create OpenGLCubeMapTexture.
-     */
-    bool ConvertAndLoadEquirectHDR(const std::string& cubeMapName, const std::string& equirectPath);
-
-    /**
-     * @brief Create a BRDF LUT texture via compute shader.
-     */
-    std::shared_ptr<Graphics::ITexture> CreateBRDFLUT(int width, int height, unsigned int numSamples);
-
-    // Utility
-    std::string ToLower(const std::string& str);
-    bool IsHDRTexture(const std::filesystem::path& path);
-    bool DetermineSRGB(const std::string& pathStr);
-    void SaveFacesToDisk(const Bitmap& cubeMap,
-        const std::array<std::filesystem::path, 6>& facePaths,
-        const std::string& prefix);
-
-private:
-    Graphics::TextureConfig MakeSomeCubeMapConfig(bool isHDR);
-    // Storage for all loaded textures (2D, cubemap, computed, etc.)
-    std::unordered_map<std::string, std::shared_ptr<Graphics::ITexture>> m_Textures;
-};
+} // namespace Graphics
