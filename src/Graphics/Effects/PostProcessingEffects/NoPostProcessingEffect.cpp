@@ -7,7 +7,7 @@ NoPostProcessingEffect::NoPostProcessingEffect(std::shared_ptr<Graphics::MeshBuf
     : PostProcessingEffect(quad, width, height)
 {
 
-    auto& shaderManager = ShaderManager::GetInstance();
+    auto& shaderManager = Graphics::ShaderManager::GetInstance();
     m_Shader = shaderManager.GetShader("noPostProcessing");
     if (!m_Shader) {
         Logger::GetLogger()->error("No postprocessing shader not found!");

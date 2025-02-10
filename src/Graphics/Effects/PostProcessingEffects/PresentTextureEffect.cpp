@@ -7,7 +7,7 @@ PresentTextureEffect::PresentTextureEffect(std::shared_ptr<Graphics::MeshBuffer>
     : PostProcessingEffect(quad, width, height)
 {
 
-    auto& shaderManager = ShaderManager::GetInstance();
+    auto& shaderManager = Graphics::ShaderManager::GetInstance();
     m_Shader = shaderManager.GetShader("presentTexture");
     if (!m_Shader) {
         Logger::GetLogger()->error("Present texture shader not found!");

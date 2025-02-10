@@ -43,5 +43,5 @@ public:
 protected:
     std::shared_ptr<Graphics::MeshBuffer> m_FullscreenQuadMeshBuffer;
     int m_Width, m_Height;
-    std::shared_ptr<Shader> m_Shader;
+    std::shared_ptr<Graphics::Shader> m_Shader;
 };

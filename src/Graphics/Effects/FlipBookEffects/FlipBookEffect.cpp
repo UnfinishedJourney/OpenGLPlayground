@@ -10,7 +10,7 @@
 FlipbookEffect::FlipbookEffect(std::shared_ptr<Graphics::MeshBuffer> quadMeshBuffer)
     : m_QuadMeshBuffer(quadMeshBuffer)
 {
-    m_Shader = ShaderManager::GetInstance().GetShader("flipbook");
+    m_Shader = Graphics::ShaderManager::GetInstance().GetShader("flipbook");
     if (!m_Shader) {
         Logger::GetLogger()->error("FlipbookEffect: 'Flipbook' shader not found!");
         throw std::runtime_error("Flipbook shader not found");

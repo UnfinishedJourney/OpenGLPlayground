@@ -22,7 +22,7 @@ public:
 
 private:
     std::shared_ptr<Graphics::ShadowMap> m_ShadowMap;
-    std::shared_ptr<Shader> m_ShadowShader; // used during shadow pass
+    std::shared_ptr<Graphics::Shader> m_ShadowShader; // used during shadow pass
     // Matrices computed from the light’s position/direction
     glm::mat4 m_ShadowMatrix;
 

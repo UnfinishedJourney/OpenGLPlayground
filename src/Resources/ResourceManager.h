@@ -19,7 +19,7 @@ public:
     //ModelManager& GetModelManager();
     Graphics::TextureManager& GetTextureManager();
     Graphics::MaterialManager& GetMaterialManager();
-    ShaderManager& GetShaderManager();
+    Graphics::ShaderManager& GetShaderManager();
 
 private:
     ResourceManager();

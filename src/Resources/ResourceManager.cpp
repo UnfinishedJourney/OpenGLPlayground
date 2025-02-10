@@ -82,6 +82,6 @@ Graphics::MaterialManager& ResourceManager::GetMaterialManager() {
     return Graphics::MaterialManager::GetInstance();
 }
 
-ShaderManager& ResourceManager::GetShaderManager() {
-    return ShaderManager::GetInstance();
+Graphics::ShaderManager& ResourceManager::GetShaderManager() {
+    return Graphics::ShaderManager::GetInstance();
 }

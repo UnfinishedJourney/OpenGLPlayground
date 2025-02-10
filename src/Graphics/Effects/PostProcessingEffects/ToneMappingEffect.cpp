@@ -13,7 +13,7 @@ ToneMappingEffect::ToneMappingEffect(std::shared_ptr<Graphics::MeshBuffer> quad,
     m_LWhite(1.0f)      // Default white-point.
 {
     // Load the tone mapping shader from your shader manager.
-    auto& shaderManager = ShaderManager::GetInstance();
+    auto& shaderManager = Graphics::ShaderManager::GetInstance();
     m_Shader = shaderManager.GetShader("toneMapping");
     if (!m_Shader) {
         Logger::GetLogger()->error("ToneMappingEffect: toneMapping shader not found!");

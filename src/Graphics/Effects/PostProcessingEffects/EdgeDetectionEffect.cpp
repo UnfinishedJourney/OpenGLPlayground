@@ -6,7 +6,7 @@
 EdgeDetectionEffect::EdgeDetectionEffect(std::shared_ptr<Graphics::MeshBuffer> quad, int width, int height)
     : PostProcessingEffect(quad, width, height), m_EdgeThreshold(0.05f) // Default threshold
 {
-    auto& shaderManager = ShaderManager::GetInstance();
+    auto& shaderManager = Graphics::ShaderManager::GetInstance();
     m_Shader = shaderManager.GetShader("edgeDetection");
     if (!m_Shader) {
         Logger::GetLogger()->error("EdgeDetection shader not found!");

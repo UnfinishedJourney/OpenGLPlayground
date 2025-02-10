@@ -1,7 +1,7 @@
 #include "GeometryPass.h"
 #include "Renderer/Batch.h"
 #include "Resources/ShaderManager.h"
-#include "Resources/MaterialManager.h"
+#include "Graphics/Materials/MaterialManager.h"
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
 #include "Utilities/ProfilerMacros.h"
@@ -73,7 +73,7 @@ void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
     {
         PROFILE_BLOCK("Render Static Batches", Cyan);
         auto& materialManager = Graphics::MaterialManager::GetInstance();
-        auto& shaderManager = ShaderManager::GetInstance();
+        auto& shaderManager = Graphics::ShaderManager::GetInstance();
 
         const auto& staticBatches = scene->GetStaticBatches();
 

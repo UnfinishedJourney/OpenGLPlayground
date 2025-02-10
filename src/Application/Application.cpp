@@ -221,7 +221,7 @@ void Application::ProcessInput(double deltaTime)
     if (m_InputManager.WasKeyJustPressed(GLFW_KEY_R))
     {
         m_Logger->info("Reloading all shaders...");
-        ShaderManager::GetInstance().ReloadAllShaders();
+        Graphics::ShaderManager::GetInstance().ReloadAllShaders();
     }
 }
 

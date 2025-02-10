@@ -43,7 +43,7 @@ void DebugLightsPass::Execute(const std::shared_ptr<Scene>& scene)
     lightManager->BindLightsGPU();
 
     auto& resourceManager = ResourceManager::GetInstance();
-    auto& shaderManager = ShaderManager::GetInstance();
+    auto& shaderManager = Graphics::ShaderManager::GetInstance();
     auto shader = shaderManager.GetShader("debugLights");
     if (shader) {
         shader->Bind();

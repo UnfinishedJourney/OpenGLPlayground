@@ -44,7 +44,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene>& scene)
     m_Framebuffer->Bind();
 
     // Bind the skybox shader
-    auto& shaderManager = ShaderManager::GetInstance();
+    auto& shaderManager = Graphics::ShaderManager::GetInstance();
     auto shader = shaderManager.GetShader("skyBox");
     if (!shader)
     {

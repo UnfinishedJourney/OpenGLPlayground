@@ -27,7 +27,7 @@ public:
 
 private:
     std::shared_ptr<Graphics::MeshBuffer> m_QuadMeshBuffer;
-    std::shared_ptr<BaseShader> m_Shader;
+    std::shared_ptr<Graphics::BaseShader> m_Shader;
     std::shared_ptr<Graphics::OpenGLTextureArray> m_TextureArray;
 
     std::vector<FlipbookAnimation> m_Animations;

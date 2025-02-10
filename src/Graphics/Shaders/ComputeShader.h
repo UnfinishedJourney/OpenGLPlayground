@@ -3,30 +3,39 @@
 #include "BaseShader.h"
 #include <filesystem>
 
-/**
- * @brief Specialized class for compute shaders (GL_COMPUTE_SHADER).
- */
-class ComputeShader : public BaseShader {
-public:
-    /**
-     * @param shaderPath  The .comp file containing the compute shader source.
-     * @param binaryPath  (Optional) path for saving/loading a program binary.
-     */
-    ComputeShader(const std::filesystem::path& shaderPath,
-        const std::filesystem::path& binaryPath = "");
+namespace Graphics {
 
     /**
-     * @brief Reload from file or binary.
+     * @brief Specialized class for compute shaders.
+     *
+     * Loads a compute shader from a .comp file and supports binary caching.
      */
-    void ReloadShader() override;
+    class ComputeShader : public BaseShader {
+    public:
+        /**
+         * @brief Constructor.
+         * @param ShaderPath Path to the compute shader source (.comp file).
+         * @param BinaryPath Optional binary path.
+         */
+        ComputeShader(const std::filesystem::path& shaderPath,
+            const std::filesystem::path& binaryPath = "");
 
-    /**
-     * @brief Dispatch compute with given group sizes.
-     */
-    void Dispatch(GLuint numGroupsX, GLuint numGroupsY, GLuint numGroupsZ) const;
+        /**
+         * @brief Reloads the compute shader from source or binary.
+         */
+        void ReloadShader() override;
 
-private:
-    void LoadShader(bool reload = false);
+        /**
+         * @brief Dispatches the compute shader.
+         * @param NumGroupsX Number of work groups in X.
+         * @param NumGroupsY Number of work groups in Y.
+         * @param NumGroupsZ Number of work groups in Z.
+         */
+        void Dispatch(GLuint numGroupsX, GLuint numGroupsY, GLuint numGroupsZ) const;
 
-    std::filesystem::path m_ShaderPath;
-};
+    private:
+        void LoadShader(bool reload = false);
+        std::filesystem::path m_ShaderPath;
+    };
+
+} // namespace Graphics

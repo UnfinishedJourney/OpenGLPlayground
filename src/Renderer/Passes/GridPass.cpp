@@ -33,7 +33,7 @@ void GridPass::Execute(const std::shared_ptr<Scene>& scene)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    auto& shaderManager = ShaderManager::GetInstance();
+    auto& shaderManager = Graphics::ShaderManager::GetInstance();
     auto shader = shaderManager.GetShader("grid");
     if (shader) {
         shader->Bind();
