@@ -1,15 +1,15 @@
 #include "ShaderManager.h"
 #include "Utilities/Logger.h"
-#include "Graphics/Shaders/BaseShader.h"
-#include "Graphics/Shaders/Shader.h"
-#include "Graphics/Shaders/ComputeShader.h"
+#include "BaseShader.h"
+#include "Shader.h"
+#include "ComputeShader.h"
 #include <fstream>
 #include <chrono>
 #include <stdexcept>
 #include <algorithm>
 #include <nlohmann/json.hpp>
 #include <filesystem>
-#include "Graphics/Shaders/ShaderUtils.h"
+#include "ShaderUtils.h"
 
 namespace Graphics {
 

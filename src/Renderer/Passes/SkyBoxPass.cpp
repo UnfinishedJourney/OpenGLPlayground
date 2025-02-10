@@ -1,7 +1,7 @@
 #include "Renderer/Passes/SkyBoxPass.h"
 #include "Scene/Scene.h"
 #include "Graphics/Buffers/MeshBuffer.h"
-#include "Resources/ShaderManager.h"
+#include "Graphics/Shaders/ShaderManager.h"
 #include "Graphics/Textures/TextureManager.h"
 #include "Resources/ResourceManager.h"
 #include "Utilities/Logger.h"

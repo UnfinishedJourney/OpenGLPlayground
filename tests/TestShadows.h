@@ -2,7 +2,6 @@
 #include "Test.h"
 #include "Renderer/Renderer.h"
 #include "Graphics/Materials/MaterialManager.h"
-#include "Resources/ShaderManager.h"
 
 class TestShadows : public Test {
 public:

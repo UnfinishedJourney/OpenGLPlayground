@@ -2,7 +2,7 @@
 #include "OpenGLTexture.h"
 #include "OpenGLCubeMapTexture.h"
 #include "EnvMapPreprocessor.h"
-#include "Resources/ShaderManager.h"
+#include "Graphics/Shaders/ShaderManager.h"
 #include "Graphics/Shaders/ComputeShader.h"
 #include "Graphics/Buffers/ShaderStorageBuffer.h"
 #include "TextureData.h"

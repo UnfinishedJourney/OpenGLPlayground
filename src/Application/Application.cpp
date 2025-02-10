@@ -10,7 +10,6 @@
 #include "Scene/Screen.h"
 #include "AllTests.h"                  
 #include "Resources/ResourceManager.h"
-#include "Resources/ShaderManager.h"
 #include "Utilities/Logger.h"
 #include "Utilities/ProfilerMacros.h"
 

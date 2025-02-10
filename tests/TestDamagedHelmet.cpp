@@ -1,8 +1,5 @@
 #include "TestDamagedHelmet.h"
-#include "Graphics/Materials/MaterialManager.h"
-#include "Resources/ShaderManager.h"
 #include "Graphics/Textures/TextureManager.h"
-#include "Scene/Transform.h"
 #include "Scene/Lights.h"
 #include "Scene/Screen.h"
 #include "Utilities/Logger.h"

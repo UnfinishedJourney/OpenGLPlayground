@@ -6,7 +6,7 @@
 #include "Resources/MeshManager.h"
 #include "Graphics/Textures/TextureManager.h"
 #include "Graphics/Materials/MaterialManager.h"
-#include "Resources/ShaderManager.h"
+#include "Graphics/Shaders/ShaderManager.h"
 
 class ResourceManager {
 public:

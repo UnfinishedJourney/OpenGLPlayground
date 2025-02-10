@@ -1,6 +1,6 @@
 #include "ToneMappingEffect.h"
 #include "Utilities/Logger.h"
-#include "Resources/ShaderManager.h"
+#include "Graphics/Shaders/ShaderManager.h"
 #include <glad/glad.h>
 #include <vector>
 #include <cmath>

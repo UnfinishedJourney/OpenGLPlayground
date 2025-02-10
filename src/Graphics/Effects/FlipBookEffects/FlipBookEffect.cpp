@@ -1,7 +1,7 @@
 #include "FlipbookEffect.h"
 #include "Utilities/Logger.h"
 #include "Resources/ResourceManager.h"
-#include "Resources/ShaderManager.h"
+#include "Graphics/Shaders/ShaderManager.h"
 #include "Scene/Screen.h"
 #include "Utilities/Utility.h"
 #include <GLFW/glfw3.h>

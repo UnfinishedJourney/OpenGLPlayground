@@ -2,7 +2,7 @@
 #include "Test.h"
 #include "Renderer/Renderer.h"
 #include "Graphics/Materials/MaterialManager.h"
-#include "Resources/ShaderManager.h"
+#include "Graphics/Shaders/ShaderManager.h"
 
 class TestLights : public Test {
 public:

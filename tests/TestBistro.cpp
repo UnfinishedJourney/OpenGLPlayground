@@ -2,8 +2,6 @@
 #include "Scene/Scene.h"
 #include "Scene/Scene.h"
 #include "Graphics/Materials/MaterialManager.h"
-#include "Resources/ShaderManager.h"
-#include "Scene/Transform.h"
 #include "Scene/Lights.h"
 #include "Utilities/Logger.h"
 #include <imgui.h>
