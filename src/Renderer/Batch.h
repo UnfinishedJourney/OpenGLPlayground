@@ -5,8 +5,7 @@
 #include <string>
 #include <glad/glad.h>
 #include <cstddef>
-
-#include "Renderer/RenderObject.h"
+#include "Renderer/RenderObject.h"  // Defines BaseRenderObject
 #include "Graphics/Buffers/VertexArray.h"
 #include "Graphics/Buffers/VertexBuffer.h"
 #include "Graphics/Buffers/IndexBuffer.h"
@@ -14,89 +13,83 @@
 #include "Graphics/Buffers/IndirectBuffer.h"
 #include "Graphics/Meshes/MeshLayout.h"
 
-/**
- * @brief Structure for one multi-draw command (used with glMultiDrawElementsIndirect).
- */
-struct DrawElementsIndirectCommand {
-    GLuint count;         ///< Number of indices to draw
-    GLuint instanceCount; ///< Number of instances
-    GLuint firstIndex;    ///< Starting index in the IBO
-    GLint  baseVertex;    ///< Offset added to indices in the VBO
-    GLuint baseInstance;  ///< Base instance ID
-};
-
-/**
- * @brief Info about one LOD range. Tracks the index offset and count within the combined IBO.
- */
-struct LODInfo {
-    size_t indexOffsetInCombinedBuffer = 0;
-    size_t indexCount = 0;
-};
-
-/**
- * @brief Batch groups multiple RenderObjects sharing the same shader and material.
- *
- * It merges their vertex/index data into single GPU buffers (VBO, IBO)
- * and uses glMultiDrawElementsIndirect to issue a multi-draw call.
- */
-class Batch {
-public:
-    Batch(const std::string& shaderName, int materialID);
-    ~Batch();
+namespace Graphics {
 
     /**
-     * @brief Add a RenderObject to the batch.
+     * @brief Structure for one multi-draw command (used with glMultiDrawElementsIndirect).
      */
-    void AddRenderObject(const std::shared_ptr<BaseRenderObject>& renderObject);
+    struct DrawElementsIndirectCommand {
+        GLuint count;         ///< Number of indices to draw.
+        GLuint instanceCount; ///< Number of instances.
+        GLuint firstIndex;    ///< Starting index in the IBO.
+        GLint  baseVertex;    ///< Offset added to indices.
+        GLuint baseInstance;  ///< Base instance ID.
+    };
 
     /**
-     * @brief Returns the list of RenderObjects in the batch.
+     * @brief Info about one LOD range. Tracks the index offset and count within the combined IBO.
      */
-    const std::vector<std::shared_ptr<BaseRenderObject>>& GetRenderObjects() const;
+    struct LODInfo {
+        size_t indexOffsetInCombinedBuffer = 0;
+        size_t indexCount = 0;
+    };
 
     /**
-     * @brief Build (or rebuild) the combined GPU buffers (VBO, IBO, IndirectBuffer).
+     * @brief Batch groups multiple RenderObjects sharing the same shader and material.
+     *
+     * It merges their vertex/index data into single GPU buffers (VBO, IBO, and indirect draw buffer)
+     * and uses glMultiDrawElementsIndirect to issue a multi-draw call.
      */
-    void BuildBatches();
+    class Batch {
+    public:
+        Batch(const std::string& shaderName, int materialID);
+        ~Batch();
 
-    /**
-     * @brief Check if the batch is dirty, and rebuild if necessary.
-     */
-    void Update();
+        /// @brief Adds a RenderObject to the batch.
+        void AddRenderObject(const std::shared_ptr<BaseRenderObject>& renderObject);
 
-    /**
-     * @brief Issue the multi-draw call for the batch.
-     */
-    void Render() const;
+        /// @brief Returns the list of RenderObjects in the batch.
+        const std::vector<std::shared_ptr<BaseRenderObject>>& GetRenderObjects() const;
 
-    // Culling
-    void CullObject(size_t objectIndex);
+        /// @brief Builds (or rebuilds) the combined GPU buffers (VBO, IBO, IndirectBuffer).
+        void BuildBatches();
 
-    // LOD updates
-    void UpdateLOD(size_t objectIndex, size_t newLOD);
+        /// @brief Checks if the batch is dirty, and rebuilds if necessary.
+        void Update();
 
-    // Accessors
-    [[nodiscard]] const std::string& GetShaderName() const { return m_ShaderName; }
-    [[nodiscard]] int GetMaterialID() const { return m_MaterialID; }
-    [[nodiscard]] const MeshLayout& GetMeshLayout() const { return m_MeshLayout; }
+        /// @brief Issues the multi-draw call for the batch.
+        void Render() const;
 
-private:
-    std::string m_ShaderName;
-    int m_MaterialID;
-    MeshLayout m_MeshLayout;
+        // Culling
+        void CullObject(size_t objectIndex);
 
-    // List of objects in the batch.
-    std::vector<std::shared_ptr<BaseRenderObject>> m_RenderObjects;
+        // LOD updates
+        void UpdateLOD(size_t objectIndex, size_t newLOD);
 
-    // GPU buffers for combined geometry.
-    std::unique_ptr<Graphics::VertexArray> m_VAO;
-    std::unique_ptr<Graphics::IndirectBuffer> m_DrawCommandBuffer;
+        // Accessors.
+        [[nodiscard]] const std::string& GetShaderName() const { return shaderName_; }
+        [[nodiscard]] int GetMaterialID() const { return materialID_; }
+        [[nodiscard]] const MeshLayout& GetMeshLayout() const { return meshLayout_; }
 
-    // One draw command per object.
-    std::vector<DrawElementsIndirectCommand> m_DrawCommands;
-    // For each object, an array of LODInfo.
-    std::vector<std::vector<LODInfo>> m_LODInfos;
+    private:
+        std::string shaderName_;
+        int materialID_;
+        MeshLayout meshLayout_;
 
-    // Flag indicating whether the batch data needs rebuilding.
-    bool m_IsDirty = true;
-};
+        // List of RenderObjects in the batch.
+        std::vector<std::shared_ptr<BaseRenderObject>> renderObjects_;
+
+        // GPU buffers for combined geometry.
+        std::unique_ptr<VertexArray> VAO_;
+        std::unique_ptr<IndirectBuffer> drawCommandBuffer_;
+
+        // One draw command per object.
+        std::vector<DrawElementsIndirectCommand> drawCommands_;
+        // For each object, an array of LODInfo.
+        std::vector<std::vector<LODInfo>> LODInfos_;
+
+        // Flag indicating whether the batch data needs rebuilding.
+        bool isDirty_ = true;
+    };
+
+} // namespace Graphics

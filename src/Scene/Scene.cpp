@@ -71,7 +71,7 @@ bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
     auto& resourceManager = ResourceManager::GetInstance();
     auto [meshLayout, matLayout] = resourceManager.GetLayoutsFromShader(shaderName);
 
-    staticloader::ModelLoader loader(scaleFactor, aiToMyType);
+    StaticLoader::ModelLoader loader(scaleFactor, aiToMyType);
     bool success = loader.LoadStaticModel(modelName, meshLayout, matLayout, /*centerModel=*/true);
     if (!success) {
         Logger::GetLogger()->error("Failed to load static model '{}'.", modelName);
@@ -82,9 +82,9 @@ bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
 
     for (auto& mi : objects) {
         auto ro = std::make_shared<StaticRenderObject>(
-            mi.mesh,
+            mi.mesh_,
             meshLayout,
-            mi.materialIndex,
+            mi.materialIndex_,
             shaderName
         );
         m_StaticObjects.push_back(ro);
@@ -105,7 +105,7 @@ bool Scene::LoadPrimitiveIntoScene(const std::string& primitiveName,
     auto& resourceManager = ResourceManager::GetInstance();
     auto [meshLayout, matLayout] = resourceManager.GetLayoutsFromShader(shaderName);
 
-    auto mesh = MeshManager::GetInstance().GetMesh(primitiveName);
+    auto mesh = Graphics::MeshManager::GetInstance().GetMesh(primitiveName);
     if (!mesh) {
         Logger::GetLogger()->error("Primitive '{}' not found in MeshManager!", primitiveName);
         return false;
@@ -166,8 +166,8 @@ BoundingBox Scene::ComputeWorldBoundingBox() const
 
         if (!ro->GetMesh()) continue;
 
-        glm::vec3 localMin = ro->GetMesh()->minBounds;
-        glm::vec3 localMax = ro->GetMesh()->maxBounds;
+        glm::vec3 localMin = ro->GetMesh()->minBounds_;
+        glm::vec3 localMax = ro->GetMesh()->maxBounds_;
 
         // If truly baked in world coords, just combine directly:
         bigBox.combinePoint(localMin);
@@ -181,7 +181,7 @@ BoundingBox Scene::ComputeWorldBoundingBox() const
     return bigBox;
 }
 
-const std::vector<std::shared_ptr<Batch>>& Scene::GetStaticBatches() const
+const std::vector<std::shared_ptr<Graphics::Batch>>& Scene::GetStaticBatches() const
 {
     return m_StaticBatchManager->GetBatches();
 }

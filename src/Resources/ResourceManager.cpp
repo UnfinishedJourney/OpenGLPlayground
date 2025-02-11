@@ -10,32 +10,32 @@ std::pair<MeshLayout, MaterialLayout> ResourceManager::GetLayoutsFromShader(cons
 {
     static const std::unordered_map<std::string, std::pair<MeshLayout, MaterialLayout>> shaderLayouts = {
         {"simplelights", {
-            {true, true, false, false, {}},
-            {{MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess}, {}}
+            MeshLayout{ true, true, false, false, {} },
+            MaterialLayout{ { MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess }, {} }
         }},
         {"basic", {
-            {true, false, false, false, {TextureType::Albedo}},
-            {{}, {}}
+            MeshLayout{ true, false, false, false, { TextureType::Albedo } },
+            MaterialLayout{ {}, {} }
         }},
         {"basicTextured", {
-            {true, false, false, false, {TextureType::Albedo}},
-            {{}, {TextureType::Albedo}}
+            MeshLayout{ true, false, false, false, { TextureType::Albedo } },
+            MaterialLayout{ {}, { TextureType::Albedo } }
         }},
         {"helmetPBR", {
-            {true, true, true, false, {TextureType::Albedo}},
-            {{}, {TextureType::Albedo, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut}}
+            MeshLayout{ true, true, true, false, { TextureType::Albedo } },
+            MaterialLayout{ {}, { TextureType::Albedo, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut } }
         }},
         {"bistroShader", {
-            {true, true, false, false, {TextureType::Albedo}},
-            {{}, {TextureType::Albedo, TextureType::Ambient}}
+            MeshLayout{ true, true, false, false, { TextureType::Albedo } },
+            MaterialLayout{ {}, { TextureType::Albedo, TextureType::Ambient } }
         }},
         {"bistroShaderShadowed", {
-            {true, true, false, false, {TextureType::Albedo}},
-            {{}, {TextureType::Albedo, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut, TextureType::Ambient}}
+            MeshLayout{ true, true, false, false, { TextureType::Albedo } },
+            MaterialLayout{ {}, { TextureType::Albedo, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut, TextureType::Ambient } }
         }},
         {"simpleLightsShadowed", {
-            {true, true, false, false, {}},
-            {{MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess}, {}}
+            MeshLayout{ true, true, false, false, {} },
+            MaterialLayout{ { MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess }, {} }
         }},
     };
 
@@ -52,8 +52,8 @@ ResourceManager::ResourceManager() {
     // Initialization if needed
 }
 
-MeshManager& ResourceManager::GetMeshManager() {
-    return MeshManager::GetInstance();
+Graphics::MeshManager& ResourceManager::GetMeshManager() {
+    return Graphics::MeshManager::GetInstance();
 }
 
 //ModelManager& ResourceManager::GetModelManager() {

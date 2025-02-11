@@ -43,3 +43,7 @@ namespace std {
         }
     };
 }
+
+
+constexpr std::size_t kMaterialParamCount = static_cast<std::size_t>(MaterialParamType::COUNT);
+constexpr std::size_t kTextureTypeCount = static_cast<std::size_t>(TextureType::COUNT);

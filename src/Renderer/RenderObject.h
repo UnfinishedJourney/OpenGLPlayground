@@ -14,7 +14,7 @@
  */
 class BaseRenderObject {
 public:
-    BaseRenderObject(std::shared_ptr<Mesh> mesh,
+    BaseRenderObject(std::shared_ptr<Graphics::Mesh> mesh,
         MeshLayout meshLayout,
         int materialID,
         std::string shaderName)
@@ -27,7 +27,7 @@ public:
     virtual ~BaseRenderObject() = default;
 
     // Accessors
-    const std::shared_ptr<Mesh>& GetMesh()       const { return m_Mesh; }
+    const std::shared_ptr<Graphics::Mesh>& GetMesh()       const { return m_Mesh; }
     const MeshLayout& GetMeshLayout() const { return m_MeshLayout; }
     int                          GetMaterialID() const { return m_MaterialID; }
     const std::string& GetShaderName() const { return m_ShaderName; }
@@ -43,7 +43,7 @@ public:
     virtual float ComputeDistanceTo(const glm::vec3& pos) const;
 
 protected:
-    std::shared_ptr<Mesh> m_Mesh;
+    std::shared_ptr<Graphics::Mesh> m_Mesh;
     MeshLayout            m_MeshLayout;
     int                   m_MaterialID;
     std::string           m_ShaderName;
@@ -54,7 +54,7 @@ protected:
 
 class RenderObject : public BaseRenderObject {
 public:
-    RenderObject(std::shared_ptr<Mesh> mesh,
+    RenderObject(std::shared_ptr<Graphics::Mesh> mesh,
         MeshLayout meshLayout,
         int materialID,
         std::string shaderName,
@@ -77,7 +77,7 @@ private:
 
 class StaticRenderObject : public BaseRenderObject {
 public:
-    StaticRenderObject(std::shared_ptr<Mesh> mesh,
+    StaticRenderObject(std::shared_ptr<Graphics::Mesh> mesh,
         MeshLayout meshLayout,
         int materialID,
         std::string shaderName);

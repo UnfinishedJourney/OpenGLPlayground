@@ -57,7 +57,7 @@ public:
     );
 
     void BuildStaticBatchesIfNeeded();
-    const std::vector<std::shared_ptr<Batch>>& GetStaticBatches() const;
+    const std::vector<std::shared_ptr<Graphics::Batch>>& GetStaticBatches() const;
 
     // Per-frame uniform updates
     void UpdateFrameDataUBO() const;

@@ -11,7 +11,7 @@ bool BaseRenderObject::SetLOD(size_t lod)
     if (lod == m_CurrentLOD) {
         return false; // no change
     }
-    size_t maxLOD = (m_Mesh->lods.empty()) ? 0 : (m_Mesh->lods.size() - 1);
+    size_t maxLOD = (m_Mesh->lods_.empty()) ? 0 : (m_Mesh->lods_.size() - 1);
     if (lod > maxLOD) {
         lod = maxLOD;
     }
@@ -21,12 +21,12 @@ bool BaseRenderObject::SetLOD(size_t lod)
 
 float BaseRenderObject::GetBoundingSphereRadius() const
 {
-    return m_Mesh->boundingSphereRadius;
+    return m_Mesh->boundingSphereRadius_;
 }
 
 glm::vec3 BaseRenderObject::GetCenter() const
 {
-    return m_Mesh->localCenter;
+    return m_Mesh->localCenter_;
 }
 
 float BaseRenderObject::ComputeDistanceTo(const glm::vec3& pos) const
@@ -38,7 +38,7 @@ float BaseRenderObject::ComputeDistanceTo(const glm::vec3& pos) const
 // ------------------------------------------------------------------
 // RenderObject (dynamic object with a Transform)
 // ------------------------------------------------------------------
-RenderObject::RenderObject(std::shared_ptr<Mesh> mesh,
+RenderObject::RenderObject(std::shared_ptr<Graphics::Mesh> mesh,
     MeshLayout meshLayout,
     int materialID,
     std::string shaderName,
@@ -70,7 +70,7 @@ float RenderObject::GetBoundingSphereRadius() const
 
 glm::vec3 RenderObject::GetCenter() const
 {
-    return m_Mesh->localCenter;
+    return m_Mesh->localCenter_;
 }
 
 glm::vec3 RenderObject::GetWorldCenter() const
@@ -89,7 +89,7 @@ float RenderObject::ComputeDistanceTo(const glm::vec3& pos) const
 // ------------------------------------------------------------------
 // StaticRenderObject
 // ------------------------------------------------------------------
-StaticRenderObject::StaticRenderObject(std::shared_ptr<Mesh> mesh,
+StaticRenderObject::StaticRenderObject(std::shared_ptr<Graphics::Mesh> mesh,
     MeshLayout meshLayout,
     int materialID,
     std::string shaderName)
@@ -100,5 +100,5 @@ StaticRenderObject::StaticRenderObject(std::shared_ptr<Mesh> mesh,
 glm::vec3 StaticRenderObject::GetWorldCenter() const
 {
     // local = world for static
-    return m_Mesh->localCenter;
+    return m_Mesh->localCenter_;
 }

@@ -30,7 +30,7 @@ void SkyBoxPass::InitializeSceneResources(const std::shared_ptr<Scene>& scene)
         /* boneData  */ {}
     };
 
-    auto& meshManager = MeshManager::GetInstance();
+    auto& meshManager = Graphics::MeshManager::GetInstance();
     m_SkyboxMeshBuffer = meshManager.GetMeshBuffer("cube", skyBoxMeshLayout);
     if (!m_SkyboxMeshBuffer)
     {

@@ -23,7 +23,7 @@ void DebugLightsPass::InitializeSceneResources(const std::shared_ptr<Scene>& sce
         {}
     };
 
-    auto& meshManager = MeshManager::GetInstance();
+    auto& meshManager = Graphics::MeshManager::GetInstance();
     m_LightSphereMeshBuffer = meshManager.GetMeshBuffer("lightsphere", lightMeshLayout);
 }
 

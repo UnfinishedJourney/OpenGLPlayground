@@ -9,7 +9,7 @@
 GridPass::GridPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
-    auto& meshManager = MeshManager::GetInstance();
+    auto& meshManager = Graphics::MeshManager::GetInstance();
     MeshLayout gridMeshLayout = {
         true,  // Positions
         false, // Normals

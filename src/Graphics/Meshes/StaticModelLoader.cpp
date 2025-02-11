@@ -11,7 +11,7 @@
 #include "Graphics/Textures/TextureManager.h"
 #include "Utilities/Logger.h"
 
-namespace staticloader {
+namespace StaticLoader {
 
     // ––– Constructor –––
     ModelLoader::ModelLoader(float scaleFactor,
@@ -41,10 +41,10 @@ namespace staticloader {
             aiProcess_RemoveRedundantMaterials |
             aiProcess_FindInvalidData |
             aiProcess_OptimizeMeshes; // Merges small meshes.
-        if (meshLayout.hasNormals) {
+        if (meshLayout.hasNormals_) {
             importFlags |= aiProcess_GenSmoothNormals;
         }
-        if (meshLayout.hasTangents || meshLayout.hasBitangents) {
+        if (meshLayout.hasTangents_ || meshLayout.hasBitangents_) {
             importFlags |= aiProcess_CalcTangentSpace;
         }
 
@@ -106,9 +106,9 @@ namespace staticloader {
                 }
 
                 // Create MeshInfo and store.
-                MeshInfo mi;
-                mi.mesh = newMesh;
-                mi.materialIndex = matID;
+                Graphics::MeshInfo mi;
+                mi.mesh_ = newMesh;
+                mi.materialIndex_ = static_cast<int>(matID);
                 objects_.push_back(mi);
             }
 
@@ -181,7 +181,7 @@ namespace staticloader {
         const std::unique_ptr<Graphics::Material>& mat,
         const MaterialLayout& matLayout)
     {
-        // Note: Use the layout’s helper methods (e.g. HasParam) instead of directly accessing the bitset.
+        // Use layout helper methods (e.g. HasParam) rather than direct bitset access.
         if (matLayout.HasParam(MaterialParamType::Ambient)) {
             aiColor3D color(0.2f);
             aiMat->Get(AI_MATKEY_COLOR_AMBIENT, color);
@@ -240,15 +240,15 @@ namespace staticloader {
     }
 
     // ––– ProcessAssimpMesh –––
-    std::shared_ptr<Mesh> ModelLoader::ProcessAssimpMesh(const aiMesh* aimesh,
+    std::shared_ptr<Graphics::Mesh> ModelLoader::ProcessAssimpMesh(const aiMesh* aimesh,
         const MeshLayout& meshLayout,
         const glm::mat4& transform)
     {
-        auto mesh = std::make_shared<Mesh>();
+        auto mesh = std::make_shared<Graphics::Mesh>();
 
         // Process positions.
-        if (meshLayout.hasPositions && aimesh->HasPositions()) {
-            mesh->positions.reserve(aimesh->mNumVertices);
+        if (meshLayout.hasPositions_ && aimesh->HasPositions()) {
+            mesh->positions_.reserve(aimesh->mNumVertices);
             glm::vec4 tmp;
             for (unsigned v = 0; v < aimesh->mNumVertices; v++) {
                 tmp.x = scaleFactor_ * aimesh->mVertices[v].x;
@@ -257,65 +257,69 @@ namespace staticloader {
                 tmp.w = 1.0f;
                 glm::vec4 worldPos = transform * tmp;
                 glm::vec3 finalPos(worldPos);
-                mesh->positions.push_back(finalPos);
+                mesh->positions_.push_back(finalPos);
 
                 // Update bounding box.
-                mesh->minBounds = glm::min(mesh->minBounds, finalPos);
-                mesh->maxBounds = glm::max(mesh->maxBounds, finalPos);
+                mesh->minBounds_ = glm::min(mesh->minBounds_, finalPos);
+                mesh->maxBounds_ = glm::max(mesh->maxBounds_, finalPos);
             }
         }
 
         // Process normals.
-        if (meshLayout.hasNormals && aimesh->HasNormals()) {
-            mesh->normals.reserve(aimesh->mNumVertices);
+        if (meshLayout.hasNormals_ && aimesh->HasNormals()) {
+            mesh->normals_.reserve(aimesh->mNumVertices);
             glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(transform)));
             for (unsigned v = 0; v < aimesh->mNumVertices; v++) {
                 glm::vec3 n(aimesh->mNormals[v].x,
                     aimesh->mNormals[v].y,
                     aimesh->mNormals[v].z);
                 n = glm::normalize(normalMat * n);
-                mesh->normals.push_back(n);
+                mesh->normals_.push_back(n);
             }
         }
 
         // Process tangents and bitangents.
-        if ((meshLayout.hasTangents || meshLayout.hasBitangents) &&
+        if ((meshLayout.hasTangents_ || meshLayout.hasBitangents_) &&
             aimesh->HasTangentsAndBitangents())
         {
             glm::mat3 tbMat = glm::mat3(glm::transpose(glm::inverse(transform)));
-            if (meshLayout.hasTangents) {
-                mesh->tangents.reserve(aimesh->mNumVertices);
+            if (meshLayout.hasTangents_) {
+                mesh->tangents_.reserve(aimesh->mNumVertices);
             }
-            if (meshLayout.hasBitangents) {
-                mesh->bitangents.reserve(aimesh->mNumVertices);
+            if (meshLayout.hasBitangents_) {
+                mesh->bitangents_.reserve(aimesh->mNumVertices);
             }
             for (unsigned v = 0; v < aimesh->mNumVertices; v++) {
-                if (meshLayout.hasTangents) {
+                if (meshLayout.hasTangents_) {
                     glm::vec3 t(aimesh->mTangents[v].x,
                         aimesh->mTangents[v].y,
                         aimesh->mTangents[v].z);
                     t = glm::normalize(tbMat * t);
-                    mesh->tangents.push_back(t);
+                    mesh->tangents_.push_back(t);
                 }
-                if (meshLayout.hasBitangents) {
+                if (meshLayout.hasBitangents_) {
                     glm::vec3 b(aimesh->mBitangents[v].x,
                         aimesh->mBitangents[v].y,
                         aimesh->mBitangents[v].z);
                     b = glm::normalize(tbMat * b);
-                    mesh->bitangents.push_back(b);
+                    mesh->bitangents_.push_back(b);
                 }
             }
         }
 
         // Process UVs.
-        if (!meshLayout.textureTypes.empty() && aimesh->HasTextureCoords(0)) {
+        if (!meshLayout.textureTypes_.none() && aimesh->HasTextureCoords(0)) {
             std::vector<glm::vec2> uvSet(aimesh->mNumVertices);
             for (unsigned v = 0; v < aimesh->mNumVertices; v++) {
                 uvSet[v] = glm::vec2(aimesh->mTextureCoords[0][v].x,
                     aimesh->mTextureCoords[0][v].y);
             }
-            for (auto txType : meshLayout.textureTypes) {
-                mesh->uvs[txType] = uvSet;
+            // Iterate over all bits set in the bitset.
+            for (std::size_t i = 0; i < meshLayout.textureTypes_.size(); ++i) {
+                if (meshLayout.textureTypes_.test(i)) {
+                    // Assume that TextureType values match the bitset index.
+                    mesh->uvs_[static_cast<TextureType>(i)] = uvSet;
+                }
             }
         }
 
@@ -330,13 +334,13 @@ namespace staticloader {
         }
 
         // Compute bounding volumes.
-        mesh->localCenter = 0.5f * (mesh->minBounds + mesh->maxBounds);
-        mesh->boundingSphereRadius = glm::length(mesh->maxBounds - mesh->localCenter);
+        mesh->localCenter_ = 0.5f * (mesh->minBounds_ + mesh->maxBounds_);
+        mesh->boundingSphereRadius_ = glm::length(mesh->maxBounds_ - mesh->localCenter_);
 
         // Prepare vertex positions for LOD generation.
         std::vector<float> floatPositions;
-        floatPositions.reserve(mesh->positions.size() * 3);
-        for (const auto& pos : mesh->positions) {
+        floatPositions.reserve(mesh->positions_.size() * 3);
+        for (const auto& pos : mesh->positions_) {
             floatPositions.push_back(pos.x);
             floatPositions.push_back(pos.y);
             floatPositions.push_back(pos.z);
@@ -345,14 +349,14 @@ namespace staticloader {
         // Generate LODs.
         std::vector<std::vector<uint32_t>> lodIndices;
         GenerateLODs(std::move(srcIndices), floatPositions, lodIndices);
-        mesh->indices.clear();
-        mesh->lods.clear();
+        mesh->indices_.clear();
+        mesh->lods_.clear();
         for (auto& singleLOD : lodIndices) {
-            MeshLOD lod;
-            lod.indexOffset = static_cast<uint32_t>(mesh->indices.size());
-            lod.indexCount = static_cast<uint32_t>(singleLOD.size());
-            mesh->indices.insert(mesh->indices.end(), singleLOD.begin(), singleLOD.end());
-            mesh->lods.push_back(lod);
+            Graphics::MeshLOD lod;
+            lod.indexOffset_ = static_cast<uint32_t>(mesh->indices_.size());
+            lod.indexCount_ = static_cast<uint32_t>(singleLOD.size());
+            mesh->indices_.insert(mesh->indices_.end(), singleLOD.begin(), singleLOD.end());
+            mesh->lods_.push_back(lod);
         }
 
         return mesh;
@@ -446,20 +450,20 @@ namespace staticloader {
         glm::vec3 sceneMax(-FLT_MAX);
         // Compute global bounding box.
         for (auto& obj : objects_) {
-            auto& mesh = obj.mesh;
-            sceneMin = glm::min(sceneMin, mesh->minBounds);
-            sceneMax = glm::max(sceneMax, mesh->maxBounds);
+            auto& mesh = obj.mesh_;
+            sceneMin = glm::min(sceneMin, mesh->minBounds_);
+            sceneMax = glm::max(sceneMax, mesh->maxBounds_);
         }
         glm::vec3 center = 0.5f * (sceneMin + sceneMax);
         // Shift every mesh.
         for (auto& obj : objects_) {
-            auto& mesh = obj.mesh;
-            for (auto& p : mesh->positions) {
+            auto& mesh = obj.mesh_;
+            for (auto& p : mesh->positions_) {
                 p -= center;
             }
-            mesh->minBounds -= center;
-            mesh->maxBounds -= center;
-            mesh->localCenter = 0.5f * (mesh->minBounds + mesh->maxBounds);
+            mesh->minBounds_ -= center;
+            mesh->maxBounds_ -= center;
+            mesh->localCenter_ = 0.5f * (mesh->minBounds_ + mesh->maxBounds_);
         }
     }
 
@@ -485,4 +489,4 @@ namespace staticloader {
         return "";
     }
 
-} // namespace staticloader
+} // namespace StaticLoader

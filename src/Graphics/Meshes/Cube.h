@@ -2,10 +2,13 @@
 
 #include "Mesh.h"
 
-/**
- * @brief A simple mesh representing a 1x1x1 cube centered at the origin.
- *        Extends Mesh to pre-populate vertex/index data.
- */
-struct Cube : public Mesh {
-    Cube();
-};
+namespace Graphics {
+
+    /**
+     * @brief Predefined 1x1x1 cube centered at the origin.
+     */
+    struct Cube : public Mesh {
+        Cube();
+    };
+
+} // namespace Graphics

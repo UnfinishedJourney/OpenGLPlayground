@@ -1,6 +1,6 @@
 #include "MeshBuffer.h"
 #include "Utilities/Logger.h"
-#include "Utilities/Utility.h"
+#include "Utilities/Utility.h" // For GLCall, if defined
 #include <stdexcept>
 #include <vector>
 #include <span>
@@ -9,129 +9,134 @@
 namespace Graphics {
 
     MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout)
-        : m_MeshLayout(layout)
+        : meshLayout_(layout)
     {
         // Validate that required position data exists.
-        if (m_MeshLayout.hasPositions && mesh.positions.empty()) {
-            Logger::GetLogger()->error("Mesh requires positions, but none were provided.");
+        if (meshLayout_.hasPositions_ && mesh.positions_.empty()) {
+            Logger::GetLogger()->error("MeshBuffer: Mesh requires positions, but none were provided.");
             throw std::runtime_error("Mesh requires positions, but none were provided.");
         }
 
-        m_VertexCount = static_cast<GLuint>(mesh.positions.size());
+        vertexCount_ = static_cast<GLuint>(mesh.positions_.size());
 
-        // Calculate total float components per vertex.
+        // Calculate the total number of float components per vertex.
         size_t totalComponents = 0;
-        if (m_MeshLayout.hasPositions)  totalComponents += 3; // (x, y, z)
-        if (m_MeshLayout.hasNormals && !mesh.normals.empty()) totalComponents += 3; // (nx, ny, nz)
-        for (const auto& textureType : m_MeshLayout.textureTypes) {
-            const auto& texCoordsVec = mesh.uvs.at(textureType);
-            if (!texCoordsVec.empty()) totalComponents += 2; // (u, v)
+        if (meshLayout_.hasPositions_)  totalComponents += 3; // (x, y, z)
+        if (meshLayout_.hasNormals_ && !mesh.normals_.empty()) totalComponents += 3; // (nx, ny, nz)
+        for (size_t i = 0; i < meshLayout_.textureTypes_.size(); ++i) {
+            if (meshLayout_.textureTypes_.test(i)) {
+                totalComponents += 2; // (u, v)
+            }
         }
-        if (m_MeshLayout.hasTangents && !mesh.tangents.empty()) totalComponents += 3;
-        if (m_MeshLayout.hasBitangents && !mesh.bitangents.empty()) totalComponents += 3;
+        if (meshLayout_.hasTangents_ && !mesh.tangents_.empty()) totalComponents += 3;
+        if (meshLayout_.hasBitangents_ && !mesh.bitangents_.empty()) totalComponents += 3;
 
         // Interleave vertex data.
         std::vector<float> vertexData;
-        vertexData.reserve(m_VertexCount * totalComponents);
+        vertexData.reserve(vertexCount_ * totalComponents);
 
-        for (size_t i = 0; i < m_VertexCount; ++i) {
-            if (m_MeshLayout.hasPositions) {
-                const auto& pos = mesh.positions[i];
+        for (size_t i = 0; i < vertexCount_; ++i) {
+            if (meshLayout_.hasPositions_) {
+                const auto& pos = mesh.positions_[i];
                 vertexData.insert(vertexData.end(), { pos.x, pos.y, pos.z });
             }
-            if (m_MeshLayout.hasNormals && !mesh.normals.empty()) {
-                const auto& normal = mesh.normals[i];
+            if (meshLayout_.hasNormals_ && !mesh.normals_.empty()) {
+                const auto& normal = mesh.normals_[i];
                 vertexData.insert(vertexData.end(), { normal.x, normal.y, normal.z });
             }
-            for (const auto& textureType : m_MeshLayout.textureTypes) {
-                const auto& texCoordsVec = mesh.uvs.at(textureType);
-                if (!texCoordsVec.empty()) {
-                    const auto& texCoord = texCoordsVec[i];
-                    vertexData.insert(vertexData.end(), { texCoord.x, texCoord.y });
+            for (size_t j = 0; j < meshLayout_.textureTypes_.size(); ++j) {
+                if (meshLayout_.textureTypes_.test(j)) {
+                    TextureType texType = static_cast<TextureType>(j);
+                    const auto& uvIt = mesh.uvs_.at(texType);
+                    if (!uvIt.empty() && i < uvIt.size()) {
+                        const auto& uv = uvIt[i];
+                        vertexData.insert(vertexData.end(), { uv.x, uv.y });
+                    }
+                    else {
+                        vertexData.insert(vertexData.end(), { 0.f, 0.f });
+                    }
                 }
             }
-            if (m_MeshLayout.hasTangents && !mesh.tangents.empty()) {
-                const auto& tangent = mesh.tangents[i];
+            if (meshLayout_.hasTangents_ && !mesh.tangents_.empty()) {
+                const auto& tangent = mesh.tangents_[i];
                 vertexData.insert(vertexData.end(), { tangent.x, tangent.y, tangent.z });
             }
-            if (m_MeshLayout.hasBitangents && !mesh.bitangents.empty()) {
-                const auto& bitangent = mesh.bitangents[i];
+            if (meshLayout_.hasBitangents_ && !mesh.bitangents_.empty()) {
+                const auto& bitangent = mesh.bitangents_[i];
                 vertexData.insert(vertexData.end(), { bitangent.x, bitangent.y, bitangent.z });
             }
         }
 
         // Create VAO and VBO.
-        m_VAO = std::make_unique<VertexArray>();
-        m_VAO->Bind();
+        VAO_ = std::make_unique<VertexArray>();
+        VAO_->Bind();
 
         std::span<const std::byte> vertexSpan{
             reinterpret_cast<const std::byte*>(vertexData.data()),
             vertexData.size() * sizeof(float)
         };
-        m_VBO = std::make_unique<VertexBuffer>(vertexSpan);
+        VBO_ = std::make_unique<VertexBuffer>(vertexSpan);
 
-        // Build the layout for the VBO.
+        // Build the VertexBufferLayout.
         VertexBufferLayout bufferLayout;
         GLuint attributeIndex = 0;
-        if (m_MeshLayout.hasPositions) {
+        if (meshLayout_.hasPositions_) {
             bufferLayout.Push<float>(3, attributeIndex++);
         }
-        if (m_MeshLayout.hasNormals && !mesh.normals.empty()) {
+        if (meshLayout_.hasNormals_ && !mesh.normals_.empty()) {
             bufferLayout.Push<float>(3, attributeIndex++);
         }
-        for (const auto& textureType : m_MeshLayout.textureTypes) {
-            const auto& texCoordsVec = mesh.uvs.at(textureType);
-            if (!texCoordsVec.empty()) {
+        for (size_t j = 0; j < meshLayout_.textureTypes_.size(); ++j) {
+            if (meshLayout_.textureTypes_.test(j)) {
                 bufferLayout.Push<float>(2, attributeIndex++);
             }
         }
-        if (m_MeshLayout.hasTangents && !mesh.tangents.empty()) {
+        if (meshLayout_.hasTangents_ && !mesh.tangents_.empty()) {
             bufferLayout.Push<float>(3, attributeIndex++);
         }
-        if (m_MeshLayout.hasBitangents && !mesh.bitangents.empty()) {
+        if (meshLayout_.hasBitangents_ && !mesh.bitangents_.empty()) {
             bufferLayout.Push<float>(3, attributeIndex++);
         }
 
-        m_VAO->AddBuffer(*m_VBO, bufferLayout);
+        VAO_->AddBuffer(*VBO_, bufferLayout);
 
-        // Optionally create IBO if indices are provided.
-        if (!mesh.indices.empty()) {
-            m_IndexCount = static_cast<GLuint>(mesh.indices.size());
-            m_HasIndices = true;
-
-            std::vector<GLuint> indicesGL(mesh.indices.begin(), mesh.indices.end());
+        // Optionally create an IBO if indices are provided.
+        if (!mesh.indices_.empty()) {
+            indexCount_ = static_cast<GLuint>(mesh.indices_.size());
+            hasIndices_ = true;
+            std::vector<GLuint> indicesGL(mesh.indices_.begin(), mesh.indices_.end());
             std::span<const GLuint> indexSpan(indicesGL.data(), indicesGL.size());
-            m_IBO = std::make_unique<IndexBuffer>(indexSpan);
+            IBO_ = std::make_unique<IndexBuffer>(indexSpan);
         }
         else {
-            m_IndexCount = m_VertexCount;
-            m_HasIndices = false;
+            indexCount_ = vertexCount_;
+            hasIndices_ = false;
         }
 
-        m_VAO->Unbind();
+        VAO_->Unbind();
     }
 
     void MeshBuffer::Bind() const {
-        m_VAO->Bind();
-        if (m_HasIndices && m_IBO) {
-            m_IBO->Bind();
+        VAO_->Bind();
+        if (hasIndices_ && IBO_) {
+            IBO_->Bind();
         }
     }
 
     void MeshBuffer::Unbind() const {
-        if (m_HasIndices && m_IBO) {
-            m_IBO->Unbind();
+        if (hasIndices_ && IBO_) {
+            IBO_->Unbind();
         }
-        m_VAO->Unbind();
+        VAO_->Unbind();
     }
 
     void MeshBuffer::Render() const {
         Bind();
-        if (m_HasIndices) {
-            GLCall(glDrawElements(GL_TRIANGLES, m_IndexCount, GL_UNSIGNED_INT, nullptr));
+        if (hasIndices_) {
+            GLCall(glDrawElements(GL_TRIANGLES, indexCount_, GL_UNSIGNED_INT, nullptr));
         }
         else {
-            GLCall(glDrawArrays(GL_TRIANGLES, 0, m_VertexCount));
+            GLCall(glDrawArrays(GL_TRIANGLES, 0, vertexCount_));
         }
         Unbind();
     }

@@ -146,7 +146,7 @@ FlipbookEffectConfig EffectsManager::LoadFlipbookConfig(const std::string& name)
 }
 
 void EffectsManager::SetupFullscreenQuad() {
-    auto& meshManager = MeshManager::GetInstance();
+    auto& meshManager = Graphics::MeshManager::GetInstance();
     auto quadMesh = meshManager.GetMesh("quad");
     MeshLayout quadMeshLayout = {
         true,  // Positions

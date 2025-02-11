@@ -1,50 +1,56 @@
 #pragma once
 
-#include <unordered_set>
-#include <functional>
-#include "Graphics/Materials/MaterialParamType.h"
+#include <bitset>
+#include <cstddef>
+#include "Graphics/Materials/MaterialParamType.h"  // Must define TextureType and TextureType::COUNT
 
 /**
- * @brief Describes which mesh attributes are present: positions, normals, tangents, etc.,
- *        and which texture coordinate sets are needed.
+ * @brief Describes which vertex attributes to load for a mesh.
  */
 struct MeshLayout {
-    bool hasPositions = true;
-    bool hasNormals = false;
-    bool hasTangents = false;
-    bool hasBitangents = false;
+    bool hasPositions_ = true;
+    bool hasNormals_ = false;
+    bool hasTangents_ = false;
+    bool hasBitangents_ = false;
+    std::bitset<kTextureTypeCount> textureTypes_;  // Does not accept an initializer list directly
 
-    // A set of texture types, each implying a set of UV coordinates
-    std::unordered_set<TextureType> textureTypes;
+    // Default constructor
+    MeshLayout() = default;
+
+    // Custom constructor that accepts an initializer list for texture types.
+    MeshLayout(bool positions, bool normals, bool tangents, bool bitangents, std::initializer_list<TextureType> texTypes)
+        : hasPositions_(positions)
+        , hasNormals_(normals)
+        , hasTangents_(tangents)
+        , hasBitangents_(bitangents)
+    {
+        for (auto tex : texTypes) {
+            textureTypes_.set(static_cast<std::size_t>(tex), true);
+        }
+    }
 
     bool operator==(const MeshLayout& other) const {
-        return hasPositions == other.hasPositions &&
-            hasNormals == other.hasNormals &&
-            hasTangents == other.hasTangents &&
-            hasBitangents == other.hasBitangents &&
-            textureTypes == other.textureTypes;
+        return hasPositions_ == other.hasPositions_ &&
+            hasNormals_ == other.hasNormals_ &&
+            hasTangents_ == other.hasTangents_ &&
+            hasBitangents_ == other.hasBitangents_ &&
+            textureTypes_ == other.textureTypes_;
     }
 };
 
-// ----------------------------------------------------------------------
-// Hash for MeshLayout so it can be used in std::unordered_map
-// ----------------------------------------------------------------------
 namespace std {
     template <>
     struct hash<MeshLayout> {
         size_t operator()(const MeshLayout& layout) const noexcept {
             size_t seed = 0;
-            auto hash_combine = [](size_t& s, size_t v) {
-                s ^= v + 0x9e3779b9 + (s << 6) + (s >> 2);
+            auto hash_combine = [&seed](size_t value) {
+                seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
                 };
-            hash_combine(seed, std::hash<bool>{}(layout.hasPositions));
-            hash_combine(seed, std::hash<bool>{}(layout.hasNormals));
-            hash_combine(seed, std::hash<bool>{}(layout.hasTangents));
-            hash_combine(seed, std::hash<bool>{}(layout.hasBitangents));
-
-            for (auto& t : layout.textureTypes) {
-                hash_combine(seed, std::hash<TextureType>{}(t));
-            }
+            hash_combine(std::hash<bool>{}(layout.hasPositions_));
+            hash_combine(std::hash<bool>{}(layout.hasNormals_));
+            hash_combine(std::hash<bool>{}(layout.hasTangents_));
+            hash_combine(std::hash<bool>{}(layout.hasBitangents_));
+            hash_combine(std::hash<std::string>{}(layout.textureTypes_.to_string()));
             return seed;
         }
     };

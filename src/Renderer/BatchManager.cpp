@@ -21,7 +21,7 @@ void BatchManager::Clear()
     m_Built = false;
 }
 
-const std::vector<std::shared_ptr<Batch>>& BatchManager::GetBatches() const
+const std::vector<std::shared_ptr<Graphics::Batch>>& BatchManager::GetBatches() const
 {
     return m_Batches;
 }
@@ -42,7 +42,7 @@ void BatchManager::BuildBatches()
 }
 
 // Groups objects by (shaderName, materialID) => new Batch for each group
-std::vector<std::shared_ptr<Batch>> BatchManager::BuildBatchesFromObjects(
+std::vector<std::shared_ptr<Graphics::Batch>> BatchManager::BuildBatchesFromObjects(
     const std::vector<std::shared_ptr<BaseRenderObject>>& objs)
 {
     // (shaderName) -> (materialID) -> vector of objects
@@ -54,13 +54,13 @@ std::vector<std::shared_ptr<Batch>> BatchManager::BuildBatchesFromObjects(
         grouping[ro->GetShaderName()][ro->GetMaterialID()].push_back(ro);
     }
 
-    std::vector<std::shared_ptr<Batch>> result;
+    std::vector<std::shared_ptr<Graphics::Batch>> result;
     result.reserve(grouping.size());
 
     // For each group => create a Batch
     for (auto& [shader, matMap] : grouping) {
         for (auto& [matID, objVec] : matMap) {
-            auto batch = std::make_shared<Batch>(shader, matID);
+            auto batch = std::make_shared<Graphics::Batch>(shader, matID);
             for (auto& ro : objVec) {
                 batch->AddRenderObject(ro);
                 m_ObjToBatch[ro.get()] = batch;
@@ -73,7 +73,7 @@ std::vector<std::shared_ptr<Batch>> BatchManager::BuildBatchesFromObjects(
     return result;
 }
 
-std::shared_ptr<Batch> BatchManager::FindBatchForObject(const std::shared_ptr<BaseRenderObject>& ro) const
+std::shared_ptr<Graphics::Batch> BatchManager::FindBatchForObject(const std::shared_ptr<BaseRenderObject>& ro) const
 {
     auto it = m_ObjToBatch.find(ro.get());
     if (it != m_ObjToBatch.end()) {

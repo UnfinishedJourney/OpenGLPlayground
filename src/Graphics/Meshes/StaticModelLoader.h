@@ -8,7 +8,6 @@
 #include <glm/glm.hpp>
 #include <assimp/scene.h>
 
-// Include your own types:
 #include "MeshInfo.h"
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Meshes/MeshLayout.h"
@@ -17,7 +16,7 @@
 #include "Graphics/Materials/MaterialParamType.h"
 #include "Graphics/Textures/ITexture.h"
 
-namespace staticloader {
+namespace StaticLoader {
 
     /**
      * @brief Loads a model from disk (via Assimp) as a set of Mesh + Material pairs,
@@ -58,7 +57,7 @@ namespace staticloader {
         /**
          * @brief Returns the loaded MeshInfo objects (each holding a Mesh pointer and a material ID).
          */
-        const std::vector<MeshInfo>& GetLoadedObjects() const { return objects_; }
+        const std::vector<Graphics::MeshInfo>& GetLoadedObjects() const { return objects_; }
 
     private:
         // Configuration parameters.
@@ -67,7 +66,7 @@ namespace staticloader {
         uint8_t maxLODs_ = 8;
 
         // Loaded objects and associated material IDs.
-        std::vector<MeshInfo> objects_;
+        std::vector<Graphics::MeshInfo> objects_;
         std::vector<std::size_t> materialIDs_;
 
         // Counters for fallback and unnamed materials.
@@ -102,7 +101,7 @@ namespace staticloader {
             const MaterialLayout& matLayout,
             const std::string& directory);
 
-        std::shared_ptr<Mesh> ProcessAssimpMesh(const aiMesh* aimesh,
+        std::shared_ptr<Graphics::Mesh> ProcessAssimpMesh(const aiMesh* aimesh,
             const MeshLayout& meshLayout,
             const glm::mat4& transform);
 
