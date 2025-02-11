@@ -69,7 +69,7 @@ bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
     std::unordered_map<aiTextureType, TextureType> aiToMyType)
 {
     auto& resourceManager = ResourceManager::GetInstance();
-    auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(shaderName);
+    auto [meshLayout, matLayout] = resourceManager.GetLayoutsFromShader(shaderName);
 
     staticloader::ModelLoader loader(scaleFactor, aiToMyType);
     bool success = loader.LoadStaticModel(modelName, meshLayout, matLayout, /*centerModel=*/true);
@@ -103,7 +103,7 @@ bool Scene::LoadPrimitiveIntoScene(const std::string& primitiveName,
     int materialID)
 {
     auto& resourceManager = ResourceManager::GetInstance();
-    auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(shaderName);
+    auto [meshLayout, matLayout] = resourceManager.GetLayoutsFromShader(shaderName);
 
     auto mesh = MeshManager::GetInstance().GetMesh(primitiveName);
     if (!mesh) {

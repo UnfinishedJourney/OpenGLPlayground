@@ -6,61 +6,47 @@ ResourceManager& ResourceManager::GetInstance() {
 }
 
 //need to make this better 
-std::pair<MeshLayout, MaterialLayout> ResourceManager::getLayoutsFromShader(std::string shaderName)
+std::pair<MeshLayout, MaterialLayout> ResourceManager::GetLayoutsFromShader(const std::string& shaderName)
 {
     static const std::unordered_map<std::string, std::pair<MeshLayout, MaterialLayout>> shaderLayouts = {
-        {"simplelights",
-            {
-                MeshLayout{ true, true, false, false, {} },
-                MaterialLayout{ {MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess}, {} }
-            }
-        },
-        {"basic",
-            {
-                MeshLayout{ true, false, false, false, {TextureType::Albedo} },
-                MaterialLayout{ {}, {} }
-            }
-        },
-        {"basicTextured",
-            {
-                MeshLayout{ true, false, false, false, {TextureType::Albedo} },
-                MaterialLayout{ {}, {TextureType::Albedo} }
-            }
-        },
-        {"helmetPBR",
-            {
-                MeshLayout{ true, true, true, false, {TextureType::Albedo} },
-                MaterialLayout{ {}, {TextureType::Albedo, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut} }
-            }
-        },
-        {"bistroShader",
-            {
-                MeshLayout{ true, true, false, false, {TextureType::Albedo} },
-                MaterialLayout{ {}, {TextureType::Albedo, TextureType::Ambient} }
-            }
-        },
-        {"bistroShaderShadowed",
-            {
-                MeshLayout{ true, true, false, false, {TextureType::Albedo} },
-                MaterialLayout{ {}, {TextureType::Albedo, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut, TextureType::Ambient} }
-            }
-        },
-        {"simpleLightsShadowed",
-            {
-                MeshLayout{ true, true, false, false, {} },
-                MaterialLayout{ {MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess}, {} }
-            }
-        },
-        // Add more shader layouts as needed
+        {"simplelights", {
+            {true, true, false, false, {}},
+            {{MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess}, {}}
+        }},
+        {"basic", {
+            {true, false, false, false, {TextureType::Albedo}},
+            {{}, {}}
+        }},
+        {"basicTextured", {
+            {true, false, false, false, {TextureType::Albedo}},
+            {{}, {TextureType::Albedo}}
+        }},
+        {"helmetPBR", {
+            {true, true, true, false, {TextureType::Albedo}},
+            {{}, {TextureType::Albedo, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut}}
+        }},
+        {"bistroShader", {
+            {true, true, false, false, {TextureType::Albedo}},
+            {{}, {TextureType::Albedo, TextureType::Ambient}}
+        }},
+        {"bistroShaderShadowed", {
+            {true, true, false, false, {TextureType::Albedo}},
+            {{}, {TextureType::Albedo, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut, TextureType::Ambient}}
+        }},
+        {"simpleLightsShadowed", {
+            {true, true, false, false, {}},
+            {{MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess}, {}}
+        }},
     };
 
-    auto it = shaderLayouts.find(shaderName);
-    if (it != shaderLayouts.end()) {
-        return it->second;
+    try {
+        return shaderLayouts.at(shaderName);
     }
-
-    throw std::runtime_error("Trying to use the wrong shader for models.");
+    catch (const std::out_of_range&) {
+        throw std::runtime_error("Trying to use the wrong shader for models: " + shaderName);
+    }
 }
+
 
 ResourceManager::ResourceManager() {
     // Initialization if needed

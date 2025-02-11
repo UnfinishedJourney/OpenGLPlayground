@@ -13,7 +13,7 @@ Batch::Batch(const std::string& shaderName, int materialID)
     , m_VAO(std::make_unique<Graphics::VertexArray>())
     , m_IsDirty(true)
 {
-    auto [meshLayout, materialLayout] = ResourceManager::GetInstance().getLayoutsFromShader(shaderName);
+    auto [meshLayout, materialLayout] = ResourceManager::GetInstance().GetLayoutsFromShader(shaderName);
     m_MeshLayout = meshLayout;
 }
 

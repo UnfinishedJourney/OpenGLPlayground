@@ -6,7 +6,6 @@ enum class MaterialParamType : std::size_t {
     Diffuse = 1,   // Kd
     Specular = 2,  // Ks
     Shininess = 3, // Ns
-    // Additional parameters can be added here.
     COUNT = 4
 };
 
@@ -44,4 +43,3 @@ namespace std {
         }
     };
 }
-

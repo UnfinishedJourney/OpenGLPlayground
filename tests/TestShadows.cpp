@@ -28,7 +28,7 @@ void TestShadows::OnEnter()
     auto& materialManager = Graphics::MaterialManager::GetInstance();
 
     auto& resourceManager = ResourceManager::GetInstance();
-    auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(shaderName);
+    auto [meshLayout, matLayout] = resourceManager.GetLayoutsFromShader(shaderName);
 
     {
         auto floorMat = std::make_unique<Graphics::Material>(matLayout);

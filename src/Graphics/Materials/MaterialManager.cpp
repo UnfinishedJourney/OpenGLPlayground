@@ -1,7 +1,6 @@
 #include "MaterialManager.h"
 #include "Utilities/Logger.h"
 #include <stdexcept>
-#include <algorithm>
 
 namespace Graphics {
 
@@ -10,70 +9,65 @@ namespace Graphics {
         return instance;
     }
 
-    std::optional<size_t> MaterialManager::GetMaterialIDByName(const std::string& name) const {
-        auto it = m_NameToIndex.find(name);
-        if (it == m_NameToIndex.end()) {
-            return std::nullopt;
-        }
-        return it->second;
+    std::optional<std::size_t> MaterialManager::GetMaterialIDByName(const std::string& name) const {
+        auto it = name_to_index_.find(name);
+        if (it != name_to_index_.end())
+            return it->second;
+        return std::nullopt;
     }
 
-    std::optional<size_t> MaterialManager::AddMaterial(std::unique_ptr<Material> material) {
+    std::optional<std::size_t> MaterialManager::AddMaterial(std::unique_ptr<Material> material) {
         if (!material) {
             Logger::GetLogger()->error("[MaterialManager] AddMaterial: null material pointer.");
-            return std::nullopt; // fail
+            return std::nullopt;
         }
-        // We allow unnamed materials but log a warning
         const std::string& name = material->GetName();
         if (name.empty()) {
             Logger::GetLogger()->warn("[MaterialManager] AddMaterial: unnamed material!");
         }
 
-        // If a material of this name already exists, remove it
-        auto existing = m_NameToIndex.find(name);
-        if (existing != m_NameToIndex.end()) {
-            Logger::GetLogger()->warn("[MaterialManager] Overriding material '{}'.", name);
-            RemoveMaterialByName(name);
+        // If a material with the same name exists, remove it.
+        if (!name.empty()) {
+            auto existing = name_to_index_.find(name);
+            if (existing != name_to_index_.end()) {
+                Logger::GetLogger()->warn("[MaterialManager] Overriding material '{}'.", name);
+                RemoveMaterialByName(name);
+            }
         }
 
-        // The new material's ID is just the next index in our vector
-        size_t newIndex = m_Materials.size();
+        std::size_t newIndex = materials_.size();
         material->SetID(newIndex);
-
-        // Move it in
-        m_Materials.emplace_back(std::move(material));
-        m_NameToIndex[name] = newIndex;
-
+        materials_.emplace_back(std::move(material));
+        if (!name.empty()) {
+            name_to_index_[materials_[newIndex]->GetName()] = newIndex;
+        }
         Logger::GetLogger()->info("[MaterialManager] Added material '{}' (ID={}).",
-            name, newIndex);
+            materials_[newIndex]->GetName(), newIndex);
         return newIndex;
     }
 
     void MaterialManager::RemoveMaterialByName(const std::string& name) {
-        auto it = m_NameToIndex.find(name);
-        if (it == m_NameToIndex.end()) {
+        auto it = name_to_index_.find(name);
+        if (it == name_to_index_.end()) {
             Logger::GetLogger()->warn("[MaterialManager] RemoveMaterialByName: '{}' not found.", name);
             return;
         }
-        // If it's currently bound, unbind it
-        if (m_CurrentlyBoundMaterial == name) {
+        std::size_t idx = it->second;
+        // Unbind if this material is currently bound.
+        if (currently_bound_material_id_.has_value() && currently_bound_material_id_.value() == idx) {
             UnbindMaterial();
         }
-
-        // Mark the material slot as removed
-        size_t idx = it->second;
-        m_Materials[idx] = nullptr;
-        m_NameToIndex.erase(it);
+        materials_[idx] = nullptr;
+        name_to_index_.erase(it);
     }
 
-    void MaterialManager::RemoveMaterialByID(size_t id) {
-        if (id >= m_Materials.size() || !m_Materials[id]) {
+    void MaterialManager::RemoveMaterialByID(std::size_t id) {
+        if (id >= materials_.size() || !materials_[id]) {
             Logger::GetLogger()->warn("[MaterialManager] Material with ID={} not found or already removed.", id);
             return;
         }
-        // Remove by name (this also unbinds if needed).
-        std::string theName = m_Materials[id]->GetName();
-        RemoveMaterialByName(theName);
+        std::string name = materials_[id]->GetName();
+        RemoveMaterialByName(name);
     }
 
     void MaterialManager::BindMaterial(const std::string& name, const std::shared_ptr<BaseShader>& shader) {
@@ -82,52 +76,44 @@ namespace Graphics {
             Logger::GetLogger()->error("[MaterialManager] Cannot bind unknown material '{}'.", name);
             return;
         }
-        size_t id = maybeID.value();
-
-        // Double-check the pointer
-        if (!m_Materials[id]) {
-            Logger::GetLogger()->error("[MaterialManager] Material ID={} is null? (Name='{}')", id, name);
-            return;
-        }
-        m_Materials[id]->Bind(shader);
-        m_CurrentlyBoundMaterial = name;
-
-        Logger::GetLogger()->debug("[MaterialManager] Bound material '{}'.", name);
+        BindMaterial(maybeID.value(), shader);
     }
 
-    void MaterialManager::BindMaterial(size_t id, const std::shared_ptr<BaseShader>& shader) {
-        if (id >= m_Materials.size() || !m_Materials[id]) {
+    void MaterialManager::BindMaterial(std::size_t id, const std::shared_ptr<BaseShader>& shader) {
+        if (id >= materials_.size() || !materials_[id]) {
             Logger::GetLogger()->error("[MaterialManager] Cannot bind unknown material with ID={}.", id);
             return;
         }
-        m_Materials[id]->Bind(shader);
-        m_CurrentlyBoundMaterial = m_Materials[id]->GetName();
-
+        materials_[id]->Bind(shader);
+        currently_bound_material_id_ = id;
         Logger::GetLogger()->debug("[MaterialManager] Bound material '{}' (ID={}).",
-            m_CurrentlyBoundMaterial, id);
+            materials_[id]->GetName(), id);
     }
 
     void MaterialManager::UnbindMaterial() {
-        if (!m_CurrentlyBoundMaterial.empty()) {
-            // If we still have that material, call Unbind on it
-            auto maybeID = GetMaterialIDByName(m_CurrentlyBoundMaterial);
-            if (maybeID.has_value()) {
-                size_t id = maybeID.value();
-                if (id < m_Materials.size() && m_Materials[id]) {
-                    m_Materials[id]->Unbind();
-                }
+        if (currently_bound_material_id_.has_value()) {
+            std::size_t id = currently_bound_material_id_.value();
+            if (id < materials_.size() && materials_[id]) {
+                materials_[id]->Unbind();
             }
-            m_CurrentlyBoundMaterial.clear();
+            currently_bound_material_id_.reset();
             Logger::GetLogger()->debug("[MaterialManager] Unbound material.");
         }
     }
 
     void MaterialManager::InitializeStandardMaterials() {
-        // Example if you want built-in materials.
-        // E.g. auto gold = std::make_unique<Material>(someLayout);
+        // Create and add built-in materials here.
+        // For example:
+        // MaterialLayout layout({MaterialParamType::Ambient, MaterialParamType::Diffuse},
+        //                       {TextureType::Albedo, TextureType::Normal});
+        // auto gold = std::make_unique<Material>(layout);
         // gold->SetName("Gold");
-        // ...
+        // gold->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(1.0f, 0.8f, 0.0f));
         // AddMaterial(std::move(gold));
+    }
+
+    const std::vector<std::unique_ptr<Material>>& MaterialManager::GetMaterials() const {
+        return materials_;
     }
 
 } // namespace Graphics

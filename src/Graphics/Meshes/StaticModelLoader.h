@@ -2,13 +2,13 @@
 
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 #include <memory>
-
+#include <cstdint>      // for uint8_t
 #include <glm/glm.hpp>
 #include <assimp/scene.h>
 
+// Include your own types:
 #include "MeshInfo.h"
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Meshes/MeshLayout.h"
@@ -17,39 +17,38 @@
 #include "Graphics/Materials/MaterialParamType.h"
 #include "Graphics/Textures/ITexture.h"
 
-namespace staticloader
-{
+namespace staticloader {
+
     /**
      * @brief Loads a model from disk (via Assimp) as a set of Mesh + Material pairs,
-     *        bakes transforms, optionally centers the geometry, and generates LODs.
+     *        baking transforms, optionally centering geometry, and generating LODs.
      */
-    class ModelLoader
-    {
+    class ModelLoader {
     public:
         /**
-         * @param scaleFactor  Uniform scale applied to all vertices before baking transform.
-         * @param aiToMyType   Mapping from Assimp texture type -> your engine’s texture type.
-         * @param maxLODs      Maximum number of LOD levels to generate (defaults to 8).
+         * @param scaleFactor  Uniform scale applied to all vertices before baking the transform.
+         * @param aiToMyType   Mapping from Assimp texture types to your engine’s texture types.
+         * @param maxLODs      Maximum number of LOD levels to generate (defaults to 5).
          */
         ModelLoader(float scaleFactor = 1.0f,
             std::unordered_map<aiTextureType, TextureType> aiToMyType = {
-                { aiTextureType_DIFFUSE,   TextureType::Albedo       },
-                { aiTextureType_NORMALS,   TextureType::Normal       },
-                { aiTextureType_SPECULAR,  TextureType::MetalRoughness },
-                { aiTextureType_EMISSIVE,  TextureType::Emissive     },
-                { aiTextureType_AMBIENT,   TextureType::Emissive     }
+                { aiTextureType_DIFFUSE,  TextureType::Albedo },
+                { aiTextureType_NORMALS,  TextureType::Normal },
+                { aiTextureType_SPECULAR, TextureType::MetalRoughness },
+                { aiTextureType_EMISSIVE, TextureType::Emissive },
+                { aiTextureType_AMBIENT,  TextureType::Emissive }
             },
             uint8_t maxLODs = 5);
-
         ~ModelLoader() = default;
 
         /**
-         * @brief Loads the specified model (by name), producing sub-meshes with transforms baked.
-         * @param modelName     A key that maps to an actual file path in the internal registry.
-         * @param meshLayout    Which attributes you want in the loaded mesh (positions, normals, etc.).
-         * @param matLayout     Which material params or textures are relevant.
-         * @param centerModel   If true, the geometry is recentered to the bounding box’s midpoint.
-         * @return True on success, false otherwise.
+         * @brief Loads the specified model (by name), producing sub-meshes with baked transforms.
+         *
+         * @param modelName   A key mapping to an actual file path (from an internal registry).
+         * @param meshLayout  Which vertex attributes to load (positions, normals, etc.).
+         * @param matLayout   Which material parameters and textures are relevant.
+         * @param centerModel If true, the geometry is recentered to the bounding box’s midpoint.
+         * @return true on success, false otherwise.
          */
         bool LoadStaticModel(const std::string& modelName,
             const MeshLayout& meshLayout,
@@ -57,52 +56,48 @@ namespace staticloader
             bool centerModel = false);
 
         /**
-         * @return Vector of MeshInfo objects (Mesh pointer + material index).
+         * @brief Returns the loaded MeshInfo objects (each holding a Mesh pointer and a material ID).
          */
-        const std::vector<MeshInfo>& GetLoadedObjects() const { return m_Objects; }
-
-        /**
-         * @return The loaded materials for each sub-mesh in the same order
-         *         they were discovered in the scene.
-         */
+        const std::vector<MeshInfo>& GetLoadedObjects() const { return objects_; }
 
     private:
-        // Internal data
-        float m_ScaleFactor = 1.0f;
-        std::unordered_map<aiTextureType, TextureType> m_AiToMyType;
-        uint8_t m_MaxLODs = 8;
+        // Configuration parameters.
+        float scaleFactor_ = 1.0f;
+        std::unordered_map<aiTextureType, TextureType> aiToMyType_;
+        uint8_t maxLODs_ = 8;
 
-        std::vector<MeshInfo>                m_Objects;
-        std::vector<int> m_MaterialIDs;
+        // Loaded objects and associated material IDs.
+        std::vector<MeshInfo> objects_;
+        std::vector<std::size_t> materialIDs_;
 
-        int m_FallbackMaterialCounter = 0;
-        int m_UnnamedMaterialCounter = 0;
+        // Counters for fallback and unnamed materials.
+        int fallbackMaterialCounter_ = 0;
+        int unnamedMaterialCounter_ = 0;
 
-        // Map from model name to actual file path
-        const std::unordered_map<std::string, std::string> m_ModelPaths = {
+        // Mapping from model name to file path.
+        const std::unordered_map<std::string, std::string> modelPaths_ = {
             {"pig",    "../assets/Objs/pig_triangulated.obj"},
             {"bunny",  "../assets/Objs/bunny.obj"},
-            {"duck",  "../assets/rubber_duck/scene.gltf"},
+            {"duck",   "../assets/rubber_duck/scene.gltf"},
             {"dragon", "../assets/Objs/dragon.obj"},
             {"bistro", "../assets/AmazonBistro/Exterior/exterior.obj"},
             {"helmet", "../assets/DamagedHelmet/glTF/DamagedHelmet.gltf"}
         };
 
-    private:
-        // Internal helpers
+        // Private helper functions.
         std::string GetModelPath(const std::string& modelName) const;
-        glm::mat4   AiToGlm(const aiMatrix4x4& m) const;
+        glm::mat4 AiToGlm(const aiMatrix4x4& m) const;
 
-        void        LoadSceneMaterials(const aiScene* scene,
+        void LoadSceneMaterials(const aiScene* scene,
             const MaterialLayout& matLayout,
             const std::string& directory);
-        int CreateMaterialForAssimpMat(const aiMaterial* aiMat,
+        std::size_t CreateMaterialForAssimpMat(const aiMaterial* aiMat,
             const MaterialLayout& matLayout,
             const std::string& directory);
-        void        LoadMaterialProperties(const aiMaterial* aiMat,
+        void LoadMaterialProperties(const aiMaterial* aiMat,
             const std::unique_ptr<Graphics::Material>& mat,
             const MaterialLayout& matLayout);
-        void        LoadMaterialTextures(const aiMaterial* aiMat,
+        void LoadMaterialTextures(const aiMaterial* aiMat,
             const std::unique_ptr<Graphics::Material>& mat,
             const MaterialLayout& matLayout,
             const std::string& directory);
@@ -115,6 +110,7 @@ namespace staticloader
             const std::vector<float>& vertices3f,
             std::vector<std::vector<uint32_t>>& outLods) const;
 
-        void CenterMeshes(); ///< Shifts all loaded meshes so bounding box is centered at origin
+        void CenterMeshes();  ///< Shifts all loaded meshes so that the bounding box is centered at the origin.
     };
+
 } // namespace staticloader

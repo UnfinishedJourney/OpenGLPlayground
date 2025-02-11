@@ -12,7 +12,7 @@ class ResourceManager {
 public:
     static ResourceManager& GetInstance();
 
-    std::pair<MeshLayout, MaterialLayout> getLayoutsFromShader(std::string shaderName);
+    std::pair<MeshLayout, MaterialLayout> GetLayoutsFromShader(const std::string& shaderName);
 
     // Access to specialized managers
     MeshManager& GetMeshManager();
