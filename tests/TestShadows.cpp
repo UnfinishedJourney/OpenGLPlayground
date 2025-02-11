@@ -30,19 +30,23 @@ void TestShadows::OnEnter()
     auto& resourceManager = ResourceManager::GetInstance();
     auto [meshLayout, matLayout] = resourceManager.getLayoutsFromShader(shaderName);
 
-    auto floorMat = std::make_shared<Graphics::Material>(matLayout);
-    floorMat->SetName("floorMat");
+    {
+        auto floorMat = std::make_unique<Graphics::Material>(matLayout);
+        floorMat->SetName("floorMat");
 
-    floorMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.0, 0.0, 1.0));
-    floorMat->AssignToPackedParams(MaterialParamType::Diffuse, glm::vec3(0.0, 1.0, 0.0));
-    floorMat->AssignToPackedParams(MaterialParamType::Specular, glm::vec3(1.0, 0.0, 0.0));
-    floorMat->AssignToPackedParams(MaterialParamType::Shininess, 100.0f);
+        floorMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.0, 0.0, 1.0));
+        floorMat->AssignToPackedParams(MaterialParamType::Diffuse, glm::vec3(0.0, 1.0, 0.0));
+        floorMat->AssignToPackedParams(MaterialParamType::Specular, glm::vec3(1.0, 0.0, 0.0));
+        floorMat->AssignToPackedParams(MaterialParamType::Shininess, 100.0f);
 
-    Graphics::MaterialManager::GetInstance().AddMaterial(floorMat);
+        Graphics::MaterialManager::GetInstance().AddMaterial(std::move(floorMat));
+        int floorMatID = Graphics::MaterialManager::GetInstance().GetMaterialIDByName("floorMat").value();
 
-    if (!m_Scene->LoadPrimitiveIntoScene("floor", shaderName, floorMat->GetID())) {
-        Logger::GetLogger()->error("Failed to load cube primitive.");
+        if (!m_Scene->LoadPrimitiveIntoScene("floor", shaderName, floorMatID)) {
+            Logger::GetLogger()->error("Failed to load cube primitive.");
+        }
     }
+
 
     // Add a light
     //LightData light1 = { glm::vec4(1.5f, 2.0f, 1.5f, 1.0f), glm::vec4(1.0f) };
@@ -53,9 +57,9 @@ void TestShadows::OnEnter()
 
     m_Scene->SetShowDebugLights(true);
     m_Scene->SetShowShadows(true);
-    auto existingMat = Graphics::MaterialManager::GetInstance().GetMaterialByID(1);
-    if (existingMat) {
-        existingMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.4f, 0.5f, 0.8f));
+    auto& materials = Graphics::MaterialManager::GetInstance().GetMaterials();
+    if (materials.size() > 0) {
+        materials[0]->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.9f, 0.1f, 0.3f));
     }
 
     m_Scene->BuildStaticBatchesIfNeeded();

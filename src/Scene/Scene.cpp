@@ -79,7 +79,6 @@ bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
     }
 
     const auto& objects = loader.GetLoadedObjects();
-    const auto& materials = loader.GetLoadedMaterials();
 
     for (auto& mi : objects) {
         auto ro = std::make_shared<StaticRenderObject>(
@@ -94,8 +93,8 @@ bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
     m_LastShaderName = shaderName;
     m_StaticBatchesDirty = true;
 
-    Logger::GetLogger()->info("Loaded static model '{}' => {} sub-meshes, {} materials.",
-        modelName, objects.size(), materials.size());
+    Logger::GetLogger()->info("Loaded static model '{}' => {} sub-meshes.",
+        modelName, objects.size());
     return true;
 }
 

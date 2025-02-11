@@ -3,7 +3,7 @@
 #include "Utilities/Logger.h" // if you use a logger
 #include <glm/gtc/matrix_transform.hpp>
 #include "Renderer/Batch.h"
-#include "Resources/ShaderManager.h"
+#include "Graphics/Shaders/ShaderManager.h"
 
 ShadowPass::ShadowPass(const std::shared_ptr<Scene>& scene, GLsizei shadowResolution)
 {

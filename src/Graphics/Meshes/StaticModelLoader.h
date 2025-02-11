@@ -65,7 +65,6 @@ namespace staticloader
          * @return The loaded materials for each sub-mesh in the same order
          *         they were discovered in the scene.
          */
-        const std::vector<std::shared_ptr<Graphics::Material>>& GetLoadedMaterials() const { return m_Materials; }
 
     private:
         // Internal data
@@ -74,7 +73,7 @@ namespace staticloader
         uint8_t m_MaxLODs = 8;
 
         std::vector<MeshInfo>                m_Objects;
-        std::vector<std::shared_ptr<Graphics::Material>> m_Materials;
+        std::vector<int> m_MaterialIDs;
 
         int m_FallbackMaterialCounter = 0;
         int m_UnnamedMaterialCounter = 0;
@@ -97,14 +96,14 @@ namespace staticloader
         void        LoadSceneMaterials(const aiScene* scene,
             const MaterialLayout& matLayout,
             const std::string& directory);
-        std::shared_ptr<Graphics::Material> CreateMaterialForAssimpMat(const aiMaterial* aiMat,
+        int CreateMaterialForAssimpMat(const aiMaterial* aiMat,
             const MaterialLayout& matLayout,
             const std::string& directory);
         void        LoadMaterialProperties(const aiMaterial* aiMat,
-            const std::shared_ptr<Graphics::Material>& mat,
+            const std::unique_ptr<Graphics::Material>& mat,
             const MaterialLayout& matLayout);
         void        LoadMaterialTextures(const aiMaterial* aiMat,
-            const std::shared_ptr<Graphics::Material>& mat,
+            const std::unique_ptr<Graphics::Material>& mat,
             const MaterialLayout& matLayout,
             const std::string& directory);
 

@@ -1,6 +1,6 @@
 #include "TerrainPass.h"
 #include "Resources/MeshManager.h"
-#include "Resources/ShaderManager.h"
+#include "Graphics/Shaders/ShaderManager.h"
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
 

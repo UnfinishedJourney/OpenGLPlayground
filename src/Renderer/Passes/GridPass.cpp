@@ -1,5 +1,5 @@
 #include "GridPass.h"
-#include "Resources/ShaderManager.h"
+#include "Graphics/Shaders/ShaderManager.h"
 #include "Resources/MeshManager.h"
 #include "Utilities/Logger.h"
 #include "Utilities/Utility.h"

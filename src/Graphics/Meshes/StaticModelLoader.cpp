@@ -33,7 +33,7 @@ namespace staticloader {
     {
         // Clear previous data
         m_Objects.clear();
-        m_Materials.clear();
+        m_MaterialIDs.clear();
         m_FallbackMaterialCounter = 0;
         m_UnnamedMaterialCounter = 0;
 
@@ -92,24 +92,24 @@ namespace staticloader {
                 auto newMesh = ProcessAssimpMesh(aimesh, meshLayout, global);
 
                 // Material
+                int matID = -1;
                 int matIndex = aimesh->mMaterialIndex;
-                std::shared_ptr<Graphics::Material> matPtr;
-                if (matIndex < 0 || matIndex >= (int)m_Materials.size()) {
+                if (matIndex < 0 || matIndex >= (int)m_MaterialIDs.size()) {
                     // fallback
-                    auto fallbackMat = std::make_shared<Graphics::Material>(matLayout);
+                    auto fallbackMat = std::make_unique<Graphics::Material>(matLayout);
                     fallbackMat->SetName("FallbackMat_" + std::to_string(++m_FallbackMaterialCounter));
-                    Graphics::MaterialManager::GetInstance().AddMaterial(fallbackMat);
-                    m_Materials.push_back(fallbackMat);
-                    matPtr = fallbackMat;
+                    auto id = Graphics::MaterialManager::GetInstance().AddMaterial(std::move(fallbackMat));
+                    m_MaterialIDs.push_back(id.value());
+                    matID = id.value();
                 }
                 else {
-                    matPtr = m_Materials[matIndex];
+                    matID = m_MaterialIDs[matIndex];
                 }
 
                 // Store
                 MeshInfo mi;
                 mi.mesh = newMesh;
-                mi.materialIndex = matPtr->GetID();
+                mi.materialIndex = matID;
                 m_Objects.push_back(mi);
             }
 
@@ -125,7 +125,7 @@ namespace staticloader {
         }
 
         Logger::GetLogger()->info("ModelLoader: Loaded '{}' => {} meshes, {} materials.",
-            modelName, m_Objects.size(), m_Materials.size());
+            modelName, m_Objects.size(), m_MaterialIDs.size());
         return true;
     }
 
@@ -133,15 +133,15 @@ namespace staticloader {
         const MaterialLayout& matLayout,
         const std::string& directory)
     {
-        m_Materials.reserve(scene->mNumMaterials);
+        m_MaterialIDs.reserve(scene->mNumMaterials);
         for (unsigned i = 0; i < scene->mNumMaterials; i++) {
             aiMaterial* aimat = scene->mMaterials[i];
-            auto mat = CreateMaterialForAssimpMat(aimat, matLayout, directory);
-            m_Materials.push_back(mat);
+            auto matID = CreateMaterialForAssimpMat(aimat, matLayout, directory);
+            m_MaterialIDs.push_back(matID);
         }
     }
 
-    std::shared_ptr<Graphics::Material> ModelLoader::CreateMaterialForAssimpMat(const aiMaterial* aiMat,
+    int ModelLoader::CreateMaterialForAssimpMat(const aiMaterial* aiMat,
         const MaterialLayout& matLayout,
         const std::string& directory)
     {
@@ -152,12 +152,12 @@ namespace staticloader {
         std::string matName(aiName.C_Str());
 
         // Possibly reuse existing material
-        auto existing = Graphics::MaterialManager::GetInstance().GetMaterialByName(matName);
-        if (existing) {
-            return existing;
+        auto matID = Graphics::MaterialManager::GetInstance().GetMaterialIDByName(matName);
+        if (matID.has_value()) {
+            return matID.value();
         }
 
-        auto material = std::make_shared<Graphics::Material>(matLayout);
+        auto material = std::make_unique<Graphics::Material>(matLayout);
         material->SetName(matName);
 
         // Load color/floats
@@ -167,12 +167,11 @@ namespace staticloader {
         LoadMaterialTextures(aiMat, material, matLayout, directory);
 
         // Register
-        Graphics::MaterialManager::GetInstance().AddMaterial(material);
-        return material;
+        return Graphics::MaterialManager::GetInstance().AddMaterial(std::move(material)).value();
     }
 
     void ModelLoader::LoadMaterialProperties(const aiMaterial* aiMat,
-        const std::shared_ptr<Graphics::Material>& mat,
+        const std::unique_ptr<Graphics::Material>& mat,
         const MaterialLayout& matLayout)
     {
         // E.g. ambient, diffuse, specular, shininess
@@ -199,7 +198,7 @@ namespace staticloader {
     }
 
     void ModelLoader::LoadMaterialTextures(const aiMaterial* aiMat,
-        const std::shared_ptr<Graphics::Material>& mat,
+        const std::unique_ptr<Graphics::Material>& mat,
         const MaterialLayout& matLayout,
         const std::string& directory)
     {

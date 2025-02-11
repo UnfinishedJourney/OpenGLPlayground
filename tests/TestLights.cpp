@@ -32,9 +32,9 @@ void TestLights::OnEnter()
     // Enable debug lights and grid
     m_Scene->SetShowGrid(true);
     m_Scene->SetShowDebugLights(true);
-    auto existingMat = Graphics::MaterialManager::GetInstance().GetMaterialByID(0);
-    if (existingMat) {
-        existingMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.9f, 0.1f, 0.3f));
+    auto& materials = Graphics::MaterialManager::GetInstance().GetMaterials();
+    if (materials.size() > 0) {
+        materials[0]->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.9f, 0.1f, 0.3f));
     }
 }
 
