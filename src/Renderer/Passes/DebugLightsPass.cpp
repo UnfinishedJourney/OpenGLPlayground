@@ -5,13 +5,13 @@
 #include <glad/glad.h>
 #include "Graphics/Shaders/Shader.h"
 
-DebugLightsPass::DebugLightsPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene>& scene)
+DebugLightsPass::DebugLightsPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene::Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
     InitializeSceneResources(scene);
 }
 
-void DebugLightsPass::InitializeSceneResources(const std::shared_ptr<Scene>& scene)
+void DebugLightsPass::InitializeSceneResources(const std::shared_ptr<Scene::Scene>& scene)
 {
     auto& resourceManager = ResourceManager::GetInstance();
 
@@ -27,7 +27,7 @@ void DebugLightsPass::InitializeSceneResources(const std::shared_ptr<Scene>& sce
     m_LightSphereMeshBuffer = meshManager.GetMeshBuffer("lightsphere", lightMeshLayout);
 }
 
-void DebugLightsPass::Execute(const std::shared_ptr<Scene>& scene)
+void DebugLightsPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
 {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     m_Framebuffer->Bind();

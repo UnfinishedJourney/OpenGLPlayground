@@ -6,7 +6,9 @@
 #include "Batch.h"
 
 class BaseRenderObject;
-class Camera;
+namespace Scene{
+    class Camera;
+}
 class LODEvaluator;
 
 /**
@@ -40,7 +42,7 @@ public:
 
     // LOD / culling
     void UpdateLOD(const std::shared_ptr<BaseRenderObject>& ro, size_t newLOD);
-    void UpdateLODs(std::shared_ptr<Camera>& camera, LODEvaluator& lodEvaluator);
+    void UpdateLODs(std::shared_ptr<Scene::Camera>& camera, LODEvaluator& lodEvaluator);
     void SetLOD(size_t forcedLOD); // for debug (force all objects to this LOD)
     void CullObject(const std::shared_ptr<BaseRenderObject>& ro);
 

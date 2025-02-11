@@ -11,14 +11,14 @@
 #include <glad/glad.h>
 
 SkyBoxPass::SkyBoxPass(std::shared_ptr<FrameBuffer> framebuffer,
-    const std::shared_ptr<Scene>& scene)
+    const std::shared_ptr<Scene::Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
 
     InitializeSceneResources(scene);
 }
 
-void SkyBoxPass::InitializeSceneResources(const std::shared_ptr<Scene>& scene)
+void SkyBoxPass::InitializeSceneResources(const std::shared_ptr<Scene::Scene>& scene)
 {
     // We'll request a simple cube MeshBuffer from MeshManager
     // We'll only need the positions (no normals, no UVs), so set the layout accordingly:
@@ -38,7 +38,7 @@ void SkyBoxPass::InitializeSceneResources(const std::shared_ptr<Scene>& scene)
     }
 }
 
-void SkyBoxPass::Execute(const std::shared_ptr<Scene>& scene)
+void SkyBoxPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
 {
     // Bind our target framebuffer (could be the main framebuffer or an off-screen one)
     m_Framebuffer->Bind();

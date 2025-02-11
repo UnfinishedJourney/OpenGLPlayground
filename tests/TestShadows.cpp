@@ -13,14 +13,10 @@ TestShadows::TestShadows()
 
 void TestShadows::OnEnter()
 {
-    // Configure the scene's camera
-    auto cam = std::make_shared<Camera>();
-    m_Scene->SetCamera(cam);
-
     std::string shaderName = "simpleLightsShadowed";
 
     // Load a model into the scene
-    if (!m_Scene->LoadStaticModelIntoScene("pig", shaderName)) {
+    if (!scene_->LoadStaticModelIntoScene("pig", shaderName)) {
         Logger::GetLogger()->error("Failed to load 'pig' model in TestShadow");
         return;
     }
@@ -42,7 +38,7 @@ void TestShadows::OnEnter()
         Graphics::MaterialManager::GetInstance().AddMaterial(std::move(floorMat));
         int floorMatID = Graphics::MaterialManager::GetInstance().GetMaterialIDByName("floorMat").value();
 
-        if (!m_Scene->LoadPrimitiveIntoScene("floor", shaderName, floorMatID)) {
+        if (!scene_->LoadPrimitiveIntoScene("floor", shaderName, floorMatID)) {
             Logger::GetLogger()->error("Failed to load cube primitive.");
         }
     }
@@ -52,30 +48,30 @@ void TestShadows::OnEnter()
     //LightData light1 = { glm::vec4(1.5f, 2.0f, 1.5f, 1.0f), glm::vec4(1.0f) };
     LightData light1 = { glm::vec4(-1.0f, -1.0f, 0.0f, 0.0f), glm::vec4(1.0f) };
 
-    auto lightManager = m_Scene->GetLightManager();
+    auto lightManager = scene_->GetLightManager();
     lightManager->AddLight(light1);
 
-    m_Scene->SetShowDebugLights(true);
-    m_Scene->SetShowShadows(true);
+    scene_->SetShowDebugLights(true);
+    scene_->SetShowShadows(true);
     auto& materials = Graphics::MaterialManager::GetInstance().GetMaterials();
     if (materials.size() > 0) {
         materials[0]->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.9f, 0.1f, 0.3f));
     }
 
-    m_Scene->BuildStaticBatchesIfNeeded();
+    scene_->BuildStaticBatchesIfNeeded();
 }
 
 void TestShadows::OnExit()
 {
     // Cleanup
-    m_Renderer.reset();
-    m_Scene->Clear();
+    renderer_.reset();
+    scene_->Clear();
 }
 
 void TestShadows::OnUpdate(float /*deltaTime*/)
 {
     // LOD or culling
-    m_Scene->CullAndLODUpdate();
+    scene_->CullAndLODUpdate();
 }
 
 void TestShadows::OnImGuiRender()

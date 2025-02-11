@@ -7,10 +7,10 @@
 
 class GridPass : public RenderPass {
 public:
-    GridPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene>& scene);
+    GridPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene::Scene>& scene);
     ~GridPass();
 
-    void Execute(const std::shared_ptr<Scene>& scene) override;
+    void Execute(const std::shared_ptr<Scene::Scene>& scene) override;
     void UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer) override;
 
 private:

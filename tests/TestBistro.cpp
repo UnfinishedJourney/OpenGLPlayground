@@ -20,34 +20,34 @@ void TestBistro::OnEnter() {
     //);
     //m_Camera->SetSpeed(200.0f);
     //m_Camera->SetFarPlane(10000.0f);
-    //m_Scene->SetCamera(m_Camera);
+    //scene_->SetCamera(m_Camera);
 
     // Load the "bistro" model into the scene
 
     auto camera = GetCamera();
     camera->SetFarPlane(250.0);
     camera->SetNearPlane(1.0);
-    //if (!m_Scene->LoadModelIntoScene("bistro", "basicTextured", "objMaterial", 0.01)) {
-    //if (!m_Scene->LoadModelIntoScene("bistro", "bistroShader", "bistroMaterial", 0.01)) {
+    //if (!scene_->LoadModelIntoScene("bistro", "basicTextured", "objMaterial", 0.01)) {
+    //if (!scene_->LoadModelIntoScene("bistro", "bistroShader", "bistroMaterial", 0.01)) {
     //    Logger::GetLogger()->error("Failed to load 'bistro' model into the scene.");
     //    return;
     //}
 
-    if (!m_Scene->LoadStaticModelIntoScene("bistro", "bistroShaderShadowed", 0.01)) {
+    if (!scene_->LoadStaticModelIntoScene("bistro", "bistroShaderShadowed", 0.01)) {
         Logger::GetLogger()->error("Failed to load 'bistro' model in TestDamagedHelmet");
         return;
     }
 
     LightData light1 = { glm::vec4(-0.1f, -1.0f, 0.0f, 0.0f), glm::vec4(1.0f) };
 
-    auto lightManager = m_Scene->GetLightManager();
+    auto lightManager = scene_->GetLightManager();
     lightManager->AddLight(light1);
 
-    m_Scene->SetShowShadows(true);
+    scene_->SetShowShadows(true);
 
-    m_Scene->BuildStaticBatchesIfNeeded();
+    scene_->BuildStaticBatchesIfNeeded();
 
-    m_Scene->SetSkyboxEnabled(true);
+    scene_->SetSkyboxEnabled(true);
 
     // Initialize Materials
     //auto& materialManager = MaterialManager::GetInstance();
@@ -65,12 +65,12 @@ void TestBistro::OnEnter() {
 }
 
 void TestBistro::OnExit() {
-    m_Renderer.reset();
-    m_Scene->Clear();
+    renderer_.reset();
+    scene_->Clear();
 }
 
 void TestBistro::OnUpdate(float deltaTime) {
-    //m_Scene->CullAndLODUpdate();
+    //scene_->CullAndLODUpdate();
 }
 
 void TestBistro::OnImGuiRender() {
@@ -89,7 +89,7 @@ void TestBistro::OnImGuiRender() {
 
     //// Lighting Controls
     //if (ImGui::CollapsingHeader("Lights")) {
-    //    const auto& lights = m_Scene->GetLightsData();
+    //    const auto& lights = scene_->GetLightsData();
     //    for (size_t i = 0; i < lights.size(); ++i) {
     //        std::string header = "Light " + std::to_string(i + 1);
     //        if (ImGui::TreeNode(header.c_str())) {
@@ -110,7 +110,7 @@ void TestBistro::OnImGuiRender() {
     //            glm::vec4(0.0f, 5.0f, 0.0f, 1.0f), // Position
     //            glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)  // Color
     //        };
-    //        m_Scene->AddLight(newPointLight);
+    //        scene_->AddLight(newPointLight);
     //    }
 
     //    if (ImGui::Button("Add Directional Light")) {
@@ -118,28 +118,28 @@ void TestBistro::OnImGuiRender() {
     //            glm::vec4(-0.2f, -1.0f, -0.3f, 0.0f), // Direction
     //            glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)      // Color
     //        };
-    //        m_Scene->AddLight(newDirLight);
+    //        scene_->AddLight(newDirLight);
     //    }
     //}
 
     //// Grid and Debug Lights
     //if (ImGui::CollapsingHeader("Scene Settings")) {
-    //    bool grid = m_Scene->GetBGrid();
+    //    bool grid = scene_->GetBGrid();
     //    if (ImGui::Checkbox("Show Grid", &grid)) {
-    //        m_Scene->SetBGrid(grid);
+    //        scene_->SetBGrid(grid);
     //    }
 
-    //    bool debugLights = m_Scene->GetBDebugLights();
+    //    bool debugLights = scene_->GetBDebugLights();
     //    if (ImGui::Checkbox("Debug Lights", &debugLights)) {
-    //        m_Scene->SetBDebugLights(debugLights);
+    //        scene_->SetBDebugLights(debugLights);
     //    }
 
     //    // Post-Processing Effects
-    //    PostProcessingEffectType effect = m_Scene->GetPostProcessingEffect();
+    //    PostProcessingEffectType effect = scene_->GetPostProcessingEffect();
     //    const char* effects[] = { "None", "Edge Detection", "Bloom", "Motion Blur" };
     //    int currentEffect = static_cast<int>(effect);
     //    if (ImGui::Combo("Post-Processing Effect", &currentEffect, effects, IM_ARRAYSIZE(effects))) {
-    //        m_Scene->SetPostProcessingEffect(static_cast<PostProcessingEffectType>(currentEffect));
+    //        scene_->SetPostProcessingEffect(static_cast<PostProcessingEffectType>(currentEffect));
     //    }
     //}
 

@@ -8,7 +8,7 @@
 #include "Graphics/Shaders/Shader.h"
 
 GeometryPass::GeometryPass(std::shared_ptr<FrameBuffer> framebuffer,
-    const std::shared_ptr<Scene>& scene)
+    const std::shared_ptr<Scene::Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
     m_bShadowed = scene->GetShowShadows();
@@ -32,7 +32,7 @@ GeometryPass::GeometryPass(std::shared_ptr<FrameBuffer> framebuffer,
 
 }
 
-void GeometryPass::Execute(const std::shared_ptr<Scene>& scene)
+void GeometryPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
 {
     PROFILE_FUNCTION(Blue);
 

@@ -3,7 +3,7 @@
 #include <glad/glad.h>
 
 PostProcessingPass::PostProcessingPass(std::shared_ptr<FrameBuffer> /*ignored*/,
-    const std::shared_ptr<Scene>& scene)
+    const std::shared_ptr<Scene::Scene>& scene)
 {
     // No need to store that "ignored" FBO. We'll rely on m_SourceFBO.
     // Possibly store scene references if needed.
@@ -23,7 +23,7 @@ void PostProcessingPass::SetSourceFramebuffer(std::shared_ptr<FrameBuffer> sourc
     m_SourceFBO = sourceFBO;
 }
 
-void PostProcessingPass::Execute(const std::shared_ptr<Scene>& scene)
+void PostProcessingPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
 {
     if (!m_SourceFBO) {
         Logger::GetLogger()->error("PostProcessingPass: No source FBO set!");

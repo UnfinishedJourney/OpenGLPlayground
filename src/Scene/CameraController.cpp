@@ -1,106 +1,99 @@
 #include "CameraController.h"
-#include "Scene/Screen.h"
+#include "Screen.h"
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
-CameraController::CameraController(InputManager& inputManager)
-    : m_InputManager(inputManager)
-    , m_Sensitivity(0.05f)
-    , m_Speed(10.0f)
-    , m_LastX(0.0f)
-    , m_LastY(0.0f)
-    , m_FirstMouse(true)
-{
-}
+namespace Scene {
 
-void CameraController::Update(float deltaTime)
-{
-    if (!m_Camera) return;
-
-    // Keyboard-based movement
-    if (m_InputManager.IsKeyPressed(GLFW_KEY_UP))
-        m_Camera->Move(CameraMovement::Forward, deltaTime);
-
-    if (m_InputManager.IsKeyPressed(GLFW_KEY_DOWN))
-        m_Camera->Move(CameraMovement::Backward, deltaTime);
-
-    if (m_InputManager.IsKeyPressed(GLFW_KEY_A))
-        m_Camera->Move(CameraMovement::Left, deltaTime);
-
-    if (m_InputManager.IsKeyPressed(GLFW_KEY_D))
-        m_Camera->Move(CameraMovement::Right, deltaTime);
-
-    if (m_InputManager.IsKeyPressed(GLFW_KEY_W))
-        m_Camera->Move(CameraMovement::Up, deltaTime);
-
-    if (m_InputManager.IsKeyPressed(GLFW_KEY_S))
-        m_Camera->Move(CameraMovement::Down, deltaTime);
-}
-
-void CameraController::ProcessMouseMovement(float xpos, float ypos)
-{
-    if (!m_Camera) return;
-
-    if (m_FirstMouse)
+    CameraController::CameraController(InputManager& inputManager)
+        : inputManager_(inputManager),
+        sensitivity_(0.05f),
+        speed_(10.0f),
+        lastX_(0.0f),
+        lastY_(0.0f),
+        firstMouse_(true)
     {
-        // Initialize the last mouse positions so the first movement isn't huge
-        m_LastX = xpos;
-        m_LastY = ypos;
-        m_FirstMouse = false;
-        return;
     }
 
-    float xOffset = xpos - m_LastX;
-    float yOffset = m_LastY - ypos;  // Y is reversed (top vs bottom)
-    m_LastX = xpos;
-    m_LastY = ypos;
+    void CameraController::Update(float deltaTime) {
+        if (!camera_) return;
 
-    // Scale by sensitivity
-    xOffset *= m_Sensitivity;
-    yOffset *= m_Sensitivity;
-
-    // Rotate the camera
-    m_Camera->Rotate(xOffset, yOffset);
-}
-
-void CameraController::ProcessMouseScroll(float yOffset)
-{
-    if (!m_Camera) return;
-
-    // Example approach: clamp around a "physical" FOV ± 10 degrees
-    float displayHeight = Screen::s_DisplayHeight;
-    float viewerDistance = Screen::s_ViewerDistance;
-
-    float physicalFOV = 2.0f * glm::degrees(std::atan((displayHeight / 2.0f) / viewerDistance));
-    float fovChange = yOffset * 1.0f;
-    float newFOV = m_Camera->GetFOV() - fovChange;
-
-    // Clamp to (physicalFOV - 10, physicalFOV + 10)
-    float minFOV = physicalFOV - 10.0f;
-    float maxFOV = physicalFOV + 10.0f;
-    newFOV = glm::clamp(newFOV, minFOV, maxFOV);
-
-    m_Camera->SetFOV(newFOV);
-}
-
-void CameraController::SetSpeed(float speed)
-{
-    m_Speed = speed;
-    if (m_Camera)
-    {
-        m_Camera->SetSpeed(speed);
+        // Keyboard-based movement.
+        if (inputManager_.IsKeyPressed(GLFW_KEY_UP))
+            camera_->Move(CameraMovement::Forward, deltaTime);
+        if (inputManager_.IsKeyPressed(GLFW_KEY_DOWN))
+            camera_->Move(CameraMovement::Backward, deltaTime);
+        if (inputManager_.IsKeyPressed(GLFW_KEY_A))
+            camera_->Move(CameraMovement::Left, deltaTime);
+        if (inputManager_.IsKeyPressed(GLFW_KEY_D))
+            camera_->Move(CameraMovement::Right, deltaTime);
+        if (inputManager_.IsKeyPressed(GLFW_KEY_W))
+            camera_->Move(CameraMovement::Up, deltaTime);
+        if (inputManager_.IsKeyPressed(GLFW_KEY_S))
+            camera_->Move(CameraMovement::Down, deltaTime);
     }
-}
 
-void CameraController::Reset()
-{
-    // Next time we move the mouse, treat it as the first event
-    m_FirstMouse = true;
-}
+    void CameraController::ProcessMouseMovement(float xpos, float ypos) {
+        if (!camera_) return;
 
-void CameraController::UpdateFOV()
-{
-    if (m_Camera)
-    {
-        m_Camera->UpdateFOV();
+        if (firstMouse_) {
+            lastX_ = xpos;
+            lastY_ = ypos;
+            firstMouse_ = false;
+            return;
+        }
+
+        float xOffset = xpos - lastX_;
+        float yOffset = lastY_ - ypos; // Y is reversed
+        lastX_ = xpos;
+        lastY_ = ypos;
+
+        xOffset *= sensitivity_;
+        yOffset *= sensitivity_;
+
+        camera_->Rotate(xOffset, yOffset);
     }
-}
+
+    void CameraController::ProcessMouseScroll(float yOffset) {
+        if (!camera_) return;
+
+        // Example: adjust FOV based on scroll input.
+        float displayHeight = Screen::s_DisplayHeight;
+        float viewerDistance = Screen::s_ViewerDistance;
+        float physicalFOV = 2.0f * glm::degrees(std::atan((displayHeight / 2.0f) / viewerDistance));
+        float fovChange = yOffset * 1.0f;
+        float newFOV = camera_->GetFOV() - fovChange;
+
+        float minFOV = physicalFOV - 10.0f;
+        float maxFOV = physicalFOV + 10.0f;
+        newFOV = glm::clamp(newFOV, minFOV, maxFOV);
+
+        camera_->SetFOV(newFOV);
+    }
+
+    void CameraController::SetSpeed(float speed) {
+        speed_ = speed;
+        if (camera_) {
+            camera_->SetSpeed(speed);
+        }
+    }
+
+    void CameraController::Reset() {
+        firstMouse_ = true;
+    }
+
+    void CameraController::UpdateFOV() {
+        if (camera_) {
+            camera_->UpdateFOV();
+        }
+    }
+
+    void CameraController::SetCamera(const std::shared_ptr<Camera>& camera) {
+        camera_ = camera;
+    }
+
+    bool CameraController::HasCamera() const {
+        return (camera_ != nullptr);
+    }
+
+} // namespace Scene

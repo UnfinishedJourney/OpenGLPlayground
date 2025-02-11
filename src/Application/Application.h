@@ -84,7 +84,7 @@ private:
     // Member variables
     // --------------------------------------------------
     GLFWwindow*                 m_Window = nullptr;   ///< Pointer to the GLFW window.
-    CameraController            m_CameraController;              ///< Controls the active camera.
+    Scene::CameraController     m_CameraController;              ///< Controls the active camera.
     InputManager                m_InputManager;                  ///< Manages keyboard & mouse input.
     TestManager                 m_TestManager;                   ///< Manages the currently active test scene.
     std::shared_ptr<TestMenu>   m_TestMenu = nullptr;   ///< Menu that allows switching between tests.

@@ -8,11 +8,11 @@
 class ShadowPass : public RenderPass {
 public:
     // shadowResolution is the width/height of the shadow map.
-    ShadowPass(const std::shared_ptr<Scene>& scene, GLsizei shadowResolution);
+    ShadowPass(const std::shared_ptr<Scene::Scene>& scene, GLsizei shadowResolution);
     ~ShadowPass();
 
     // Render the scene from the light’s POV into the shadow map.
-    void Execute(const std::shared_ptr<Scene>& scene) override;
+    void Execute(const std::shared_ptr<Scene::Scene>& scene) override;
 
     // For this pass, UpdateFramebuffer is not used.
     void UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer) override {}

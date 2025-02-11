@@ -5,6 +5,8 @@
 #include <memory>
 #include "TestManager.h"
 
+#include "Test.h"
+
 class TestMenu
 {
 public:
@@ -17,8 +19,6 @@ private:
     TestManager& m_TestManager;
     std::vector<std::pair<std::string, std::function<std::shared_ptr<Test>()>>> m_Tests;
 };
-
-#include "Test.h"
 
 
 class TestMenuTest : public Test

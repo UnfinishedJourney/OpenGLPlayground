@@ -98,7 +98,7 @@ void BatchManager::UpdateLOD(const std::shared_ptr<BaseRenderObject>& ro, size_t
 }
 
 // Evaluate LOD for each object using the LODEvaluator
-void BatchManager::UpdateLODs(std::shared_ptr<Camera>& camera, LODEvaluator& lodEvaluator)
+void BatchManager::UpdateLODs(std::shared_ptr<Scene::Camera>& camera, LODEvaluator& lodEvaluator)
 {
     if (!m_Built || !camera) {
         return;

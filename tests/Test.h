@@ -1,73 +1,52 @@
 #pragma once
+
 #include <memory>
 #include "Scene/Scene.h"
 #include "Renderer/Renderer.h"
-#include "Scene/Screen.h"
+#include "Scene/Screen.h"  // Screen provides static members for width/height
 
 /**
- * @class Test
- * @brief Base class representing a self-contained demo.
+ * @brief Base class representing a self-contained demo/test.
  */
-class Test
-{
+class Test {
 public:
-    Test()
-    {
-        // Build a renderer
-        m_Renderer = std::make_unique<Renderer>();
-        // Build a scene
-        m_Scene = std::make_shared<Scene>();
+    Test() {
+        // Create renderer from the Renderer namespace.
+        renderer_ = std::make_unique<Renderer>();
+        // Create scene from the Scene namespace.
+        scene_ = std::make_shared<Scene::Scene>();
 
-        // Initialize the renderer with initial window size
-        m_Renderer->Initialize(Screen::s_Width, Screen::s_Height);
+        // Initialize the renderer with the initial window dimensions.
+        renderer_->Initialize(Screen::s_Width, Screen::s_Height);
     }
-
     virtual ~Test() = default;
 
-    // Called when becoming the active test
     virtual void OnEnter() {}
-
-    // Called once when we leave this test
-    virtual void OnExit()
-    {
-        // Cleanup resources
-        if (m_Renderer) {
-            m_Renderer.reset();
+    virtual void OnExit() {
+        if (renderer_) {
+            renderer_.reset();
         }
-        if (m_Scene) {
-            m_Scene->Clear();
+        if (scene_) {
+            scene_->Clear();
         }
     }
-
-    // Called every frame to update logic
     virtual void OnUpdate(float /*deltaTime*/) {}
-
-    // Called every frame to render
-    virtual void OnRender()
-    {
-        if (m_Renderer && m_Scene) {
-            m_Renderer->RenderScene(m_Scene);
+    virtual void OnRender() {
+        if (renderer_ && scene_) {
+            renderer_->RenderScene(scene_);
         }
     }
-
-    // Called every frame to render ImGui
     virtual void OnImGuiRender() {}
-
-    // Window resized
-    virtual void OnWindowResize(int width, int height)
-    {
-        if (m_Renderer) {
-            m_Renderer->OnWindowResize(width, height);
+    virtual void OnWindowResize(int width, int height) {
+        if (renderer_) {
+            renderer_->OnWindowResize(width, height);
         }
     }
-
-    // Retrieve camera
-    virtual std::shared_ptr<Camera> GetCamera() const
-    {
-        return m_Scene ? m_Scene->GetCamera() : nullptr;
+    virtual std::shared_ptr<Scene::Camera> GetCamera() const {
+        return scene_ ? scene_->GetCamera() : nullptr;
     }
 
 protected:
-    std::unique_ptr<Renderer> m_Renderer;
-    std::shared_ptr<Scene>    m_Scene;
+    std::unique_ptr<Renderer> renderer_;
+    std::shared_ptr<Scene::Scene> scene_;
 };

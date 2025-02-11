@@ -5,7 +5,10 @@
 #include <memory>
 
 class BaseRenderObject;
-class Camera;
+namespace Scene
+{
+    class Camera;
+}
 
 /**
  * A simple LOD evaluator that uses distance thresholds.
@@ -16,7 +19,7 @@ public:
     // Evaluate LOD for each object based on camera position and return new LOD indices.
     std::unordered_map<BaseRenderObject*, size_t> EvaluateLODs(
         const std::vector<std::shared_ptr<BaseRenderObject>>& objects,
-        const std::shared_ptr<Camera>& camera);
+        const std::shared_ptr<Scene::Camera>& camera);
 
 private:
     // Instead of fixed absolute distances, we define ratios.

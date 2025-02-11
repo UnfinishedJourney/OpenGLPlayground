@@ -1,6 +1,6 @@
 #include "VisualEffectsPass.h"
 
-void VisualEffectsPass::Execute(const std::shared_ptr<Scene>& scene) {
+void VisualEffectsPass::Execute(const std::shared_ptr<Scene::Scene>& scene) {
     // Assuming the default framebuffer is currently bound, or you bind one as needed
     for (auto& effect : m_FlipbookEffects) {
         effect->Render();

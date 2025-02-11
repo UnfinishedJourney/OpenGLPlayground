@@ -16,18 +16,18 @@ void TestDamagedHelmet::OnEnter() {
       { aiTextureType_EMISSIVE, TextureType::Emissive    }
     };
 
-    if (!m_Scene->LoadStaticModelIntoScene("helmet", "helmetPBR", 1.0, aiToMyType)) {
+    if (!scene_->LoadStaticModelIntoScene("helmet", "helmetPBR", 1.0, aiToMyType)) {
         Logger::GetLogger()->error("Failed to load 'helmet' model in TestDamagedHelmet");
         return;
     }
 
-    m_Scene->SetSkyboxEnabled(true);
+    scene_->SetSkyboxEnabled(true);
     //m_Scene->SetPostProcessingEffect(PostProcessingEffectType::ToneMapping);
 }
 
 void TestDamagedHelmet::OnExit() {
-    m_Renderer.reset();
-    m_Scene->Clear();
+    renderer_.reset();
+    scene_->Clear();
 }
 
 void TestDamagedHelmet::OnUpdate(float deltaTime) {}

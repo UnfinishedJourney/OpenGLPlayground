@@ -69,7 +69,7 @@ void TestManager::HandleWindowResize(int width, int height)
     }
 }
 
-std::shared_ptr<Camera> TestManager::GetCurrentCamera() const
+std::shared_ptr<Scene::Camera> TestManager::GetCurrentCamera() const
 {
     return m_CurrentTest ? m_CurrentTest->GetCamera() : nullptr;
 }

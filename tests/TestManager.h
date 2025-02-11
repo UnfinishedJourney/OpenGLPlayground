@@ -25,7 +25,7 @@ public:
     void HandleWindowResize(int width, int height);
 
     // Get current test's camera
-    std::shared_ptr<Camera> GetCurrentCamera() const;
+    std::shared_ptr<Scene::Camera> GetCurrentCamera() const;
 
 private:
     std::unordered_map<std::string, std::function<std::shared_ptr<Test>()>> m_TestRegistry;

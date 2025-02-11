@@ -41,7 +41,7 @@ void Renderer::Initialize(int width, int height)
     // glCullFace(GL_BACK);
 }
 
-void Renderer::RenderScene(const std::shared_ptr<Scene>& scene)
+void Renderer::RenderScene(const std::shared_ptr<Scene::Scene>& scene)
 {
     PROFILE_FUNCTION(Blue);
 
@@ -132,7 +132,7 @@ void Renderer::OnWindowResize(int width, int height)
     EffectsManager::GetInstance().OnWindowResize(width, height);
 }
 
-void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
+void Renderer::InitializePassesForScene(const std::shared_ptr<Scene::Scene>& scene)
 {
     PROFILE_FUNCTION(Cyan);
 
@@ -175,7 +175,7 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene>& scene)
     }
 }
 
-void Renderer::CreateFramebuffersForScene(const std::shared_ptr<Scene>& scene,
+void Renderer::CreateFramebuffersForScene(const std::shared_ptr<Scene::Scene>& scene,
     int width,
     int height)
 {

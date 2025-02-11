@@ -6,7 +6,7 @@
 #include <glad/glad.h>
 #include "Graphics/Shaders/Shader.h"
 
-GridPass::GridPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene>& scene)
+GridPass::GridPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene::Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
     auto& meshManager = Graphics::MeshManager::GetInstance();
@@ -20,7 +20,7 @@ GridPass::GridPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_p
     m_GridMeshBuffer = meshManager.GetMeshBuffer("quad", gridMeshLayout);
 }
 
-void GridPass::Execute(const std::shared_ptr<Scene>& scene)
+void GridPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
 {
     m_Framebuffer->Bind();
 

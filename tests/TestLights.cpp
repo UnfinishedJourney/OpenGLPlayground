@@ -1,5 +1,4 @@
 #include "TestLights.h"
-#include "Scene/Scene.h"
 #include "Utilities/Logger.h"
 
 #include <imgui.h>
@@ -13,12 +12,8 @@ TestLights::TestLights()
 
 void TestLights::OnEnter()
 {
-    // Configure the scene's camera
-    auto cam = std::make_shared<Camera>();
-    m_Scene->SetCamera(cam);
-
     // Load a model into the scene
-    if (!m_Scene->LoadStaticModelIntoScene("pig", "simplelights")) {
+    if (!scene_->LoadStaticModelIntoScene("pig", "simplelights")) {
         Logger::GetLogger()->error("Failed to load 'pig' model in TestLights");
         return;
     }
@@ -26,12 +21,12 @@ void TestLights::OnEnter()
     // Add a light
     LightData light1 = { glm::vec4(1.5f, 2.0f, 1.5f, 1.0f), glm::vec4(1.0f) };
 
-    auto lightManager = m_Scene->GetLightManager();
+    auto lightManager = scene_->GetLightManager();
     lightManager->AddLight(light1);
 
     // Enable debug lights and grid
-    m_Scene->SetShowGrid(true);
-    m_Scene->SetShowDebugLights(true);
+    scene_->SetShowGrid(true);
+    scene_->SetShowDebugLights(true);
     auto& materials = Graphics::MaterialManager::GetInstance().GetMaterials();
     if (materials.size() > 0) {
         materials[0]->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.9f, 0.1f, 0.3f));
@@ -41,14 +36,14 @@ void TestLights::OnEnter()
 void TestLights::OnExit()
 {
     // Cleanup
-    m_Renderer.reset();
-    m_Scene->Clear();
+    renderer_.reset();
+    scene_->Clear();
 }
 
 void TestLights::OnUpdate(float /*deltaTime*/)
 {
     // LOD or culling
-    m_Scene->CullAndLODUpdate();
+    scene_->CullAndLODUpdate();
 }
 
 void TestLights::OnImGuiRender()

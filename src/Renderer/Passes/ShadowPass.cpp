@@ -5,7 +5,7 @@
 #include "Renderer/Batch.h"
 #include "Graphics/Shaders/ShaderManager.h"
 
-ShadowPass::ShadowPass(const std::shared_ptr<Scene>& scene, GLsizei shadowResolution)
+ShadowPass::ShadowPass(const std::shared_ptr<Scene::Scene>& scene, GLsizei shadowResolution)
 {
     m_ShadowMap = std::make_shared<Graphics::ShadowMap>(shadowResolution, shadowResolution);
     auto& shaderManager = Graphics::ShaderManager::GetInstance();
@@ -82,7 +82,7 @@ ShadowPass::~ShadowPass() {
     // Unique pointers clean up automatically.
 }
 
-void ShadowPass::Execute(const std::shared_ptr<Scene>& scene) {
+void ShadowPass::Execute(const std::shared_ptr<Scene::Scene>& scene) {
 
     if (m_BCalculated)
         return;

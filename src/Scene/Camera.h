@@ -1,178 +1,147 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
+#include <cmath>
 
-/**
- * @enum CameraMovement
- * @brief Enum describing possible movement directions for the camera.
- */
-enum class CameraMovement
-{
-    Forward,
-    Backward,
-    Left,
-    Right,
-    Up,
-    Down
-};
+namespace Scene {
 
-/**
- * @class Camera
- * @brief Encapsulates the view/projection matrices and controls for a 3D camera.
- *
- * This camera uses a position, yaw, and pitch to define its orientation,
- * and calculates projection matrices based on the current screen size.
- */
-class Camera
-{
-public:
     /**
-     * @brief Constructs a camera with given position, up vector, yaw, and pitch.
+     * @enum CameraMovement
+     * @brief Enumerates possible movement directions for the camera.
+     */
+    enum class CameraMovement {
+        Forward,
+        Backward,
+        Left,
+        Right,
+        Up,
+        Down
+    };
+
+    /**
+     * @class Camera
+     * @brief Encapsulates view/projection matrices and controls for a 3D camera.
      *
-     * @param position Initial position of the camera in world space.
-     * @param up       World-space up vector.
-     * @param yaw      Initial yaw angle (in degrees).
-     * @param pitch    Initial pitch angle (in degrees).
+     * This camera uses a position, yaw, and pitch to define its orientation,
+     * and calculates projection matrices based on the current screen size.
      */
-    Camera(const glm::vec3& position = glm::vec3(0.0f, 0.0f, 8.0f),
-        const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f),
-        float yaw = -90.0f,
-        float pitch = 0.0f);
+    class Camera {
+    public:
+        /**
+         * @brief Constructs a camera with given position, up vector, yaw, and pitch.
+         * @param position Initial position in world space (default: (0, 0, 8)).
+         * @param up World-space up vector (default: (0, 1, 0)).
+         * @param yaw Initial yaw angle in degrees (default: -90).
+         * @param pitch Initial pitch angle in degrees (default: 0).
+         */
+        Camera(const glm::vec3& position = glm::vec3(0.0f, 0.0f, 8.0f),
+            const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f),
+            float yaw = -90.0f,
+            float pitch = 0.0f);
 
-    /**
-     * @brief Returns the view matrix calculated from the camera's position and orientation.
-     */
-    glm::mat4 GetViewMatrix() const;
+        /**
+         * @brief Returns the view matrix computed from the camera's position and orientation.
+         */
+        glm::mat4 GetViewMatrix() const;
 
-    /**
-     * @brief Returns the current projection matrix (perspective).
-     */
-    glm::mat4 GetProjectionMatrix() const;
+        /**
+         * @brief Returns the current projection matrix.
+         */
+        glm::mat4 GetProjectionMatrix() const;
 
-    /**
-     * @brief Gets the current field-of-view (vertical FOV in degrees).
-     */
-    float GetFOV() const;
+        /**
+         * @brief Gets the current vertical field of view (in degrees).
+         */
+        float GetFOV() const;
 
-    /**
-     * @brief Sets the field-of-view and updates the projection matrix accordingly.
-     *
-     * @param fov New FOV value in degrees.
-     */
-    void SetFOV(float fov);
+        /**
+         * @brief Sets the field-of-view and updates the projection matrix.
+         * @param fov New FOV in degrees.
+         */
+        void SetFOV(float fov);
 
-    /**
-     * @brief Moves the camera in the given direction according to its speed and deltaTime.
-     *
-     * @param direction  The desired CameraMovement direction (e.g. Forward).
-     * @param deltaTime  Time elapsed (in seconds) since last frame.
-     */
-    void Move(CameraMovement direction, float deltaTime);
+        /**
+         * @brief Moves the camera in the specified direction based on its speed and deltaTime.
+         * @param direction The desired CameraMovement direction.
+         * @param deltaTime Time elapsed (in seconds) since the last frame.
+         */
+        void Move(CameraMovement direction, float deltaTime);
 
-    /**
-     * @brief Rotates the camera by xOffset (yaw) and yOffset (pitch).
-     *
-     * @param xOffset Change in yaw (degrees).
-     * @param yOffset Change in pitch (degrees).
-     */
-    void Rotate(float xOffset, float yOffset);
+        /**
+         * @brief Rotates the camera by the given yaw and pitch offsets.
+         * @param xOffset Change in yaw (degrees).
+         * @param yOffset Change in pitch (degrees).
+         */
+        void Rotate(float xOffset, float yOffset);
 
-    /**
-     * @brief Sets the camera's movement speed (units per second).
-     *
-     * @param speed New speed value.
-     */
-    void SetSpeed(float speed);
+        /**
+         * @brief Sets the movement speed (units per second).
+         * @param speed New movement speed.
+         */
+        void SetSpeed(float speed);
 
-    /**
-     * @brief Dynamically computes a new FOV based on real-world display parameters.
-     */
-    void UpdateFOV();
+        /**
+         * @brief Dynamically updates the FOV based on real-world display parameters.
+         */
+        void UpdateFOV();
 
-    /**
-     * @brief Recomputes the projection matrix with a given aspect ratio.
-     *
-     * @param aspectRatio Width/height ratio for the screen (>= 0).
-     */
-    void UpdateProjectionMatrix(float aspectRatio);
+        /**
+         * @brief Recomputes the projection matrix using a given aspect ratio.
+         * @param aspectRatio Width/height ratio.
+         */
+        void UpdateProjectionMatrix(float aspectRatio);
 
-    /**
-     * @brief Gets the camera's current position.
-     */
-    glm::vec3 GetPosition() const { return m_Position; }
+        /// @brief Returns the camera's position.
+        glm::vec3 GetPosition() const { return position_; }
 
-    /**
-     * @brief Directly accesses the camera's position by reference (use with caution).
-     */
-    glm::vec3& GetPositionRef() { return m_Position; }
+        /// @brief Returns a modifiable reference to the camera's position.
+        glm::vec3& GetPositionRef() { return position_; }
 
-    /**
-     * @brief Gets the camera's forward (front) vector.
-     */
-    glm::vec3 GetFront() const { return m_Front; }
+        /// @brief Returns the camera's forward (front) vector.
+        glm::vec3 GetFront() const { return front_; }
 
-    /**
-     * @brief Gets the camera's up vector.
-     */
-    glm::vec3 GetUp() const { return m_Up; }
+        /// @brief Returns the camera's up vector.
+        glm::vec3 GetUp() const { return up_; }
 
-    /**
-     * @brief Gets the near clipping plane distance.
-     */
-    float GetNearPlane() const;
+        /// @brief Gets the near clipping plane.
+        float GetNearPlane() const;
 
-    /**
-     * @brief Sets the near clipping plane and updates the projection matrix.
-     *
-     * @param nearPlane New near plane distance (minimum 0.01).
-     */
-    void SetNearPlane(float nearPlane);
+        /// @brief Sets the near clipping plane and updates the projection matrix.
+        void SetNearPlane(float nearPlane);
 
-    /**
-     * @brief Gets the far clipping plane distance.
-     */
-    float GetFarPlane() const;
+        /// @brief Gets the far clipping plane.
+        float GetFarPlane() const;
 
-    /**
-     * @brief Sets the far clipping plane and updates the projection matrix.
-     *
-     * @param farPlane New far plane distance (must be > near plane).
-     */
-    void SetFarPlane(float farPlane);
+        /// @brief Sets the far clipping plane and updates the projection matrix.
+        void SetFarPlane(float farPlane);
 
-    /**
-     * @brief Sets the camera's world-space position.
-     *
-     * @param pos The new position vector.
-     */
-    void SetPosition(const glm::vec3& pos) { m_Position = pos; }
+        /// @brief Sets the camera's position.
+        void SetPosition(const glm::vec3& pos) { position_ = pos; }
 
-private:
-    /**
-     * @brief Recalculates the front, right, and up vectors based on the current yaw and pitch.
-     */
-    void UpdateCameraVectors();
+    private:
+        /// @brief Recalculates the front, right, and up vectors from yaw and pitch.
+        void UpdateCameraVectors();
 
-private:
-    // -------------------
-    // Camera Parameters
-    // -------------------
-    glm::vec3 m_Position;   ///< Current position in world space.
-    glm::vec3 m_Front;      ///< Normalized forward direction vector.
-    glm::vec3 m_Up;         ///< Normalized up direction (depends on front & right).
-    glm::vec3 m_Right;      ///< Normalized right direction (cross of front & worldUp).
-    glm::vec3 m_WorldUp;    ///< Keeps track of the "world up" direction.
+    private:
+        // Camera parameters
+        glm::vec3 position_;     ///< Current position in world space.
+        glm::vec3 front_;        ///< Forward direction vector (normalized).
+        glm::vec3 up_;           ///< Up direction vector.
+        glm::vec3 right_;        ///< Right direction vector.
+        glm::vec3 worldUp_;      ///< World up vector (remains constant).
 
-    float m_Yaw;            ///< Rotation around the Y-axis (in degrees).
-    float m_Pitch;          ///< Rotation around the X-axis (in degrees).
-    float m_FOV;            ///< Vertical field of view (in degrees).
-    float m_Speed;          ///< Movement speed in world units/second.
-    float m_MouseSensitivity; ///< Mouse look sensitivity multiplier.
-    float m_NearPlane;      ///< Near clipping plane distance.
-    float m_FarPlane;       ///< Far clipping plane distance.
+        float yaw_;              ///< Yaw angle (in degrees).
+        float pitch_;            ///< Pitch angle (in degrees).
+        float fov_;              ///< Field of view (in degrees).
+        float speed_;            ///< Movement speed (units per second).
+        float mouseSensitivity_; ///< Mouse sensitivity for rotation.
+        float nearPlane_;        ///< Near clipping plane.
+        float farPlane_;         ///< Far clipping plane.
 
-    // -------------------
-    // Matrices
-    // -------------------
-    glm::mat4 m_ProjectionMatrix; ///< The computed perspective projection matrix.
-};
+        // Matrices
+        glm::mat4 projectionMatrix_; ///< Current perspective projection matrix.
+    };
+
+} // namespace Scene

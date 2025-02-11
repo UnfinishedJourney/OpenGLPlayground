@@ -7,7 +7,7 @@
 
 std::unordered_map<BaseRenderObject*, size_t> LODEvaluator::EvaluateLODs(
     const std::vector<std::shared_ptr<BaseRenderObject>>& objects,
-    const std::shared_ptr<Camera>& camera)
+    const std::shared_ptr<Scene::Camera>& camera)
 {
     std::unordered_map<BaseRenderObject*, size_t> lodMap;
 

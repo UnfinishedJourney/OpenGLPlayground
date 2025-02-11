@@ -9,7 +9,7 @@ public:
     VisualEffectsPass() = default;
     ~VisualEffectsPass() = default;
 
-    void Execute(const std::shared_ptr<Scene>& scene) override;
+    void Execute(const std::shared_ptr<Scene::Scene>& scene) override;
     void AddFlipbookEffect(std::shared_ptr<FlipbookEffect> effect);
 
     void Update(double currentTime);

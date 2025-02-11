@@ -35,7 +35,7 @@ public:
      *        2) blit from MSAA FBO -> single-sample FBO
      *        3) post-processing pass using single-sample texture
      */
-    void RenderScene(const std::shared_ptr<Scene>& scene);
+    void RenderScene(const std::shared_ptr<Scene::Scene>& scene);
 
     /**
      * @brief Called when the window is resized. Recreates FBOs and passes if needed.
@@ -56,7 +56,7 @@ private:
      * @brief Creates or re-creates the MSAA and single-sample framebuffers
      *        for rendering the given scene at the given width/height.
      */
-    void CreateFramebuffersForScene(const std::shared_ptr<Scene>& scene,
+    void CreateFramebuffersForScene(const std::shared_ptr<Scene::Scene>& scene,
         int width,
         int height);
 
@@ -64,7 +64,7 @@ private:
      * @brief (Re)initializes all render passes for the given scene,
      *        clearing old passes and building new ones.
      */
-    void InitializePassesForScene(const std::shared_ptr<Scene>& scene);
+    void InitializePassesForScene(const std::shared_ptr<Scene::Scene>& scene);
 
 private:
     int m_Width = 800;
@@ -79,7 +79,7 @@ private:
     std::vector<std::unique_ptr<ShadowPass>>       m_ShadowPasses;
 
     // The current scene this renderer is rendering
-    std::shared_ptr<Scene> m_CurrentScene;
+    std::shared_ptr<Scene::Scene> m_CurrentScene;
 
     // MSAA (multisample) FBO for rendering geometry
     std::shared_ptr<FrameBuffer> m_MsaaFBO;
