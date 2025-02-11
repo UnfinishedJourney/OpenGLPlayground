@@ -1,5 +1,4 @@
 #pragma once
-
 #include <glad/glad.h>
 #include <span>
 #include <cstddef>
@@ -37,9 +36,6 @@ namespace Graphics {
          */
         void Bind() const;
 
-        /**
-         * @brief Unbinds the IBO.
-         */
         void Unbind() const;
 
         /**
@@ -50,15 +46,15 @@ namespace Graphics {
          */
         void UpdateData(std::span<const GLuint> data, GLintptr offset = 0);
 
-        [[nodiscard]] GLuint GetRendererID() const { return m_RendererID; }
-        [[nodiscard]] GLsizei GetCount() const { return m_Count; }
-        [[nodiscard]] size_t GetSize() const { return m_Size; }
+        [[nodiscard]] GLuint GetRendererID() const { return renderer_id_; }
+        [[nodiscard]] GLsizei GetCount() const { return count_; }
+        [[nodiscard]] size_t GetSize() const { return size_; }
 
     private:
-        GLuint m_RendererID{ 0 };  ///< OpenGL buffer handle
-        GLsizei m_Count{ 0 };      ///< Number of indices
-        size_t m_Size{ 0 };        ///< Buffer size in bytes
-        GLenum m_Usage{ GL_STATIC_DRAW };
+        GLuint renderer_id_{ 0 };           ///< OpenGL buffer handle.
+        GLsizei count_{ 0 };                ///< Number of indices.
+        size_t size_{ 0 };                  ///< Buffer size in bytes.
+        GLenum usage_{ GL_STATIC_DRAW };
     };
 
 } // namespace Graphics

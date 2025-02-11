@@ -1,5 +1,4 @@
 #pragma once
-
 #include <glad/glad.h>
 #include <span>
 #include <cstddef>
@@ -27,9 +26,11 @@ namespace Graphics {
 
         ~IndirectBuffer();
 
-        // Non-copyable; movable.
+        // Non-copyable
         IndirectBuffer(const IndirectBuffer&) = delete;
         IndirectBuffer& operator=(const IndirectBuffer&) = delete;
+
+        // Movable
         IndirectBuffer(IndirectBuffer&& other) noexcept;
         IndirectBuffer& operator=(IndirectBuffer&& other) noexcept;
 
@@ -38,9 +39,6 @@ namespace Graphics {
          */
         void Bind() const;
 
-        /**
-         * @brief Unbinds the GL_DRAW_INDIRECT_BUFFER.
-         */
         void Unbind() const;
 
         /**
@@ -57,12 +55,12 @@ namespace Graphics {
          */
         void SetData(std::span<const std::byte> data, GLenum usage = GL_DYNAMIC_DRAW);
 
-        [[nodiscard]] GLuint GetRendererID() const { return m_RendererID; }
-        [[nodiscard]] size_t GetBufferSize() const { return m_BufferSize; }
+        [[nodiscard]] GLuint GetRendererID() const { return renderer_id_; }
+        [[nodiscard]] size_t GetBufferSize() const { return size_; }
 
     private:
-        GLuint m_RendererID{ 0 };  ///< OpenGL buffer handle.
-        size_t m_BufferSize = 0; ///< Current buffer size in bytes.
+        GLuint renderer_id_{ 0 };   ///< OpenGL buffer handle.
+        size_t size_ = 0;      ///< Current buffer size in bytes.
     };
 
 } // namespace Graphics

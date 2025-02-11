@@ -6,57 +6,57 @@
 namespace Graphics {
 
     IndexBuffer::IndexBuffer(std::span<const GLuint> data, GLenum usage)
-        : m_Count(static_cast<GLsizei>(data.size())),
-        m_Size(data.size_bytes()),
-        m_Usage(usage)
+        : count_(static_cast<GLsizei>(data.size())),
+        size_(data.size_bytes()),
+        usage_(usage)
     {
-        GLCall(glCreateBuffers(1, &m_RendererID));
-        if (m_RendererID == 0) {
+        GLCall(glCreateBuffers(1, &renderer_id_));
+        if (renderer_id_ == 0) {
             throw std::runtime_error("Failed to create Index Buffer Object.");
         }
-        GLCall(glNamedBufferData(m_RendererID, m_Size, data.data(), m_Usage));
-        Logger::GetLogger()->info("Created IndexBuffer (ID={}) with Count={}.", m_RendererID, m_Count);
+        GLCall(glNamedBufferData(renderer_id_, size_, data.data(), usage_));
+        Logger::GetLogger()->info("Created IndexBuffer (ID={}) with Count={}.", renderer_id_, count_);
     }
 
     IndexBuffer::~IndexBuffer()
     {
-        if (m_RendererID != 0) {
-            GLCall(glDeleteBuffers(1, &m_RendererID));
-            Logger::GetLogger()->info("Deleted IndexBuffer (ID={}).", m_RendererID);
+        if (renderer_id_ != 0) {
+            GLCall(glDeleteBuffers(1, &renderer_id_));
+            Logger::GetLogger()->info("Deleted IndexBuffer (ID={}).", renderer_id_);
         }
     }
 
     IndexBuffer::IndexBuffer(IndexBuffer&& other) noexcept
-        : m_RendererID(other.m_RendererID),
-        m_Count(other.m_Count),
-        m_Size(other.m_Size),
-        m_Usage(other.m_Usage)
+        : renderer_id_(other.renderer_id_),
+        count_(other.count_),
+        size_(other.size_),
+        usage_(other.usage_)
     {
-        other.m_RendererID = 0;
-        other.m_Count = 0;
-        other.m_Size = 0;
+        other.renderer_id_ = 0;
+        other.count_ = 0;
+        other.size_ = 0;
     }
 
     IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other) noexcept
     {
         if (this != &other) {
-            if (m_RendererID != 0) {
-                GLCall(glDeleteBuffers(1, &m_RendererID));
+            if (renderer_id_ != 0) {
+                GLCall(glDeleteBuffers(1, &renderer_id_));
             }
-            m_RendererID = other.m_RendererID;
-            m_Count = other.m_Count;
-            m_Size = other.m_Size;
-            m_Usage = other.m_Usage;
-            other.m_RendererID = 0;
-            other.m_Count = 0;
-            other.m_Size = 0;
+            renderer_id_ = other.renderer_id_;
+            count_ = other.count_;
+            size_ = other.size_;
+            usage_ = other.usage_;
+            other.renderer_id_ = 0;
+            other.count_ = 0;
+            other.size_ = 0;
         }
         return *this;
     }
 
     void IndexBuffer::Bind() const
     {
-        GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_RendererID));
+        GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer_id_));
     }
 
     void IndexBuffer::Unbind() const
@@ -66,13 +66,14 @@ namespace Graphics {
 
     void IndexBuffer::UpdateData(std::span<const GLuint> data, GLintptr offset)
     {
-        if (offset + static_cast<GLintptr>(data.size_bytes()) > static_cast<GLintptr>(m_Size)) {
+        // Ensure that the update does not exceed the total buffer size.
+        if (offset + static_cast<GLintptr>(data.size_bytes()) > static_cast<GLintptr>(size_)) {
             throw std::runtime_error("IndexBuffer::UpdateData: Data exceeds buffer size.");
         }
-        // Optionally update m_Count if the entire buffer is replaced.
-        m_Count = static_cast<GLsizei>(data.size());
-        GLCall(glNamedBufferSubData(m_RendererID, offset, data.size_bytes(), data.data()));
-        Logger::GetLogger()->debug("Updated IndexBuffer (ID={}) at offset={} with new data.", m_RendererID, offset);
+
+        // Update the specified subregion of the buffer.
+        GLCall(glNamedBufferSubData(renderer_id_, offset, data.size_bytes(), data.data()));
+        Logger::GetLogger()->debug("Updated IndexBuffer (ID={}) at offset={} with new data.", renderer_id_, offset);
     }
 
 } // namespace Graphics
