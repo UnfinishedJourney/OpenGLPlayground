@@ -4,7 +4,13 @@
 #include <span>
 #include <numeric>
 #include <stdexcept>
-#include <algorithm> // for std::max
+#include <algorithm> 
+
+#include "Graphics/Buffers/VertexArray.h"
+#include "Graphics/Buffers/VertexBuffer.h"
+#include "Graphics/Buffers/IndexBuffer.h"
+#include "Graphics/Buffers/VertexBufferLayout.h"
+#include "Graphics/Buffers/IndirectBuffer.h"
 
 namespace Graphics {
 
@@ -46,15 +52,21 @@ namespace Graphics {
             return;
         }
 
+        if (!isDirty_) {
+            Logger::GetLogger()->warn("Batch::BuildBatches: no need to build batches.",
+                shaderName_, materialID_);
+            return;
+        }
+
         // 1) Build the vertex layout and compute totals.
         VertexBufferLayout vertexLayout;
         BatchGeometryTotals totals = BuildLayoutAndTotals(vertexLayout);
 
         // Reserve combined arrays.
         std::vector<float> combinedVertexData;
-        combinedVertexData.reserve(totals.totalVertices * totals.vertexElementCount);
+        combinedVertexData.reserve(totals.totalVertices_ * totals.vertexElementCount_);
         std::vector<GLuint> combinedIndices;
-        combinedIndices.reserve(totals.totalIndices);
+        combinedIndices.reserve(totals.totalIndices_);
         // Clear and reserve lod infos and draw commands.
         lodInfos_.clear();
         drawCommands_.clear();
@@ -69,12 +81,6 @@ namespace Graphics {
         CreateGpuBuffers(vertexLayout, combinedVertexData, combinedIndices, drawCommands_);
 
         isDirty_ = false;
-    }
-
-    void Batch::Update() {
-        if (isDirty_) {
-            BuildBatches();
-        }
     }
 
     void Batch::Render() const {
@@ -143,30 +149,30 @@ namespace Graphics {
         GLuint attribIndex = 0;
         if (meshLayout_.hasPositions_) {
             vertexLayout.Push<float>(3, attribIndex++);
-            totals.vertexElementCount += 3;
+            totals.vertexElementCount_ += 3;
         }
         if (meshLayout_.hasNormals_) {
             vertexLayout.Push<float>(3, attribIndex++);
-            totals.vertexElementCount += 3;
+            totals.vertexElementCount_ += 3;
         }
         if (meshLayout_.hasTangents_) {
             vertexLayout.Push<float>(3, attribIndex++);
-            totals.vertexElementCount += 3;
+            totals.vertexElementCount_ += 3;
         }
         if (meshLayout_.hasBitangents_) {
             vertexLayout.Push<float>(3, attribIndex++);
-            totals.vertexElementCount += 3;
+            totals.vertexElementCount_ += 3;
         }
         for (size_t i = 0; i < meshLayout_.textureTypes_.size(); ++i) {
             if (meshLayout_.textureTypes_.test(i)) {
                 vertexLayout.Push<float>(2, attribIndex++);
-                totals.vertexElementCount += 2;
+                totals.vertexElementCount_ += 2;
             }
         }
         // Sum totals from each render object.
         for (const auto& ro : renderObjects_) {
-            totals.totalVertices += ro->GetVertexN();
-            totals.totalIndices += ro->GetIndexN();
+            totals.totalVertices_ += ro->GetVertexN();
+            totals.totalIndices_ += ro->GetIndexN();
         }
         return totals;
     }

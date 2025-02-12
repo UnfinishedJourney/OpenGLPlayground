@@ -17,14 +17,6 @@ namespace Graphics {
         Logger::GetLogger()->info("Created IndirectBuffer with ID={} Size={} bytes.", renderer_id_, size_);
     }
 
-    IndirectBuffer::IndirectBuffer() {
-        GLCall(glCreateBuffers(1, &renderer_id_));
-        if (renderer_id_ == 0) {
-            throw std::runtime_error("Failed to create Indirect Buffer Object.");
-        }
-        size_ = 0;
-    }
-
     IndirectBuffer::~IndirectBuffer() {
         if (renderer_id_ != 0) {
             GLCall(glDeleteBuffers(1, &renderer_id_));
@@ -67,13 +59,6 @@ namespace Graphics {
 
         GLCall(glNamedBufferSubData(renderer_id_, offset, data.size_bytes(), data.data()));
         Logger::GetLogger()->debug("Updated IndirectBuffer ID={} Offset={} Size={}.", renderer_id_, offset, data.size_bytes());
-    }
-
-    void IndirectBuffer::SetData(std::span<const std::byte> data, GLenum usage) {
-        // Reallocate and upload new data using DSA. (don't need to delete the buffer)
-        GLCall(glNamedBufferData(renderer_id_, data.size_bytes(), data.data(), usage));
-        size_ = data.size_bytes();
-        Logger::GetLogger()->info("Set IndirectBuffer ID={} new data. Size={}.", renderer_id_, size_);
     }
 
 } // namespace Graphics

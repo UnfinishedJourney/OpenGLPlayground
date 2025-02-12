@@ -21,11 +21,6 @@ namespace Graphics {
          */
         IndirectBuffer(std::span<const std::byte> data, GLenum usage = GL_DYNAMIC_DRAW);
 
-        /**
-         * @brief Default constructor. Call SetData later to allocate storage.
-         */
-        IndirectBuffer();
-
         ~IndirectBuffer();
 
         // Non-copyable
@@ -49,13 +44,6 @@ namespace Graphics {
          * @param offset Byte offset in the buffer to update.
          */
         void UpdateData(std::span<const std::byte> data, GLintptr offset = 0);
-
-        /**
-         * @brief Allocates buffer storage and uploads new data.
-         * @param data New data to store.
-         * @param usage Usage hint (e.g., GL_DYNAMIC_DRAW).
-         */
-        void SetData(std::span<const std::byte> data, GLenum usage = GL_DYNAMIC_DRAW);
 
         [[nodiscard]] GLuint GetRendererID() const { return renderer_id_; }
         [[nodiscard]] size_t GetBufferSize() const { return size_; }

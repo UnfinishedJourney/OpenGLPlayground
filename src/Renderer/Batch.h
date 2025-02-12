@@ -5,13 +5,17 @@
 #include <string>
 #include <glad/glad.h>
 #include <cstddef>
-#include "Renderer/RenderObject.h"  // Defines BaseRenderObject
-#include "Graphics/Buffers/VertexArray.h"
-#include "Graphics/Buffers/VertexBuffer.h"
-#include "Graphics/Buffers/IndexBuffer.h"
-#include "Graphics/Buffers/VertexBufferLayout.h"
-#include "Graphics/Buffers/IndirectBuffer.h"
+#include "Renderer/RenderObject.h"  
 #include "Graphics/Meshes/MeshLayout.h"
+
+namespace Graphics {
+
+    class VertexArray;
+    class VertexBuffer;
+    class IndexBuffer;
+    class VertexBufferLayout;
+    class IndirectBuffer;
+}
 
 namespace Graphics {
 
@@ -54,9 +58,6 @@ namespace Graphics {
         /// @brief Builds (or rebuilds) the combined GPU buffers (VBO, IBO, and IndirectBuffer).
         void BuildBatches();
 
-        /// @brief Checks if the batch is dirty and rebuilds if necessary.
-        void Update();
-
         /// @brief Issues the multi-draw call for the batch.
         void Render() const;
 
@@ -74,9 +75,9 @@ namespace Graphics {
     private:
         // Helper types.
         struct BatchGeometryTotals {
-            int totalVertices = 0;
-            int totalIndices = 0;
-            int vertexElementCount = 0; // floats per vertex
+            int totalVertices_ = 0;
+            int totalIndices_ = 0;
+            int vertexElementCount_ = 0; // floats per vertex
         };
 
         // Helper functions.
@@ -101,8 +102,8 @@ namespace Graphics {
 
         // GPU buffers for combined geometry.
         std::unique_ptr<VertexArray> vao_;
-        std::unique_ptr<VertexBuffer> vertexBuffer_;   // Now stored as a member.
-        std::unique_ptr<IndexBuffer> indexBuffer_;       // Now stored as a member.
+        std::unique_ptr<VertexBuffer> vertexBuffer_;   // maybe won't store them after all
+        std::unique_ptr<IndexBuffer> indexBuffer_;       
         std::unique_ptr<IndirectBuffer> drawCommandBuffer_;
 
         // One draw command per object.
