@@ -20,7 +20,7 @@ namespace Graphics {
          * @param usage OpenGL usage flag (e.g., GL_STATIC_DRAW).
          * @throws std::runtime_error if the buffer cannot be created.
          */
-        VertexBuffer(std::span<const std::byte> data, GLenum usage = GL_STATIC_DRAW);
+        explicit VertexBuffer(std::span<const std::byte> data, GLenum usage = GL_STATIC_DRAW);
 
         ~VertexBuffer();
 
@@ -37,9 +37,6 @@ namespace Graphics {
          */
         void Bind() const;
 
-        /**
-         * @brief Unbinds any VBO from the GL_ARRAY_BUFFER target.
-         */
         void Unbind() const;
 
         /**
@@ -50,13 +47,13 @@ namespace Graphics {
          */
         void UpdateData(std::span<const std::byte> data, GLintptr offset = 0);
 
-        [[nodiscard]] size_t GetSize() const { return m_Size; }
-        [[nodiscard]] GLuint GetRendererID() const { return m_RendererID; }
+        [[nodiscard]] size_t GetSize() const { return size_; }
+        [[nodiscard]] GLuint GetRendererID() const { return renderer_id_; }
 
     private:
-        GLuint m_RendererID{ 0 };  ///< OpenGL buffer handle (0 if uninitialized)
-        size_t m_Size{ 0 };        ///< Buffer size in bytes
-        GLenum m_Usage{ GL_STATIC_DRAW };
+        GLuint renderer_id_{ 0 };           ///< OpenGL buffer handle (0 if uninitialized)
+        size_t size_{ 0 };                  ///< Buffer size in bytes
+        GLenum usage_{ GL_STATIC_DRAW };
     };
 
-}
+} // namespace Graphics

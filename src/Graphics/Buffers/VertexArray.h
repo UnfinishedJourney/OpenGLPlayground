@@ -1,7 +1,7 @@
 #pragma once
 
-#include <glad/glad.h>
 #include <vector>
+#include <glad/glad.h>
 #include <stdexcept>
 
 namespace Graphics {
@@ -32,19 +32,19 @@ namespace Graphics {
         /**
          * @brief Attaches a vertex buffer and its layout to this VAO.
          *
-         * @param vertexBuffer  The source VertexBuffer.
-         * @param layout        The layout describing the buffer’s vertex attributes.
-         * @param bindingIndex  The binding index within the VAO (must be unique).
+         * @param vertex_buffer  The source VertexBuffer.
+         * @param layout         The layout describing the buffer’s vertex attributes.
+         * @param binding_index  The binding index within the VAO (must be unique).
          * @throws std::invalid_argument if the binding index is already in use.
          */
-        void AddBuffer(const VertexBuffer& vertexBuffer,
+        void AddBuffer(const VertexBuffer& vertex_buffer,
             const VertexBufferLayout& layout,
-            GLuint bindingIndex = 0);
+            GLuint binding_index = 0);
 
         /**
          * @brief Associates an IndexBuffer (element buffer) with this VAO.
          */
-        void SetIndexBuffer(const IndexBuffer& indexBuffer);
+        void SetIndexBuffer(const IndexBuffer& index_buffer);
 
         /**
          * @brief Binds the VAO.
@@ -56,11 +56,11 @@ namespace Graphics {
          */
         void Unbind() const;
 
-        [[nodiscard]] GLuint GetRendererID() const { return m_RendererID; }
+        [[nodiscard]] GLuint GetRendererID() const { return renderer_id_; }
 
     private:
-        GLuint m_RendererID{ 0 };  ///< OpenGL VAO handle
-        std::vector<GLuint> m_BindingIndices; ///< Tracks used binding indices to avoid duplicates
+        GLuint renderer_id_{ 0 };               ///< OpenGL VAO handle
+        std::vector<GLuint> binding_indices_;   ///< Tracks used binding indices to avoid duplicates
     };
 
 } // namespace Graphics

@@ -10,11 +10,11 @@ namespace Graphics {
      * @brief Describes a single vertex attribute.
      */
     struct VertexBufferElement {
-        GLuint attributeIndex; ///< Location of the attribute in the shader
-        GLuint count;          ///< Number of components (e.g., 3 for vec3)
-        GLenum type;           ///< Data type (GL_FLOAT, GL_UNSIGNED_INT, etc.)
-        GLboolean normalized;  ///< Whether fixed-point data should be normalized
-        GLuint offset;         ///< Byte offset within the vertex structure
+        GLuint attribute_index_; ///< Location of the attribute in the shader
+        GLuint count_;           ///< Number of components (e.g., 3 for vec3)
+        GLenum type_;            ///< Data type (GL_FLOAT, GL_UNSIGNED_INT, etc.)
+        GLboolean normalized_;   ///< Whether fixed-point data should be normalized
+        GLuint offset_;          ///< Byte offset within the vertex structure
     };
 
     /**
@@ -26,7 +26,7 @@ namespace Graphics {
         std::is_same_v<T, GLubyte>;
 
     /**
-     * @brief Manages a collection of vertex attributes and calculates stride.
+     * @brief Manages a collection of vertex attributes and calculates the stride.
      */
     class VertexBufferLayout {
     public:
@@ -36,37 +36,37 @@ namespace Graphics {
          * @brief Adds an attribute to the layout.
          * @tparam T Must satisfy SupportedVertexType.
          * @param count Number of components.
-         * @param attributeIndex Attribute location in the shader.
+         * @param attribute_index Attribute location in the shader.
          */
         template<SupportedVertexType T>
-        void Push(GLuint count, GLuint attributeIndex);
+        void Push(GLuint count, GLuint attribute_index);
 
-        [[nodiscard]] const std::vector<VertexBufferElement>& GetElements() const { return m_Elements; }
-        [[nodiscard]] GLuint GetStride() const { return m_Stride; }
+        [[nodiscard]] const std::vector<VertexBufferElement>& GetElements() const { return elements_; }
+        [[nodiscard]] GLuint GetStride() const { return stride_; }
 
     private:
-        std::vector<VertexBufferElement> m_Elements;
-        GLuint m_Stride{ 0 };
-        GLuint m_Offset{ 0 };
+        std::vector<VertexBufferElement> elements_;
+        GLuint stride_{ 0 };
+        GLuint offset_{ 0 };
     };
 
     template<SupportedVertexType T>
-    void VertexBufferLayout::Push(GLuint count, GLuint attributeIndex)
+    void VertexBufferLayout::Push(GLuint count, GLuint attribute_index)
     {
         if constexpr (std::is_same_v<T, float>) {
-            m_Elements.push_back({ attributeIndex, count, GL_FLOAT, GL_FALSE, m_Offset });
-            m_Offset += count * sizeof(GLfloat);
-            m_Stride += count * sizeof(GLfloat);
+            elements_.push_back({ attribute_index, count, GL_FLOAT, GL_FALSE, offset_ });
+            offset_ += count * sizeof(GLfloat);
+            stride_ += count * sizeof(GLfloat);
         }
         else if constexpr (std::is_same_v<T, GLuint>) {
-            m_Elements.push_back({ attributeIndex, count, GL_UNSIGNED_INT, GL_FALSE, m_Offset });
-            m_Offset += count * sizeof(GLuint);
-            m_Stride += count * sizeof(GLuint);
+            elements_.push_back({ attribute_index, count, GL_UNSIGNED_INT, GL_FALSE, offset_ });
+            offset_ += count * sizeof(GLuint);
+            stride_ += count * sizeof(GLuint);
         }
         else if constexpr (std::is_same_v<T, GLubyte>) {
-            m_Elements.push_back({ attributeIndex, count, GL_UNSIGNED_BYTE, GL_TRUE, m_Offset });
-            m_Offset += count * sizeof(GLubyte);
-            m_Stride += count * sizeof(GLubyte);
+            elements_.push_back({ attribute_index, count, GL_UNSIGNED_BYTE, GL_TRUE, offset_ });
+            offset_ += count * sizeof(GLubyte);
+            stride_ += count * sizeof(GLubyte);
         }
     }
 
