@@ -59,6 +59,7 @@ namespace Graphics {
         [[nodiscard]] GLuint GetRendererID() const { return renderer_id_; }
 
     private:
+        //we don't need to store VBO and IBO since their deletion is deffered while they are bound to VAO
         GLuint renderer_id_{ 0 };               ///< OpenGL VAO handle
         std::vector<GLuint> binding_indices_;   ///< Tracks used binding indices to avoid duplicates
     };

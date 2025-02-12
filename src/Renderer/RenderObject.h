@@ -42,6 +42,13 @@ public:
     // Distance-based logic
     virtual float ComputeDistanceTo(const glm::vec3& pos) const;
 
+    int GetVertexN() const {
+        return m_Mesh->positions_.size();
+    }
+    int GetIndexN() const {
+        return m_Mesh->indices_.size();
+    }
+
 protected:
     std::shared_ptr<Graphics::Mesh> m_Mesh;
     MeshLayout            m_MeshLayout;

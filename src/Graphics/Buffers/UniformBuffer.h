@@ -15,11 +15,11 @@ namespace Graphics {
         /**
          * @brief Constructs a UniformBuffer with the given size and binding point.
          * @param size The size of the buffer in bytes.
-         * @param bindingPoint The binding point index.
+         * @param binding_point The binding point index.
          * @param usage Usage pattern (e.g., GL_DYNAMIC_DRAW).
          * @throws std::runtime_error if buffer creation fails.
          */
-        UniformBuffer(GLsizeiptr size, GLuint bindingPoint, GLenum usage = GL_DYNAMIC_DRAW);
+        explicit UniformBuffer(GLsizeiptr size, GLuint binding_point, GLenum usage = GL_DYNAMIC_DRAW);
 
         ~UniformBuffer();
 
@@ -50,25 +50,33 @@ namespace Graphics {
 
         /**
          * @brief Maps the buffer for direct access.
+         *
+         * Mapping a buffer means obtaining a pointer to its memory so that the CPU
+         * can directly read from or write to it. This can be useful for dynamic data updates
+         * or read-back of GPU results.
+         *
          * @param access Access flags (e.g., GL_READ_ONLY, GL_WRITE_ONLY, GL_READ_WRITE).
-         * @return Pointer to mapped memory.
+         * @return Pointer to the mapped memory.
          */
         void* MapBuffer(GLenum access) const;
 
         /**
          * @brief Unmaps the buffer.
+         *
+         * Unmapping releases the pointer obtained by MapBuffer. After unmapping,
+         * the pointer is no longer valid, and the data is available for GPU operations.
          */
         void UnmapBuffer() const;
 
-        [[nodiscard]] GLuint GetRendererID()   const { return m_RendererID; }
-        [[nodiscard]] GLuint GetBindingPoint() const { return m_BindingPoint; }
-        [[nodiscard]] GLsizeiptr GetSize()       const { return m_Size; }
+        [[nodiscard]] GLuint     GetRendererID()   const { return renderer_id_; }
+        [[nodiscard]] GLuint     GetBindingPoint() const { return binding_point_; }
+        [[nodiscard]] GLsizeiptr GetSize()       const { return size_; }
 
     private:
-        GLuint     m_BindingPoint = 0;
-        GLenum     m_Usage = GL_DYNAMIC_DRAW;
-        GLsizeiptr m_Size = 0;
-        GLuint     m_RendererID = 0;
+        GLuint     binding_point_ = 0;   ///< UBO binding point.
+        GLenum     usage_ = GL_DYNAMIC_DRAW;
+        GLsizeiptr size_ = 0;   ///< Buffer size in bytes.
+        GLuint     renderer_id_ = 0;   ///< OpenGL buffer handle.
     };
 
 } // namespace Graphics

@@ -6,6 +6,8 @@
 
 namespace Graphics {
 
+    //maybe should use mapping instead of glNamedBufferSubData and maybe should delete default constructor and setdata
+
     /**
      * @brief Manages an OpenGL buffer for indirect draw commands (GL_DRAW_INDIRECT_BUFFER).
      */
