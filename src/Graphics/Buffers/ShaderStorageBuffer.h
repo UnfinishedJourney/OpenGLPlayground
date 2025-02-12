@@ -2,13 +2,12 @@
 
 #include <glad/glad.h>
 #include <stdexcept>
+#include <span>
 
 namespace Graphics {
 
     /**
      * @brief Manages an OpenGL Shader Storage Buffer (SSBO).
-     *
-     * Allows binding at a specified binding point for use in shader programs.
      */
     class ShaderStorageBuffer {
     public:
@@ -23,9 +22,11 @@ namespace Graphics {
 
         ~ShaderStorageBuffer();
 
-        // Non-copyable; movable.
+        // Non-copyable
         ShaderStorageBuffer(const ShaderStorageBuffer&) = delete;
         ShaderStorageBuffer& operator=(const ShaderStorageBuffer&) = delete;
+
+        // Movable
         ShaderStorageBuffer(ShaderStorageBuffer&& other) noexcept;
         ShaderStorageBuffer& operator=(ShaderStorageBuffer&& other) noexcept;
 
@@ -34,34 +35,30 @@ namespace Graphics {
          */
         void Bind() const;
 
-        /**
-         * @brief Unbinds the SSBO.
-         */
         void Unbind() const;
 
         /**
          * @brief Updates a region of the buffer with new data.
-         * @param data Pointer to the new data.
-         * @param size Size in bytes of the data.
+         * @param data A span of raw bytes representing the new data.
          * @param offset Byte offset into the buffer.
-         * @throws std::runtime_error if size + offset exceed the buffer capacity.
+         * @throws std::runtime_error if offset + data size exceeds the buffer capacity.
          */
-        void SetData(const void* data, GLsizeiptr size, GLintptr offset = 0);
+        void UpdateData(std::span<const std::byte> data, GLintptr offset = 0);
 
         /**
          * @brief Binds the SSBO to its specified binding point.
          */
         void BindBase() const;
 
-        [[nodiscard]] GLsizeiptr GetSize()         const { return m_Size; }
-        [[nodiscard]] GLuint     GetRendererID()   const { return m_RendererID; }
-        [[nodiscard]] GLuint     GetBindingPoint() const { return m_BindingPoint; }
+        [[nodiscard]] GLsizeiptr GetSize()         const { return size_; }
+        [[nodiscard]] GLuint     GetRendererID()   const { return rendererID_; }
+        [[nodiscard]] GLuint     GetBindingPoint() const { return bindingPoint_; }
 
     private:
-        GLuint      m_BindingPoint = 0;
-        GLsizeiptr  m_Size = 0;
-        GLenum      m_Usage = GL_DYNAMIC_DRAW;
-        GLuint      m_RendererID = 0;
+        GLuint rendererID_{ 0 };
+        GLuint bindingPoint_{ 0 };
+        GLsizeiptr size_{ 0 };
+        GLenum usage_{ GL_DYNAMIC_DRAW };
     };
 
 } // namespace Graphics

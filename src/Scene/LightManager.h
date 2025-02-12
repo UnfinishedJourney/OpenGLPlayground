@@ -72,7 +72,7 @@ private:
     //std::vector<Light> m_Lights;
 
     // Store GPU buffer here :
-    std::unique_ptr<Graphics::ShaderStorageBuffer> m_LightsSSBO;
+    std::unique_ptr<Graphics::ShaderStorageBuffer> lightsSSBO_;
 
     std::vector<LightData>  m_LightsData;
 

@@ -10,16 +10,15 @@ LightManager::LightManager()
 {
     // Create the Lights SSBO
     GLsizeiptr bufferSize = sizeof(glm::vec4) + MAX_LIGHTS * sizeof(LightData);
-    m_LightsSSBO = std::make_unique<Graphics::ShaderStorageBuffer>(
+    lightsSSBO_ = std::make_unique<Graphics::ShaderStorageBuffer>(
         LIGHTS_DATA_BINDING_POINT,
         bufferSize,
         GL_DYNAMIC_DRAW
     );
 
     // Initialize lights count to zero
-    uint32_t numLights = 0;
-    m_LightsSSBO->SetData(&numLights, sizeof(glm::vec4), 0);
-    m_LightsSSBO->BindBase(); // optional
+    std::array<uint32_t, 4> countData = { 0, 0, 0, 0 };
+    lightsSSBO_->UpdateData(std::as_bytes(std::span(countData)), 0);
 }
 
 LightManager::~LightManager() = default;
@@ -60,19 +59,23 @@ void LightManager::UpdateLightsGPU()
 {
     // Number of lights is the first vec4
     uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
-    m_LightsSSBO->SetData(&numLights, sizeof(glm::vec4), 0);
+    std::array<uint32_t, 4> countData = { numLights, 0, 0, 0 };
+    lightsSSBO_->UpdateData(std::as_bytes(std::span(countData)), 0);
 
-    // Then the array of LightData
+    // Then update the array of LightData starting at offset sizeof(glm::vec4).
     if (!m_LightsData.empty()) {
         size_t dataSize = m_LightsData.size() * sizeof(LightData);
-        m_LightsSSBO->SetData(m_LightsData.data(), dataSize, sizeof(glm::vec4));
+        lightsSSBO_->UpdateData(
+            std::as_bytes(std::span(m_LightsData.data(), m_LightsData.size())),
+            sizeof(glm::vec4)
+        );
     }
 }
 
 void LightManager::BindLightsGPU() const
 {
-    if (m_LightsSSBO) {
-        m_LightsSSBO->BindBase();
+    if (lightsSSBO_) {
+        lightsSSBO_->BindBase();
     }
 }
 

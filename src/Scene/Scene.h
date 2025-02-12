@@ -10,6 +10,7 @@
 #include "Renderer/Batch.h"
 #include "Renderer/BatchManager.h"
 #include "Graphics/Buffers/UniformBuffer.h"
+#include "Graphics/Buffers/ShaderStorageBuffer.h"
 #include "Scene/Camera.h"
 #include "Scene/FrustumCuller.h"
 #include "Scene/LODEvaluator.h"
@@ -17,14 +18,17 @@
 #include "LightManager.h"
 #include "Graphics/Effects/PostProcessingEffects/PostProcessingEffectType.h"
 
+// Forward declarations for types used below.
+struct BoundingBox;            // Assumed defined elsewhere.
+class BaseRenderObject;        // Assumed defined elsewhere.
+
 namespace Scene {
+
     /**
-     * @brief Represents the entire scene:
-     *  - Possibly a SceneGraph (for dynamic/hierarchical objects),
-     *  - A list of static objects (transforms baked in),
-     *  - A camera & a LightManager,
-     *  - Batching logic,
-     *  - Post-processing toggles.
+     * @brief Represents the entire scene.
+     *
+     * This class encapsulates the scene graph for dynamic objects, a list of static objects,
+     * the active camera, lighting, batching for efficient rendering, and post-processing settings.
      */
     class Scene
     {
@@ -32,13 +36,23 @@ namespace Scene {
         Scene();
         ~Scene();
 
+        /// Clears the scene (removing all objects and resetting managers).
         void Clear();
 
-        // Camera
+        /// Sets the active camera.
         void SetCamera(const std::shared_ptr<Camera>& camera);
-        std::shared_ptr<Camera> GetCamera() const { return m_Camera; }
+        /// Returns the active camera.
+        std::shared_ptr<Camera> GetCamera() const { return camera_; }
 
-        // Load a model or primitive
+        /**
+         * @brief Loads a static model into the scene.
+         *
+         * @param modelName The name or path of the model to load.
+         * @param shaderName The shader name used for rendering.
+         * @param scaleFactor Scaling factor applied to the model.
+         * @param aiToMyType Mapping from Assimp texture types to engine-specific texture types.
+         * @return true if the model loaded successfully, false otherwise.
+         */
         bool LoadStaticModelIntoScene(
             const std::string& modelName,
             const std::string& shaderName,
@@ -51,78 +65,99 @@ namespace Scene {
                     { aiTextureType_AMBIENT,   TextureType::Emissive     }
             });
 
+        /**
+         * @brief Loads a primitive (predefined geometry) into the scene.
+         *
+         * @param primitiveName The name of the primitive.
+         * @param shaderName The shader to be used.
+         * @param materialID Material identifier.
+         * @return true if the primitive was loaded successfully, false otherwise.
+         */
         bool LoadPrimitiveIntoScene(
             const std::string& primitiveName,
             const std::string& shaderName,
             int materialID = 0
         );
 
+        /// Builds static render batches if there have been changes.
         void BuildStaticBatchesIfNeeded();
+        /// Returns the static render batches.
         const std::vector<std::shared_ptr<Graphics::Batch>>& GetStaticBatches() const;
 
-        // Per-frame uniform updates
+        /// Updates the per-frame UBO with current camera/view data.
         void UpdateFrameDataUBO() const;
-        void BindFrameDataUBO()  const;
+        /// Binds the per-frame UBO.
+        void BindFrameDataUBO() const;
 
-        // LOD & Culling
+        /// Performs frustum culling and updates Level-of-Detail (LOD).
         void CullAndLODUpdate();
 
-        // Light manager
-        std::shared_ptr<LightManager> GetLightManager() const { return m_LightManager; }
+        /// Returns the scene's light manager.
+        std::shared_ptr<LightManager> GetLightManager() const { return lightManager_; }
 
-        // Post-processing toggles
-        void  SetPostProcessingEffect(PostProcessingEffectType effect);
+        /// Sets the post-processing effect.
+        void SetPostProcessingEffect(PostProcessingEffectType effect);
+        /// Returns the current post-processing effect.
         PostProcessingEffectType GetPostProcessingEffect() const;
 
+        /// Computes the world-space bounding box for static objects.
         BoundingBox ComputeWorldBoundingBox() const;
 
-        // Scene toggles
-        void SetShowGrid(bool bGrid) { m_ShowGrid = bGrid; }
-        bool GetShowGrid()             const { return m_ShowGrid; }
+        // Scene toggle setters/getters.
+        void SetShowGrid(bool show) { showGrid_ = show; }
+        bool GetShowGrid() const { return showGrid_; }
 
-        void SetShowDebugLights(bool bDebug) { m_ShowDebugLights = bDebug; }
-        bool GetShowDebugLights()      const { return m_ShowDebugLights; }
+        void SetShowDebugLights(bool show) { showDebugLights_ = show; }
+        bool GetShowDebugLights() const { return showDebugLights_; }
 
-        void SetSkyboxEnabled(bool enable) { m_EnableSkybox = enable; }
-        bool GetSkyboxEnabled()        const { return m_EnableSkybox; }
+        void SetSkyboxEnabled(bool enable) { enableSkybox_ = enable; }
+        bool GetSkyboxEnabled() const { return enableSkybox_; }
 
-        void SetShowShadows(bool bShadows) { m_TurnOnShadows = bShadows; }
-        bool GetShowShadows()             const { return m_TurnOnShadows; }
+        void SetShowShadows(bool show) { turnOnShadows_ = show; }
+        bool GetShowShadows() const { return turnOnShadows_; }
 
     private:
-        // For hierarchical scenes (optional)
-        std::unique_ptr<SceneGraph> m_SceneGraph;
+        // Scene graph for dynamic/hierarchical objects.
+        std::unique_ptr<SceneGraph> sceneGraph_;
 
-        // Light manager
-        std::shared_ptr<LightManager> m_LightManager;
+        // Manager for lighting.
+        std::shared_ptr<LightManager> lightManager_;
 
-        // A list of static objects
-        std::vector<std::shared_ptr<BaseRenderObject>> m_StaticObjects;
-        bool m_StaticBatchesDirty = true;
+        // List of static render objects.
+        std::vector<std::shared_ptr<BaseRenderObject>> staticObjects_;
+        bool staticBatchesDirty_ = true;
 
-        // Batching
-        std::unique_ptr<BatchManager> m_StaticBatchManager;
+        // Manager for batching static render objects.
+        std::unique_ptr<BatchManager> staticBatchManager_;
 
-        // Camera
-        std::shared_ptr<Camera> m_Camera;
+        // The active camera.
+        std::shared_ptr<Camera> camera_;
 
-        // Uniform buffer for frame data
-        std::unique_ptr<Graphics::UniformBuffer> m_FrameDataUBO;
+        // UBO for per-frame data (e.g. view/projection matrices).
+        std::unique_ptr<Graphics::UniformBuffer> frameDataUBO_;
 
-        // LOD & culling
-        std::unique_ptr<LODEvaluator>   m_LODEvaluator;
-        std::unique_ptr<FrustumCuller>  m_FrustumCuller;
+        // SSBO for per-object data (e.g. model matrices).
+        std::unique_ptr<Graphics::ShaderStorageBuffer> objectDataSSBO_;
 
-        // Post-processing effect
-        PostProcessingEffectType m_PostProcessingEffect = PostProcessingEffectType::None;
+        // Evaluator for Level-of-Detail.
+        std::unique_ptr<LODEvaluator> lodEvaluator_;
+        // Frustum culler for visibility determination.
+        std::unique_ptr<FrustumCuller> frustumCuller_;
 
-        // Possibly store the last used shader name, etc.
-        std::string m_LastShaderName;
-        // Some toggles
-        bool m_EnableSkybox = false;
-        bool m_ShowGrid = false;
-        bool m_ShowDebugLights = false;
-        bool m_TurnOnShadows = false;
+        // Active post-processing effect.
+        PostProcessingEffectType postProcessingEffect_ = PostProcessingEffectType::None;
 
+        // Cache for last used shader name.
+        std::string lastShaderName_;
+
+        // Scene toggle flags.
+        bool enableSkybox_ = false;
+        bool showGrid_ = false;
+        bool showDebugLights_ = false;
+        bool turnOnShadows_ = false;
+
+        // Binding points for the UBO and SSBO.
+        static constexpr GLuint FRAME_DATA_BINDING_POINT = 0;
     };
-}
+
+} // namespace Scene

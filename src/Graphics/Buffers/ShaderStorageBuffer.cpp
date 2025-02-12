@@ -6,70 +6,79 @@
 namespace Graphics {
 
     ShaderStorageBuffer::ShaderStorageBuffer(GLuint bindingPoint, GLsizeiptr size, GLenum usage)
-        : m_BindingPoint(bindingPoint), m_Size(size), m_Usage(usage)
+        : bindingPoint_(bindingPoint), size_(size), usage_(usage)
     {
-        GLCall(glCreateBuffers(1, &m_RendererID));
-        if (m_RendererID == 0) {
+        GLCall(glCreateBuffers(1, &rendererID_));
+        if (rendererID_ == 0) {
             Logger::GetLogger()->error("Failed to create Shader Storage Buffer Object.");
             throw std::runtime_error("Failed to create Shader Storage Buffer Object.");
         }
-        GLCall(glNamedBufferData(m_RendererID, m_Size, nullptr, m_Usage));
-        GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, m_BindingPoint, m_RendererID));
-        Logger::GetLogger()->info("Created ShaderStorageBuffer ID={} at binding point={} with size={} bytes.",
-            m_RendererID, m_BindingPoint, m_Size);
+        GLCall(glNamedBufferData(rendererID_, size_, nullptr, usage_));
+        GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint_, rendererID_));
+        Logger::GetLogger()->info("Created ShaderStorageBuffer (ID={}) at binding point={} with size={} bytes.",
+            rendererID_, bindingPoint_, size_);
     }
 
-    ShaderStorageBuffer::~ShaderStorageBuffer() {
-        if (m_RendererID != 0) {
-            GLCall(glDeleteBuffers(1, &m_RendererID));
-            Logger::GetLogger()->info("Deleted ShaderStorageBuffer ID={}.", m_RendererID);
+    ShaderStorageBuffer::~ShaderStorageBuffer()
+    {
+        if (rendererID_ != 0) {
+            GLCall(glDeleteBuffers(1, &rendererID_));
+            Logger::GetLogger()->info("Deleted ShaderStorageBuffer (ID={}).", rendererID_);
         }
     }
 
     ShaderStorageBuffer::ShaderStorageBuffer(ShaderStorageBuffer&& other) noexcept
-        : m_BindingPoint(other.m_BindingPoint), m_Size(other.m_Size),
-        m_Usage(other.m_Usage), m_RendererID(other.m_RendererID)
+        : bindingPoint_(other.bindingPoint_),
+        size_(other.size_),
+        usage_(other.usage_),
+        rendererID_(other.rendererID_)
     {
-        other.m_RendererID = 0;
+        other.rendererID_ = 0;
     }
 
-    ShaderStorageBuffer& ShaderStorageBuffer::operator=(ShaderStorageBuffer&& other) noexcept {
+    ShaderStorageBuffer& ShaderStorageBuffer::operator=(ShaderStorageBuffer&& other) noexcept
+    {
         if (this != &other) {
-            if (m_RendererID != 0) {
-                GLCall(glDeleteBuffers(1, &m_RendererID));
+            if (rendererID_ != 0) {
+                GLCall(glDeleteBuffers(1, &rendererID_));
             }
-            m_BindingPoint = other.m_BindingPoint;
-            m_Size = other.m_Size;
-            m_Usage = other.m_Usage;
-            m_RendererID = other.m_RendererID;
-            other.m_RendererID = 0;
+            bindingPoint_ = other.bindingPoint_;
+            size_ = other.size_;
+            usage_ = other.usage_;
+            rendererID_ = other.rendererID_;
+            other.rendererID_ = 0;
         }
         return *this;
     }
 
-    void ShaderStorageBuffer::Bind() const {
-        GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_RendererID));
-        Logger::GetLogger()->debug("Bound SSBO ID={} to GL_SHADER_STORAGE_BUFFER.", m_RendererID);
+    void ShaderStorageBuffer::Bind() const
+    {
+        GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, rendererID_));
+        Logger::GetLogger()->debug("Bound ShaderStorageBuffer (ID={}) to GL_SHADER_STORAGE_BUFFER.", rendererID_);
     }
 
-    void ShaderStorageBuffer::Unbind() const {
+    void ShaderStorageBuffer::Unbind() const
+    {
         GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
-        Logger::GetLogger()->debug("Unbound SSBO from GL_SHADER_STORAGE_BUFFER.");
+        Logger::GetLogger()->debug("Unbound ShaderStorageBuffer from GL_SHADER_STORAGE_BUFFER.");
     }
 
-    void ShaderStorageBuffer::SetData(const void* data, GLsizeiptr size, GLintptr offset) {
-        if (offset + size > m_Size) {
-            Logger::GetLogger()->error("Data size exceeds SSBO capacity. Offset={} Size={} BufferSize={}",
-                offset, size, m_Size);
-            throw std::runtime_error("ShaderStorageBuffer::SetData - data exceeds buffer size");
+    void ShaderStorageBuffer::UpdateData(std::span<const std::byte> data, GLintptr offset)
+    {
+        if (offset + static_cast<GLintptr>(data.size_bytes()) > static_cast<GLintptr>(size_)) {
+            Logger::GetLogger()->error("ShaderStorageBuffer::UpdateData error: offset({}) + size({}) exceeds buffer capacity ({} bytes).",
+                offset, data.size_bytes(), size_);
+            throw std::runtime_error("ShaderStorageBuffer::UpdateData - data exceeds buffer size");
         }
-        GLCall(glNamedBufferSubData(m_RendererID, offset, size, data));
-        Logger::GetLogger()->debug("Updated SSBO ID={} with new data. Offset={} Size={}.", m_RendererID, offset, size);
+        GLCall(glNamedBufferSubData(rendererID_, offset, data.size_bytes(), data.data()));
+        Logger::GetLogger()->debug("Updated ShaderStorageBuffer (ID={}) offset={} size={} bytes.",
+            rendererID_, offset, data.size_bytes());
     }
 
-    void ShaderStorageBuffer::BindBase() const {
-        GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, m_BindingPoint, m_RendererID));
-        Logger::GetLogger()->debug("Bound SSBO ID={} to binding point={}.", m_RendererID, m_BindingPoint);
+    void ShaderStorageBuffer::BindBase() const
+    {
+        GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint_, rendererID_));
+        Logger::GetLogger()->debug("Bound ShaderStorageBuffer (ID={}) to binding point {}.", rendererID_, bindingPoint_);
     }
 
 } // namespace Graphics

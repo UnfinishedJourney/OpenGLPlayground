@@ -5,36 +5,48 @@
 #include "Resources/ResourceManager.h"
 #include "Graphics/Meshes/StaticModelLoader.h"
 #include "Renderer/RenderObject.h"
+#include <cfloat>  // For FLT_MAX
 
 namespace Scene {
 
-    struct FrameCommonData
+    /**
+     * @brief Structure containing per-frame common data for rendering.
+     */
+    struct alignas(16) FrameCommonData
     {
-        glm::mat4 view;
-        glm::mat4 proj;
-        glm::vec4 cameraPos;
+        glm::mat4 view_;
+        glm::mat4 proj_;
+        glm::vec4 cameraPos_;
     };
-
-    static constexpr GLuint FRAME_DATA_BINDING_POINT = 0;
 
     Scene::Scene()
     {
-        m_SceneGraph = std::make_unique<SceneGraph>();
-        m_Camera = std::make_shared<Camera>();
+        // Initialize the scene graph.
+        sceneGraph_ = std::make_unique<SceneGraph>();
 
-        // Create frame UBO
-        m_FrameDataUBO = std::make_unique<Graphics::UniformBuffer>(
+        // Create a default camera.
+        camera_ = std::make_shared<Camera>();
+
+        // Create the per-frame UBO using a Std140 layout.
+        frameDataUBO_ = std::make_unique<Graphics::UniformBuffer>(
             sizeof(FrameCommonData),
             FRAME_DATA_BINDING_POINT,
+            Graphics::UniformBufferLayout::Std140,
             GL_DYNAMIC_DRAW
         );
 
-        m_LODEvaluator = std::make_unique<LODEvaluator>();
-        m_FrustumCuller = std::make_unique<FrustumCuller>();
-        m_StaticBatchManager = std::make_unique<BatchManager>();
+        // Initialize LOD evaluator and frustum culler.
+        lodEvaluator_ = std::make_unique<LODEvaluator>();
+        frustumCuller_ = std::make_unique<FrustumCuller>();
 
-        // Create a shared LightManager
-        m_LightManager = std::make_shared<LightManager>();
+        // Create the static batch manager.
+        staticBatchManager_ = std::make_unique<BatchManager>();
+
+        // Create a shared light manager.
+        lightManager_ = std::make_shared<LightManager>();
+
+        // The object data SSBO will be created when static objects are added.
+        objectDataSSBO_ = nullptr;
     }
 
     Scene::~Scene()
@@ -44,25 +56,29 @@ namespace Scene {
 
     void Scene::Clear()
     {
-        // Clear geometry
-        if (m_StaticBatchManager)
-            m_StaticBatchManager->Clear();
-        m_StaticObjects.clear();
-        m_StaticBatchesDirty = true;
+        Logger::GetLogger()->info("Clearing scene.");
 
-        // Optionally re-init the light manager to empty
-        m_LightManager = std::make_shared<LightManager>();
+        // Clear geometry and batches.
+        if (staticBatchManager_)
+            staticBatchManager_->Clear();
+        staticObjects_.clear();
+        staticBatchesDirty_ = true;
 
-        // Re-init scene graph
-        m_SceneGraph = std::make_unique<SceneGraph>();
+        // Reinitialize the light manager.
+        lightManager_ = std::make_shared<LightManager>();
 
-        // Not clearing the camera because you might keep the same pointer
-        // or reassign it if you wish
+        // Reinitialize the scene graph.
+        sceneGraph_ = std::make_unique<SceneGraph>();
     }
 
     void Scene::SetCamera(const std::shared_ptr<Camera>& camera)
     {
-        m_Camera = camera;
+        if (!camera) {
+            Logger::GetLogger()->warn("Attempted to set a null camera.");
+            return;
+        }
+        camera_ = camera;
+        Logger::GetLogger()->info("Camera set for the scene.");
     }
 
     bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
@@ -70,9 +86,12 @@ namespace Scene {
         float scaleFactor,
         std::unordered_map<aiTextureType, TextureType> aiToMyType)
     {
+        Logger::GetLogger()->info("Loading static model '{}' with shader '{}'.", modelName, shaderName);
+
         auto& resourceManager = ResourceManager::GetInstance();
         auto [meshLayout, matLayout] = resourceManager.GetLayoutsFromShader(shaderName);
 
+        // Use the StaticModelLoader to load the model.
         StaticLoader::ModelLoader loader(scaleFactor, aiToMyType);
         bool success = loader.LoadStaticModel(modelName, meshLayout, matLayout, /*centerModel=*/true);
         if (!success) {
@@ -80,23 +99,23 @@ namespace Scene {
             return false;
         }
 
-        const auto& objects = loader.GetLoadedObjects();
+        const auto& loadedObjects = loader.GetLoadedObjects();
 
-        for (auto& mi : objects) {
-            auto ro = std::make_shared<StaticRenderObject>(
-                mi.mesh_,
+        // Create render objects for each sub-mesh.
+        for (const auto& meshInfo : loadedObjects) {
+            auto renderObj = std::make_shared<StaticRenderObject>(
+                meshInfo.mesh_,
                 meshLayout,
-                mi.materialIndex_,
+                meshInfo.materialIndex_,
                 shaderName
             );
-            m_StaticObjects.push_back(ro);
+            staticObjects_.push_back(renderObj);
         }
 
-        m_LastShaderName = shaderName;
-        m_StaticBatchesDirty = true;
+        lastShaderName_ = shaderName;
+        staticBatchesDirty_ = true;
 
-        Logger::GetLogger()->info("Loaded static model '{}' => {} sub-meshes.",
-            modelName, objects.size());
+        Logger::GetLogger()->info("Loaded static model '{}' with {} sub-mesh(es).", modelName, loadedObjects.size());
         return true;
     }
 
@@ -104,6 +123,8 @@ namespace Scene {
         const std::string& shaderName,
         int materialID)
     {
+        Logger::GetLogger()->info("Loading primitive '{}' with shader '{}'.", primitiveName, shaderName);
+
         auto& resourceManager = ResourceManager::GetInstance();
         auto [meshLayout, matLayout] = resourceManager.GetLayoutsFromShader(shaderName);
 
@@ -113,116 +134,122 @@ namespace Scene {
             return false;
         }
 
-        auto ro = std::make_shared<StaticRenderObject>(
+        auto renderObj = std::make_shared<StaticRenderObject>(
             mesh,
             meshLayout,
             materialID,
             shaderName
         );
 
-        m_StaticObjects.push_back(ro);
-        m_StaticBatchesDirty = true;
-        Logger::GetLogger()->info("Scene::LoadPrimitiveIntoScene: Loaded '{}' with shader '{}'.",
-            primitiveName, shaderName);
+        staticObjects_.push_back(renderObj);
+        staticBatchesDirty_ = true;
+
+        Logger::GetLogger()->info("Loaded primitive '{}' successfully.", primitiveName);
         return true;
     }
 
     void Scene::BuildStaticBatchesIfNeeded()
     {
-        if (!m_StaticBatchesDirty)
+        if (!staticBatchesDirty_)
             return;
 
-        m_StaticBatchesDirty = false;
-        if (m_StaticBatchManager) {
-            m_StaticBatchManager->Clear();
-            for (auto& ro : m_StaticObjects) {
-                m_StaticBatchManager->AddRenderObject(ro);
+        Logger::GetLogger()->info("Building static batches.");
+
+        staticBatchesDirty_ = false;
+        if (staticBatchManager_) {
+            staticBatchManager_->Clear();
+            for (const auto& renderObj : staticObjects_) {
+                staticBatchManager_->AddRenderObject(renderObj);
             }
-            m_StaticBatchManager->BuildBatches();
+            staticBatchManager_->BuildBatches();
         }
 
-        if (m_TurnOnShadows)
-        {
+        // If shadows are enabled, update the light manager's bounding box.
+        if (turnOnShadows_) {
             BoundingBox bb = ComputeWorldBoundingBox();
-            m_LightManager->SetBoundingBox(bb.min_, bb.max_);
+            lightManager_->SetBoundingBox(bb.min_, bb.max_);
         }
-    }
-
-    BoundingBox Scene::ComputeWorldBoundingBox() const
-    {
-        // Start with a trivial bounding box
-        BoundingBox bigBox;
-        bigBox.min_ = glm::vec3(FLT_MAX);
-        bigBox.max_ = glm::vec3(-FLT_MAX);
-
-        for (auto& ro : m_StaticObjects)
-        {
-            // If static, we assume the geometry is “baked” in world space
-            // Or we might have a transform we can apply
-            // For a “static” object that’s already in world coords,
-            // we can just gather the mesh’s bounding box directly.
-
-            // For example, if each Mesh has .minPos / .maxPos in its local space:
-            // we might do `glm::vec3 corners[8]` etc., transform them,
-            // or if it’s truly “baked,” we just combine that min/max.
-
-            if (!ro->GetMesh()) continue;
-
-            glm::vec3 localMin = ro->GetMesh()->minBounds_;
-            glm::vec3 localMax = ro->GetMesh()->maxBounds_;
-
-            // If truly baked in world coords, just combine directly:
-            bigBox.combinePoint(localMin);
-            bigBox.combinePoint(localMax);
-
-            // If you need a transform, do something like:
-            //   auto worldCorners = ro->ComputeCornersInWorld();
-            //   for each corner: bigBox.combinePoint(corner);
-        }
-
-        return bigBox;
     }
 
     const std::vector<std::shared_ptr<Graphics::Batch>>& Scene::GetStaticBatches() const
     {
-        return m_StaticBatchManager->GetBatches();
+        return staticBatchManager_->GetBatches();
     }
 
     void Scene::UpdateFrameDataUBO() const
     {
-        if (!m_Camera) return;
+        if (!camera_) {
+            Logger::GetLogger()->warn("No camera available. Skipping frame UBO update.");
+            return;
+        }
 
-        FrameCommonData data{};
-        data.view = m_Camera->GetViewMatrix();
-        data.proj = m_Camera->GetProjectionMatrix();
-        data.cameraPos = glm::vec4(m_Camera->GetPosition(), 1.0f);
+        FrameCommonData frameData{};
+        frameData.view_ = camera_->GetViewMatrix();
+        frameData.proj_ = camera_->GetProjectionMatrix();
+        frameData.cameraPos_ = glm::vec4(camera_->GetPosition(), 1.0f);
 
-        m_FrameDataUBO->SetData(&data, sizeof(FrameCommonData));
+        frameDataUBO_->UpdateData(
+            { reinterpret_cast<const std::byte*>(&frameData), sizeof(frameData) },
+            0
+        );
+        Logger::GetLogger()->debug("Updated frame data UBO.");
     }
 
     void Scene::BindFrameDataUBO() const
     {
-        m_FrameDataUBO->Bind();
+        frameDataUBO_->Bind();
+        Logger::GetLogger()->debug("Bound frame data UBO.");
     }
 
     void Scene::CullAndLODUpdate()
     {
-        if (!m_Camera) return;
+        if (!camera_) {
+            Logger::GetLogger()->warn("No camera available. Skipping culling and LOD update.");
+            return;
+        }
 
-        glm::mat4 VP = m_Camera->GetProjectionMatrix() * m_Camera->GetViewMatrix();
-        m_FrustumCuller->ExtractFrustumPlanes(VP);
+        glm::mat4 VP = camera_->GetProjectionMatrix() * camera_->GetViewMatrix();
+        frustumCuller_->ExtractFrustumPlanes(VP);
+        Logger::GetLogger()->debug("Extracted frustum planes.");
 
-        // optional: cull out-of-frustum
-        m_StaticBatchManager->UpdateLODs(m_Camera, *m_LODEvaluator);
+        if (staticBatchManager_) {
+            staticBatchManager_->UpdateLODs(camera_, *lodEvaluator_);
+            Logger::GetLogger()->debug("Updated LODs for static batches.");
+        }
     }
 
     void Scene::SetPostProcessingEffect(PostProcessingEffectType effect)
     {
-        m_PostProcessingEffect = effect;
+        postProcessingEffect_ = effect;
+        Logger::GetLogger()->info("Post-processing effect set to {}.", static_cast<int>(effect));
     }
 
     PostProcessingEffectType Scene::GetPostProcessingEffect() const
     {
-        return m_PostProcessingEffect;
+        return postProcessingEffect_;
     }
-}
+
+    BoundingBox Scene::ComputeWorldBoundingBox() const
+    {
+        BoundingBox worldBox;
+        worldBox.min_ = glm::vec3(FLT_MAX);
+        worldBox.max_ = glm::vec3(-FLT_MAX);
+
+        for (const auto& renderObj : staticObjects_) {
+            if (!renderObj || !renderObj->GetMesh())
+                continue;
+
+            glm::vec3 localMin = renderObj->GetMesh()->minBounds_;
+            glm::vec3 localMax = renderObj->GetMesh()->maxBounds_;
+
+            worldBox.combinePoint(localMin);
+            worldBox.combinePoint(localMax);
+        }
+
+        Logger::GetLogger()->debug("Computed world bounding box: min({},{},{}) max({},{},{}).",
+            worldBox.min_.x, worldBox.min_.y, worldBox.min_.z,
+            worldBox.max_.x, worldBox.max_.y, worldBox.max_.z);
+        return worldBox;
+    }
+
+} // namespace Scene
