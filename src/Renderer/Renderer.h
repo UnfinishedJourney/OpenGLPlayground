@@ -82,8 +82,8 @@ private:
     std::shared_ptr<Scene::Scene> m_CurrentScene;
 
     // MSAA (multisample) FBO for rendering geometry
-    std::shared_ptr<FrameBuffer> m_MsaaFBO;
+    std::shared_ptr<graphics::FrameBuffer> m_MsaaFBO;
 
     // Single-sample FBO for resolved color
-    std::shared_ptr<FrameBuffer> m_ResolvedFBO;
+    std::shared_ptr<graphics::FrameBuffer> m_ResolvedFBO;
 };

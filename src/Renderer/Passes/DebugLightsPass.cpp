@@ -5,7 +5,7 @@
 #include <glad/glad.h>
 #include "Graphics/Shaders/Shader.h"
 
-DebugLightsPass::DebugLightsPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene::Scene>& scene)
+DebugLightsPass::DebugLightsPass(std::shared_ptr<graphics::FrameBuffer> framebuffer, const std::shared_ptr<Scene::Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
     InitializeSceneResources(scene);
@@ -69,7 +69,7 @@ void DebugLightsPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void DebugLightsPass::UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer)
+void DebugLightsPass::UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer)
 {
     m_Framebuffer = framebuffer;
 }

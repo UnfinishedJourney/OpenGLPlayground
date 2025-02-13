@@ -15,7 +15,7 @@ public:
     void Execute(const std::shared_ptr<Scene::Scene>& scene) override;
 
     // For this pass, UpdateFramebuffer is not used.
-    void UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer) override {}
+    void UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer) override {}
 
     // Retrieve the ShadowMap so the texture can be used in the main pass.
     std::shared_ptr<graphics::ShadowMap> GetShadowMap() const { return m_ShadowMap; }

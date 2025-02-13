@@ -185,11 +185,11 @@ void Renderer::CreateFramebuffersForScene(const std::shared_ptr<Scene::Scene>& s
     int samples = 4;
 
     // Typically one color attachment, RGBA8
-    std::vector<FrameBufferTextureAttachment> msaaAttachments = {
+    std::vector<graphics::FrameBufferTextureAttachment> msaaAttachments = {
         { GL_COLOR_ATTACHMENT0, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE }
     };
 
-    m_MsaaFBO = std::make_shared<FrameBuffer>(
+    m_MsaaFBO = std::make_shared<graphics::FrameBuffer>(
         width,
         height,
         msaaAttachments,
@@ -198,11 +198,11 @@ void Renderer::CreateFramebuffersForScene(const std::shared_ptr<Scene::Scene>& s
     );
 
     // Single-sample FBO (resolved)
-    std::vector<FrameBufferTextureAttachment> resolvedColorAttachment = {
+    std::vector<graphics::FrameBufferTextureAttachment> resolvedColorAttachment = {
         { GL_COLOR_ATTACHMENT0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE }
     };
 
-    m_ResolvedFBO = std::make_shared<FrameBuffer>(
+    m_ResolvedFBO = std::make_shared<graphics::FrameBuffer>(
         width,
         height,
         resolvedColorAttachment,

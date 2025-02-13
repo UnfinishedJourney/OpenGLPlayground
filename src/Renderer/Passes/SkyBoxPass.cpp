@@ -10,7 +10,7 @@
 
 #include <glad/glad.h>
 
-SkyBoxPass::SkyBoxPass(std::shared_ptr<FrameBuffer> framebuffer,
+SkyBoxPass::SkyBoxPass(std::shared_ptr<graphics::FrameBuffer> framebuffer,
     const std::shared_ptr<Scene::Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
@@ -105,7 +105,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
     m_Framebuffer->Unbind();
 }
 
-void SkyBoxPass::UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer)
+void SkyBoxPass::UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer)
 {
     m_Framebuffer = framebuffer;
 }

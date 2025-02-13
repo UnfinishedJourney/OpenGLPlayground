@@ -9,16 +9,16 @@
 class DebugLightsPass : public RenderPass
 {
 public:
-    DebugLightsPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene::Scene>& scene);
+    DebugLightsPass(std::shared_ptr<graphics::FrameBuffer> framebuffer, const std::shared_ptr<Scene::Scene>& scene);
 
     void Execute(const std::shared_ptr<Scene::Scene>& scene) override;
 
-    void UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer) override;
+    void UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer) override;
 
     ~DebugLightsPass();
 
 private:
-    std::shared_ptr<FrameBuffer> m_Framebuffer;
+    std::shared_ptr<graphics::FrameBuffer> m_Framebuffer;
 
     void InitializeSceneResources(const std::shared_ptr<Scene::Scene>& scene);
     std::shared_ptr<graphics::MeshBuffer> m_LightSphereMeshBuffer;

@@ -2,118 +2,110 @@
 
 #include <glad/glad.h>
 #include <vector>
-#include <memory>
-#include "BufferDeleter.h"
+#include <stdexcept>
 
-/**
- * @brief Describes a texture attachment for a FrameBuffer (usually color attachments).
- */
-struct FrameBufferTextureAttachment {
-    GLenum attachmentType; ///< e.g., GL_COLOR_ATTACHMENT0
-    GLenum internalFormat; ///< e.g., GL_RGBA8
-    GLenum format;         ///< e.g., GL_RGBA
-    GLenum type;           ///< e.g., GL_UNSIGNED_BYTE
-};
+namespace graphics {
 
-/**
- * @brief A class encapsulating an OpenGL Framebuffer.
- *
- * Provides RAII management of the framebuffer, color attachments,
- * and an optional depth attachment (as a texture, not a renderbuffer).
- */
-class FrameBuffer {
-public:
     /**
-     * @param width       The width of the framebuffer attachments.
-     * @param height      The height of the framebuffer attachments.
-     * @param attachments A list of color (or other) attachments to create.
-     * @param hasDepth    Whether to include a depth attachment as a texture.
-     * @param samples     If > 1, creates a multisample framebuffer.
+     * @brief Describes a texture attachment for a framebuffer.
      */
-    FrameBuffer(int width,
-        int height,
-        const std::vector<FrameBufferTextureAttachment>& attachments,
-        bool hasDepth = true,
-        int samples = 1);
-
-    ~FrameBuffer();
-
-    FrameBuffer(const FrameBuffer&) = delete;
-    FrameBuffer& operator=(const FrameBuffer&) = delete;
-
-    FrameBuffer(FrameBuffer&&) noexcept = default;
-    FrameBuffer& operator=(FrameBuffer&&) noexcept = default;
+    struct FrameBufferTextureAttachment {
+        GLenum attachment_type;  ///< e.g., GL_COLOR_ATTACHMENT0
+        GLenum internal_format;  ///< e.g., GL_RGBA8
+        GLenum format;           ///< e.g., GL_RGBA
+        GLenum type;             ///< e.g., GL_UNSIGNED_BYTE
+    };
 
     /**
-     * @brief Binds this framebuffer as the current draw/read target.
-     */
-    void Bind() const;
-
-    /**
-     * @brief Unbinds any bound framebuffer (i.e., binds the default FBO).
-     */
-    void Unbind() const;
-
-    /**
-     * @brief Returns the texture ID for a specific color attachment.
-     * @note  Valid typically for single-sample attachments if you want
-     *        to sample the color or depth in a later pass.
-     */
-    GLuint GetTexture(GLenum attachment) const;
-
-    /**
-     * @brief If you want the depth texture ID (when hasDepth = true).
-     * @return The OpenGL texture ID for the depth attachment (0 if none).
-     */
-    GLuint GetDepthTexture() const;
-
-    /**
-     * @brief Resizes the framebuffer attachments to the new width/height.
-     *        This will internally re-create all attachments.
-     */
-    void Resize(int newWidth, int newHeight);
-
-    /**
-     * @brief Blit/resolve from this FBO to a target FBO (e.g. single-sample).
-     *        Used to resolve MSAA color into a non-multisample texture if needed.
+     * @brief Encapsulates an OpenGL framebuffer along with its attachments.
      *
-     * @param targetFBO  The destination FBO (e.g., a single-sample FBO).
-     * @param mask       Which buffers to blit (GL_COLOR_BUFFER_BIT, etc.).
-     * @param filter     Typically GL_NEAREST or GL_LINEAR for color.
+     * Manages color and depth attachments (optionally multisampled) using RAII.
      */
-    void BlitTo(FrameBuffer& targetFBO,
-        GLbitfield mask = GL_COLOR_BUFFER_BIT,
-        GLenum filter = GL_LINEAR) const;
+    class FrameBuffer {
+    public:
+        /**
+         * @brief Constructs a framebuffer with given dimensions and attachments.
+         *
+         * @param width        Framebuffer width.
+         * @param height       Framebuffer height.
+         * @param attachments  List of color attachment specifications.
+         * @param has_depth    Whether to include a depth texture.
+         * @param samples      Number of samples (multisampling if > 1).
+         *
+         * @throws std::runtime_error if framebuffer creation fails.
+         */
+        FrameBuffer(int width,
+            int height,
+            const std::vector<FrameBufferTextureAttachment>& attachments,
+            bool has_depth = true,
+            int samples = 1);
 
-    [[nodiscard]] GLuint GetRendererID() const { return m_RendererIDPtr ? *m_RendererIDPtr : 0; }
-    [[nodiscard]] int    GetWidth()      const { return m_Width; }
-    [[nodiscard]] int    GetHeight()     const { return m_Height; }
-    [[nodiscard]] int    GetSamples()    const { return m_Samples; }
-    [[nodiscard]] bool   HasDepth()      const { return m_HasDepth; }
+        ~FrameBuffer();
 
-private:
-    void Initialize(int width,
-        int height,
-        const std::vector<FrameBufferTextureAttachment>& attachments,
-        bool hasDepth,
-        int samples);
+        // Non-copyable
+        FrameBuffer(const FrameBuffer&) = delete;
+        FrameBuffer& operator=(const FrameBuffer&) = delete;
 
-    /**
-     * @brief Frees all GPU resources (textures, FBO).
-     *        Called from destructor and also from Resize() before re-init.
-     */
-    void Cleanup();
+        // Movable
+        FrameBuffer(FrameBuffer&& other) noexcept;
+        FrameBuffer& operator=(FrameBuffer&& other) noexcept;
 
-private:
-    std::unique_ptr<GLuint, FrameBufferDeleter>          m_RendererIDPtr;
-    std::vector<std::unique_ptr<GLuint, TextureDeleter>> m_ColorTextures;  ///< for color attachments
+        /// Binds the framebuffer for rendering.
+        void Bind() const;
 
-    // For the depth attachment as a texture (instead of a renderbuffer):
-    std::unique_ptr<GLuint, TextureDeleter> m_DepthTexturePtr;
+        /// Unbinds (binds the default framebuffer).
+        void Unbind() const;
 
-    std::vector<FrameBufferTextureAttachment> m_Attachments;
-    int  m_Width = 0;
-    int  m_Height = 0;
-    bool m_HasDepth = false;
-    int  m_Samples = 1; // 1 means single-sample (no MSAA)
-};
+        /**
+         * @brief Returns the texture ID for a given color attachment.
+         * @param attachment Attachment enum (e.g., GL_COLOR_ATTACHMENT0 + n).
+         * @return Texture ID if found, or 0.
+         */
+        [[nodiscard]] GLuint GetTexture(GLenum attachment) const;
+
+        /// Returns the depth texture ID.
+        [[nodiscard]] GLuint GetDepthTexture() const;
+
+        /// Resizes the framebuffer and reinitializes attachments.
+        void Resize(int new_width, int new_height);
+
+        /**
+         * @brief Blits (or resolves) from this framebuffer to a target framebuffer.
+         *
+         * @param target_fbo The destination framebuffer.
+         * @param mask       Which buffers to blit (e.g., GL_COLOR_BUFFER_BIT).
+         * @param filter     Filtering mode (GL_NEAREST or GL_LINEAR).
+         */
+        void BlitTo(const FrameBuffer& target_fbo,
+            GLbitfield mask = GL_COLOR_BUFFER_BIT,
+            GLenum filter = GL_LINEAR) const;
+
+        [[nodiscard]] GLuint GetRendererID() const { return renderer_id_; }
+        [[nodiscard]] int GetWidth()  const { return width_; }
+        [[nodiscard]] int GetHeight() const { return height_; }
+        [[nodiscard]] int GetSamples() const { return samples_; }
+        [[nodiscard]] bool HasDepth() const { return has_depth_; }
+
+    private:
+        // Helper functions for texture attachment creation.
+        GLuint CreateColorAttachment(const FrameBufferTextureAttachment& att) const;
+        GLuint CreateDepthAttachment() const;
+
+        /// Initializes (or reinitializes) the framebuffer.
+        void Initialize();
+
+        /// Releases OpenGL resources.
+        void Cleanup();
+
+        GLuint renderer_id_{ 0 };               ///< OpenGL framebuffer handle.
+        std::vector<GLuint> color_textures_;      ///< Color texture attachments.
+        GLuint depth_texture_{ 0 };              ///< Depth texture attachment (if any).
+
+        std::vector<FrameBufferTextureAttachment> attachments_;
+        int width_{ 0 };
+        int height_{ 0 };
+        bool has_depth_{ false };
+        int samples_{ 1 };
+    };
+
+} // namespace graphics

@@ -6,7 +6,7 @@
 #include <glad/glad.h>
 #include "Graphics/Shaders/Shader.h"
 
-GridPass::GridPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene::Scene>& scene)
+GridPass::GridPass(std::shared_ptr<graphics::FrameBuffer> framebuffer, const std::shared_ptr<Scene::Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
     auto& meshManager = graphics::MeshManager::GetInstance();
@@ -61,7 +61,7 @@ GridPass::~GridPass()
 {
 }
 
-void GridPass::UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer)
+void GridPass::UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer)
 {
     m_Framebuffer = framebuffer;
 }

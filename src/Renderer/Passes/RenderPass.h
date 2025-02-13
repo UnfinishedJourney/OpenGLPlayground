@@ -14,5 +14,5 @@ public:
     virtual void Execute(const std::shared_ptr<Scene::Scene>& scene) = 0;
 
     // Update the framebuffer (e.g., when window size changes)
-    virtual void UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer) = 0;
+    virtual void UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer) = 0;
 };

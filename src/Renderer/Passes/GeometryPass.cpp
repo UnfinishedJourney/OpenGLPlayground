@@ -7,7 +7,7 @@
 #include "Utilities/ProfilerMacros.h"
 #include "Graphics/Shaders/Shader.h"
 
-GeometryPass::GeometryPass(std::shared_ptr<FrameBuffer> framebuffer,
+GeometryPass::GeometryPass(std::shared_ptr<graphics::FrameBuffer> framebuffer,
     const std::shared_ptr<Scene::Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
@@ -117,7 +117,7 @@ void GeometryPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
     }
 }
 
-void GeometryPass::UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer)
+void GeometryPass::UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer)
 {
     PROFILE_FUNCTION(Green);
     m_Framebuffer = framebuffer;

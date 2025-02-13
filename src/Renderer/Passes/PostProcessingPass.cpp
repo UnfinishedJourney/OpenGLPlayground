@@ -2,7 +2,7 @@
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
 
-PostProcessingPass::PostProcessingPass(std::shared_ptr<FrameBuffer> /*ignored*/,
+PostProcessingPass::PostProcessingPass(std::shared_ptr<graphics::FrameBuffer> /*ignored*/,
     const std::shared_ptr<Scene::Scene>& scene)
 {
     // No need to store that "ignored" FBO. We'll rely on m_SourceFBO.
@@ -18,7 +18,7 @@ void PostProcessingPass::SetPostProcessingEffect(const std::shared_ptr<PostProce
     m_Effect = effect;
 }
 
-void PostProcessingPass::SetSourceFramebuffer(std::shared_ptr<FrameBuffer> sourceFBO)
+void PostProcessingPass::SetSourceFramebuffer(std::shared_ptr<graphics::FrameBuffer> sourceFBO)
 {
     m_SourceFBO = sourceFBO;
 }
@@ -47,7 +47,7 @@ void PostProcessingPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
     m_Effect->Apply(sceneTextureID, /*outputFramebuffer=*/0);
 }
 
-void PostProcessingPass::UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer)
+void PostProcessingPass::UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer)
 {
     // If we want to change the source FBO, we do so here.
     // But typically we do SetSourceFramebuffer(...) for clarity.
