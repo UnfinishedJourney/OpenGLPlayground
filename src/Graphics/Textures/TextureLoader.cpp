@@ -1,13 +1,17 @@
 #include "TextureLoader.h"
-#include "TextureData.h"
+// CHANGED: Include "Bitmap.h" instead of "TextureData.h"
+#include "Bitmap.h"
+
 #include "OpenGLTexture.h"
 #include "OpenGLCubeMapTexture.h"
 #include "OpenGLTextureArray.h"
+
 #include "Utilities/Logger.h"
 #include "Utilities/Utility.h"
 #include "Graphics/Shaders/ShaderManager.h"
 #include "Graphics/Shaders/ComputeShader.h"
 #include "Graphics/Buffers/ShaderStorageBuffer.h"
+
 #include <stdexcept>
 #include <filesystem>
 #include <array>
@@ -15,35 +19,47 @@
 
 namespace graphics {
 
-    std::shared_ptr<ITexture> TextureLoader::Load2DTexture(const std::string& filePath, const TextureConfig& config) {
-        TextureData data;
-        bool loaded = data.LoadFromFile(filePath, /*flip_y=*/true, /*force_4Ch=*/true, config.is_hdr_);
-        bool is_hdr = config.is_hdr_;
-        if (!loaded || (!is_hdr && data.GetDataU8() == nullptr) ||
-            (is_hdr && data.GetDataFloat() == nullptr)) {
-            Logger::GetLogger()->error("TextureLoader: Failed to load 2D texture from '{}'.", filePath);
-            throw std::runtime_error("2D texture load failed.");
-        }
+    std::shared_ptr<ITexture> TextureLoader::Load2DTexture(const std::string& filePath, const TextureConfig& config)
+    {
+        // CHANGED: Use Bitmap instead of TextureData
+        Bitmap bitmap;
         try {
-            auto texture = std::make_shared<OpenGLTexture>(data, config);
+            // Load data from disk (HDR or LDR depending on config.is_hdr_)
+            bool loaded = bitmap.LoadFromFile(filePath, /*flipY=*/true, /*force4Ch=*/true, config.is_hdr_);
+            if (!loaded || bitmap.data().empty()) {
+                Logger::GetLogger()->error("TextureLoader: Failed to load 2D texture from '{}'.", filePath);
+                throw std::runtime_error("2D texture load failed (empty data).");
+            }
+        }
+        catch (const std::exception& e) {
+            Logger::GetLogger()->error("TextureLoader: Exception loading 2D image from '{}': {}", filePath, e.what());
+            throw;
+        }
+
+        // Construct an OpenGL 2D texture from the Bitmap
+        try {
+            auto texture = std::make_shared<OpenGLTexture>(bitmap, config);
             Logger::GetLogger()->info("TextureLoader: Loaded 2D texture from '{}'.", filePath);
             return texture;
         }
         catch (const std::exception& e) {
-            Logger::GetLogger()->error("TextureLoader: Exception loading 2D texture from '{}': {}", filePath, e.what());
+            Logger::GetLogger()->error("TextureLoader: Exception creating OpenGLTexture from '{}': {}", filePath, e.what());
             throw;
         }
     }
 
-    std::shared_ptr<ITexture> TextureLoader::LoadCubeMapTexture(const std::array<std::string, 6>& facePathsStr, const TextureConfig& config) {
-        // Convert from array<string> to array<filesystem::path>
+    std::shared_ptr<ITexture> TextureLoader::LoadCubeMapTexture(const std::array<std::string, 6>& facePathsStr,
+        const TextureConfig& config)
+    {
+        // The constructor of OpenGLCubeMapTexture expects an array<std::filesystem::path,6>
         std::array<std::filesystem::path, 6> facePaths;
         for (size_t i = 0; i < facePathsStr.size(); ++i) {
             facePaths[i] = std::filesystem::path(facePathsStr[i]);
         }
+
         try {
             auto cubeMap = std::make_shared<OpenGLCubeMapTexture>(facePaths, config);
-            Logger::GetLogger()->info("TextureLoader: Loaded cubemap texture.");
+            Logger::GetLogger()->info("TextureLoader: Loaded cubemap texture from 6 faces.");
             return cubeMap;
         }
         catch (const std::exception& e) {
@@ -52,10 +68,19 @@ namespace graphics {
         }
     }
 
-    std::shared_ptr<ITexture> TextureLoader::LoadTextureArray(const std::string& filePath, const TextureConfig& config,
-        uint32_t totalFrames, uint32_t gridX, uint32_t gridY) {
+    std::shared_ptr<ITexture> TextureLoader::LoadTextureArray(const std::string& filePath,
+        const TextureConfig& config,
+        uint32_t totalFrames,
+        uint32_t gridX,
+        uint32_t gridY)
+    {
         try {
-            auto textureArray = std::make_shared<OpenGLTextureArray>(std::vector<std::string>{filePath}, config, totalFrames, gridX, gridY);
+            // The OpenGLTextureArray constructor expects a vector of file paths (currently only 1).
+            auto textureArray = std::make_shared<OpenGLTextureArray>(std::vector<std::string>{ filePath },
+                config,
+                totalFrames,
+                gridX,
+                gridY);
             Logger::GetLogger()->info("TextureLoader: Loaded texture array from '{}'.", filePath);
             return textureArray;
         }
@@ -65,14 +90,19 @@ namespace graphics {
         }
     }
 
-    std::shared_ptr<ITexture> TextureLoader::CreateBRDFTexture(int width, int height, unsigned int numSamples) {
+    std::shared_ptr<ITexture> TextureLoader::CreateBRDFTexture(int width, int height, unsigned int numSamples)
+    {
+        // This part is unchanged; it builds a minimal texture from compute shader results.
         auto& shaderManager = ShaderManager::GetInstance();
         auto computeShader = shaderManager.GetComputeShader("brdfCompute");
         if (!computeShader) {
             Logger::GetLogger()->error("TextureLoader: Compute shader 'brdfCompute' not found!");
             throw std::runtime_error("BRDF compute shader not found.");
         }
+
+        // Create a buffer big enough to hold the results
         auto ssbo = std::make_unique<ShaderStorageBuffer>(1, width * height * sizeof(glm::vec2), GL_DYNAMIC_COPY);
+
         computeShader->Bind();
         computeShader->SetUniform("NUM_SAMPLES", numSamples);
         GLuint groupX = (width + 15) / 16;
@@ -81,6 +111,7 @@ namespace graphics {
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         computeShader->Unbind();
 
+        // Create an RG32F texture
         GLuint brdfLUTID = 0;
         glGenTextures(1, &brdfLUTID);
         glBindTexture(GL_TEXTURE_2D, brdfLUTID);
@@ -91,8 +122,12 @@ namespace graphics {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glBindTexture(GL_TEXTURE_2D, 0);
 
+        // Copy from SSBO into the texture
         ssbo->Bind();
-        glm::vec2* ptr = static_cast<glm::vec2*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, width * height * sizeof(glm::vec2), GL_MAP_READ_BIT));
+        glm::vec2* ptr = static_cast<glm::vec2*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER,
+            0,
+            width * height * sizeof(glm::vec2),
+            GL_MAP_READ_BIT));
         if (!ptr) {
             ssbo->Unbind();
             glDeleteTextures(1, &brdfLUTID);
@@ -105,10 +140,11 @@ namespace graphics {
         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
         ssbo->Unbind();
 
-        // Wrap the computed texture in a minimal ITexture implementation.
+        // Wrap in a minimal ITexture
         class ComputedTexture : public ITexture {
         public:
-            ComputedTexture(GLuint id, int w, int h) : texture_id_(id), width_(w), height_(h) {}
+            ComputedTexture(GLuint id, int w, int h)
+                : texture_id_(id), width_(w), height_(h) {}
             ~ComputedTexture() override {
                 if (texture_id_) {
                     glDeleteTextures(1, &texture_id_);

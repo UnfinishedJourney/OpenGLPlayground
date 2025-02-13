@@ -1,49 +1,28 @@
 #pragma once
-#include "ITexture.h"
-#include "TextureData.h"
+#include "GLBaseTexture.h"
+#include "Bitmap.h"
 #include "TextureConfig.h"
-#include <glad/glad.h>
-#include <cstdint>
 
 namespace graphics {
 
     /**
-     * @brief Represents a standard 2D OpenGL texture.
-     *
-     * Supports LDR or HDR data, optional sRGB internal formats,
-     * mipmaps, anisotropy, and optionally bindless textures.
+     * @brief Standard 2D OpenGL texture. Inherits from GLBaseTexture.
      */
-    class OpenGLTexture : public ITexture {
+    class OpenGLTexture : public GLBaseTexture
+    {
     public:
         /**
-         * @brief Creates a texture from the provided image data and configuration.
-         * @param data   The image data.
-         * @param config Configuration parameters.
-         * @throws std::runtime_error if texture creation fails.
+         * @brief Construct a 2D texture from the given Bitmap + config.
          */
-        OpenGLTexture(const TextureData& data, const TextureConfig& config);
-        ~OpenGLTexture() override;
+        OpenGLTexture(const Bitmap& image, const TextureConfig& config);
 
-        void Bind(uint32_t unit) const override;
-        void Unbind(uint32_t unit) const override;
+        ~OpenGLTexture() override = default;
 
-        uint32_t GetWidth() const override { return width_; }
-        uint32_t GetHeight() const override { return height_; }
-        uint64_t GetBindlessHandle() const override { return bindless_handle_; }
-        bool IsBindless() const override { return is_bindless_; }
-
-        /// Returns the raw OpenGL texture ID.
-        [[nodiscard]] GLuint GetTextureID() const { return texture_id_; }
+        /// If needed, expose the raw GL texture ID
+        GLuint GetTextureID() const { return texture_id_; }
 
     private:
-        GLuint texture_id_ = 0;
-        uint32_t width_ = 0;
-        uint32_t height_ = 0;
-        uint64_t bindless_handle_ = 0;
-        bool is_bindless_ = false;
-
-        /// Determines the final internal format based on config and channel count.
-        static GLenum ResolveInternalFormat(const TextureConfig& config, int channels);
+        // We might add some private helper or put it in a separate "TextureHelpers.h"
     };
 
 } // namespace graphics

@@ -19,8 +19,8 @@ namespace graphics {
         bool generate_mips_ = true;
         bool use_anisotropy_ = true;
         bool use_bindless_ = false;
-        bool is_hdr_ = false;   ///< Expect float data (e.g. stbi_loadf).
-        bool is_srgb_ = false;  ///< Use an sRGB internal format if LDR.
+        bool is_hdr_ = false;   ///< Expect float data (stbi_loadf).
+        bool is_srgb_ = false;   ///< Use an sRGB internal format if LDR.
     };
 
 } // namespace graphics

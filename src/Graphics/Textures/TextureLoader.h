@@ -21,8 +21,11 @@ namespace graphics {
         static std::shared_ptr<ITexture> LoadCubeMapTexture(const std::array<std::string, 6>& facePaths, const TextureConfig& config);
 
         /// Loads a texture array (sprite sheet) from file.
-        static std::shared_ptr<ITexture> LoadTextureArray(const std::string& filePath, const TextureConfig& config,
-            uint32_t totalFrames, uint32_t gridX, uint32_t gridY);
+        static std::shared_ptr<ITexture> LoadTextureArray(const std::string& filePath,
+            const TextureConfig& config,
+            uint32_t totalFrames,
+            uint32_t gridX,
+            uint32_t gridY);
 
         /// Creates a computed BRDF LUT texture using a compute shader.
         static std::shared_ptr<ITexture> CreateBRDFTexture(int width, int height, unsigned int numSamples);

@@ -1,125 +1,101 @@
 #include "OpenGLTextureArray.h"
-#include "TextureData.h"
+#include "TextureUtils.h"
 #include "Utilities/Logger.h"
-#include "Utilities/Utility.h"
+#include <stdexcept>
 #include <cmath>
 #include <cstring>
-#include <stdexcept>
-#include <vector>
 
 namespace graphics {
 
-    OpenGLTextureArray::OpenGLTextureArray(const std::vector<std::string>& file_paths,
+    OpenGLTextureArray::OpenGLTextureArray(const std::vector<std::string>& filePaths,
         const TextureConfig& config,
-        uint32_t total_frames,
-        uint32_t grid_x,
-        uint32_t grid_y)
+        uint32_t totalFrames,
+        uint32_t gridX,
+        uint32_t gridY)
     {
-        if (file_paths.empty()) {
-            throw std::runtime_error("OpenGLTextureArray: No input files provided.");
+        if (filePaths.empty()) {
+            throw std::runtime_error("OpenGLTextureArray: no input files provided!");
         }
-        if (file_paths.size() > 1) {
-            throw std::runtime_error("OpenGLTextureArray: Multiple files not supported in this scenario.");
+        if (filePaths.size() > 1) {
+            throw std::runtime_error("OpenGLTextureArray: multiple files not supported in this example!");
         }
 
-        // Load the full sprite sheet from the first file.
-        TextureData data;
-        if (!data.LoadFromFile(file_paths[0], /*flipY=*/false, /*force4Ch=*/true, /*isHDR=*/false)) {
-            throw std::runtime_error("OpenGLTextureArray: Failed to load texture from " + file_paths[0]);
-        }
-        width_ = static_cast<uint32_t>(data.GetWidth());
-        height_ = static_cast<uint32_t>(data.GetHeight());
-        int channels = data.GetChannels();
+        // 1) Load the sprite sheet into a Bitmap
+        Bitmap sheet;
+        sheet.LoadFromFile(filePaths[0], /*flipY=*/false, /*force4Ch=*/true, /*isHDR=*/false);
 
-        // Compute frame dimensions.
-        uint32_t frame_width = width_ / grid_x;
-        uint32_t frame_height = height_ / grid_y;
+        width_ = sheet.width();
+        height_ = sheet.height();
+        int chans = sheet.components();
 
-        GLCall(glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &texture_id_));
+        // each frame dimension
+        uint32_t frameW = width_ / gridX;
+        uint32_t frameH = height_ / gridY;
+
+        glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &texture_id_);
         if (!texture_id_) {
-            throw std::runtime_error("OpenGLTextureArray: Failed to create texture array object.");
+            throw std::runtime_error("OpenGLTextureArray: glCreateTextures failed!");
         }
+
+        // final format
+        GLenum finalFmt = ResolveInternalFormat(config, chans);
 
         int levels = config.generate_mips_
-            ? static_cast<int>(std::floor(std::log2(std::max(frame_width, frame_height)))) + 1
+            ? (int)std::floor(std::log2(std::max(frameW, frameH))) + 1
             : 1;
-        GLCall(glTextureStorage3D(texture_id_, levels, config.internal_format_, frame_width, frame_height, total_frames));
 
-        // Set unpack alignment.
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        const unsigned char* full_image_data = data.GetDataU8();
-        if (!full_image_data) {
-            throw std::runtime_error("OpenGLTextureArray: No 8-bit data found (expected LDR).");
+        glTextureStorage3D(texture_id_, levels, finalFmt, frameW, frameH, totalFrames);
+
+        // slice the sprite sheet
+        const uint8_t* fullData = sheet.GetDataU8();
+        if (!fullData) {
+            throw std::runtime_error("OpenGLTextureArray: expected 8-bit sprite sheet!");
         }
-        size_t frame_size = static_cast<size_t>(frame_width) * frame_height * channels;
-        std::vector<unsigned char> frame_data(frame_size);
-        uint32_t frame_index = 0;
-        for (uint32_t gy = 0; gy < grid_y && frame_index < total_frames; gy++) {
-            for (uint32_t gx = 0; gx < grid_x && frame_index < total_frames; gx++) {
-                uint32_t src_x = gx * frame_width;
-                uint32_t src_y = gy * frame_height;
-                for (uint32_t row = 0; row < frame_height; row++) {
-                    size_t src_offset = ((src_y + row) * static_cast<size_t>(width_) + src_x) * channels;
-                    size_t dst_offset = row * static_cast<size_t>(frame_width) * channels;
-                    std::memcpy(&frame_data[dst_offset], &full_image_data[src_offset], frame_width * channels);
+        size_t frameSize = (size_t)frameW * frameH * chans;
+        std::vector<uint8_t> frameBuf(frameSize);
+
+        uint32_t frameIdx = 0;
+        for (uint32_t gy = 0; gy < gridY && frameIdx < totalFrames; ++gy) {
+            for (uint32_t gx = 0; gx < gridX && frameIdx < totalFrames; ++gx) {
+                uint32_t srcX = gx * frameW;
+                uint32_t srcY = gy * frameH;
+                for (uint32_t row = 0; row < frameH; ++row) {
+                    size_t srcOffset = ((srcY + row) * (size_t)width_ + srcX) * chans;
+                    size_t dstOffset = row * (size_t)frameW * chans;
+                    std::memcpy(&frameBuf[dstOffset],
+                        &fullData[srcOffset],
+                        frameW * chans);
                 }
-                GLCall(glTextureSubImage3D(texture_id_,
-                    0, // mip level
-                    0, // x offset
-                    0, // y offset
-                    frame_index, // layer index
-                    frame_width,
-                    frame_height,
-                    1, // one layer
-                    GL_RGBA, // forcing 4 channels
+                // upload subimage
+                glTextureSubImage3D(texture_id_,
+                    0, // mip
+                    0, 0, frameIdx, // x,y,z
+                    frameW, frameH, 1,
+                    GL_RGBA, // assume 4 channels forced
                     GL_UNSIGNED_BYTE,
-                    frame_data.data()));
-                frame_index++;
+                    frameBuf.data());
+                frameIdx++;
             }
         }
-        Logger::GetLogger()->info("OpenGLTextureArray: Loaded {} frames (expected {}).", frame_index, total_frames);
+        Logger::GetLogger()->info("OpenGLTextureArray: Loaded {} frames (expected {}).", frameIdx, totalFrames);
+
+        // set params
         if (config.generate_mips_) {
-            GLCall(glGenerateTextureMipmap(texture_id_));
+            glGenerateTextureMipmap(texture_id_);
         }
-        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_MIN_FILTER, config.min_filter_));
-        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_MAG_FILTER, config.mag_filter_));
-        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_WRAP_S, config.wrap_s_));
-        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_WRAP_T, config.wrap_t_));
-        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_WRAP_R, config.wrap_r_));
+        glTextureParameteri(texture_id_, GL_TEXTURE_MIN_FILTER, config.min_filter_);
+        glTextureParameteri(texture_id_, GL_TEXTURE_MAG_FILTER, config.mag_filter_);
+        glTextureParameteri(texture_id_, GL_TEXTURE_WRAP_S, config.wrap_s_);
+        glTextureParameteri(texture_id_, GL_TEXTURE_WRAP_T, config.wrap_t_);
+        glTextureParameteri(texture_id_, GL_TEXTURE_WRAP_R, config.wrap_r_);
 
         if (config.use_anisotropy_) {
-            GLfloat max_aniso = 0.f;
-            glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_aniso);
-            GLCall(glTextureParameterf(texture_id_, GL_TEXTURE_MAX_ANISOTROPY, max_aniso));
+            GLfloat maxAniso = 0.0f;
+            glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
+            glTextureParameterf(texture_id_, GL_TEXTURE_MAX_ANISOTROPY, maxAniso);
         }
-        if (config.use_bindless_ && GLAD_GL_ARB_bindless_texture) {
-            bindless_handle_ = glGetTextureHandleARB(texture_id_);
-            if (bindless_handle_) {
-                glMakeTextureHandleResidentARB(bindless_handle_);
-                is_bindless_ = true;
-            }
-        }
-    }
 
-    OpenGLTextureArray::~OpenGLTextureArray() {
-        if (is_bindless_ && bindless_handle_) {
-            glMakeTextureHandleNonResidentARB(bindless_handle_);
-        }
-        if (texture_id_) {
-            GLCall(glDeleteTextures(1, &texture_id_));
-        }
-    }
-
-    void OpenGLTextureArray::Bind(uint32_t unit) const {
-        if (!is_bindless_) {
-            GLCall(glBindTextureUnit(unit, texture_id_));
-        }
-    }
-
-    void OpenGLTextureArray::Unbind(uint32_t unit) const {
-        if (!is_bindless_) {
-            GLCall(glBindTextureUnit(unit, 0));
-        }
+        MakeBindlessIfNeeded(config.use_bindless_);
     }
 
 } // namespace graphics
