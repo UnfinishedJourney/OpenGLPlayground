@@ -3,31 +3,34 @@
 #include "TextureConfig.h"
 #include <array>
 #include <filesystem>
-#include <vector>
-#include <cstdint>
 #include <glad/glad.h>
+#include <cstdint>
 
 namespace graphics {
 
     /**
      * @brief Represents an OpenGL cube map texture.
      *
-     * Supports both single mip-level cube maps (6 files) and
-     * cube maps with multiple mip levels.
+     * Supports loading from 6 individual face files or from multiple mip levels.
      */
     class OpenGLCubeMapTexture : public ITexture {
     public:
         /**
-         * @brief Constructs a cube map texture from 6 file paths (one per face).
+         * @brief Constructs a cube map texture from 6 face image files.
+         * @param faces Array of 6 file paths.
+         * @param config Texture configuration.
+         * @throws std::runtime_error if any face fails to load.
          */
         OpenGLCubeMapTexture(const std::array<std::filesystem::path, 6>& faces,
             const TextureConfig& config);
 
         /**
          * @brief Constructs a cube map texture from multiple mip levels.
-         * Each mip level is an array of 6 file paths.
+         * @param mip_faces Vector of 6-face arrays, one per mip level.
+         * @param config Texture configuration.
+         * @throws std::runtime_error if any face fails to load.
          */
-        OpenGLCubeMapTexture(const std::vector<std::array<std::filesystem::path, 6>>& mipFaces,
+        OpenGLCubeMapTexture(const std::vector<std::array<std::filesystem::path, 6>>& mip_faces,
             const TextureConfig& config);
 
         ~OpenGLCubeMapTexture() override;
@@ -35,17 +38,20 @@ namespace graphics {
         void Bind(uint32_t unit) const override;
         void Unbind(uint32_t unit) const override;
 
-        uint32_t GetWidth()  const override { return m_Width; }
-        uint32_t GetHeight() const override { return m_Height; }
-        uint64_t GetBindlessHandle() const override { return m_BindlessHandle; }
-        bool     IsBindless()        const override { return m_IsBindless; }
+        uint32_t GetWidth() const override { return width_; }
+        uint32_t GetHeight() const override { return height_; }
+        uint64_t GetBindlessHandle() const override { return bindless_handle_; }
+        bool IsBindless() const override { return is_bindless_; }
 
     private:
-        GLuint m_TextureID = 0;
-        uint32_t m_Width = 0;
-        uint32_t m_Height = 0;
-        uint64_t m_BindlessHandle = 0;
-        bool m_IsBindless = false;
+        void InitializeCubeMap(const std::array<std::filesystem::path, 6>& faces, const TextureConfig& config);
+        void InitializeCubeMapMip(const std::vector<std::array<std::filesystem::path, 6>>& mip_faces, const TextureConfig& config);
+
+        GLuint texture_id_ = 0;
+        uint32_t width_ = 0;
+        uint32_t height_ = 0;
+        uint64_t bindless_handle_ = 0;
+        bool is_bindless_ = false;
     };
 
 } // namespace graphics

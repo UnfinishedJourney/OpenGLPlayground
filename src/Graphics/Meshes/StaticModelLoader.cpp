@@ -9,11 +9,12 @@
 
 #include "Graphics/Materials/MaterialManager.h"
 #include "Graphics/Textures/TextureManager.h"
+#include "Graphics/Textures/TextureConfig.h"
 #include "Utilities/Logger.h"
 
 namespace StaticLoader {
 
-    // ––– Constructor –––
+    // â€“â€“â€“ Constructor â€“â€“â€“
     ModelLoader::ModelLoader(float scaleFactor,
         std::unordered_map<aiTextureType, TextureType> aiToMyType,
         uint8_t maxLODs)
@@ -22,7 +23,7 @@ namespace StaticLoader {
         maxLODs_(maxLODs)
     {}
 
-    // ––– LoadStaticModel –––
+    // â€“â€“â€“ LoadStaticModel â€“â€“â€“
     bool ModelLoader::LoadStaticModel(const std::string& modelName,
         const MeshLayout& meshLayout,
         const MaterialLayout& matLayout,
@@ -128,7 +129,7 @@ namespace StaticLoader {
         return true;
     }
 
-    // ––– LoadSceneMaterials –––
+    // â€“â€“â€“ LoadSceneMaterials â€“â€“â€“
     void ModelLoader::LoadSceneMaterials(const aiScene* scene,
         const MaterialLayout& matLayout,
         const std::string& directory)
@@ -141,7 +142,7 @@ namespace StaticLoader {
         }
     }
 
-    // ––– CreateMaterialForAssimpMat –––
+    // â€“â€“â€“ CreateMaterialForAssimpMat â€“â€“â€“
     std::size_t ModelLoader::CreateMaterialForAssimpMat(const aiMaterial* aiMat,
         const MaterialLayout& matLayout,
         const std::string& directory)
@@ -176,7 +177,7 @@ namespace StaticLoader {
         return idOpt.value();
     }
 
-    // ––– LoadMaterialProperties –––
+    // â€“â€“â€“ LoadMaterialProperties â€“â€“â€“
     void ModelLoader::LoadMaterialProperties(const aiMaterial* aiMat,
         const std::unique_ptr<graphics::Material>& mat,
         const MaterialLayout& matLayout)
@@ -207,7 +208,7 @@ namespace StaticLoader {
         }
     }
 
-    // ––– LoadMaterialTextures –––
+    // â€“â€“â€“ LoadMaterialTextures â€“â€“â€“
     void ModelLoader::LoadMaterialTextures(const aiMaterial* aiMat,
         const std::unique_ptr<graphics::Material>& mat,
         const MaterialLayout& matLayout,
@@ -226,7 +227,8 @@ namespace StaticLoader {
                     full = full.lexically_normal();
 
                     auto textureName = rel.filename().string();
-                    auto loadedTex = graphics::TextureManager::GetInstance().LoadTexture(textureName, full.string());
+                    graphics::TextureConfig texture_config;
+                    auto loadedTex = graphics::TextureManager::GetInstance().Load2DTexture(textureName, full.string(), texture_config);
                     if (!loadedTex) {
                         Logger::GetLogger()->error("Failed to load texture '{}' for type={}.",
                             full.string(), static_cast<int>(myType));
@@ -239,7 +241,7 @@ namespace StaticLoader {
         }
     }
 
-    // ––– ProcessAssimpMesh –––
+    // â€“â€“â€“ ProcessAssimpMesh â€“â€“â€“
     std::shared_ptr<graphics::Mesh> ModelLoader::ProcessAssimpMesh(const aiMesh* aimesh,
         const MeshLayout& meshLayout,
         const glm::mat4& transform)
@@ -362,7 +364,7 @@ namespace StaticLoader {
         return mesh;
     }
 
-    // ––– GenerateLODs –––
+    // â€“â€“â€“ GenerateLODs â€“â€“â€“
     void ModelLoader::GenerateLODs(std::vector<uint32_t> srcIndices,
         const std::vector<float>& vertices3f,
         std::vector<std::vector<uint32_t>>& outLods) const
@@ -397,7 +399,7 @@ namespace StaticLoader {
             );
 
             bool sloppy = false;
-            // If no significant improvement is achieved, try a “sloppy” simplification.
+            // If no significant improvement is achieved, try a â€œsloppyâ€ simplification.
             if (numOpt > simplified.size() * 0.9f) {
                 if (lodLevel > 1) {
                     numOpt = meshopt_simplifySloppy(
@@ -440,7 +442,7 @@ namespace StaticLoader {
         }
     }
 
-    // ––– CenterMeshes –––
+    // â€“â€“â€“ CenterMeshes â€“â€“â€“
     void ModelLoader::CenterMeshes()
     {
         if (objects_.empty()) {
@@ -467,7 +469,7 @@ namespace StaticLoader {
         }
     }
 
-    // ––– AiToGlm –––
+    // â€“â€“â€“ AiToGlm â€“â€“â€“
     glm::mat4 ModelLoader::AiToGlm(const aiMatrix4x4& m) const
     {
         glm::mat4 ret;
@@ -478,7 +480,7 @@ namespace StaticLoader {
         return glm::transpose(ret);
     }
 
-    // ––– GetModelPath –––
+    // â€“â€“â€“ GetModelPath â€“â€“â€“
     std::string ModelLoader::GetModelPath(const std::string& modelName) const
     {
         auto it = modelPaths_.find(modelName);

@@ -15,7 +15,7 @@ namespace graphics {
         /// Unbind the texture from a texture unit.
         virtual void Unbind(uint32_t unit) const = 0;
 
-        virtual uint32_t GetWidth()  const = 0;
+        virtual uint32_t GetWidth() const = 0;
         virtual uint32_t GetHeight() const = 0;
 
         /// If using bindless textures, return the GPU handle.

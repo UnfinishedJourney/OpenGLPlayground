@@ -1,43 +1,50 @@
 #pragma once
 #include "ITexture.h"
 #include "TextureConfig.h"
-#include "TextureData.h"
 #include <vector>
 #include <string>
-#include <cstdint>
 #include <glad/glad.h>
+#include <cstdint>
 
 namespace graphics {
 
     /**
-     * @brief Represents a 2D texture array (e.g. a sprite sheet sliced into frames).
+     * @brief Represents a 2D texture array.
      *
-     * The constructor slices a single image (or could later combine multiple files)
-     * into layers of a GL texture array.
+     * Loads a sprite sheet and slices it into layers stored in a GL texture array.
      */
     class OpenGLTextureArray : public ITexture {
     public:
-        OpenGLTextureArray(const std::vector<std::string>& filePaths,
+        /**
+         * @brief Constructs a texture array by slicing a single sprite sheet.
+         * @param file_paths A vector of file paths (only one file is supported currently).
+         * @param config Texture configuration.
+         * @param total_frames Total number of frames.
+         * @param grid_x Number of columns in the sprite sheet.
+         * @param grid_y Number of rows in the sprite sheet.
+         * @throws std::runtime_error if texture creation fails.
+         */
+        OpenGLTextureArray(const std::vector<std::string>& file_paths,
             const TextureConfig& config,
-            uint32_t totalFrames = 64,
-            uint32_t gridX = 8,
-            uint32_t gridY = 8);
+            uint32_t total_frames = 64,
+            uint32_t grid_x = 8,
+            uint32_t grid_y = 8);
         ~OpenGLTextureArray() override;
 
         void Bind(uint32_t unit) const override;
         void Unbind(uint32_t unit) const override;
 
-        uint32_t GetWidth()  const override { return m_Width; }
-        uint32_t GetHeight() const override { return m_Height; }
-        uint64_t GetBindlessHandle() const override { return m_BindlessHandle; }
-        bool IsBindless()        const override { return m_IsBindless; }
+        uint32_t GetWidth() const override { return width_; }
+        uint32_t GetHeight() const override { return height_; }
+        uint64_t GetBindlessHandle() const override { return bindless_handle_; }
+        bool IsBindless() const override { return is_bindless_; }
 
     private:
-        GLuint m_TextureID = 0;
-        uint32_t m_Width = 0;
-        uint32_t m_Height = 0;
-        uint64_t m_BindlessHandle = 0;
-        bool m_IsBindless = false;
+        GLuint texture_id_ = 0;
+        uint32_t width_ = 0;
+        uint32_t height_ = 0;
+        uint64_t bindless_handle_ = 0;
+        bool is_bindless_ = false;
     };
 
 } // namespace graphics

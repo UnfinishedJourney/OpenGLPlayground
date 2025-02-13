@@ -5,42 +5,30 @@
 namespace graphics {
 
     /**
-     * @brief Loads image data from disk (either LDR or HDR).
-     *
-     * Optionally flips the image vertically and can force four channels.
+     * @brief Loads image data from disk (LDR or HDR).
      */
     class TextureData {
     public:
-        /**
-         * @brief Loads texture data from a file.
-         * @param filePath Path to the image.
-         * @param flipY If true, flips the image vertically.
-         * @param force4Ch Forces loading 4 channels (RGBA) if true.
-         * @param isHDR Loads as HDR (float) if true.
-         * @return true on success, false otherwise.
-         */
-        bool LoadFromFile(const std::string& filePath,
-            bool flipY = true,
-            bool force4Ch = true,
-            bool isHDR = false);
+        bool LoadFromFile(const std::string& file_path,
+            bool flip_y = true,
+            bool force_4ch = true,
+            bool is_hdr = false);
 
-        /// Returns LDR (8-bit) pixel data if available.
-        const unsigned char* GetDataU8() const { return m_ByteData.empty() ? nullptr : m_ByteData.data(); }
-        /// Returns HDR (float) pixel data if available.
-        const float* GetDataFloat() const { return m_FloatData.empty() ? nullptr : m_FloatData.data(); }
+        const unsigned char* GetDataU8() const { return byte_data_.empty() ? nullptr : byte_data_.data(); }
+        const float* GetDataFloat() const { return float_data_.empty() ? nullptr : float_data_.data(); }
 
-        int GetWidth() const { return m_Width; }
-        int GetHeight() const { return m_Height; }
-        int GetChannels() const { return m_Channels; }
-        bool IsHDR() const { return m_IsHDR; }
+        int GetWidth() const { return width_; }
+        int GetHeight() const { return height_; }
+        int GetChannels() const { return channels_; }
+        bool IsHDR() const { return is_hdr_; }
 
     private:
-        std::vector<unsigned char> m_ByteData;   ///< LDR data.
-        std::vector<float>         m_FloatData;  ///< HDR data.
-        int m_Width = 0;
-        int m_Height = 0;
-        int m_Channels = 0;
-        bool m_IsHDR = false;
+        std::vector<unsigned char> byte_data_;
+        std::vector<float> float_data_;
+        int width_ = 0;
+        int height_ = 0;
+        int channels_ = 0;
+        bool is_hdr_ = false;
     };
 
 } // namespace graphics

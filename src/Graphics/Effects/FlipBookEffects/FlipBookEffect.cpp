@@ -26,10 +26,10 @@ void FlipbookEffect::LoadConfig(const std::string& basePath, const std::string& 
 
     std::string fullPath = basePath + framesFile;
     graphics::TextureConfig config;
-    config.internalFormat = GL_RGBA8;
-    config.generateMips = false;
-    config.wrapS = GL_CLAMP_TO_EDGE;
-    config.wrapT = GL_CLAMP_TO_EDGE;
+    config.internal_format_ = GL_RGBA8;
+    config.generate_mips_ = false;
+    config.wrap_s_ = GL_CLAMP_TO_EDGE;
+    config.wrap_t_ = GL_CLAMP_TO_EDGE;
     //config.minFilter = GL_LINEAR;
     //config.magFilter = GL_LINEAR;
 

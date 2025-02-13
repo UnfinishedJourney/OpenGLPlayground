@@ -4,142 +4,151 @@
 #include "Utilities/Utility.h"
 #include <stdexcept>
 #include <vector>
+#include <cmath>
+#include <filesystem>
 
 namespace graphics {
 
     OpenGLCubeMapTexture::OpenGLCubeMapTexture(const std::array<std::filesystem::path, 6>& faces,
-        const TextureConfig& config)
-    {
-        // Load the first face to determine dimensions.
+        const TextureConfig& config) {
+        InitializeCubeMap(faces, config);
+    }
+
+    OpenGLCubeMapTexture::OpenGLCubeMapTexture(const std::vector<std::array<std::filesystem::path, 6>>& mip_faces,
+        const TextureConfig& config) {
+        InitializeCubeMapMip(mip_faces, config);
+    }
+
+    void OpenGLCubeMapTexture::InitializeCubeMap(const std::array<std::filesystem::path, 6>& faces,
+        const TextureConfig& config) {
+        // Load first face to determine dimensions.
         TextureData faceData;
-        if (!faceData.LoadFromFile(faces[0].string(), /*flipY=*/false, /*force4Ch=*/true, config.isHDR)) {
-            throw std::runtime_error("Failed to load cube map face: " + faces[0].string());
+        if (!faceData.LoadFromFile(faces[0].string(), false, true, config.is_hdr_)) {
+            throw std::runtime_error("OpenGLCubeMapTexture: Failed to load face: " + faces[0].string());
         }
-        m_Width = static_cast<uint32_t>(faceData.GetWidth());
-        m_Height = static_cast<uint32_t>(faceData.GetHeight());
-        GLenum internalFormat = config.internalFormat;
+        width_ = static_cast<uint32_t>(faceData.GetWidth());
+        height_ = static_cast<uint32_t>(faceData.GetHeight());
+        GLenum internal_format = config.internal_format_;
 
-        GLCall(glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &m_TextureID));
-        if (!m_TextureID) {
-            throw std::runtime_error("Failed to create cube map texture.");
+        GLCall(glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &texture_id_));
+        if (texture_id_ == 0) {
+            throw std::runtime_error("OpenGLCubeMapTexture: Failed to create cube map texture.");
         }
-
-        int levels = config.generateMips
-            ? static_cast<int>(std::floor(std::log2(std::max(m_Width, m_Height)))) + 1
+        int levels = config.generate_mips_
+            ? static_cast<int>(std::floor(std::log2(std::max(width_, height_)))) + 1
             : 1;
-        GLCall(glTextureStorage2D(m_TextureID, levels, internalFormat, m_Width, m_Height));
+        GLCall(glTextureStorage2D(texture_id_, levels, internal_format, width_, height_));
 
-        // Load and upload each face.
-        for (size_t i = 0; i < 6; i++) {
+        // Load each face.
+        for (size_t i = 0; i < 6; ++i) {
             TextureData data;
-            if (!data.LoadFromFile(faces[i].string(), /*flipY=*/false, /*force4Ch=*/true, config.isHDR)) {
-                throw std::runtime_error("Failed to load cube map face: " + faces[i].string());
+            if (!data.LoadFromFile(faces[i].string(), false, true, config.is_hdr_)) {
+                throw std::runtime_error("OpenGLCubeMapTexture: Failed to load face: " + faces[i].string());
             }
-            GLenum dataType = config.isHDR ? GL_FLOAT : GL_UNSIGNED_BYTE;
-            GLenum uploadFormat = GL_RGBA;
-            const void* pixels = config.isHDR
+            GLenum dataType = config.is_hdr_ ? GL_FLOAT : GL_UNSIGNED_BYTE;
+            GLenum uploadFormat = GL_RGBA; // assuming data is RGBA
+            const void* pixels = config.is_hdr_
                 ? static_cast<const void*>(data.GetDataFloat())
                 : static_cast<const void*>(data.GetDataU8());
             if (!pixels) {
-                throw std::runtime_error("No pixel data for cube map face: " + faces[i].string());
+                throw std::runtime_error("OpenGLCubeMapTexture: No pixel data for face: " + faces[i].string());
             }
-            GLCall(glTextureSubImage3D(m_TextureID, 0, 0, 0, i, m_Width, m_Height, 1, uploadFormat, dataType, pixels));
+            GLCall(glTextureSubImage3D(texture_id_, 0, 0, 0, i, width_, height_, 1, uploadFormat, dataType, pixels));
         }
-        if (config.generateMips) {
-            GLCall(glGenerateTextureMipmap(m_TextureID));
+        if (config.generate_mips_) {
+            GLCall(glGenerateTextureMipmap(texture_id_));
         }
-        GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_MIN_FILTER, config.minFilter));
-        GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_MAG_FILTER, config.magFilter));
-        GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_S, config.wrapS));
-        GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_T, config.wrapT));
-        GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_R, config.wrapR));
+        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_MIN_FILTER, config.min_filter_));
+        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_MAG_FILTER, config.mag_filter_));
+        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_WRAP_S, config.wrap_s_));
+        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_WRAP_T, config.wrap_t_));
+        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_WRAP_R, config.wrap_r_));
 
-        if (config.useBindless && GLAD_GL_ARB_bindless_texture) {
-            m_BindlessHandle = glGetTextureHandleARB(m_TextureID);
-            if (m_BindlessHandle) {
-                glMakeTextureHandleResidentARB(m_BindlessHandle);
-                m_IsBindless = true;
+        if (config.use_bindless_ && GLAD_GL_ARB_bindless_texture) {
+            bindless_handle_ = glGetTextureHandleARB(texture_id_);
+            if (bindless_handle_) {
+                glMakeTextureHandleResidentARB(bindless_handle_);
+                is_bindless_ = true;
             }
         }
     }
 
-    OpenGLCubeMapTexture::OpenGLCubeMapTexture(const std::vector<std::array<std::filesystem::path, 6>>& mipFaces,
-        const TextureConfig& config)
-    {
-        if (mipFaces.empty()) {
-            throw std::runtime_error("No mip faces provided for cube map texture.");
+    void OpenGLCubeMapTexture::InitializeCubeMapMip(const std::vector<std::array<std::filesystem::path, 6>>& mip_faces,
+        const TextureConfig& config) {
+        if (mip_faces.empty()) {
+            throw std::runtime_error("OpenGLCubeMapTexture: No mip faces provided.");
         }
-        // Use the first mip level to determine dimensions.
+        // Use first face of first mip level for dimensions.
         TextureData faceData;
-        if (!faceData.LoadFromFile(mipFaces[0][0].string(), false, true, config.isHDR)) {
-            throw std::runtime_error("Failed to load cube map face: " + mipFaces[0][0].string());
+        if (!faceData.LoadFromFile(mip_faces[0][0].string(), false, true, config.is_hdr_)) {
+            throw std::runtime_error("OpenGLCubeMapTexture: Failed to load face: " + mip_faces[0][0].string());
         }
-        m_Width = static_cast<uint32_t>(faceData.GetWidth());
-        m_Height = static_cast<uint32_t>(faceData.GetHeight());
-        GLenum internalFormat = config.internalFormat;
+        width_ = static_cast<uint32_t>(faceData.GetWidth());
+        height_ = static_cast<uint32_t>(faceData.GetHeight());
+        GLenum internal_format = config.internal_format_;
+        int mipLevels = static_cast<int>(mip_faces.size());
 
-        int mipLevels = static_cast<int>(mipFaces.size());
-        GLCall(glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &m_TextureID));
-        if (!m_TextureID) {
-            throw std::runtime_error("Failed to create cube map texture.");
+        GLCall(glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &texture_id_));
+        if (texture_id_ == 0) {
+            throw std::runtime_error("OpenGLCubeMapTexture: Failed to create cube map texture.");
         }
-        GLCall(glTextureStorage2D(m_TextureID, mipLevels, internalFormat, m_Width, m_Height));
+        GLCall(glTextureStorage2D(texture_id_, mipLevels, internal_format, width_, height_));
 
         for (int level = 0; level < mipLevels; ++level) {
-            const auto& faces = mipFaces[level];
-            for (size_t i = 0; i < 6; i++) {
+            const auto& faces = mip_faces[level];
+            for (size_t i = 0; i < 6; ++i) {
                 TextureData data;
-                if (!data.LoadFromFile(faces[i].string(), false, true, config.isHDR)) {
-                    throw std::runtime_error("Failed to load cube map face at mip level " + std::to_string(level) +
+                if (!data.LoadFromFile(faces[i].string(), false, true, config.is_hdr_)) {
+                    throw std::runtime_error("OpenGLCubeMapTexture: Failed to load face at mip level " + std::to_string(level) +
                         ": " + faces[i].string());
                 }
-                GLenum dataType = config.isHDR ? GL_FLOAT : GL_UNSIGNED_BYTE;
+                GLenum dataType = config.is_hdr_ ? GL_FLOAT : GL_UNSIGNED_BYTE;
                 GLenum uploadFormat = GL_RGBA;
-                const void* pixels = config.isHDR
+                const void* pixels = config.is_hdr_
                     ? static_cast<const void*>(data.GetDataFloat())
                     : static_cast<const void*>(data.GetDataU8());
                 if (!pixels) {
-                    throw std::runtime_error("No pixel data for cube map face at mip level " + std::to_string(level) +
+                    throw std::runtime_error("OpenGLCubeMapTexture: No pixel data for face at mip level " + std::to_string(level) +
                         ": " + faces[i].string());
                 }
-                GLCall(glTextureSubImage3D(m_TextureID, level, 0, 0, i, m_Width, m_Height, 1, uploadFormat, dataType, pixels));
+                GLCall(glTextureSubImage3D(texture_id_, level, 0, 0, i, width_, height_, 1, uploadFormat, dataType, pixels));
             }
         }
-        if (config.generateMips) {
-            GLCall(glGenerateTextureMipmap(m_TextureID));
+        if (config.generate_mips_) {
+            GLCall(glGenerateTextureMipmap(texture_id_));
         }
-        GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_MIN_FILTER, config.minFilter));
-        GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_MAG_FILTER, config.magFilter));
-        GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_S, config.wrapS));
-        GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_T, config.wrapT));
-        GLCall(glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_R, config.wrapR));
+        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_MIN_FILTER, config.min_filter_));
+        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_MAG_FILTER, config.mag_filter_));
+        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_WRAP_S, config.wrap_s_));
+        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_WRAP_T, config.wrap_t_));
+        GLCall(glTextureParameteri(texture_id_, GL_TEXTURE_WRAP_R, config.wrap_r_));
 
-        if (config.useBindless && GLAD_GL_ARB_bindless_texture) {
-            m_BindlessHandle = glGetTextureHandleARB(m_TextureID);
-            if (m_BindlessHandle) {
-                glMakeTextureHandleResidentARB(m_BindlessHandle);
-                m_IsBindless = true;
+        if (config.use_bindless_ && GLAD_GL_ARB_bindless_texture) {
+            bindless_handle_ = glGetTextureHandleARB(texture_id_);
+            if (bindless_handle_) {
+                glMakeTextureHandleResidentARB(bindless_handle_);
+                is_bindless_ = true;
             }
         }
     }
 
     OpenGLCubeMapTexture::~OpenGLCubeMapTexture() {
-        if (m_IsBindless && m_BindlessHandle) {
-            glMakeTextureHandleNonResidentARB(m_BindlessHandle);
+        if (is_bindless_ && bindless_handle_) {
+            glMakeTextureHandleNonResidentARB(bindless_handle_);
         }
-        if (m_TextureID) {
-            GLCall(glDeleteTextures(1, &m_TextureID));
+        if (texture_id_) {
+            GLCall(glDeleteTextures(1, &texture_id_));
         }
     }
 
     void OpenGLCubeMapTexture::Bind(uint32_t unit) const {
-        if (!m_IsBindless) {
-            GLCall(glBindTextureUnit(unit, m_TextureID));
+        if (!is_bindless_) {
+            GLCall(glBindTextureUnit(unit, texture_id_));
         }
     }
 
     void OpenGLCubeMapTexture::Unbind(uint32_t unit) const {
-        if (!m_IsBindless) {
+        if (!is_bindless_) {
             GLCall(glBindTextureUnit(unit, 0));
         }
     }

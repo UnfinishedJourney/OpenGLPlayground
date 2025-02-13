@@ -33,7 +33,7 @@ namespace graphics {
      */
     struct ShaderMetadata {
         std::filesystem::path BinaryPath;  // Path to the binary.
-        bool IsComputeShader = false;      // True if it’s a compute shader.
+        bool IsComputeShader = false;      // True if itâ€™s a compute shader.
         std::unordered_map<GLenum, std::filesystem::path> ShaderStages;
     };
 
