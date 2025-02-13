@@ -146,7 +146,7 @@ FlipbookEffectConfig EffectsManager::LoadFlipbookConfig(const std::string& name)
 }
 
 void EffectsManager::SetupFullscreenQuad() {
-    auto& meshManager = Graphics::MeshManager::GetInstance();
+    auto& meshManager = graphics::MeshManager::GetInstance();
     auto quadMesh = meshManager.GetMesh("quad");
     MeshLayout quadMeshLayout = {
         true,  // Positions
@@ -155,7 +155,7 @@ void EffectsManager::SetupFullscreenQuad() {
         false, // Bitangents
         { TextureType::Albedo }
     };
-    m_FullscreenQuadMeshBuffer = std::make_shared<Graphics::MeshBuffer>(*quadMesh, quadMeshLayout);
+    m_FullscreenQuadMeshBuffer = std::make_shared<graphics::MeshBuffer>(*quadMesh, quadMeshLayout);
     m_FlipbookQuadMeshBuffer = m_FullscreenQuadMeshBuffer;
 }
 

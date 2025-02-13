@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <glad/glad.h>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Represents a 2D texture array (e.g. a sprite sheet sliced into frames).
@@ -40,4 +40,4 @@ namespace Graphics {
         bool m_IsBindless = false;
     };
 
-} // namespace Graphics
+} // namespace graphics

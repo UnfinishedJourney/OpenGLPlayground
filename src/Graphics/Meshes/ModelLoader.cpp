@@ -90,18 +90,18 @@
 //    }
 //
 //    std::string matName = EnsureUniqueMaterialName(aiName.C_Str());
-//    auto existingMat = Graphics::MaterialManager::GetInstance().GetMaterialByName(matName);
+//    auto existingMat = graphics::MaterialManager::GetInstance().GetMaterialByName(matName);
 //    if (existingMat) {
 //        // Material already exists, reuse
 //        return existingMat->GetName();
 //    }
 //
-//    auto mat = std::make_shared<Graphics::Material>(matLayout);
+//    auto mat = std::make_shared<graphics::Material>(matLayout);
 //    mat->SetName(matName);
 //    LoadMaterialProperties(aiMat, mat, matLayout);
 //    LoadMaterialTextures(aiMat, mat, matLayout, directory);
 //
-//    Graphics::MaterialManager::GetInstance().AddMaterial(mat);
+//    graphics::MaterialManager::GetInstance().AddMaterial(mat);
 //    return matName;
 //}
 //
@@ -118,7 +118,7 @@
 //}
 //
 //void ModelLoader::LoadMaterialProperties(const aiMaterial* aiMat,
-//    std::shared_ptr<Graphics::Material> mat,
+//    std::shared_ptr<graphics::Material> mat,
 //    const MaterialLayout& matLayout)
 //{
 //    // Example for Ambient
@@ -146,7 +146,7 @@
 //}
 //
 //void ModelLoader::LoadMaterialTextures(const aiMaterial* aiMat,
-//    std::shared_ptr<Graphics::Material> material,
+//    std::shared_ptr<graphics::Material> material,
 //    const MaterialLayout& matLayout,
 //    const std::string& directory)
 //{
@@ -178,7 +178,7 @@
 //                fullPath = fullPath.lexically_normal();
 //
 //                auto texName = relativePath.filename().string(); // short name
-//                auto loadedTex = Graphics::TextureManager::GetInstance().LoadTexture(texName, fullPath.string());
+//                auto loadedTex = graphics::TextureManager::GetInstance().LoadTexture(texName, fullPath.string());
 //                if (!loadedTex) {
 //                    Logger::GetLogger()->error("Failed to load texture '{}' for type '{}'.",
 //                        fullPath.string(), (int)myType);
@@ -198,10 +198,10 @@
 //}
 //
 ////fallback material should be assosiated with layout
-//std::unique_ptr<Graphics::Material> ModelLoader::CreateFallbackMaterial(const std::string& name,
+//std::unique_ptr<graphics::Material> ModelLoader::CreateFallbackMaterial(const std::string& name,
 //    const MaterialLayout& matLayout)
 //{
-//    auto fallbackMat = std::make_shared<Graphics::Material>(matLayout);
+//    auto fallbackMat = std::make_shared<graphics::Material>(matLayout);
 //    fallbackMat->SetName(name);
 //    fallbackMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.2f));
 //    fallbackMat->AssignToPackedParams(MaterialParamType::Diffuse, glm::vec3(0.6f));
@@ -267,7 +267,7 @@
 //            // fallback
 //            materialName = CreateFallbackMaterialName();
 //            auto fallback = CreateFallbackMaterial(materialName, matLayout);
-//            Graphics::MaterialManager::GetInstance().AddMaterial(std::move(fallback));
+//            graphics::MaterialManager::GetInstance().AddMaterial(std::move(fallback));
 //            m_Data.createdMaterials.push_back(materialName);
 //        }
 //        else {

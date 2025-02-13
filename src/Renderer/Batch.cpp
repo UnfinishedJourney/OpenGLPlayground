@@ -12,7 +12,7 @@
 #include "Graphics/Buffers/VertexBufferLayout.h"
 #include "Graphics/Buffers/IndirectBuffer.h"
 
-namespace Graphics {
+namespace renderer {
 
     // ========================= Batch Public Methods =========================
 
@@ -59,7 +59,7 @@ namespace Graphics {
         }
 
         // 1) Build the vertex layout and compute totals.
-        VertexBufferLayout vertexLayout;
+        graphics::VertexBufferLayout vertexLayout;
         BatchGeometryTotals totals = BuildLayoutAndTotals(vertexLayout);
 
         // Reserve combined arrays.
@@ -144,7 +144,7 @@ namespace Graphics {
 
     // ========================= Helper Functions =========================
     // Builds the vertex layout based on the mesh layout and computes totals.
-    Batch::BatchGeometryTotals Batch::BuildLayoutAndTotals(VertexBufferLayout& vertexLayout) const {
+    Batch::BatchGeometryTotals Batch::BuildLayoutAndTotals(graphics::VertexBufferLayout& vertexLayout) const {
         BatchGeometryTotals totals;
         GLuint attribIndex = 0;
         if (meshLayout_.hasPositions_) {
@@ -270,7 +270,7 @@ namespace Graphics {
     }
 
     // Creates or updates the GPU buffers (VBO, IBO, indirect command buffer) and updates the VAO.
-    void Batch::CreateGpuBuffers(const VertexBufferLayout& vertexLayout,
+    void Batch::CreateGpuBuffers(const graphics::VertexBufferLayout& vertexLayout,
         const std::vector<float>& vertexData,
         const std::vector<GLuint>& indexData,
         const std::vector<DrawElementsIndirectCommand>& drawCommands)
@@ -281,11 +281,11 @@ namespace Graphics {
             vertexData.size() * sizeof(float)
         );
 
-        vertexBuffer_ = std::make_unique<VertexBuffer>(vertexSpan, GL_STATIC_DRAW);
+        vertexBuffer_ = std::make_unique<graphics::VertexBuffer>(vertexSpan, GL_STATIC_DRAW);
 
         // Create index buffer.
         std::span<const GLuint> indexSpan(indexData.data(), indexData.size());
-        indexBuffer_ = std::make_unique<IndexBuffer>(indexSpan, GL_STATIC_DRAW);
+        indexBuffer_ = std::make_unique<graphics::IndexBuffer>(indexSpan, GL_STATIC_DRAW);
 
 
         // Create indirect command buffer.
@@ -294,11 +294,11 @@ namespace Graphics {
             drawCommands.size() * sizeof(DrawElementsIndirectCommand)
         );
 
-        drawCommandBuffer_ = std::make_unique<IndirectBuffer>(cmdSpan, GL_DYNAMIC_DRAW);
+        drawCommandBuffer_ = std::make_unique<graphics::IndirectBuffer>(cmdSpan, GL_DYNAMIC_DRAW);
 
-        vao_ = std::make_unique<VertexArray>();
+        vao_ = std::make_unique<graphics::VertexArray>();
         vao_->AddBuffer(*vertexBuffer_, vertexLayout);
         vao_->SetIndexBuffer(*indexBuffer_);
     }
 
-} // namespace Graphics
+} // namespace renderer

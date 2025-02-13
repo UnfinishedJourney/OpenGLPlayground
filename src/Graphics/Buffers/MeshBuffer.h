@@ -11,7 +11,7 @@
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Meshes/MeshLayout.h"
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Combines a VAO, VBO, and (optionally) an IBO into one renderable mesh buffer.
@@ -51,4 +51,4 @@ namespace Graphics {
         GLuint indexCount_ = 0;
     };
 
-} // namespace Graphics
+} // namespace graphics

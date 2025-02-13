@@ -91,9 +91,9 @@ namespace StaticLoader {
                 std::size_t matIndex = aimesh->mMaterialIndex;
                 if (matIndex >= materialIDs_.size()) {
                     // Use a fallback material.
-                    auto fallbackMat = std::make_unique<Graphics::Material>(matLayout);
+                    auto fallbackMat = std::make_unique<graphics::Material>(matLayout);
                     fallbackMat->SetName("FallbackMat_" + std::to_string(++fallbackMaterialCounter_));
-                    auto idOpt = Graphics::MaterialManager::GetInstance().AddMaterial(std::move(fallbackMat));
+                    auto idOpt = graphics::MaterialManager::GetInstance().AddMaterial(std::move(fallbackMat));
                     if (!idOpt.has_value()) {
                         Logger::GetLogger()->error("ModelLoader: Failed to create fallback material.");
                         continue;
@@ -106,7 +106,7 @@ namespace StaticLoader {
                 }
 
                 // Create MeshInfo and store.
-                Graphics::MeshInfo mi;
+                graphics::MeshInfo mi;
                 mi.mesh_ = newMesh;
                 mi.materialIndex_ = static_cast<int>(matID);
                 objects_.push_back(mi);
@@ -153,12 +153,12 @@ namespace StaticLoader {
         std::string matName(aiName.C_Str());
 
         // Reuse an existing material if one exists.
-        auto existingMatID = Graphics::MaterialManager::GetInstance().GetMaterialIDByName(matName);
+        auto existingMatID = graphics::MaterialManager::GetInstance().GetMaterialIDByName(matName);
         if (existingMatID.has_value()) {
             return existingMatID.value();
         }
 
-        auto material = std::make_unique<Graphics::Material>(matLayout);
+        auto material = std::make_unique<graphics::Material>(matLayout);
         material->SetName(matName);
 
         // Load material properties (colors, floats, etc.).
@@ -168,7 +168,7 @@ namespace StaticLoader {
         LoadMaterialTextures(aiMat, material, matLayout, directory);
 
         // Register the new material.
-        auto idOpt = Graphics::MaterialManager::GetInstance().AddMaterial(std::move(material));
+        auto idOpt = graphics::MaterialManager::GetInstance().AddMaterial(std::move(material));
         if (!idOpt.has_value()) {
             Logger::GetLogger()->error("ModelLoader: Failed to add material '{}'.", matName);
             return 0;
@@ -178,7 +178,7 @@ namespace StaticLoader {
 
     // ––– LoadMaterialProperties –––
     void ModelLoader::LoadMaterialProperties(const aiMaterial* aiMat,
-        const std::unique_ptr<Graphics::Material>& mat,
+        const std::unique_ptr<graphics::Material>& mat,
         const MaterialLayout& matLayout)
     {
         // Use layout helper methods (e.g. HasParam) rather than direct bitset access.
@@ -209,7 +209,7 @@ namespace StaticLoader {
 
     // ––– LoadMaterialTextures –––
     void ModelLoader::LoadMaterialTextures(const aiMaterial* aiMat,
-        const std::unique_ptr<Graphics::Material>& mat,
+        const std::unique_ptr<graphics::Material>& mat,
         const MaterialLayout& matLayout,
         const std::string& directory)
     {
@@ -226,7 +226,7 @@ namespace StaticLoader {
                     full = full.lexically_normal();
 
                     auto textureName = rel.filename().string();
-                    auto loadedTex = Graphics::TextureManager::GetInstance().LoadTexture(textureName, full.string());
+                    auto loadedTex = graphics::TextureManager::GetInstance().LoadTexture(textureName, full.string());
                     if (!loadedTex) {
                         Logger::GetLogger()->error("Failed to load texture '{}' for type={}.",
                             full.string(), static_cast<int>(myType));
@@ -240,11 +240,11 @@ namespace StaticLoader {
     }
 
     // ––– ProcessAssimpMesh –––
-    std::shared_ptr<Graphics::Mesh> ModelLoader::ProcessAssimpMesh(const aiMesh* aimesh,
+    std::shared_ptr<graphics::Mesh> ModelLoader::ProcessAssimpMesh(const aiMesh* aimesh,
         const MeshLayout& meshLayout,
         const glm::mat4& transform)
     {
-        auto mesh = std::make_shared<Graphics::Mesh>();
+        auto mesh = std::make_shared<graphics::Mesh>();
 
         // Process positions.
         if (meshLayout.hasPositions_ && aimesh->HasPositions()) {
@@ -352,7 +352,7 @@ namespace StaticLoader {
         mesh->indices_.clear();
         mesh->lods_.clear();
         for (auto& singleLOD : lodIndices) {
-            Graphics::MeshLOD lod;
+            graphics::MeshLOD lod;
             lod.indexOffset_ = static_cast<uint32_t>(mesh->indices_.size());
             lod.indexCount_ = static_cast<uint32_t>(singleLOD.size());
             mesh->indices_.insert(mesh->indices_.end(), singleLOD.begin(), singleLOD.end());

@@ -2,7 +2,7 @@
 #include <glad/glad.h>
 #include <iostream>
 
-namespace Graphics {
+namespace graphics {
 
     ShadowMap::ShadowMap(GLsizei width, GLsizei height)
         : m_Width(width), m_Height(height)
@@ -49,4 +49,4 @@ namespace Graphics {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
-} // namespace Graphics
+} // namespace graphics

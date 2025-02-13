@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <span>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Specifies the memory layout for uniform buffers.
@@ -81,4 +81,4 @@ namespace Graphics {
         UniformBufferLayout m_Layout{ UniformBufferLayout::Std140 };
     };
 
-} // namespace Graphics
+} // namespace graphics

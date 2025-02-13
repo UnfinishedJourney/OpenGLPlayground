@@ -2,7 +2,7 @@
 #include <stb_image.h>
 #include <cstring>
 
-namespace Graphics {
+namespace graphics {
 
     bool TextureData::LoadFromFile(const std::string& filePath,
         bool flipY,
@@ -51,4 +51,4 @@ namespace Graphics {
         return true;
     }
 
-} // namespace Graphics
+} // namespace graphics

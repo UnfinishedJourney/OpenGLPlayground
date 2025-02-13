@@ -6,7 +6,7 @@
 #include <iterator>
 #include <glm/gtc/type_ptr.hpp>
 
-namespace Graphics {
+namespace graphics {
 
     BaseShader::BaseShader(const std::filesystem::path& binaryPath)
         : m_BinaryPath(binaryPath), m_RendererID(0)
@@ -230,4 +230,4 @@ namespace Graphics {
         Logger::GetLogger()->info("Shader binary saved to '{}'.", m_BinaryPath.string());
     }
 
-} // namespace Graphics
+} // namespace graphics

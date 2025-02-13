@@ -22,5 +22,5 @@ private:
     void InitializeSceneResources(const std::shared_ptr<Scene::Scene>& scene);
 
     std::shared_ptr<FrameBuffer> m_Framebuffer;
-    std::shared_ptr<Graphics::MeshBuffer>  m_SkyboxMeshBuffer;
+    std::shared_ptr<graphics::MeshBuffer>  m_SkyboxMeshBuffer;
 };

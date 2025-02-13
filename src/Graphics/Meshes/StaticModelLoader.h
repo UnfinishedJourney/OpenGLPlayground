@@ -57,7 +57,7 @@ namespace StaticLoader {
         /**
          * @brief Returns the loaded MeshInfo objects (each holding a Mesh pointer and a material ID).
          */
-        const std::vector<Graphics::MeshInfo>& GetLoadedObjects() const { return objects_; }
+        const std::vector<graphics::MeshInfo>& GetLoadedObjects() const { return objects_; }
 
     private:
         // Configuration parameters.
@@ -66,7 +66,7 @@ namespace StaticLoader {
         uint8_t maxLODs_ = 8;
 
         // Loaded objects and associated material IDs.
-        std::vector<Graphics::MeshInfo> objects_;
+        std::vector<graphics::MeshInfo> objects_;
         std::vector<std::size_t> materialIDs_;
 
         // Counters for fallback and unnamed materials.
@@ -94,14 +94,14 @@ namespace StaticLoader {
             const MaterialLayout& matLayout,
             const std::string& directory);
         void LoadMaterialProperties(const aiMaterial* aiMat,
-            const std::unique_ptr<Graphics::Material>& mat,
+            const std::unique_ptr<graphics::Material>& mat,
             const MaterialLayout& matLayout);
         void LoadMaterialTextures(const aiMaterial* aiMat,
-            const std::unique_ptr<Graphics::Material>& mat,
+            const std::unique_ptr<graphics::Material>& mat,
             const MaterialLayout& matLayout,
             const std::string& directory);
 
-        std::shared_ptr<Graphics::Mesh> ProcessAssimpMesh(const aiMesh* aimesh,
+        std::shared_ptr<graphics::Mesh> ProcessAssimpMesh(const aiMesh* aimesh,
             const MeshLayout& meshLayout,
             const glm::mat4& transform);
 

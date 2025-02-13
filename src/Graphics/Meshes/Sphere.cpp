@@ -7,7 +7,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-namespace Graphics {
+namespace graphics {
 
     Sphere::Sphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
         if (radius <= 0.f)
@@ -76,4 +76,4 @@ namespace Graphics {
         }
     }
 
-} // namespace Graphics
+} // namespace graphics

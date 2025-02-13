@@ -11,7 +11,7 @@
 class ToneMappingEffect : public PostProcessingEffect {
 public:
     // Constructor: Pass in the fullscreen quad mesh and initial dimensions.
-    ToneMappingEffect(std::shared_ptr<Graphics::MeshBuffer> quad, int width = 800, int height = 600);
+    ToneMappingEffect(std::shared_ptr<graphics::MeshBuffer> quad, int width = 800, int height = 600);
     virtual ~ToneMappingEffect();
 
     // Apply the tone mapping effect.

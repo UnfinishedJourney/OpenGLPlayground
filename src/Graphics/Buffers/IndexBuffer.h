@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <stdexcept>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Encapsulates an OpenGL Index Buffer Object (IBO).
@@ -57,4 +57,4 @@ namespace Graphics {
         GLenum usage_{ GL_STATIC_DRAW };
     };
 
-} // namespace Graphics
+} // namespace graphics

@@ -38,7 +38,7 @@ public:
     /**
      * @return The final set of Batches after building.
      */
-    const std::vector<std::shared_ptr<Graphics::Batch>>& GetBatches() const;
+    const std::vector<std::shared_ptr<renderer::Batch>>& GetBatches() const;
 
     // LOD / culling
     void UpdateLOD(const std::shared_ptr<BaseRenderObject>& ro, size_t newLOD);
@@ -48,17 +48,17 @@ public:
 
 private:
     std::vector<std::shared_ptr<BaseRenderObject>> m_RenderObjects; // All objects
-    std::vector<std::shared_ptr<Graphics::Batch>>            m_Batches;       // Final grouping
+    std::vector<std::shared_ptr<renderer::Batch>>            m_Batches;       // Final grouping
 
     // Lookups: object -> the batch that it belongs to
-    std::unordered_map<BaseRenderObject*, std::shared_ptr<Graphics::Batch>> m_ObjToBatch;
+    std::unordered_map<BaseRenderObject*, std::shared_ptr<renderer::Batch>> m_ObjToBatch;
 
     bool m_Built = false;
 
 private:
-    std::vector<std::shared_ptr<Graphics::Batch>> BuildBatchesFromObjects(
+    std::vector<std::shared_ptr<renderer::Batch>> BuildBatchesFromObjects(
         const std::vector<std::shared_ptr<BaseRenderObject>>& objs
     );
 
-    std::shared_ptr<Graphics::Batch> FindBatchForObject(const std::shared_ptr<BaseRenderObject>& ro) const;
+    std::shared_ptr<renderer::Batch> FindBatchForObject(const std::shared_ptr<BaseRenderObject>& ro) const;
 };

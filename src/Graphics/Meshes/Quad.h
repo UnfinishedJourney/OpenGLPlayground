@@ -2,7 +2,7 @@
 
 #include "Mesh.h"
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief A 2D quad in the XY plane (Z = 0) with corners at (-1, -1) and (1, 1).
@@ -18,4 +18,4 @@ namespace Graphics {
         Floor();
     };
 
-} // namespace Graphics
+} // namespace graphics

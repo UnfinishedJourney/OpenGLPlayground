@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace Graphics {
+namespace graphics {
 
     OpenGLTextureArray::OpenGLTextureArray(const std::vector<std::string>& filePaths,
         const TextureConfig& config,
@@ -126,4 +126,4 @@ namespace Graphics {
         }
     }
 
-} // namespace Graphics
+} // namespace graphics

@@ -3,7 +3,7 @@
 #include "Utilities/Utility.h"
 #include <stdexcept>
 
-namespace Graphics {
+namespace graphics {
 
     ShaderStorageBuffer::ShaderStorageBuffer(GLuint bindingPoint, GLsizeiptr size, GLenum usage)
         : bindingPoint_(bindingPoint), size_(size), usage_(usage)
@@ -53,8 +53,8 @@ namespace Graphics {
 
     void ShaderStorageBuffer::Bind() const
     {
-        GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, rendererID_));
-        Logger::GetLogger()->debug("Bound ShaderStorageBuffer (ID={}) to GL_SHADER_STORAGE_BUFFER.", rendererID_);
+        GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint_, rendererID_));
+        Logger::GetLogger()->debug("Bound ShaderStorageBuffer (ID={}) to binding point {}.", rendererID_, bindingPoint_);
     }
 
     void ShaderStorageBuffer::Unbind() const
@@ -75,10 +75,4 @@ namespace Graphics {
             rendererID_, offset, data.size_bytes());
     }
 
-    void ShaderStorageBuffer::BindBase() const
-    {
-        GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint_, rendererID_));
-        Logger::GetLogger()->debug("Bound ShaderStorageBuffer (ID={}) to binding point {}.", rendererID_, bindingPoint_);
-    }
-
-} // namespace Graphics
+} // namespace graphics

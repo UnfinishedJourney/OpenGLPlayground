@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Loads image data from disk (either LDR or HDR).
@@ -43,4 +43,4 @@ namespace Graphics {
         bool m_IsHDR = false;
     };
 
-} // namespace Graphics
+} // namespace graphics

@@ -2,7 +2,7 @@
 
 #include "Mesh.h"
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Predefined 1x1x1 cube centered at the origin.
@@ -11,4 +11,4 @@ namespace Graphics {
         Cube();
     };
 
-} // namespace Graphics
+} // namespace graphics

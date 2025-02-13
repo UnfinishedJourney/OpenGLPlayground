@@ -30,7 +30,7 @@ void SkyBoxPass::InitializeSceneResources(const std::shared_ptr<Scene::Scene>& s
         /* boneData  */ {}
     };
 
-    auto& meshManager = Graphics::MeshManager::GetInstance();
+    auto& meshManager = graphics::MeshManager::GetInstance();
     m_SkyboxMeshBuffer = meshManager.GetMeshBuffer("cube", skyBoxMeshLayout);
     if (!m_SkyboxMeshBuffer)
     {
@@ -44,7 +44,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
     m_Framebuffer->Bind();
 
     // Bind the skybox shader
-    auto& shaderManager = Graphics::ShaderManager::GetInstance();
+    auto& shaderManager = graphics::ShaderManager::GetInstance();
     auto shader = shaderManager.GetShader("skyBox");
     if (!shader)
     {
@@ -59,7 +59,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
 
     // Bind the cubemap texture (assume it is named "pisaCube" in your TextureManager)
     std::string skyBoxName = "spiaggia_di_mondello";
-    auto cubeMap = Graphics::TextureManager::GetInstance().GetTexture(skyBoxName);
+    auto cubeMap = graphics::TextureManager::GetInstance().GetTexture(skyBoxName);
     if (!cubeMap)
     {
         Logger::GetLogger()->error("SkyBox cubemap skyBoxName not found.");
@@ -68,7 +68,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
     cubeMap->Bind(8);
 
     skyBoxName = "spiaggia_di_mondello_irr";
-    auto cubeMap_irr = Graphics::TextureManager::GetInstance().GetTexture(skyBoxName);
+    auto cubeMap_irr = graphics::TextureManager::GetInstance().GetTexture(skyBoxName);
     if (!cubeMap_irr)
     {
         Logger::GetLogger()->error("SkyBox cubemap skyBoxName not found.");

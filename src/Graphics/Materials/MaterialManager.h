@@ -7,7 +7,7 @@
 #include "Material.h"
 #include "Graphics/Shaders/BaseShader.h"
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Manager for materials.
@@ -80,4 +80,4 @@ namespace Graphics {
         std::optional<std::size_t> currently_bound_material_id_;
     };
 
-} // namespace Graphics
+} // namespace graphics

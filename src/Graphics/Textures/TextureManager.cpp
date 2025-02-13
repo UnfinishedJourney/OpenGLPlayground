@@ -15,7 +15,7 @@
 #include <stb_image.h>
 #include <filesystem>
 
-namespace Graphics {
+namespace graphics {
 
     std::string TextureManager::ToLower(const std::string& str) {
         std::string lowerStr = str;
@@ -453,4 +453,4 @@ namespace Graphics {
         return std::make_shared<ExistingOpenGLTexture>(brdfLUTID, width, height);
     }
 
-} // namespace Graphics
+} // namespace graphics

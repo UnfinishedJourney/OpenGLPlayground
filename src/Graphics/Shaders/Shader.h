@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <filesystem>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief A standard shader program class supporting vertex, fragment, geometry, tessellation
@@ -31,4 +31,4 @@ namespace Graphics {
         std::unordered_map<GLenum, std::filesystem::path> m_ShaderStages;
     };
 
-} // namespace Graphics
+} // namespace graphics

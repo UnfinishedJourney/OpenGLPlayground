@@ -7,13 +7,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-ToneMappingEffect::ToneMappingEffect(std::shared_ptr<Graphics::MeshBuffer> quad, int width, int height)
+ToneMappingEffect::ToneMappingEffect(std::shared_ptr<graphics::MeshBuffer> quad, int width, int height)
     : PostProcessingEffect(quad, width, height),
     m_Exposure(0.18f),  // Default exposure value.
     m_LWhite(1.0f)      // Default white-point.
 {
     // Load the tone mapping shader from your shader manager.
-    auto& shaderManager = Graphics::ShaderManager::GetInstance();
+    auto& shaderManager = graphics::ShaderManager::GetInstance();
     m_Shader = shaderManager.GetShader("toneMapping");
     if (!m_Shader) {
         Logger::GetLogger()->error("ToneMappingEffect: toneMapping shader not found!");

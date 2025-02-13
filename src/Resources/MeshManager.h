@@ -8,7 +8,7 @@
 #include "Graphics/Buffers/MeshBuffer.h"
 #include "Graphics/Meshes/MeshLayout.h"
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Manages meshes and mesh buffers.
@@ -54,4 +54,4 @@ namespace Graphics {
         std::unordered_map<MeshKey, std::shared_ptr<MeshBuffer>, MeshKeyHash> meshBuffers_;
     };
 
-} // namespace Graphics
+} // namespace graphics

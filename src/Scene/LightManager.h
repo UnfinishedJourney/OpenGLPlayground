@@ -7,7 +7,7 @@
 #include "glm/glm.hpp"
 #include "Lights.h"
 
-namespace Graphics {
+namespace graphics {
     class UniformBuffer;
     class ShaderStorageBuffer;
 };
@@ -34,8 +34,8 @@ struct BoundingBox
  */
 
 struct alignas(16) LightData {
-    glm::vec4 position; // w is padding or another parameter, for dir lights position is direction? don't have them yet
-    glm::vec4 color;    // w is intensity
+    glm::vec4 position_; // w is padding or another parameter, for dir lights position is direction? don't have them yet
+    glm::vec4 color_;    // w is intensity
 };
 
 class LightManager
@@ -52,8 +52,8 @@ public:
     void BindLightsGPU() const;
 
     void SetBoundingBox(glm::vec3 min, glm::vec3 max) {
-        m_BBox.min_ = min;
-        m_BBox.max_ = max;
+        bBox_.min_ = min;
+        bBox_.max_ = max;
     }
 
     glm::mat4 ComputeLightView(size_t id) const;
@@ -63,18 +63,18 @@ public:
     // 
     // we get light id, index in vector
     std::optional<size_t> AddLight(const LightData& light);
-    const std::vector<LightData>& GetLightsData() const { return m_LightsData; }
+    const std::vector<LightData>& GetLightsData() const { return lightsData_; }
 
 private:
 
-    BoundingBox m_BBox;
+    BoundingBox bBox_;
 
     //std::vector<Light> m_Lights;
 
     // Store GPU buffer here :
-    std::unique_ptr<Graphics::ShaderStorageBuffer> lightsSSBO_;
+    std::unique_ptr<graphics::ShaderStorageBuffer> lightsSSBO_;
 
-    std::vector<LightData>  m_LightsData;
+    std::vector<LightData>  lightsData_;
 
 
     // For a directional light, we can compute an orthographic matrix that encloses the entire bounding box

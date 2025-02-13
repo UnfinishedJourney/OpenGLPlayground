@@ -18,11 +18,11 @@ public:
     void UpdateFramebuffer(std::shared_ptr<FrameBuffer> framebuffer) override {}
 
     // Retrieve the ShadowMap so the texture can be used in the main pass.
-    std::shared_ptr<Graphics::ShadowMap> GetShadowMap() const { return m_ShadowMap; }
+    std::shared_ptr<graphics::ShadowMap> GetShadowMap() const { return m_ShadowMap; }
 
 private:
-    std::shared_ptr<Graphics::ShadowMap> m_ShadowMap;
-    std::shared_ptr<Graphics::Shader> m_ShadowShader; // used during shadow pass
+    std::shared_ptr<graphics::ShadowMap> m_ShadowMap;
+    std::shared_ptr<graphics::Shader> m_ShadowShader; // used during shadow pass
     // Matrices computed from the light’s position/direction
     glm::mat4 m_ShadowMatrix;
 

@@ -3,7 +3,7 @@
 #include "Utilities/Utility.h"
 #include <glad/glad.h>
 
-namespace Graphics {
+namespace graphics {
 
     ExistingBindlessGLTexture::ExistingBindlessGLTexture(GLuint id, int w, int h, bool makeBindless)
         : m_TextureID(id), m_Width(w), m_Height(h)
@@ -38,4 +38,4 @@ namespace Graphics {
         }
     }
 
-} // namespace Graphics
+} // namespace graphics

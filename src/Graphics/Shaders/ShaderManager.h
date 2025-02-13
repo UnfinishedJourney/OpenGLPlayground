@@ -9,13 +9,13 @@
 #include <glad/glad.h>
 
 // Forward declarations.
-namespace Graphics {
+namespace graphics {
     class BaseShader;
     class ComputeShader;
     class Shader;
 }
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @struct GlobalMetadata
@@ -88,4 +88,4 @@ namespace Graphics {
 
     };
 
-} // namespace Graphics
+} // namespace graphics

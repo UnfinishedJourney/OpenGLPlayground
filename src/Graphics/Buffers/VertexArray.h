@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 #include <stdexcept>
 
-namespace Graphics {
+namespace graphics {
 
     // Forward declarations
     class VertexBuffer;
@@ -64,4 +64,4 @@ namespace Graphics {
         std::vector<GLuint> binding_indices_;   ///< Tracks used binding indices to avoid duplicates
     };
 
-} // namespace Graphics
+} // namespace graphics

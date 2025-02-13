@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Abstract interface for a texture.
@@ -24,4 +24,4 @@ namespace Graphics {
         virtual bool IsBindless() const = 0;
     };
 
-} // namespace Graphics
+} // namespace graphics

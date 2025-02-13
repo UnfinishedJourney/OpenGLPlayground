@@ -8,7 +8,7 @@
 #include "Renderer/RenderObject.h"  
 #include "Graphics/Meshes/MeshLayout.h"
 
-namespace Graphics {
+namespace graphics {
 
     class VertexArray;
     class VertexBuffer;
@@ -17,7 +17,7 @@ namespace Graphics {
     class IndirectBuffer;
 }
 
-namespace Graphics {
+namespace renderer {
 
     /**
      * @brief Structure for one multi-draw command (used with glMultiDrawElementsIndirect).
@@ -81,13 +81,13 @@ namespace Graphics {
         };
 
         // Helper functions.
-        BatchGeometryTotals BuildLayoutAndTotals(VertexBufferLayout& vertexLayout) const;
+        BatchGeometryTotals BuildLayoutAndTotals(graphics::VertexBufferLayout& vertexLayout) const;
         void CombineGeometryData(std::vector<float>& combinedVertexData,
             std::vector<GLuint>& combinedIndices,
             std::vector<std::vector<LODInfo>>& combinedLODInfos,
             std::vector<DrawElementsIndirectCommand>& combinedDrawCommands,
             GLuint& baseVertex) const;
-        void CreateGpuBuffers(const VertexBufferLayout& vertexLayout,
+        void CreateGpuBuffers(const graphics::VertexBufferLayout& vertexLayout,
             const std::vector<float>& vertexData,
             const std::vector<GLuint>& indexData,
             const std::vector<DrawElementsIndirectCommand>& drawCommands);
@@ -101,10 +101,10 @@ namespace Graphics {
         std::vector<std::shared_ptr<BaseRenderObject>> renderObjects_;
 
         // GPU buffers for combined geometry.
-        std::unique_ptr<VertexArray> vao_;
-        std::unique_ptr<VertexBuffer> vertexBuffer_;   // maybe won't store them after all
-        std::unique_ptr<IndexBuffer> indexBuffer_;       
-        std::unique_ptr<IndirectBuffer> drawCommandBuffer_;
+        std::unique_ptr<graphics::VertexArray> vao_;
+        std::unique_ptr<graphics::VertexBuffer> vertexBuffer_;   // maybe won't store them after all
+        std::unique_ptr<graphics::IndexBuffer> indexBuffer_;
+        std::unique_ptr<graphics::IndirectBuffer> drawCommandBuffer_;
 
         // One draw command per object.
         std::vector<DrawElementsIndirectCommand> drawCommands_;
@@ -115,4 +115,4 @@ namespace Graphics {
         bool isDirty_ = true;
     };
 
-} // namespace Graphics
+} // namespace renderer

@@ -10,7 +10,7 @@ LightManager::LightManager()
 {
     // Create the Lights SSBO
     GLsizeiptr bufferSize = sizeof(glm::vec4) + MAX_LIGHTS * sizeof(LightData);
-    lightsSSBO_ = std::make_unique<Graphics::ShaderStorageBuffer>(
+    lightsSSBO_ = std::make_unique<graphics::ShaderStorageBuffer>(
         LIGHTS_DATA_BINDING_POINT,
         bufferSize,
         GL_DYNAMIC_DRAW
@@ -26,7 +26,7 @@ LightManager::~LightManager() = default;
 //void LightManager::AddLight(const Light& light)
 //{
 //
-//    if (m_LightsData.size() >= MAX_LIGHTS) {
+//    if (lightsData_.size() >= MAX_LIGHTS) {
 //        Logger::GetLogger()->warn("Scene::AddLight: exceeded MAX_LIGHTS = {}", MAX_LIGHTS);
 //        return;
 //    }
@@ -43,30 +43,30 @@ LightManager::~LightManager() = default;
 std::optional<size_t> LightManager::AddLight(const LightData& light)
 {
 
-    if (m_LightsData.size() >= MAX_LIGHTS) {
+    if (lightsData_.size() >= MAX_LIGHTS) {
         Logger::GetLogger()->warn("Scene::AddLight: exceeded MAX_LIGHTS = {}", MAX_LIGHTS);
         return std::nullopt;
     }
 
-    m_LightsData.push_back(light);
+    lightsData_.push_back(light);
     //maybe should update all lights at once
     UpdateLightsGPU();
-    return m_LightsData.size() - 1;
+    return lightsData_.size() - 1;
 }
 
 
 void LightManager::UpdateLightsGPU()
 {
     // Number of lights is the first vec4
-    uint32_t numLights = static_cast<uint32_t>(m_LightsData.size());
+    uint32_t numLights = static_cast<uint32_t>(lightsData_.size());
     std::array<uint32_t, 4> countData = { numLights, 0, 0, 0 };
     lightsSSBO_->UpdateData(std::as_bytes(std::span(countData)), 0);
 
     // Then update the array of LightData starting at offset sizeof(glm::vec4).
-    if (!m_LightsData.empty()) {
-        size_t dataSize = m_LightsData.size() * sizeof(LightData);
+    if (!lightsData_.empty()) {
+        size_t dataSize = lightsData_.size() * sizeof(LightData);
         lightsSSBO_->UpdateData(
-            std::as_bytes(std::span(m_LightsData.data(), m_LightsData.size())),
+            std::as_bytes(std::span(lightsData_.data(), lightsData_.size())),
             sizeof(glm::vec4)
         );
     }
@@ -75,20 +75,20 @@ void LightManager::UpdateLightsGPU()
 void LightManager::BindLightsGPU() const
 {
     if (lightsSSBO_) {
-        lightsSSBO_->BindBase();
+        lightsSSBO_->Bind();
     }
 }
 
 glm::mat4 LightManager::ComputeLightView(size_t id) const
 {
-    if (id >= m_LightsData.size()) {
+    if (id >= lightsData_.size()) {
         Logger::GetLogger()->warn("Scene::ComputeLightView: wrong index", MAX_LIGHTS);
         return 1.0f;
     }
 
-    const auto& lightData = m_LightsData[id];
+    const auto& lightData = lightsData_[id];
 
-    if (lightData.position.w == 0.0)
+    if (lightData.position_.w == 0.0)
     {
         return ComputeDirectionalLightView(lightData);
     }
@@ -101,14 +101,14 @@ glm::mat4 LightManager::ComputeLightView(size_t id) const
 
 glm::mat4 LightManager::ComputeLightProj(size_t id) const
 {
-    if (id >= m_LightsData.size()) {
+    if (id >= lightsData_.size()) {
         Logger::GetLogger()->warn("Scene::ComputeLightView: wrong index", MAX_LIGHTS);
         return 1.0f;
     }
 
-    const auto& lightData = m_LightsData[id];
+    const auto& lightData = lightsData_[id];
 
-    if (lightData.position.w < 0.5)
+    if (lightData.position_.w < 0.5)
     {
         return ComputeDirectionalLightProj(lightData);
     }
@@ -122,7 +122,7 @@ glm::mat4 LightManager::ComputeDirectionalLightView(const LightData& light) cons
 {
     // 1) Interpret light.position.xyz as the DIRECTION
     //    We'll normalize it. If it's near zero length, we need a fallback
-    glm::vec3 dir = glm::normalize(glm::vec3(light.position));
+    glm::vec3 dir = glm::normalize(glm::vec3(light.position_));
 
     // 2) For "up" vector, pick something that isn't parallel to dir
     //    We'll default to (0,0,1). If dir is near that, fallback to (0,1,0).
@@ -146,14 +146,14 @@ glm::mat4 LightManager::ComputeDirectionalLightProj(const LightData& light) cons
 
     // 2) Transform the bounding box corners
     glm::vec3 corners[8] = {
-        { m_BBox.min_.x, m_BBox.min_.y, m_BBox.min_.z },
-        { m_BBox.min_.x, m_BBox.min_.y, m_BBox.max_.z },
-        { m_BBox.min_.x, m_BBox.max_.y, m_BBox.min_.z },
-        { m_BBox.min_.x, m_BBox.max_.y, m_BBox.max_.z },
-        { m_BBox.max_.x, m_BBox.min_.y, m_BBox.min_.z },
-        { m_BBox.max_.x, m_BBox.min_.y, m_BBox.max_.z },
-        { m_BBox.max_.x, m_BBox.max_.y, m_BBox.min_.z },
-        { m_BBox.max_.x, m_BBox.max_.y, m_BBox.max_.z },
+        { bBox_.min_.x, bBox_.min_.y, bBox_.min_.z },
+        { bBox_.min_.x, bBox_.min_.y, bBox_.max_.z },
+        { bBox_.min_.x, bBox_.max_.y, bBox_.min_.z },
+        { bBox_.min_.x, bBox_.max_.y, bBox_.max_.z },
+        { bBox_.max_.x, bBox_.min_.y, bBox_.min_.z },
+        { bBox_.max_.x, bBox_.min_.y, bBox_.max_.z },
+        { bBox_.max_.x, bBox_.max_.y, bBox_.min_.z },
+        { bBox_.max_.x, bBox_.max_.y, bBox_.max_.z },
     };
 
     glm::vec3 minLS(1e9f), maxLS(-1e9f);
@@ -181,7 +181,7 @@ glm::mat4 LightManager::ComputeDirectionalLightProj(const LightData& light) cons
 
 glm::mat4 LightManager::ComputePointLightView(const LightData& light) const
 {
-    glm::vec3 lightPos = light.position;
+    glm::vec3 lightPos = light.position_;
     // Pick a target for the light’s view; for instance, the center of the scene:
     glm::vec3 target = glm::vec3(0.0f);
     // Choose a suitable up vector:

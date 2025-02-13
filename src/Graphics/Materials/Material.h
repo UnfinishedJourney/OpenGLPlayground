@@ -12,7 +12,7 @@
 // A variant holding possible uniform parameter types.
 using UniformValue = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4>;
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Standard packed material parameters.
@@ -88,4 +88,4 @@ namespace Graphics {
         uint32_t texture_usage_{ 0 }; // Bitmask tracking which standard textures are set.
     };
 
-} // namespace Graphics
+} // namespace graphics

@@ -3,7 +3,7 @@
 #include <glad/glad.h>
 #include <cstdint>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Wraps an externally created GL texture so that it can be made bindless.
@@ -36,4 +36,4 @@ namespace Graphics {
         uint64_t m_BindlessHandle = 0;
     };
 
-} // namespace Graphics
+} // namespace graphics

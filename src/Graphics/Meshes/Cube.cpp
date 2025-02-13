@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <algorithm>  // For std::min, std::max
 
-namespace Graphics {
+namespace graphics {
 
     Cube::Cube() {
         // 8 cube corners.
@@ -76,4 +76,4 @@ namespace Graphics {
         lods_.push_back(lod0);
     }
 
-} // namespace Graphics
+} // namespace graphics

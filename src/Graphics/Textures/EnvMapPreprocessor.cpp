@@ -11,7 +11,7 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/ext.hpp>
 
-namespace Graphics {
+namespace graphics {
 
     namespace MathConstants {
         constexpr float PI = 3.14159265359f;
@@ -317,4 +317,4 @@ namespace Graphics {
         return mipMaps;
     }
 
-} // namespace Graphics
+} // namespace graphics

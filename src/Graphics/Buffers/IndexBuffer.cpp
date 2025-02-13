@@ -3,7 +3,7 @@
 #include "Utilities/Utility.h"
 #include <stdexcept>
 
-namespace Graphics {
+namespace graphics {
 
     IndexBuffer::IndexBuffer(std::span<const GLuint> data, GLenum usage)
         : count_(static_cast<GLsizei>(data.size())),
@@ -76,4 +76,4 @@ namespace Graphics {
         Logger::GetLogger()->debug("Updated IndexBuffer (ID={}) at offset={} with new data.", renderer_id_, offset);
     }
 
-} // namespace Graphics
+} // namespace graphics

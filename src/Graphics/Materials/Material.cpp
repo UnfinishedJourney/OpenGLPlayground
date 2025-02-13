@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace Graphics {
+namespace graphics {
 
     // Helper functions for mapping texture types to uniform names and binding slots.
     static std::string GetTextureUniformName(TextureType type) {
@@ -206,4 +206,4 @@ namespace Graphics {
         }
     }
 
-} // namespace Graphics
+} // namespace graphics

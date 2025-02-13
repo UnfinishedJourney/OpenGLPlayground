@@ -7,10 +7,10 @@
 #include <GLFW/glfw3.h>
 #include "Graphics/Shaders/Shader.h"
 
-FlipbookEffect::FlipbookEffect(std::shared_ptr<Graphics::MeshBuffer> quadMeshBuffer)
+FlipbookEffect::FlipbookEffect(std::shared_ptr<graphics::MeshBuffer> quadMeshBuffer)
     : m_QuadMeshBuffer(quadMeshBuffer)
 {
-    m_Shader = Graphics::ShaderManager::GetInstance().GetShader("flipbook");
+    m_Shader = graphics::ShaderManager::GetInstance().GetShader("flipbook");
     if (!m_Shader) {
         Logger::GetLogger()->error("FlipbookEffect: 'Flipbook' shader not found!");
         throw std::runtime_error("Flipbook shader not found");
@@ -25,7 +25,7 @@ void FlipbookEffect::LoadConfig(const std::string& basePath, const std::string& 
     m_Loop = loop;
 
     std::string fullPath = basePath + framesFile;
-    Graphics::TextureConfig config;
+    graphics::TextureConfig config;
     config.internalFormat = GL_RGBA8;
     config.generateMips = false;
     config.wrapS = GL_CLAMP_TO_EDGE;
@@ -36,7 +36,7 @@ void FlipbookEffect::LoadConfig(const std::string& basePath, const std::string& 
     std::vector<std::string> framePaths;
     framePaths.push_back(fullPath);
 
-    m_TextureArray = std::make_shared<Graphics::OpenGLTextureArray>(framePaths, config, totalFrames, gridX, gridY);
+    m_TextureArray = std::make_shared<graphics::OpenGLTextureArray>(framePaths, config, totalFrames, gridX, gridY);
 
     Logger::GetLogger()->info("FlipbookEffect: Loaded flipbook from {} ({} frames).", fullPath, totalFrames);
 }

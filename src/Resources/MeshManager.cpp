@@ -2,7 +2,7 @@
 #include "Utilities/Logger.h"
 #include "Graphics/Meshes/AllMeshes.h"  // Assumes this header includes all your mesh types (Cube, Sphere, Quad, etc.)
 
-namespace Graphics {
+namespace graphics {
 
     MeshManager& MeshManager::GetInstance() {
         static MeshManager instance;
@@ -79,4 +79,4 @@ namespace Graphics {
         Logger::GetLogger()->info("MeshManager cleared all meshes and buffers.");
     }
 
-} // namespace Graphics
+} // namespace graphics

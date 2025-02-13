@@ -3,7 +3,7 @@
 #include "Utilities/Utility.h"
 #include <stdexcept>
 
-namespace Graphics {
+namespace graphics {
 
     IndirectBuffer::IndirectBuffer(std::span<const std::byte> data, GLenum usage)
         : size_(data.size_bytes())
@@ -61,4 +61,4 @@ namespace Graphics {
         Logger::GetLogger()->debug("Updated IndirectBuffer ID={} Offset={} Size={}.", renderer_id_, offset, data.size_bytes());
     }
 
-} // namespace Graphics
+} // namespace graphics

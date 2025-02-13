@@ -3,7 +3,7 @@
 #include <memory>
 #include "Mesh.h"
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Holds a reference to a Mesh plus an associated material index.
@@ -15,4 +15,4 @@ namespace Graphics {
         int materialIndex_ = -1;
     };
 
-} // namespace Graphics
+} // namespace graphics

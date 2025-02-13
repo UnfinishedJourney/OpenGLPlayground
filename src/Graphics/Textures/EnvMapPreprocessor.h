@@ -8,7 +8,7 @@
 //modified
 //https://github.com/PacktPublishing/3D-Graphics-Rendering-Cookbook
 
-namespace Graphics {
+namespace graphics {
 
     class EnvMapPreprocessor {
     public:
@@ -43,4 +43,4 @@ namespace Graphics {
         std::vector<Bitmap> ComputePrefilteredCubemap(const Bitmap& inEquirect, int baseFaceSize, int numSamples) const; //does not work yet
     };
 
-} // namespace Graphics
+} // namespace graphics

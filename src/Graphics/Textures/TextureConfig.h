@@ -1,7 +1,7 @@
 #pragma once
 #include <glad/glad.h>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Configuration parameters for texture creation.
@@ -25,4 +25,4 @@ namespace Graphics {
         bool isSRGB = false; ///< Use an sRGB internal format if LDR.
     };
 
-} // namespace Graphics
+} // namespace graphics

@@ -5,7 +5,7 @@
 #include <glad/glad.h>
 #include <cstdint>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Represents a standard 2D OpenGL texture.
@@ -43,4 +43,4 @@ namespace Graphics {
         static GLenum ResolveInternalFormat(const TextureConfig& config, int channels);
     };
 
-} // namespace Graphics
+} // namespace graphics

@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <glad/glad.h>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Represents an OpenGL cube map texture.
@@ -48,4 +48,4 @@ namespace Graphics {
         bool m_IsBindless = false;
     };
 
-} // namespace Graphics
+} // namespace graphics

@@ -2,7 +2,7 @@
 #include <string_view>
 #include <glm/glm.hpp>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Interface for shader programs.
@@ -28,4 +28,4 @@ namespace Graphics {
         virtual void SetUniform(std::string_view name, const glm::mat4& value) const = 0;
     };
 
-} // namespace Graphics
+} // namespace graphics

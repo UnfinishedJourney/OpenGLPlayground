@@ -4,9 +4,9 @@
 #include <cstddef>
 #include <stdexcept>
 
-namespace Graphics {
+namespace graphics {
 
-    //maybe should use mapping instead of glNamedBufferSubData and maybe should delete default constructor and setdata
+    //maybe should use mapping instead of glNamedBufferSubData
 
     /**
      * @brief Manages an OpenGL buffer for indirect draw commands (GL_DRAW_INDIRECT_BUFFER).
@@ -53,4 +53,4 @@ namespace Graphics {
         size_t size_ = 0;      ///< Current buffer size in bytes.
     };
 
-} // namespace Graphics
+} // namespace graphics

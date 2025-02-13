@@ -21,13 +21,13 @@ void TestShadows::OnEnter()
         return;
     }
 
-    auto& materialManager = Graphics::MaterialManager::GetInstance();
+    auto& materialManager = graphics::MaterialManager::GetInstance();
 
     auto& resourceManager = ResourceManager::GetInstance();
     auto [meshLayout, matLayout] = resourceManager.GetLayoutsFromShader(shaderName);
 
     {
-        auto floorMat = std::make_unique<Graphics::Material>(matLayout);
+        auto floorMat = std::make_unique<graphics::Material>(matLayout);
         floorMat->SetName("floorMat");
 
         floorMat->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.0, 0.0, 1.0));
@@ -35,8 +35,8 @@ void TestShadows::OnEnter()
         floorMat->AssignToPackedParams(MaterialParamType::Specular, glm::vec3(1.0, 0.0, 0.0));
         floorMat->AssignToPackedParams(MaterialParamType::Shininess, 100.0f);
 
-        Graphics::MaterialManager::GetInstance().AddMaterial(std::move(floorMat));
-        int floorMatID = Graphics::MaterialManager::GetInstance().GetMaterialIDByName("floorMat").value();
+        graphics::MaterialManager::GetInstance().AddMaterial(std::move(floorMat));
+        int floorMatID = graphics::MaterialManager::GetInstance().GetMaterialIDByName("floorMat").value();
 
         if (!scene_->LoadPrimitiveIntoScene("floor", shaderName, floorMatID)) {
             Logger::GetLogger()->error("Failed to load cube primitive.");
@@ -53,7 +53,7 @@ void TestShadows::OnEnter()
 
     scene_->SetShowDebugLights(true);
     scene_->SetShowShadows(true);
-    auto& materials = Graphics::MaterialManager::GetInstance().GetMaterials();
+    auto& materials = graphics::MaterialManager::GetInstance().GetMaterials();
     if (materials.size() > 0) {
         materials[0]->AssignToPackedParams(MaterialParamType::Ambient, glm::vec3(0.9f, 0.1f, 0.3f));
     }

@@ -2,7 +2,7 @@
 #include "Utilities/Logger.h"
 #include <stdexcept>
 
-namespace Graphics {
+namespace graphics {
 
     MaterialManager& MaterialManager::GetInstance() {
         static MaterialManager instance;
@@ -116,4 +116,4 @@ namespace Graphics {
         return materials_;
     }
 
-} // namespace Graphics
+} // namespace graphics

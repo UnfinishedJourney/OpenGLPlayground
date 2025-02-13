@@ -1,7 +1,7 @@
 #include "Quad.h"
 #include <glm/glm.hpp>
 
-namespace Graphics {
+namespace graphics {
 
     Quad::Quad() {
         // Define 4 vertices.
@@ -91,4 +91,4 @@ namespace Graphics {
         lods_.push_back(lod0);
     }
 
-} // namespace Graphics
+} // namespace graphics

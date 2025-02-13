@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace Graphics {
+namespace graphics {
 
     OpenGLCubeMapTexture::OpenGLCubeMapTexture(const std::array<std::filesystem::path, 6>& faces,
         const TextureConfig& config)
@@ -144,4 +144,4 @@ namespace Graphics {
         }
     }
 
-} // namespace Graphics
+} // namespace graphics

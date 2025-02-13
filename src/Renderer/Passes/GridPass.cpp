@@ -9,7 +9,7 @@
 GridPass::GridPass(std::shared_ptr<FrameBuffer> framebuffer, const std::shared_ptr<Scene::Scene>& scene)
     : m_Framebuffer(framebuffer)
 {
-    auto& meshManager = Graphics::MeshManager::GetInstance();
+    auto& meshManager = graphics::MeshManager::GetInstance();
     MeshLayout gridMeshLayout = {
         true,  // Positions
         false, // Normals
@@ -33,7 +33,7 @@ void GridPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    auto& shaderManager = Graphics::ShaderManager::GetInstance();
+    auto& shaderManager = graphics::ShaderManager::GetInstance();
     auto shader = shaderManager.GetShader("grid");
     if (shader) {
         shader->Bind();

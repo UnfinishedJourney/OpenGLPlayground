@@ -3,7 +3,7 @@
 #include "BaseShader.h"
 #include <filesystem>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Specialized class for compute shaders.
@@ -38,4 +38,4 @@ namespace Graphics {
         std::filesystem::path m_ShaderPath;
     };
 
-} // namespace Graphics
+} // namespace graphics

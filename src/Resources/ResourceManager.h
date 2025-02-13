@@ -15,11 +15,11 @@ public:
     std::pair<MeshLayout, MaterialLayout> GetLayoutsFromShader(const std::string& shaderName);
 
     // Access to specialized managers
-    Graphics::MeshManager& GetMeshManager();
+    graphics::MeshManager& GetMeshManager();
     //ModelManager& GetModelManager();
-    Graphics::TextureManager& GetTextureManager();
-    Graphics::MaterialManager& GetMaterialManager();
-    Graphics::ShaderManager& GetShaderManager();
+    graphics::TextureManager& GetTextureManager();
+    graphics::MaterialManager& GetMaterialManager();
+    graphics::ShaderManager& GetShaderManager();
 
 private:
     ResourceManager();

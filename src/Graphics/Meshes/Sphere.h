@@ -2,7 +2,7 @@
 
 #include "Mesh.h"
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Generates a UV sphere mesh with a given radius, sector count, and stack count.
@@ -18,4 +18,4 @@ namespace Graphics {
         LightSphere() : Sphere(0.1f, 20, 10) {}
     };
 
-} // namespace Graphics
+} // namespace graphics

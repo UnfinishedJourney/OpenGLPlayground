@@ -15,5 +15,5 @@ public:
 
 private:
     std::shared_ptr<FrameBuffer> m_Framebuffer;
-    std::shared_ptr<Graphics::MeshBuffer> m_GridMeshBuffer;
+    std::shared_ptr<graphics::MeshBuffer> m_GridMeshBuffer;
 };

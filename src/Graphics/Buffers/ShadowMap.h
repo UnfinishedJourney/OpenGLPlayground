@@ -2,7 +2,7 @@
 
 #include <glad/glad.h>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Manages a shadow map by creating a depth texture and associated FBO.
@@ -42,4 +42,4 @@ namespace Graphics {
         GLsizei m_Width, m_Height;
     };
 
-} // namespace Graphics
+} // namespace graphics

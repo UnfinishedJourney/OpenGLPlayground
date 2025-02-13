@@ -11,7 +11,7 @@
 #include <filesystem>
 #include "ShaderUtils.h"
 
-namespace Graphics {
+namespace graphics {
 
     ShaderManager::ShaderManager(const std::filesystem::path& metadataPath,
         const std::filesystem::path& configPath)
@@ -292,4 +292,4 @@ namespace Graphics {
         return ShaderUtils::GetLatestModificationTime(SourcePath, ProcessedFiles);
     }
 
-} // namespace Graphics
+} // namespace graphics

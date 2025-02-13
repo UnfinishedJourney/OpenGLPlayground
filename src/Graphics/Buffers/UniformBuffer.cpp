@@ -3,7 +3,7 @@
 #include "Utilities/Utility.h"
 #include <stdexcept>
 
-namespace Graphics {
+namespace graphics {
 
     UniformBuffer::UniformBuffer(GLsizeiptr size, GLuint bindingPoint,
         UniformBufferLayout layout, GLenum usage)
@@ -100,4 +100,4 @@ namespace Graphics {
         Logger::GetLogger()->debug("Unmapped UniformBuffer (ID={}).", m_RendererID);
     }
 
-} // namespace Graphics
+} // namespace graphics

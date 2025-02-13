@@ -3,17 +3,17 @@
 #include "Utilities/Logger.h"
 #include <glad/glad.h>
 
-PresentTextureEffect::PresentTextureEffect(std::shared_ptr<Graphics::MeshBuffer> quad, int width, int height)
+PresentTextureEffect::PresentTextureEffect(std::shared_ptr<graphics::MeshBuffer> quad, int width, int height)
     : PostProcessingEffect(quad, width, height)
 {
 
-    auto& shaderManager = Graphics::ShaderManager::GetInstance();
+    auto& shaderManager = graphics::ShaderManager::GetInstance();
     m_Shader = shaderManager.GetShader("presentTexture");
     if (!m_Shader) {
         Logger::GetLogger()->error("Present texture shader not found!");
     }
 
-    auto& textureManager = Graphics::TextureManager::GetInstance();
+    auto& textureManager = graphics::TextureManager::GetInstance();
 
     m_Texture = textureManager.GetTexture("brdfLUT");
     //m_Texture = textureManager.GetTexture2D("cuteDog");
@@ -23,7 +23,7 @@ void PresentTextureEffect::SetParameters(const std::unordered_map<std::string, E
 {
     for (const auto& [key, value] : params) {
         if (key == "texture") {
-            if (auto tex = std::get_if<std::shared_ptr<Graphics::ITexture>>(&value)) {
+            if (auto tex = std::get_if<std::shared_ptr<graphics::ITexture>>(&value)) {
                 SetTexture(*tex);
             }
             else {
@@ -34,7 +34,7 @@ void PresentTextureEffect::SetParameters(const std::unordered_map<std::string, E
     }
 }
 
-void PresentTextureEffect::SetTexture(std::shared_ptr<Graphics::ITexture> texture)
+void PresentTextureEffect::SetTexture(std::shared_ptr<graphics::ITexture> texture)
 {
     if (texture) {
         m_Texture = texture;

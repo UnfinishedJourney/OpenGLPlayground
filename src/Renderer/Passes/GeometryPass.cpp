@@ -72,8 +72,8 @@ void GeometryPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
     // 4) Render batches
     {
         PROFILE_BLOCK("Render Static Batches", Cyan);
-        auto& materialManager = Graphics::MaterialManager::GetInstance();
-        auto& shaderManager = Graphics::ShaderManager::GetInstance();
+        auto& materialManager = graphics::MaterialManager::GetInstance();
+        auto& shaderManager = graphics::ShaderManager::GetInstance();
 
         const auto& staticBatches = scene->GetStaticBatches();
 

@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <stdexcept>
 
-namespace Graphics {
+namespace graphics {
 
     VertexArray::VertexArray()
     {
@@ -89,4 +89,4 @@ namespace Graphics {
         GLCall(glBindVertexArray(0));
     }
 
-} // namespace Graphics
+} // namespace graphics

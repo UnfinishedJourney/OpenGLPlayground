@@ -8,7 +8,7 @@
 #include <nlohmann/json.hpp>
 #include "ITexture.h"
 
-namespace Graphics {
+namespace graphics {
 
     struct TextureConfig; // Forward if defined elsewhere
     class Bitmap;
@@ -54,4 +54,4 @@ namespace Graphics {
         std::unordered_map<std::string, std::shared_ptr<ITexture>> textures_;
     };
 
-} // namespace Graphics
+} // namespace graphics

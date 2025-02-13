@@ -82,7 +82,7 @@ namespace Scene {
         /// Builds static render batches if there have been changes.
         void BuildStaticBatchesIfNeeded();
         /// Returns the static render batches.
-        const std::vector<std::shared_ptr<Graphics::Batch>>& GetStaticBatches() const;
+        const std::vector<std::shared_ptr<renderer::Batch>>& GetStaticBatches() const;
 
         /// Updates the per-frame UBO with current camera/view data.
         void UpdateFrameDataUBO() const;
@@ -134,10 +134,10 @@ namespace Scene {
         std::shared_ptr<Camera> camera_;
 
         // UBO for per-frame data (e.g. view/projection matrices).
-        std::unique_ptr<Graphics::UniformBuffer> frameDataUBO_;
+        std::unique_ptr<graphics::UniformBuffer> frameDataUBO_;
 
         // SSBO for per-object data (e.g. model matrices).
-        std::unique_ptr<Graphics::ShaderStorageBuffer> objectDataSSBO_;
+        std::unique_ptr<graphics::ShaderStorageBuffer> objectDataSSBO_;
 
         // Evaluator for Level-of-Detail.
         std::unique_ptr<LODEvaluator> lodEvaluator_;

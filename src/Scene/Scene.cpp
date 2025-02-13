@@ -28,10 +28,10 @@ namespace Scene {
         camera_ = std::make_shared<Camera>();
 
         // Create the per-frame UBO using a Std140 layout.
-        frameDataUBO_ = std::make_unique<Graphics::UniformBuffer>(
+        frameDataUBO_ = std::make_unique<graphics::UniformBuffer>(
             sizeof(FrameCommonData),
             FRAME_DATA_BINDING_POINT,
-            Graphics::UniformBufferLayout::Std140,
+            graphics::UniformBufferLayout::Std140,
             GL_DYNAMIC_DRAW
         );
 
@@ -128,7 +128,7 @@ namespace Scene {
         auto& resourceManager = ResourceManager::GetInstance();
         auto [meshLayout, matLayout] = resourceManager.GetLayoutsFromShader(shaderName);
 
-        auto mesh = Graphics::MeshManager::GetInstance().GetMesh(primitiveName);
+        auto mesh = graphics::MeshManager::GetInstance().GetMesh(primitiveName);
         if (!mesh) {
             Logger::GetLogger()->error("Primitive '{}' not found in MeshManager!", primitiveName);
             return false;
@@ -171,7 +171,7 @@ namespace Scene {
         }
     }
 
-    const std::vector<std::shared_ptr<Graphics::Batch>>& Scene::GetStaticBatches() const
+    const std::vector<std::shared_ptr<renderer::Batch>>& Scene::GetStaticBatches() const
     {
         return staticBatchManager_->GetBatches();
     }

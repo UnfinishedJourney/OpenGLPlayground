@@ -3,7 +3,7 @@
 #include "Utilities/Utility.h"  // Contains GLCall macro for error checking
 #include <stdexcept>
 
-namespace Graphics {
+namespace graphics {
 
     VertexBuffer::VertexBuffer(std::span<const std::byte> data, GLenum usage)
         : size_{ data.size_bytes() }, usage_{ usage }
@@ -70,4 +70,4 @@ namespace Graphics {
         Logger::GetLogger()->debug("Updated VertexBuffer (ID={}) offset={} size={}.", renderer_id_, offset, data.size_bytes());
     }
 
-} // namespace Graphics
+} // namespace graphics

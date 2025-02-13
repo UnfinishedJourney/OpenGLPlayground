@@ -20,12 +20,12 @@ using EffectParameter = std::variant<
     glm::vec2,
     glm::vec3,
     glm::vec4,
-    std::shared_ptr<Graphics::ITexture>
+    std::shared_ptr<graphics::ITexture>
 >;
 
 class PostProcessingEffect {
 public:
-    PostProcessingEffect(std::shared_ptr<Graphics::MeshBuffer> quad, int width = 800, int height = 600)
+    PostProcessingEffect(std::shared_ptr<graphics::MeshBuffer> quad, int width = 800, int height = 600)
         : m_FullscreenQuadMeshBuffer(quad), m_Width(width), m_Height(height)
     {}
 
@@ -41,7 +41,7 @@ public:
     virtual void SetParameters(const std::unordered_map<std::string, EffectParameter>& params) {};
 
 protected:
-    std::shared_ptr<Graphics::MeshBuffer> m_FullscreenQuadMeshBuffer;
+    std::shared_ptr<graphics::MeshBuffer> m_FullscreenQuadMeshBuffer;
     int m_Width, m_Height;
-    std::shared_ptr<Graphics::Shader> m_Shader;
+    std::shared_ptr<graphics::Shader> m_Shader;
 };

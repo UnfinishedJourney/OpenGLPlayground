@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 #include <type_traits>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Describes a single vertex attribute.
@@ -70,4 +70,4 @@ namespace Graphics {
         }
     }
 
-} // namespace Graphics
+} // namespace graphics

@@ -10,7 +10,7 @@
 #include <unordered_set>
 #include "IShader.h"
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Base class for OpenGL shader programs.
@@ -85,4 +85,4 @@ namespace Graphics {
         GLint GetUniformLocation(std::string_view name) const;
     };
 
-} // namespace Graphics
+} // namespace graphics

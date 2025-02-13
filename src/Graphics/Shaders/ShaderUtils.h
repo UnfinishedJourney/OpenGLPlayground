@@ -8,7 +8,7 @@
 #include <fstream>
 #include "Utilities/Logger.h"
 
-namespace Graphics {
+namespace graphics {
     namespace ShaderUtils {
 
         inline std::string ReadFile(const std::filesystem::path& filepath) {
@@ -141,4 +141,4 @@ namespace Graphics {
         }
 
     } // namespace ShaderUtils
-} // namespace Graphics
+} // namespace graphics

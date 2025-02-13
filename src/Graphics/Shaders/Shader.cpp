@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <unordered_set>
 
-namespace Graphics {
+namespace graphics {
 
     Shader::Shader(const std::unordered_map<GLenum, std::filesystem::path>& shaderStages,
         const std::filesystem::path& binaryPath)
@@ -57,4 +57,4 @@ namespace Graphics {
         Logger::GetLogger()->info("Shader program created successfully, ID={}.", m_RendererID);
     }
 
-} // namespace Graphics
+} // namespace graphics

@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <span>
 
-namespace Graphics {
+namespace graphics {
 
     /**
      * @brief Manages an OpenGL Shader Storage Buffer (SSBO).
@@ -31,7 +31,7 @@ namespace Graphics {
         ShaderStorageBuffer& operator=(ShaderStorageBuffer&& other) noexcept;
 
         /**
-         * @brief Binds the SSBO to GL_SHADER_STORAGE_BUFFER.
+         * @brief Binds the SSBO to its specified binding point to GL_SHADER_STORAGE_BUFFER.
          */
         void Bind() const;
 
@@ -45,11 +45,6 @@ namespace Graphics {
          */
         void UpdateData(std::span<const std::byte> data, GLintptr offset = 0);
 
-        /**
-         * @brief Binds the SSBO to its specified binding point.
-         */
-        void BindBase() const;
-
         [[nodiscard]] GLsizeiptr GetSize()         const { return size_; }
         [[nodiscard]] GLuint     GetRendererID()   const { return rendererID_; }
         [[nodiscard]] GLuint     GetBindingPoint() const { return bindingPoint_; }
@@ -61,4 +56,4 @@ namespace Graphics {
         GLenum usage_{ GL_DYNAMIC_DRAW };
     };
 
-} // namespace Graphics
+} // namespace graphics

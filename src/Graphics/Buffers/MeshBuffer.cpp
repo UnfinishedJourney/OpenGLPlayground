@@ -6,7 +6,7 @@
 #include <span>
 #include <glad/glad.h>
 
-namespace Graphics {
+namespace graphics {
 
     MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout)
         : meshLayout_(layout)
@@ -141,4 +141,4 @@ namespace Graphics {
         Unbind();
     }
 
-} // namespace Graphics
+} // namespace graphics

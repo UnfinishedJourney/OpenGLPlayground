@@ -23,7 +23,7 @@ void DebugLightsPass::InitializeSceneResources(const std::shared_ptr<Scene::Scen
         {}
     };
 
-    auto& meshManager = Graphics::MeshManager::GetInstance();
+    auto& meshManager = graphics::MeshManager::GetInstance();
     m_LightSphereMeshBuffer = meshManager.GetMeshBuffer("lightsphere", lightMeshLayout);
 }
 
@@ -43,7 +43,7 @@ void DebugLightsPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
     lightManager->BindLightsGPU();
 
     auto& resourceManager = ResourceManager::GetInstance();
-    auto& shaderManager = Graphics::ShaderManager::GetInstance();
+    auto& shaderManager = graphics::ShaderManager::GetInstance();
     auto shader = shaderManager.GetShader("debugLights");
     if (shader) {
         shader->Bind();

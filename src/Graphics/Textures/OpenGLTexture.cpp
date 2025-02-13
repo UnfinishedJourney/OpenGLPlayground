@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <algorithm>
 
-namespace Graphics {
+namespace graphics {
 
     static inline GLenum DataFormatForHDR(bool isHDR) {
         return isHDR ? GL_FLOAT : GL_UNSIGNED_BYTE;
@@ -102,4 +102,4 @@ namespace Graphics {
         }
     }
 
-} // namespace Graphics
+} // namespace graphics

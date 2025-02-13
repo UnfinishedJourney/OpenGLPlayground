@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 
-namespace Graphics {
+namespace graphics {
 
     int Bitmap::getBytesPerComponent(BitmapFormat fmt) {
         switch (fmt) {
@@ -123,4 +123,4 @@ namespace Graphics {
         }
     }
 
-} // namespace Graphics
+} // namespace graphics

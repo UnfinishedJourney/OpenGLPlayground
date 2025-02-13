@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <unordered_set>
 
-namespace Graphics {
+namespace graphics {
 
     ComputeShader::ComputeShader(const std::filesystem::path& shaderPath,
         const std::filesystem::path& binaryPath)
@@ -52,4 +52,4 @@ namespace Graphics {
         Unbind();
     }
 
-} // namespace Graphics
+} // namespace graphics

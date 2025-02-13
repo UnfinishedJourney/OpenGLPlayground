@@ -38,7 +38,7 @@ float BaseRenderObject::ComputeDistanceTo(const glm::vec3& pos) const
 // ------------------------------------------------------------------
 // RenderObject (dynamic object with a Transform)
 // ------------------------------------------------------------------
-RenderObject::RenderObject(std::shared_ptr<Graphics::Mesh> mesh,
+RenderObject::RenderObject(std::shared_ptr<graphics::Mesh> mesh,
     MeshLayout meshLayout,
     int materialID,
     std::string shaderName,
@@ -89,7 +89,7 @@ float RenderObject::ComputeDistanceTo(const glm::vec3& pos) const
 // ------------------------------------------------------------------
 // StaticRenderObject
 // ------------------------------------------------------------------
-StaticRenderObject::StaticRenderObject(std::shared_ptr<Graphics::Mesh> mesh,
+StaticRenderObject::StaticRenderObject(std::shared_ptr<graphics::Mesh> mesh,
     MeshLayout meshLayout,
     int materialID,
     std::string shaderName)

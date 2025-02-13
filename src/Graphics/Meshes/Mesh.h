@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include "Graphics/Materials/MaterialParamType.h"  // Assumes TextureType is defined in a header
 
-namespace Graphics {
+namespace graphics {
 
     /// Represents one level-of-detail (LOD) for a mesh.
     struct MeshLOD {
@@ -45,4 +45,4 @@ namespace Graphics {
         size_t GetLODCount() const { return lods_.size(); }
     };
 
-} // namespace Graphics
+} // namespace graphics

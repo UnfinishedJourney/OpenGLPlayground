@@ -9,7 +9,7 @@
 //https://github.com/PacktPublishing/3D-Graphics-Rendering-Cookbook
 
 //need to potentially unite it with texturedata
-namespace Graphics {
+namespace graphics {
 
     enum class BitmapType {
         TwoD,
@@ -66,4 +66,4 @@ namespace Graphics {
         void setPixelInternal(int x, int y, const glm::vec4& color);
     };
 
-} // namespace Graphics
+} // namespace graphics

@@ -52,22 +52,22 @@ ResourceManager::ResourceManager() {
     // Initialization if needed
 }
 
-Graphics::MeshManager& ResourceManager::GetMeshManager() {
-    return Graphics::MeshManager::GetInstance();
+graphics::MeshManager& ResourceManager::GetMeshManager() {
+    return graphics::MeshManager::GetInstance();
 }
 
 //ModelManager& ResourceManager::GetModelManager() {
 //    return ModelManager::GetInstance();
 //}
 
-Graphics::TextureManager& ResourceManager::GetTextureManager() {
-    return Graphics::TextureManager::GetInstance();
+graphics::TextureManager& ResourceManager::GetTextureManager() {
+    return graphics::TextureManager::GetInstance();
 }
 
-Graphics::MaterialManager& ResourceManager::GetMaterialManager() {
-    return Graphics::MaterialManager::GetInstance();
+graphics::MaterialManager& ResourceManager::GetMaterialManager() {
+    return graphics::MaterialManager::GetInstance();
 }
 
-Graphics::ShaderManager& ResourceManager::GetShaderManager() {
-    return Graphics::ShaderManager::GetInstance();
+graphics::ShaderManager& ResourceManager::GetShaderManager() {
+    return graphics::ShaderManager::GetInstance();
 }
