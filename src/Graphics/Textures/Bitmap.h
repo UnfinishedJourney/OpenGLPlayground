@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <glm/glm.hpp>
 
+//https://github.com/PacktPublishing/3D-Graphics-Rendering-Cookbook
+
 namespace graphics {
 
     enum class BitmapFormat { UnsignedByte, Float };

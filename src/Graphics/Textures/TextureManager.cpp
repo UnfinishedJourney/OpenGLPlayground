@@ -1,9 +1,9 @@
-#include "TextureUtils.h"
 #include "TextureManager.h"
+#include "TextureUtils.h"
+#include "BitMap.h"
 #include "TextureLoader.h"
 #include "EnvMapPreprocessor.h"
 #include "Utilities/Logger.h"
-
 #include <fstream>
 #include <stdexcept>
 #include <algorithm>
@@ -18,15 +18,7 @@ namespace graphics {
         return lowerStr;
     }
 
-    bool TextureManager::IsHDRTexture(const std::filesystem::path& path) {
-        static const std::vector<std::string> hdrExts = { ".hdr", ".exr", ".tif", ".tiff" };
-        std::string ext = ToLower(path.extension().string());
-        return (std::find(hdrExts.begin(), hdrExts.end(), ext) != hdrExts.end());
-    }
-
-    bool TextureManager::DetermineSRGB(const std::string& /*pathStr*/) {
-        // You could do some name-based detection: if file name contains "_diffuse", etc.
-        // Return false by default
+    bool TextureManager::DetermineSRGB(const std::string&) {
         return false;
     }
 
@@ -35,13 +27,11 @@ namespace graphics {
         return instance;
     }
 
-    TextureManager::TextureManager(const std::filesystem::path& configPath)
-    {
+    TextureManager::TextureManager(const std::filesystem::path& configPath) {
         LoadConfig(configPath);
     }
 
-    bool TextureManager::LoadConfig(const std::filesystem::path& configPath)
-    {
+    bool TextureManager::LoadConfig(const std::filesystem::path& configPath) {
         if (!std::filesystem::exists(configPath)) {
             Logger::GetLogger()->error("TextureManager: Config file '{}' does not exist.", configPath.string());
             return false;
@@ -51,7 +41,6 @@ namespace graphics {
             Logger::GetLogger()->error("TextureManager: Failed to open config file '{}'.", configPath.string());
             return false;
         }
-
         nlohmann::json jsonData;
         try {
             file >> jsonData;
@@ -64,47 +53,25 @@ namespace graphics {
             Logger::GetLogger()->error("TextureManager: JSON config missing 'textures' section.");
             return false;
         }
-
         auto& texturesJson = jsonData["textures"];
-        if (texturesJson.contains("2d")) {
-            if (!Load2DTextures(texturesJson["2d"])) {
-                return false;
-            }
-        }
-        if (texturesJson.contains("cubeMaps")) {
-            if (!LoadCubeMaps(texturesJson["cubeMaps"])) {
-                return false;
-            }
-        }
-        if (texturesJson.contains("computed")) {
-            if (!LoadComputedTextures(texturesJson["computed"])) {
-                return false;
-            }
-        }
+        if (texturesJson.contains("2d")) Load2DTextures(texturesJson["2d"]);
+        if (texturesJson.contains("cubeMaps")) LoadCubeMaps(texturesJson["cubeMaps"]);
+        if (texturesJson.contains("computed")) LoadComputedTextures(texturesJson["computed"]);
         return true;
     }
 
-    // ----------------------------------------------------
-    // Load2DTextures: read name->path from JSON, load them
-    // ----------------------------------------------------
-    bool TextureManager::Load2DTextures(const nlohmann::json& json)
-    {
+    bool TextureManager::Load2DTextures(const nlohmann::json& json) {
         for (auto& [name, value] : json.items()) {
             std::string path;
-            if (value.is_string()) {
+            if (value.is_string())
                 path = value.get<std::string>();
-            }
-            else if (value.is_object()) {
+            else if (value.is_object())
                 path = value.value("path", "");
-            }
             if (path.empty()) {
                 Logger::GetLogger()->error("TextureManager: 2D texture '{}' has an invalid path.", name);
                 continue;
             }
-
-            TextureConfig config; // Default
-            // Optionally parse more fields from 'value' if the JSON object has them
-
+            TextureConfig config;
             try {
                 auto tex = TextureLoader::Load2DTexture(path, config);
                 textures_[name] = tex;
@@ -117,31 +84,23 @@ namespace graphics {
         return true;
     }
 
-    // ----------------------------------------------------
-    // LoadCubeMaps: read name->[paths], load or do equirect
-    // ----------------------------------------------------
-    bool TextureManager::LoadCubeMaps(const nlohmann::json& json)
-    {
+    bool TextureManager::LoadCubeMaps(const nlohmann::json& json) {
         for (auto& [cubeMapName, value] : json.items()) {
             if (!value.is_array() || value.empty()) {
-                Logger::GetLogger()->error("TextureManager: Cubemap '{}' should be a non-empty array of paths.", cubeMapName);
+                Logger::GetLogger()->error("TextureManager: Cubemap '{}' should be a non-empty array.", cubeMapName);
                 continue;
             }
-
-            // If exactly one path => treat it as equirectangular HDR -> convert
             if (value.size() == 1) {
                 std::string eqPath = value[0].get<std::string>();
-                if (!ConvertAndLoadEquirectHDR(cubeMapName, eqPath)) {
+                if (!ConvertAndLoadEquirectHDR(cubeMapName, eqPath))
                     Logger::GetLogger()->error("TextureManager: Failed to convert equirect HDR for '{}'.", cubeMapName);
-                }
             }
-            // If exactly 6 => load directly
             else if (value.size() == 6) {
                 std::array<std::string, 6> facePaths;
                 for (size_t i = 0; i < 6; ++i) {
                     facePaths[i] = value[i].get<std::string>();
                 }
-                TextureConfig cfg; // or parse from JSON
+                TextureConfig cfg;
                 try {
                     auto tex = TextureLoader::LoadCubeMapTexture(facePaths, cfg);
                     textures_[cubeMapName] = tex;
@@ -152,25 +111,19 @@ namespace graphics {
                 }
             }
             else {
-                Logger::GetLogger()->error("TextureManager: Cubemap '{}' must have 1 or 6 paths (got {}).",
-                    cubeMapName, value.size());
+                Logger::GetLogger()->error("TextureManager: Cubemap '{}' must have 1 or 6 paths (got {}).", cubeMapName, value.size());
             }
         }
         return true;
     }
 
-    // ----------------------------------------------------
-    // LoadComputedTextures: e.g. BRDF LUT from JSON
-    // ----------------------------------------------------
-    bool TextureManager::LoadComputedTextures(const nlohmann::json& json)
-    {
+    bool TextureManager::LoadComputedTextures(const nlohmann::json& json) {
         for (auto& [name, info] : json.items()) {
             std::string type = info.value("type", "");
             if (type == "compute" || type == "brdf") {
                 int w = info.value("width", 256);
                 int h = info.value("height", 256);
                 unsigned int samples = info.value("numSamples", 1024);
-
                 try {
                     auto tex = TextureLoader::CreateBRDFTexture(w, h, samples);
                     textures_[name] = tex;
@@ -187,29 +140,15 @@ namespace graphics {
         return true;
     }
 
-    // ----------------------------------------------------
-    // Expose a texture by name
-    // ----------------------------------------------------
-    std::shared_ptr<ITexture> TextureManager::GetTexture(const std::string& name)
-    {
+    std::shared_ptr<ITexture> TextureManager::GetTexture(const std::string& name) {
         auto it = textures_.find(name);
-        if (it != textures_.end()) {
-            return it->second;
-        }
+        if (it != textures_.end()) return it->second;
         Logger::GetLogger()->warn("TextureManager: Texture '{}' not found.", name);
         return nullptr;
     }
 
-    // ----------------------------------------------------
-    // Load2DTexture: if not already loaded, delegate to TextureLoader
-    // ----------------------------------------------------
-    std::shared_ptr<ITexture> TextureManager::Load2DTexture(const std::string& name,
-        const std::string& path,
-        const TextureConfig& config)
-    {
-        if (auto existing = GetTexture(name)) {
-            return existing;
-        }
+    std::shared_ptr<ITexture> TextureManager::Load2DTexture(const std::string& name, const std::string& path, const TextureConfig& config) {
+        if (auto existing = GetTexture(name)) return existing;
         try {
             auto tex = TextureLoader::Load2DTexture(path, config);
             textures_[name] = tex;
@@ -221,16 +160,8 @@ namespace graphics {
         }
     }
 
-    // ----------------------------------------------------
-    // LoadCubeMapTexture: if not loaded, call TextureLoader
-    // ----------------------------------------------------
-    std::shared_ptr<ITexture> TextureManager::LoadCubeMapTexture(const std::string& name,
-        const std::array<std::string, 6>& facePaths,
-        const TextureConfig& config)
-    {
-        if (auto existing = GetTexture(name)) {
-            return existing;
-        }
+    std::shared_ptr<ITexture> TextureManager::LoadCubeMapTexture(const std::string& name, const std::array<std::string, 6>& facePaths, const TextureConfig& config) {
+        if (auto existing = GetTexture(name)) return existing;
         try {
             auto tex = TextureLoader::LoadCubeMapTexture(facePaths, config);
             textures_[name] = tex;
@@ -242,19 +173,8 @@ namespace graphics {
         }
     }
 
-    // ----------------------------------------------------
-    // LoadTextureArray: calls TextureLoader
-    // ----------------------------------------------------
-    std::shared_ptr<ITexture> TextureManager::LoadTextureArray(const std::string& name,
-        const std::string& path,
-        const TextureConfig& config,
-        uint32_t totalFrames,
-        uint32_t gridX,
-        uint32_t gridY)
-    {
-        if (auto existing = GetTexture(name)) {
-            return existing;
-        }
+    std::shared_ptr<ITexture> TextureManager::LoadTextureArray(const std::string& name, const std::string& path, const TextureConfig& config, uint32_t totalFrames, uint32_t gridX, uint32_t gridY) {
+        if (auto existing = GetTexture(name)) return existing;
         try {
             auto tex = TextureLoader::LoadTextureArray(path, config, totalFrames, gridX, gridY);
             textures_[name] = tex;
@@ -266,17 +186,8 @@ namespace graphics {
         }
     }
 
-    // ----------------------------------------------------
-    // CreateBRDFTexture
-    // ----------------------------------------------------
-    std::shared_ptr<ITexture> TextureManager::CreateBRDFTexture(const std::string& name,
-        int width,
-        int height,
-        unsigned int numSamples)
-    {
-        if (auto existing = GetTexture(name)) {
-            return existing;
-        }
+    std::shared_ptr<ITexture> TextureManager::CreateBRDFTexture(const std::string& name, int width, int height, unsigned int numSamples) {
+        if (auto existing = GetTexture(name)) return existing;
         try {
             auto tex = TextureLoader::CreateBRDFTexture(width, height, numSamples);
             textures_[name] = tex;
@@ -288,38 +199,20 @@ namespace graphics {
         }
     }
 
-    // ----------------------------------------------------
-    // Convert equirect -> cube faces (environment, irr, skybox), load them
-    // ----------------------------------------------------
-    bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName,
-        const std::string& equirectPath)
-    {
-        // This function uses EnvMapPreprocessor to create
-        // environment faces, LDR skybox faces, and irradiance faces.
-        // Then it loads them as normal cubemaps in the manager.
-
+    bool TextureManager::ConvertAndLoadEquirectHDR(const std::string& cubeMapName, const std::string& equirectPath) {
         std::filesystem::path srcPath(equirectPath);
         if (!std::filesystem::exists(srcPath)) {
             Logger::GetLogger()->error("TextureManager: Equirect HDR '{}' does not exist.", equirectPath);
             return false;
         }
-
         std::string stem = srcPath.stem().string();
         std::filesystem::path outDir = srcPath.parent_path() / stem;
-
-        std::array<std::filesystem::path, 6> envFaces = {
-            outDir / "face_0.hdr", outDir / "face_1.hdr", outDir / "face_2.hdr",
-            outDir / "face_3.hdr", outDir / "face_4.hdr", outDir / "face_5.hdr"
-        };
-        std::array<std::filesystem::path, 6> ldrFaces = {
-            outDir / "ldr_face_0.png", outDir / "ldr_face_1.png", outDir / "ldr_face_2.png",
-            outDir / "ldr_face_3.png", outDir / "ldr_face_4.png", outDir / "ldr_face_5.png"
-        };
-        std::array<std::filesystem::path, 6> irrFaces = {
-            outDir / "irr_0.hdr", outDir / "irr_1.hdr", outDir / "irr_2.hdr",
-            outDir / "irr_3.hdr", outDir / "irr_4.hdr", outDir / "irr_5.hdr"
-        };
-
+        std::array<std::filesystem::path, 6> envFaces = { outDir / "face_0.hdr", outDir / "face_1.hdr", outDir / "face_2.hdr",
+                                                         outDir / "face_3.hdr", outDir / "face_4.hdr", outDir / "face_5.hdr" };
+        std::array<std::filesystem::path, 6> ldrFaces = { outDir / "ldr_face_0.png", outDir / "ldr_face_1.png", outDir / "ldr_face_2.png",
+                                                         outDir / "ldr_face_3.png", outDir / "ldr_face_4.png", outDir / "ldr_face_5.png" };
+        std::array<std::filesystem::path, 6> irrFaces = { outDir / "irr_0.hdr", outDir / "irr_1.hdr", outDir / "irr_2.hdr",
+                                                         outDir / "irr_3.hdr", outDir / "irr_4.hdr", outDir / "irr_5.hdr" };
         if (!std::filesystem::exists(outDir)) {
             std::error_code ec;
             std::filesystem::create_directories(outDir, ec);
@@ -328,10 +221,7 @@ namespace graphics {
                 return false;
             }
         }
-
         EnvMapPreprocessor preprocessor;
-
-        // 1) Create environment faces if not present
         if (!std::filesystem::exists(envFaces[0])) {
             Bitmap equirect = preprocessor.LoadTexture(srcPath);
             Bitmap vCross = preprocessor.ConvertEquirectangularMapToVerticalCross(equirect);
@@ -342,21 +232,17 @@ namespace graphics {
         else {
             Logger::GetLogger()->info("TextureManager: Environment faces already exist for '{}'.", equirectPath);
         }
-
-        // 2) Create LDR skybox faces if missing
         if (!std::filesystem::exists(ldrFaces[0])) {
             Logger::GetLogger()->info("TextureManager: Generating LDR skybox faces for '{}'.", equirectPath);
             Bitmap equirect = preprocessor.LoadTexture(srcPath);
             Bitmap vCross = preprocessor.ConvertEquirectangularMapToVerticalCross(equirect);
             Bitmap faceCube = preprocessor.ConvertVerticalCrossToCubeMapFaces(vCross);
-            SaveFacesToDiskLDR(faceCube, ldrFaces, "ldr_face_");
+            SaveFacesToDisk(faceCube, ldrFaces, "ldr_face_");
             Logger::GetLogger()->info("TextureManager: Created LDR skybox faces for '{}'.", equirectPath);
         }
         else {
             Logger::GetLogger()->info("TextureManager: LDR skybox faces already exist for '{}'.", equirectPath);
         }
-
-        // 3) Create irradiance faces if missing
         if (!std::filesystem::exists(irrFaces[0])) {
             Logger::GetLogger()->info("TextureManager: Generating irradiance faces for '{}'.", equirectPath);
             Bitmap equirect = preprocessor.LoadTexture(srcPath);
@@ -369,36 +255,26 @@ namespace graphics {
         else {
             Logger::GetLogger()->info("TextureManager: Irradiance faces already exist for '{}'.", equirectPath);
         }
-
-        // 4) Load environment (HDR) cubemap
-        TextureConfig envCfg = MakeSomeCubeMapConfig(/*isHDR=*/true);
+        TextureConfig envCfg = MakeSomeCubeMapConfig(true);
         try {
-            auto cubeMap = TextureLoader::LoadCubeMapTexture({
-                envFaces[0].string(), envFaces[1].string(), envFaces[2].string(),
-                envFaces[3].string(), envFaces[4].string(), envFaces[5].string()
-                }, envCfg);
+            auto cubeMap = TextureLoader::LoadCubeMapTexture({ envFaces[0].string(), envFaces[1].string(), envFaces[2].string(),
+                                                               envFaces[3].string(), envFaces[4].string(), envFaces[5].string() }, envCfg);
             textures_[cubeMapName] = cubeMap;
         }
         catch (const std::exception& e) {
             Logger::GetLogger()->error("TextureManager: Exception creating env cubemap '{}': {}", cubeMapName, e.what());
             return false;
         }
-
-        // 5) Load irradiance cubemap
-        TextureConfig irrCfg = MakeSomeCubeMapConfig(/*isHDR=*/true);
+        TextureConfig irrCfg = MakeSomeCubeMapConfig(true);
         try {
-            auto irrCube = TextureLoader::LoadCubeMapTexture({
-                irrFaces[0].string(), irrFaces[1].string(), irrFaces[2].string(),
-                irrFaces[3].string(), irrFaces[4].string(), irrFaces[5].string()
-                }, irrCfg);
+            auto irrCube = TextureLoader::LoadCubeMapTexture({ irrFaces[0].string(), irrFaces[1].string(), irrFaces[2].string(),
+                                                               irrFaces[3].string(), irrFaces[4].string(), irrFaces[5].string() }, irrCfg);
             textures_[cubeMapName + "_irr"] = irrCube;
             Logger::GetLogger()->info("TextureManager: Created irradiance cubemap '{}_irr'.", cubeMapName);
         }
         catch (const std::exception& e) {
             Logger::GetLogger()->warn("TextureManager: Failed to create irradiance cubemap for '{}': {}", cubeMapName, e.what());
         }
-
-        // 6) Load skybox (LDR) cubemap
         TextureConfig skyboxCfg;
         skyboxCfg.internal_format_ = GL_SRGB8_ALPHA8;
         skyboxCfg.wrap_s_ = GL_CLAMP_TO_EDGE;
@@ -411,27 +287,19 @@ namespace graphics {
         skyboxCfg.use_bindless_ = false;
         skyboxCfg.is_hdr_ = false;
         skyboxCfg.is_srgb_ = true;
-
         try {
-            auto skyboxCube = TextureLoader::LoadCubeMapTexture({
-                ldrFaces[0].string(), ldrFaces[1].string(), ldrFaces[2].string(),
-                ldrFaces[3].string(), ldrFaces[4].string(), ldrFaces[5].string()
-                }, skyboxCfg);
+            auto skyboxCube = TextureLoader::LoadCubeMapTexture({ ldrFaces[0].string(), ldrFaces[1].string(), ldrFaces[2].string(),
+                                                                 ldrFaces[3].string(), ldrFaces[4].string(), ldrFaces[5].string() }, skyboxCfg);
             textures_[cubeMapName + "_skybox"] = skyboxCube;
-            Logger::GetLogger()->info("TextureManager: Loaded skybox (LDR) cubemap '{}_skybox'.", cubeMapName);
+            Logger::GetLogger()->info("TextureManager: Loaded skybox cubemap '{}_skybox'.", cubeMapName);
         }
         catch (const std::exception& e) {
             Logger::GetLogger()->error("TextureManager: Exception creating skybox cubemap '{}': {}", cubeMapName, e.what());
         }
-
         return true;
     }
 
-    // ----------------------------------------------------
-    // Helper to define a typical float-cubemap config
-    // ----------------------------------------------------
-    TextureConfig TextureManager::MakeSomeCubeMapConfig(bool isHDR)
-    {
+    TextureConfig TextureManager::MakeSomeCubeMapConfig(bool isHDR) {
         TextureConfig cfg;
         cfg.internal_format_ = GL_RGB32F;
         cfg.wrap_s_ = GL_CLAMP_TO_EDGE;
@@ -447,31 +315,20 @@ namespace graphics {
         return cfg;
     }
 
-    // ----------------------------------------------------
-    // SaveFacesToDisk: storing the six faces from a cubemap Bitmap
-    // ----------------------------------------------------
-    void TextureManager::SaveFacesToDisk(const Bitmap& cubeMap,
-        const std::array<std::filesystem::path, 6>& facePaths,
-        const std::string& prefix)
-    {
+    void TextureManager::SaveFacesToDisk(const Bitmap& cubeMap, const std::array<std::filesystem::path, 6>& facePaths, const std::string& prefix) {
         if (cubeMap.depth() != 6) {
             Logger::GetLogger()->error("TextureManager: SaveFacesToDisk: expected depth=6, got {}", cubeMap.depth());
             return;
         }
-        int faceW = cubeMap.width();
-        int faceH = cubeMap.height();
-        int comp = cubeMap.components();
+        int faceW = cubeMap.width(), faceH = cubeMap.height(), comp = cubeMap.components();
         int pixBytes = comp * Bitmap::getBytesPerComponent(cubeMap.format());
         int faceSize = faceW * faceH * pixBytes;
-
         EnvMapPreprocessor preprocessor;
         for (int i = 0; i < 6; ++i) {
             Bitmap faceBmp(faceW, faceH, comp, cubeMap.format());
             const uint8_t* src = cubeMap.data().data() + i * faceSize;
             std::memcpy(faceBmp.data().data(), src, faceSize);
-
             try {
-                // Save each face as HDR
                 SaveAsHDR(faceBmp, facePaths[i]);
             }
             catch (const std::exception& e) {
@@ -480,11 +337,7 @@ namespace graphics {
         }
     }
 
-    // ----------------------------------------------------
-    // Clear all textures from the manager
-    // ----------------------------------------------------
-    void TextureManager::Clear()
-    {
+    void TextureManager::Clear() {
         textures_.clear();
         Logger::GetLogger()->info("TextureManager: Cleared texture cache.");
     }

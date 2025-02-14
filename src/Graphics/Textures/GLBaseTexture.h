@@ -1,35 +1,24 @@
 #pragma once
 #include "ITexture.h"
 #include <glad/glad.h>
-#include <stdexcept>
 #include <cstdint>
 
 namespace graphics {
 
-    /**
-     * @brief A base class implementing ITexture for OpenGL.
-     *
-     * Holds the raw GLuint texture object
-     * provides default Bind/Unbind, and handles bindless toggling.
-     */
-    class GLBaseTexture : public ITexture
-    {
+    class GLBaseTexture : public ITexture {
     public:
         GLBaseTexture() = default;
         virtual ~GLBaseTexture() override;
 
-        // By default, bind by glBindTextureUnit if not bindless
         void Bind(uint32_t unit) const override;
         void Unbind(uint32_t unit) const override;
 
         uint32_t GetWidth()  const override { return width_; }
         uint32_t GetHeight() const override { return height_; }
-
         uint64_t GetBindlessHandle() const override { return bindless_handle_; }
         bool     IsBindless()        const override { return is_bindless_; }
 
     protected:
-        // Helper: if config says "use_bindless" and extension is present, do it.
         void MakeBindlessIfNeeded(bool useBindless);
 
     protected:
