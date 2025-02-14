@@ -2,11 +2,16 @@
 #include <cstddef>
 
 enum class MaterialParamType : std::size_t {
-    Ambient = 0,   // Ka
-    Diffuse = 1,   // Kd
-    Specular = 2,  // Ks
-    Shininess = 3, // Ns
-    COUNT = 4
+    Ambient = 0,          // Ka (vec3)
+    Diffuse = 1,          // Kd (vec3)
+    Specular = 2,         // Ks (vec3)
+    Shininess = 3,        // Ns (float)
+    RefractionIndex = 4,  // Ni (float)
+    Opacity = 5,          // d  (float)
+    Illumination = 6,     // illum (int, stored as float)
+    Emissive = 7,         // Ke (vec3)
+    // Note: TransmissionFilter (Tf) is not packed here—store it as a custom param.
+    COUNT = 8
 };
 
 namespace std {

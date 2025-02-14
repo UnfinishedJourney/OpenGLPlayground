@@ -30,8 +30,8 @@ std::pair<MeshLayout, MaterialLayout> ResourceManager::GetLayoutsFromShader(cons
             MaterialLayout{ {}, { TextureType::Albedo, TextureType::Ambient } }
         }},
         {"bistroShaderShadowed", {
-            MeshLayout{ true, true, false, false, { TextureType::Albedo } },
-            MaterialLayout{ {}, { TextureType::Albedo, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut, TextureType::Ambient } }
+            MeshLayout{ true, true, true, false, { TextureType::Albedo } },
+            MaterialLayout{ {MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess, MaterialParamType::Opacity, MaterialParamType::Emissive }, { TextureType::Albedo, TextureType::Height, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut, TextureType::Ambient } }
         }},
         {"simpleLightsShadowed", {
             MeshLayout{ true, true, false, false, {} },

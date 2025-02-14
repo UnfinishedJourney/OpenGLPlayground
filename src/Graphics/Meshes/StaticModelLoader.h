@@ -35,7 +35,8 @@ namespace StaticLoader {
                 { aiTextureType_NORMALS,  TextureType::Normal },
                 { aiTextureType_SPECULAR, TextureType::MetalRoughness },
                 { aiTextureType_EMISSIVE, TextureType::Emissive },
-                { aiTextureType_AMBIENT,  TextureType::Emissive }
+                { aiTextureType_AMBIENT,  TextureType::Ambient },
+                { aiTextureType_HEIGHT,   TextureType::Height }
             },
             uint8_t maxLODs = 5);
         ~ModelLoader() = default;

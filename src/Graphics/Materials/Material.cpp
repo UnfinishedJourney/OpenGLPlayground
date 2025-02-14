@@ -78,6 +78,15 @@ namespace graphics {
             }
             break;
         }
+        case MaterialParamType::RefractionIndex: {
+            if (auto fPtr = std::get_if<float>(&value)) {
+                packed_params_.mtl0_.w = *fPtr;
+            }
+            else {
+                Logger::GetLogger()->warn("[Material: {}] RefractionIndex must be float!", name_);
+            }
+            break;
+        }
         case MaterialParamType::Diffuse: {
             if (auto vec3Ptr = std::get_if<glm::vec3>(&value)) {
                 packed_params_.mtl1_.x = vec3Ptr->x;
@@ -86,6 +95,15 @@ namespace graphics {
             }
             else {
                 Logger::GetLogger()->warn("[Material: {}] Diffuse must be glm::vec3!", name_);
+            }
+            break;
+        }
+        case MaterialParamType::Opacity: {
+            if (auto fPtr = std::get_if<float>(&value)) {
+                packed_params_.mtl1_.w = *fPtr;
+            }
+            else {
+                Logger::GetLogger()->warn("[Material: {}] Opacity must be float!", name_);
             }
             break;
         }
@@ -106,6 +124,29 @@ namespace graphics {
             }
             else {
                 Logger::GetLogger()->warn("[Material: {}] Shininess must be float!", name_);
+            }
+            break;
+        }
+        case MaterialParamType::Emissive: {
+            if (auto vec3Ptr = std::get_if<glm::vec3>(&value)) {
+                packed_params_.mtl3_.x = vec3Ptr->x;
+                packed_params_.mtl3_.y = vec3Ptr->y;
+                packed_params_.mtl3_.z = vec3Ptr->z;
+            }
+            else {
+                Logger::GetLogger()->warn("[Material: {}] Emissive must be glm::vec3!", name_);
+            }
+            break;
+        }
+        case MaterialParamType::Illumination: {
+            if (auto fPtr = std::get_if<float>(&value)) {
+                packed_params_.mtl3_.w = *fPtr;
+            }
+            else if (auto intPtr = std::get_if<int>(&value)) {
+                packed_params_.mtl3_.w = static_cast<float>(*intPtr);
+            }
+            else {
+                Logger::GetLogger()->warn("[Material: {}] Illumination must be a number!", name_);
             }
             break;
         }

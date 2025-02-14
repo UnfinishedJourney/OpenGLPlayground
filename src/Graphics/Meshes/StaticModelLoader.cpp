@@ -182,30 +182,75 @@ namespace StaticLoader {
         const std::unique_ptr<graphics::Material>& mat,
         const MaterialLayout& matLayout)
     {
-        // Use layout helper methods (e.g. HasParam) rather than direct bitset access.
+        // Ambient (Ka)
         if (matLayout.HasParam(MaterialParamType::Ambient)) {
-            aiColor3D color(0.2f);
-            aiMat->Get(AI_MATKEY_COLOR_AMBIENT, color);
+            aiColor3D ambient(0.2f, 0.2f, 0.2f);
+            aiMat->Get(AI_MATKEY_COLOR_AMBIENT, ambient);
             mat->AssignToPackedParams(MaterialParamType::Ambient,
-                glm::vec3(color.r, color.g, color.b));
+                glm::vec3(ambient.r, ambient.g, ambient.b));
         }
+        // Diffuse (Kd)
         if (matLayout.HasParam(MaterialParamType::Diffuse)) {
-            aiColor3D color(0.8f);
-            aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+            aiColor3D diffuse(0.8f, 0.8f, 0.8f);
+            aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
             mat->AssignToPackedParams(MaterialParamType::Diffuse,
-                glm::vec3(color.r, color.g, color.b));
+                glm::vec3(diffuse.r, diffuse.g, diffuse.b));
         }
+        // Specular (Ks)
         if (matLayout.HasParam(MaterialParamType::Specular)) {
-            aiColor3D color(0.0f);
-            aiMat->Get(AI_MATKEY_COLOR_SPECULAR, color);
+            aiColor3D specular(0.0f, 0.0f, 0.0f);
+            aiMat->Get(AI_MATKEY_COLOR_SPECULAR, specular);
             mat->AssignToPackedParams(MaterialParamType::Specular,
-                glm::vec3(color.r, color.g, color.b));
+                glm::vec3(specular.r, specular.g, specular.b));
         }
+        // Shininess (Ns)
         if (matLayout.HasParam(MaterialParamType::Shininess)) {
             float shininess = 32.0f;
             aiMat->Get(AI_MATKEY_SHININESS, shininess);
             mat->AssignToPackedParams(MaterialParamType::Shininess, shininess);
         }
+        // Refraction Index (Ni)
+        if (matLayout.HasParam(MaterialParamType::RefractionIndex)) {
+            float ni = 1.0f;
+            aiMat->Get(AI_MATKEY_REFRACTI, ni);
+            mat->AssignToPackedParams(MaterialParamType::RefractionIndex, ni);
+        }
+        // Opacity (d)
+        if (matLayout.HasParam(MaterialParamType::Opacity)) {
+            float opacity = 1.0f;
+            aiMat->Get(AI_MATKEY_OPACITY, opacity);
+
+            // The book does: transparencyFactor = clamp(1 - opacity, 0, 1)
+            // and if near-opaque, force to zero. Then final alpha = 1 - transparencyFactor
+            float transparencyFactor = glm::clamp(1.0f - opacity, 0.0f, 1.0f);
+
+            const float opaquenessThreshold = 0.05f;
+            if (transparencyFactor >= 1.0f - opaquenessThreshold)
+                transparencyFactor = 0.0f;
+
+            float finalOpacity = 1.0f - transparencyFactor;
+            mat->AssignToPackedParams(MaterialParamType::Opacity, finalOpacity);
+        }
+        // Emissive (Ke)
+        if (matLayout.HasParam(MaterialParamType::Emissive)) {
+            aiColor3D emissive(0.0f, 0.0f, 0.0f);
+            aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, emissive);
+            mat->AssignToPackedParams(MaterialParamType::Emissive,
+                glm::vec3(emissive.r, emissive.g, emissive.b));
+        }
+        //// Illumination (illum)
+        //if (matLayout.HasParam(MaterialParamType::Illumination)) {
+        //    int illum = 2;
+        //    aiMat->Get(AI_MATKEY_SHADING_MODEL, illum);
+        //    mat->AssignToPackedParams(MaterialParamType::Illumination, illum);
+        //}
+        //// Transmission Filter (Tf) is stored as a custom parameter.
+        //{
+        //    aiColor3D tf(1.0f, 1.0f, 1.0f);
+        //    if (aiMat->Get("Tf", tf) == AI_SUCCESS) {
+        //        mat->SetCustomParam("uTransmissionFilter", glm::vec3(tf.r, tf.g, tf.b));
+        //    }
+        //}
     }
 
     // ––– LoadMaterialTextures –––

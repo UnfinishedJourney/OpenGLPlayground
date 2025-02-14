@@ -39,6 +39,9 @@ void GeometryPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     {
         PROFILE_BLOCK("Bind Framebuffer", Magenta);
         m_Framebuffer->Bind();
@@ -115,6 +118,8 @@ void GeometryPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
         PROFILE_BLOCK("Unbind Framebuffer", Magenta);
         m_Framebuffer->Unbind();
     }
+
+    glDisable(GL_BLEND);
 }
 
 void GeometryPass::UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer)

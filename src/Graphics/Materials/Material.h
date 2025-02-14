@@ -24,19 +24,23 @@ namespace graphics {
      *   - mtl3_: (Ke.xyz, extra)
      */
     struct PackedMtlParams {
+        // mtl0_: (Ambient.xyz, RefractionIndex)
         glm::vec4 mtl0_{ 0.2f, 0.2f, 0.2f, 1.0f };
+        // mtl1_: (Diffuse.xyz, Opacity)
         glm::vec4 mtl1_{ 0.8f, 0.8f, 0.8f, 1.0f };
+        // mtl2_: (Specular.xyz, Shininess)
         glm::vec4 mtl2_{ 0.0f, 0.0f, 0.0f, 32.0f };
+        // mtl3_: (Emissive.xyz, Illumination)
         glm::vec4 mtl3_{ 0.0f, 0.0f, 0.0f, 0.0f };
 
         inline glm::vec3 Ambient() const { return glm::vec3(mtl0_); }
-        inline float Ni() const { return mtl0_.w; }
+        inline float RefractionIndex() const { return mtl0_.w; }
         inline glm::vec3 Diffuse() const { return glm::vec3(mtl1_); }
-        inline float d() const { return mtl1_.w; }
+        inline float Opacity() const { return mtl1_.w; }
         inline glm::vec3 Specular() const { return glm::vec3(mtl2_); }
         inline float Shininess() const { return mtl2_.w; }
         inline glm::vec3 Emissive() const { return glm::vec3(mtl3_); }
-        inline float Extra() const { return mtl3_.w; }
+        inline float Illumination() const { return mtl3_.w; }
     };
 
     /**
