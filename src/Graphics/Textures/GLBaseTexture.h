@@ -9,7 +9,7 @@ namespace graphics {
     /**
      * @brief A base class implementing ITexture for OpenGL.
      *
-     * Holds the raw GLuint texture object, does RAII destruction,
+     * Holds the raw GLuint texture object
      * provides default Bind/Unbind, and handles bindless toggling.
      */
     class GLBaseTexture : public ITexture

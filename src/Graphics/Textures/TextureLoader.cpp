@@ -25,7 +25,7 @@ namespace graphics {
         Bitmap bitmap;
         try {
             // Load data from disk (HDR or LDR depending on config.is_hdr_)
-            bool loaded = bitmap.LoadFromFile(filePath, /*flipY=*/true, /*force4Ch=*/true, config.is_hdr_);
+            bool loaded = bitmap.LoadFromFile(filePath, /*flipY=*/true, /*force4Ch=*/true);
             if (!loaded || bitmap.data().empty()) {
                 Logger::GetLogger()->error("TextureLoader: Failed to load 2D texture from '{}'.", filePath);
                 throw std::runtime_error("2D texture load failed (empty data).");

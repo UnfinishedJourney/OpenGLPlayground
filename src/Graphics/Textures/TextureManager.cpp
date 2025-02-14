@@ -1,3 +1,4 @@
+#include "TextureUtils.h"
 #include "TextureManager.h"
 #include "TextureLoader.h"
 #include "EnvMapPreprocessor.h"
@@ -348,7 +349,7 @@ namespace graphics {
             Bitmap equirect = preprocessor.LoadTexture(srcPath);
             Bitmap vCross = preprocessor.ConvertEquirectangularMapToVerticalCross(equirect);
             Bitmap faceCube = preprocessor.ConvertVerticalCrossToCubeMapFaces(vCross);
-            preprocessor.SaveFacesToDiskLDR(faceCube, ldrFaces, "ldr_face_");
+            SaveFacesToDiskLDR(faceCube, ldrFaces, "ldr_face_");
             Logger::GetLogger()->info("TextureManager: Created LDR skybox faces for '{}'.", equirectPath);
         }
         else {
@@ -471,7 +472,7 @@ namespace graphics {
 
             try {
                 // Save each face as HDR
-                preprocessor.SaveAsHDR(faceBmp, facePaths[i]);
+                SaveAsHDR(faceBmp, facePaths[i]);
             }
             catch (const std::exception& e) {
                 Logger::GetLogger()->error("TextureManager: SaveFacesToDisk: face {}: {}", prefix + std::to_string(i), e.what());

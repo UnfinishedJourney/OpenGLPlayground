@@ -13,7 +13,7 @@ namespace graphics {
     {
         // 1) Load first face to get width_/height_
         Bitmap face0;
-        face0.LoadFromFile(faces[0].string(), /*flipY=*/false, /*force4Ch=*/true, config.is_hdr_);
+        face0.LoadFromFile(faces[0].string(), /*flipY=*/false, /*force4Ch=*/true);
         width_ = face0.width();
         height_ = face0.height();
 
@@ -32,7 +32,7 @@ namespace graphics {
         // Upload each face
         for (int i = 0; i < 6; ++i) {
             Bitmap face;
-            face.LoadFromFile(faces[i].string(), /*flipY=*/false, /*force4Ch=*/true, config.is_hdr_);
+            face.LoadFromFile(faces[i].string(), /*flipY=*/false, /*force4Ch=*/true);
             GLenum type = DataTypeForHDR(face.IsHDR());
             GLenum format = GL_RGBA;
 
@@ -65,7 +65,7 @@ namespace graphics {
         }
         // 1) Load first face of first level
         Bitmap face0;
-        face0.LoadFromFile(mip_faces[0][0].string(), false, true, config.is_hdr_);
+        face0.LoadFromFile(mip_faces[0][0].string(), false, true);
         width_ = face0.width();
         height_ = face0.height();
 
@@ -82,7 +82,7 @@ namespace graphics {
         for (int level = 0; level < mipLevels; ++level) {
             for (int i = 0; i < 6; ++i) {
                 Bitmap face;
-                face.LoadFromFile(mip_faces[level][i].string(), false, true, config.is_hdr_);
+                face.LoadFromFile(mip_faces[level][i].string(), false, true);
                 GLenum type = DataTypeForHDR(face.IsHDR());
                 GLenum format = GL_RGBA;
 

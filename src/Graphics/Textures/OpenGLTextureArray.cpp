@@ -22,7 +22,7 @@ namespace graphics {
 
         // 1) Load the sprite sheet into a Bitmap
         Bitmap sheet;
-        sheet.LoadFromFile(filePaths[0], /*flipY=*/false, /*force4Ch=*/true, /*isHDR=*/false);
+        sheet.LoadFromFile(filePaths[0], /*flipY=*/false, /*force4Ch=*/true);
 
         width_ = sheet.width();
         height_ = sheet.height();
