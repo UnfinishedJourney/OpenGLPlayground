@@ -56,14 +56,7 @@ namespace Scene {
         bool LoadStaticModelIntoScene(
             const std::string& modelName,
             const std::string& shaderName,
-            float scaleFactor = 1.0f,
-            std::unordered_map<aiTextureType, TextureType> aiToMyType = {
-                    { aiTextureType_DIFFUSE,   TextureType::Albedo       },
-                    { aiTextureType_NORMALS,   TextureType::Normal       },
-                    { aiTextureType_SPECULAR,  TextureType::MetalRoughness },
-                    { aiTextureType_EMISSIVE,  TextureType::Emissive     },
-                    { aiTextureType_AMBIENT,   TextureType::Emissive     }
-            });
+            float scaleFactor = 1.0f);
 
         /**
          * @brief Loads a primitive (predefined geometry) into the scene.

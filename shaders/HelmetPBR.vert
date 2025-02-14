@@ -6,7 +6,7 @@ layout (location = 2) in vec3 tangents;
 layout (location = 3) in vec2 uvs;
 
 
-out vec2 tc;           // Texture coordinates
+out vec2 uv;           // Texture coordinates
 out vec3 fragPos;      // Fragment position in world space
 out vec3 normal;       // Normal in world space
 out mat3 TBN;          // Tangent, Bitangent, Normal matrix
@@ -15,7 +15,7 @@ out mat3 TBN;          // Tangent, Bitangent, Normal matrix
 
 void main()
 {
-    tc = uvs;
+    uv = uvs;
 
     vec4 worldPosition = vec4(positions, 1.0);
     fragPos = positions;

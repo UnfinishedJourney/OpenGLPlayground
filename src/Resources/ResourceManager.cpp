@@ -14,24 +14,24 @@ std::pair<MeshLayout, MaterialLayout> ResourceManager::GetLayoutsFromShader(cons
             MaterialLayout{ { MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess }, {} }
         }},
         {"basic", {
-            MeshLayout{ true, false, false, false, { TextureType::Albedo } },
+            MeshLayout{ true, false, false, false, { TextureType::Diffuse } },
             MaterialLayout{ {}, {} }
         }},
         {"basicTextured", {
-            MeshLayout{ true, false, false, false, { TextureType::Albedo } },
-            MaterialLayout{ {}, { TextureType::Albedo } }
+            MeshLayout{ true, false, false, false, { TextureType::Diffuse } },
+            MaterialLayout{ {}, { TextureType::Diffuse } }
         }},
         {"helmetPBR", {
-            MeshLayout{ true, true, true, false, { TextureType::Albedo } },
-            MaterialLayout{ {}, { TextureType::Albedo, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut } }
+            MeshLayout{ true, true, true, false, { TextureType::Diffuse } },
+            MaterialLayout{ {}, { TextureType::Diffuse, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut } }
         }},
         {"bistroShader", {
-            MeshLayout{ true, true, false, false, { TextureType::Albedo } },
-            MaterialLayout{ {}, { TextureType::Albedo, TextureType::Ambient } }
+            MeshLayout{ true, true, false, false, { TextureType::Diffuse } },
+            MaterialLayout{ {}, { TextureType::Diffuse, TextureType::Ambient } }
         }},
         {"bistroShaderShadowed", {
-            MeshLayout{ true, true, true, false, { TextureType::Albedo } },
-            MaterialLayout{ {MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess, MaterialParamType::Opacity, MaterialParamType::Emissive }, { TextureType::Albedo, TextureType::Height, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut, TextureType::Ambient } }
+            MeshLayout{ true, true, true, false, { TextureType::Diffuse } },
+            MaterialLayout{ {MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess, MaterialParamType::Opacity, MaterialParamType::Emissive }, { TextureType::Diffuse, TextureType::Height, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut, TextureType::Ambient } }
         }},
         {"simpleLightsShadowed", {
             MeshLayout{ true, true, false, false, {} },

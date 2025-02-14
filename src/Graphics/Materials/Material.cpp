@@ -10,7 +10,7 @@ namespace graphics {
     // Helper functions for mapping texture types to uniform names and binding slots.
     static std::string GetTextureUniformName(TextureType type) {
         switch (type) {
-        case TextureType::Albedo:           return "uTexAlbedo";
+        case TextureType::Diffuse:          return "uTexDiffuse";
         case TextureType::Normal:           return "uTexNormal";
         case TextureType::MetalRoughness:   return "uTexMetalRoughness";
         case TextureType::AO:               return "uTexAO";
@@ -24,7 +24,7 @@ namespace graphics {
 
     static int GetTextureBindingSlot(TextureType type) {
         switch (type) {
-        case TextureType::Albedo:           return 0;
+        case TextureType::Diffuse:          return 0;
         case TextureType::Normal:           return 1;
         case TextureType::MetalRoughness:   return 2;
         case TextureType::AO:               return 3;

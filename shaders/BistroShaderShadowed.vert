@@ -19,11 +19,11 @@ void main()
     wPos = position;
     gl_Position = u_Proj * u_View * vec4(wPos, 1.0);
     PosLightMap = u_ShadowMatrix * vec4(position, 1.0);
-    wNormal = normal;
+    wNormal = normalize(normal);
     uv = texCoord;
 
     vec3 T = normalize(tangent);
-    vec3 N = normal;
-    vec3 B = cross(N, T);
+    vec3 N = wNormal;
+    vec3 B = normalize(cross(N, T));
     TBN = mat3(T, B, N); 
 }

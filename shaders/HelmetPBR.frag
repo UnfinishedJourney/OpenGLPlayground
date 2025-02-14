@@ -3,13 +3,13 @@
 // -----------------------------------------------------------------------------
 // Uniforms and UBOs (make sure these are defined in your included files)
 // -----------------------------------------------------------------------------
-#include "Common/Common.shader"   // Should define u_CameraPos, etc.
+#include "Common/Common.shader"   // Should define u_CameraPos, euv.
 #include "Common/Lights.shader"   // Should define lightsData[] and numLights
-
+#include "Common/Material.shader"
 // -----------------------------------------------------------------------------
 // Inputs / Outputs
 // -----------------------------------------------------------------------------
-in vec2  tc;          // Texture coordinates
+in vec2  uv;          // Texture coordinates
 in vec3  fragPos;     // World-space position
 in vec3  normal;      // World-space normal (from geometry or partially from a normal map)
 in mat3  TBN;         // Tangent-Bitangent-Normal matrix
@@ -20,17 +20,10 @@ out vec4 out_FragColor;
 // Texture Samplers
 // -----------------------------------------------------------------------------
 
-layout(binding = 0) uniform sampler2D texAlbedo;
-layout(binding = 1) uniform sampler2D texNormal;
-layout(binding = 2) uniform sampler2D texMetalRoughness; // .g = metallic, .r = roughness (here: .g = metallic, .r = roughness)
-layout(binding = 3) uniform sampler2D texAO;
-layout(binding = 4) uniform sampler2D texEmissive;
 
 // BRDF LUT for specular IBL:
 layout(binding = 7) uniform sampler2D texBRDF_LUT;
 layout(binding = 8) uniform samplerCube u_EnvironmentMap;
-// Environment maps for IBL:
-layout(binding = 9) uniform samplerCube u_EnvironmentMapDiffuse;   // Diffuse irradiance map
 
 // -----------------------------------------------------------------------------
 // Constants
@@ -50,18 +43,26 @@ vec4 SRGBtoLINEAR(vec4 srgbIn)
 void main()
 {
     vec3 lightDirection = normalize(vec3(-1.0, 1.0, -0.3));
-    vec3 lightColor = 2.0*vec3(1.0);
+    vec3 lighuvolor = vec3(1.0);
+
+    if (HasTexture(4))
+    {
+
+        vec3 texCol = texture(uTexEmissive, uv).rgb;
+        out_FragColor = vec4(texCol, 1.0);
+        //return;
+    }
 
     // ----- STEP 1: Texture Sampling -----
-    vec3 albedo     = texture(texAlbedo, tc).rgb;
+    vec3 albedo     = texture(uTexDiffuse, uv).rgb;
 
     //albedo = SRGBtoLINEAR(vec4(albedo, 1.0)).rgb;
-    vec3 normalMap  = texture(texNormal, tc).rgb;
-    vec2 metalRough = texture(texMetalRoughness, tc).bg; // .b = metallic, .g = roughness
+    vec3 normalMap  = texture(uTexNormal, uv).rgb;
+    vec2 metalRough = texture(uTexMetalRoughness, uv).bg; // .b = metallic, .g = roughness
     float metallic  = metalRough.y;
     float roughness = metalRough.x;
-    float ao        = texture(texAO, tc).r;
-    vec3 emissive   = texture(texEmissive, tc).rgb;
+    float ao        = texture(uTexAO, uv).r;
+    vec3 emissive   = texture(uTexEmissive, uv).rgb;
     //emissive = SRGBtoLINEAR(vec4(emissive, 1.0)).rgb;
     // ----- STEP 2: Normal Mapping -----
     // Convert normal from [0,1] to [-1,1] then into world space via TBN.
@@ -87,7 +88,7 @@ void main()
     vec3 F_env = F0 + (1.0 - F0) * pow(1.0 - VdotN, 5.0);
 
     // Sample prefiltered (specular) environment.
-    // We choose a maximum mip level count that should match the mip chain in the prefiltered cubemap.
+    // We choose a maximum mip level count that should mauvh the mip chain in the prefiltered cubemap.
     float maxMipLevels = 5.0;
     //vec3 prefilteredSpec = textureLod(u_EnvironmentMapSpecular, R, roughness * maxMipLevels).rgb;
 
@@ -105,7 +106,7 @@ void main()
 
     //directional light
     float NdotL = max(dot(N, lightDirection), 0.0);
-    vec3 directDiffuse = (1.0 - metallic) * albedo / PI * lightColor * NdotL;
+    vec3 directDiffuse = (1.0 - metallic) * albedo / PI * lighuvolor * NdotL;
     vec3 H = normalize(V + lightDirection);
     float NdotH = max(dot(N, H), 0.0);
     float specPower = mix(32.0, 1.0, roughness);
@@ -113,7 +114,7 @@ void main()
 
     float VdotH = max(dot(V, H), 0.0);
     vec3 F_direct = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
-    vec3 directSpecular = F_direct * lightColor * specFactor * NdotL;
+    vec3 directSpecular = F_direct * lighuvolor * specFactor * NdotL;
 
     vec3 directLight = directDiffuse + directSpecular;
     color += directLight;

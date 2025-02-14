@@ -8,15 +8,17 @@
 TestDamagedHelmet::TestDamagedHelmet() {}
 
 void TestDamagedHelmet::OnEnter() {
-    std::unordered_map<aiTextureType, TextureType> aiToMyType = {
-      { aiTextureType_DIFFUSE,  TextureType::Albedo      },
-      { aiTextureType_NORMALS,  TextureType::Normal      },
-      { aiTextureType_LIGHTMAP, TextureType::AO          },
-      { aiTextureType_UNKNOWN,  TextureType::MetalRoughness },
-      { aiTextureType_EMISSIVE, TextureType::Emissive    }
-    };
+    //std::unordered_map<aiTextureType, TextureType> aiToMyType = {
+    //  { aiTextureType_DIFFUSE,  TextureType::Diffuse      },
+    //  { aiTextureType_NORMALS,  TextureType::Normal      },
+    //  { aiTextureType_LIGHTMAP, TextureType::AO          },
+    //  { aiTextureType_UNKNOWN,  TextureType::MetalRoughness },
+    //  { aiTextureType_EMISSIVE, TextureType::Emissive    },
+    //  { aiTextureType_METALNESS, TextureType::Height},
+    //  { aiTextureType_DIFFUSE_ROUGHNESS, TextureType::Ambient},
+    //};
 
-    if (!scene_->LoadStaticModelIntoScene("helmet", "helmetPBR", 1.0, aiToMyType)) {
+    if (!scene_->LoadStaticModelIntoScene("helmet", "helmetPBR", 1.0)) {
         Logger::GetLogger()->error("Failed to load 'helmet' model in TestDamagedHelmet");
         return;
     }

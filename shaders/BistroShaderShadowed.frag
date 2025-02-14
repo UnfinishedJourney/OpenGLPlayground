@@ -70,9 +70,9 @@ void main()
     // 2. Base color & alpha
     vec3 albedo  = Kd;
     float alpha  = 1.0;  // default
-    if (HasTexture(0))   // bit 0 means there's an Albedo texture
+    if (HasTexture(0))   // bit 0 means there's a diffuse texture
     {
-        vec4 texColor = texture(uTexAlbedo, uv);
+        vec4 texColor = texture(uTexDiffuse, uv);
         //color = texColor;
         //return;
         albedo = Kd*texColor.rgb;
@@ -89,8 +89,6 @@ void main()
         vec3 normalTex = texture(uTexNormal, uv).rgb;
         //Remap from [0,1] to [-1,1] and transform using the TBN matrix.
         N = normalize(TBN * (normalTex * 2.0 - 1.0));
-        color = vec4(1.0, 1.0, 0.0, 1.0);
-        return;
     }
 
     // Metalness and Roughness (bit 2): assume red channel is roughness, green channel is metallic.
@@ -118,11 +116,11 @@ void main()
         emissive = Ke*texColor.rgb;
     }
 
-    if (HasTexture(1))
+    if (HasTexture(6))
     {
         vec4 texColor = texture(uTexHeight, uv);
-        color = vec4(1.0, 0.0, 1.0, 1.0);
-        return;
+        //color = texColor;
+        //return;
     }
 
     // --- STEP 3: Compute View Vector ---

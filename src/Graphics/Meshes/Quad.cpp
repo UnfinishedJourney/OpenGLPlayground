@@ -13,7 +13,7 @@ namespace graphics {
         };
 
         // Provide UVs for Albedo.
-        uvs_[TextureType::Albedo] = {
+        uvs_[TextureType::Diffuse] = {
             { 0.0f, 1.0f },
             { 0.0f, 0.0f },
             { 1.0f, 0.0f },
@@ -60,7 +60,7 @@ namespace graphics {
         }
 
         // Define UVs.
-        uvs_[TextureType::Albedo] = {
+        uvs_[TextureType::Diffuse] = {
             { 0.0f, 1.0f },
             { 0.0f, 0.0f },
             { 1.0f, 0.0f },

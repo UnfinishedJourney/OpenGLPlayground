@@ -23,6 +23,55 @@ namespace StaticLoader {
         maxLODs_(maxLODs)
     {}
 
+    struct AssimpParamFlags
+    {
+        bool hasAmbient = false; // AI_MATKEY_COLOR_AMBIENT
+        bool hasDiffuse = false; // AI_MATKEY_COLOR_DIFFUSE
+        bool hasSpecular = false; // AI_MATKEY_COLOR_SPECULAR
+        bool hasEmissive = false; // AI_MATKEY_COLOR_EMISSIVE
+        bool hasRefraction = false; // AI_MATKEY_REFRACTI
+        bool hasOpacity = false; // AI_MATKEY_OPACITY
+        bool hasShininess = false; // AI_MATKEY_SHININESS
+
+        bool hasDiffuseTex = false; // aiTextureType_DIFFUSE
+        bool hasNormalsTex = false; // aiTextureType_NORMALS
+        bool hasSpecularTex = false; // aiTextureType_SPECULAR
+        bool hasEmissiveTex = false; // aiTextureType_EMISSIVE
+        bool hasAmbientTex = false; // aiTextureType_AMBIENT
+        bool hasHeightTex = false; // aiTextureType_HEIGHT
+        bool hasOtherTex = false; // anything else (if you like)
+    };
+
+    static std::string FlagsToKeyString(const AssimpParamFlags& f)
+    {
+        // Build up a small string. We only add entries if the corresponding bool is true.
+        // Alternatively, you could do a bitmask approach, but strings are simpler to inspect in a debugger.
+        std::string s;
+        if (f.hasAmbient)     s += "Ka+";
+        if (f.hasDiffuse)     s += "Kd+";
+        if (f.hasSpecular)    s += "Ks+";
+        if (f.hasEmissive)    s += "Ke+";
+        if (f.hasRefraction)  s += "Ni+";
+        if (f.hasOpacity)     s += "opacity+";
+        if (f.hasShininess)   s += "Ns+";
+
+        if (f.hasDiffuseTex)  s += "diffTex+";
+        if (f.hasNormalsTex)  s += "normTex+";
+        if (f.hasSpecularTex) s += "specTex+";
+        if (f.hasEmissiveTex) s += "emissTex+";
+        if (f.hasAmbientTex)  s += "ambTex+";
+        if (f.hasHeightTex)   s += "heightTex+";
+        if (f.hasOtherTex)    s += "otherTex+";
+
+        if (s.empty()) {
+            return "EmptyMaterial";
+        }
+        // Remove trailing '+'
+        if (s.back() == '+')
+            s.pop_back();
+        return s;
+    }
+
     // ––– LoadStaticModel –––
     bool ModelLoader::LoadStaticModel(const std::string& modelName,
         const MeshLayout& meshLayout,
@@ -49,6 +98,7 @@ namespace StaticLoader {
             importFlags |= aiProcess_CalcTangentSpace;
         }
 
+        AI_CONFIG_IMPORT_FBX_READ_MATERIALS;
         // Look up file path.
         std::string filePath = GetModelPath(modelName);
         if (filePath.empty()) {
@@ -119,7 +169,6 @@ namespace StaticLoader {
             }
         }
 
-        // 3) Optionally recenter geometry.
         if (centerModel) {
             CenterMeshes();
         }
@@ -174,6 +223,39 @@ namespace StaticLoader {
             Logger::GetLogger()->error("ModelLoader: Failed to add material '{}'.", matName);
             return 0;
         }
+
+        //AssimpParamFlags paramFlags;
+
+        //std::vector<std::string> propertyKeys;
+        //propertyKeys.reserve(aiMat->mNumProperties);
+
+        //for (unsigned p = 0; p < aiMat->mNumProperties; ++p) {
+        //    const aiMaterialProperty* prop = aiMat->mProperties[p];
+        //    // Build a small description:
+        //    //   - The key string (prop->mKey.C_Str())
+        //    //   - The "semantic" (aiTextureType) if it’s a texture
+        //    //   - The "index" if relevant
+        //    // Optionally, you can also print the type (aiPTI_Float, etc.)
+
+        //    // Example:
+        //    std::ostringstream oss;
+        //    oss << "Key='" << prop->mKey.C_Str() << "'"
+        //        << " semantic=" << prop->mSemantic
+        //        << " index=" << prop->mIndex;
+
+        //    // Optionally parse prop->mType (aiPropertyTypeInfo):
+        //    // prop->mType is in {aiPTI_Float, aiPTI_Double, aiPTI_String, aiPTI_Integer, aiPTI_Buffer}
+        //    oss << " type=" << prop->mType;
+
+        //    // For even deeper debugging, you could examine `prop->mData`
+        //    // but that’s typically too detailed for quick logging.
+
+        //    propertyKeys.push_back(oss.str());
+        //    allProperties_.insert(oss.str());
+        //}
+
+        //materialProperties_[matName] = std::move(propertyKeys);
+
         return idOpt.value();
     }
 
@@ -259,6 +341,13 @@ namespace StaticLoader {
         const MaterialLayout& matLayout,
         const std::string& directory)
     {
+        //for (int i = 0; i <= 25; i++)
+        //{
+        //    unsigned count = aiMat->GetTextureCount(static_cast<aiTextureType>(i));
+        //    if (count > 0) {
+        //        allTextures_[static_cast<aiTextureType>(i)].insert(mat->GetName());
+        //    }
+        //}
         // For each mapping from Assimp texture type to your texture type.
         for (auto& [aiType, myType] : aiToMyType_) {
             unsigned count = aiMat->GetTextureCount(aiType);

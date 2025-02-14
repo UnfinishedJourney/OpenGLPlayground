@@ -83,8 +83,7 @@ namespace Scene {
 
     bool Scene::LoadStaticModelIntoScene(const std::string& modelName,
         const std::string& shaderName,
-        float scaleFactor,
-        std::unordered_map<aiTextureType, TextureType> aiToMyType)
+        float scaleFactor)
     {
         Logger::GetLogger()->info("Loading static model '{}' with shader '{}'.", modelName, shaderName);
 
@@ -92,7 +91,7 @@ namespace Scene {
         auto [meshLayout, matLayout] = resourceManager.GetLayoutsFromShader(shaderName);
 
         // Use the StaticModelLoader to load the model.
-        StaticLoader::ModelLoader loader(scaleFactor, aiToMyType);
+        StaticLoader::ModelLoader loader(scaleFactor);
         bool success = loader.LoadStaticModel(modelName, meshLayout, matLayout, /*centerModel=*/true);
         if (!success) {
             Logger::GetLogger()->error("Failed to load static model '{}'.", modelName);

@@ -11,7 +11,7 @@ uniform PackedMtlParams uMaterial;       // Mtl0..Mtl3
 uniform int uMaterial_textureUsageFlags; // bitmask
 
 
-layout(binding = 0) uniform sampler2D uTexAlbedo;
+layout(binding = 0) uniform sampler2D uTexDiffuse;
 layout(binding = 1) uniform sampler2D uTexNormal;
 layout(binding = 2) uniform sampler2D uTexMetalRoughness;
 layout(binding = 3) uniform sampler2D uTexAO;

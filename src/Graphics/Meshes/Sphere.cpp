@@ -18,7 +18,7 @@ namespace graphics {
         // Reserve space for vertices and UVs.
         positions_.reserve((stackCount + 1) * (sectorCount + 1));
         normals_.reserve((stackCount + 1) * (sectorCount + 1));
-        uvs_[TextureType::Albedo].reserve((stackCount + 1) * (sectorCount + 1));
+        uvs_[TextureType::Diffuse].reserve((stackCount + 1) * (sectorCount + 1));
         indices_.reserve(stackCount * sectorCount * 6);
 
         float sectorStep = 2.f * static_cast<float>(M_PI) / sectorCount;
@@ -39,7 +39,7 @@ namespace graphics {
                 normals_.push_back(n);
                 float s = static_cast<float>(j) / sectorCount;
                 float t = static_cast<float>(i) / stackCount;
-                uvs_[TextureType::Albedo].push_back({ s, t });
+                uvs_[TextureType::Diffuse].push_back({ s, t });
             }
         }
 

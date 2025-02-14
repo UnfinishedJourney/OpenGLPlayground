@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <set>
 #include <memory>
 #include <cstdint>      // for uint8_t
 #include <glm/glm.hpp>
@@ -31,12 +32,15 @@ namespace StaticLoader {
          */
         ModelLoader(float scaleFactor = 1.0f,
             std::unordered_map<aiTextureType, TextureType> aiToMyType = {
-                { aiTextureType_DIFFUSE,  TextureType::Albedo },
+                { aiTextureType_DIFFUSE,  TextureType::Diffuse },
                 { aiTextureType_NORMALS,  TextureType::Normal },
                 { aiTextureType_SPECULAR, TextureType::MetalRoughness },
                 { aiTextureType_EMISSIVE, TextureType::Emissive },
                 { aiTextureType_AMBIENT,  TextureType::Ambient },
-                { aiTextureType_HEIGHT,   TextureType::Height }
+                { aiTextureType_HEIGHT,   TextureType::Normal },
+                { aiTextureType_DISPLACEMENT,   TextureType::Height },
+                { aiTextureType_LIGHTMAP,   TextureType::AO },
+                { aiTextureType_DIFFUSE_ROUGHNESS, TextureType::MetalRoughness }
             },
             uint8_t maxLODs = 5);
         ~ModelLoader() = default;
@@ -61,6 +65,9 @@ namespace StaticLoader {
         const std::vector<graphics::MeshInfo>& GetLoadedObjects() const { return objects_; }
 
     private:
+        //std::unordered_map<std::string, std::vector<std::string>> materialProperties_; //for debugging
+        //std::set<std::string> allProperties_;
+        //std::unordered_map<aiTextureType, std::set<std::string>> allTextures_;
         // Configuration parameters.
         float scaleFactor_ = 1.0f;
         std::unordered_map<aiTextureType, TextureType> aiToMyType_;

@@ -25,7 +25,7 @@ namespace std {
 
 //maybe should move it to separate class
 enum class TextureType : std::size_t {
-    Albedo = 0,
+    Diffuse = 0,
     Normal = 1,
     MetalRoughness = 2,
     AO = 3,
