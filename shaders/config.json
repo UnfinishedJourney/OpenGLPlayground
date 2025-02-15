@@ -108,13 +108,6 @@
                 "fragment": "../shaders/HelmetPBR.frag"
             }
         },
-        "bistroShader": {
-            "binary_path": "../shaders/bin/BistroShader.bin",
-            "shader_stages": {
-                "vertex": "../shaders/BistroShader.vert",
-                "fragment": "../shaders/BistroShader.frag"
-            }
-        },
         "bistroShaderShadowed": {
             "binary_path": "../shaders/bin/BistroShaderShadowed.bin",
             "shader_stages": {

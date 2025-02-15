@@ -4,40 +4,15 @@
 #include "Common/Common.shader"
 #include "Common/Material.shader"
 #include "Common/LightsFunctions.shader"
+#include "Common/Parallax.shader"
+#include "Common/PCF.shader"
 
-// We still may have a "samplerCube u_Texture" if you want, or rename it.
-// But typically your environment maps are in separate binding slots.
+
 layout(binding = 8) uniform samplerCube u_EnvironmentMap; // or you can rename
 
 // For the shadow map
 layout(binding = 10) uniform sampler2DShadow u_ShadowMap;
 
-// PCF routine for directional shadow
-float PCF(sampler2DShadow shadowMap, vec4 shadowCoord)
-{
-    // do the perspective divide
-    vec3 sc = shadowCoord.xyz / shadowCoord.w;
-
-    // if out of [0..1], no shadow (treat as lit)
-    if(any(lessThan(sc, vec3(0.0))) || any(greaterThan(sc, vec3(1.0))))
-        return 1.0;
-
-    // 3x3 PCF
-    float sum = 0.0;
-    float texSize = 2048.0; // match your shadow map size
-    float offset = 1.0 / texSize;
-
-    for(int yy=-1; yy<=1; yy++)
-    {
-        for(int xx=-1; xx<=1; xx++)
-        {
-            vec4 offCoord = shadowCoord;
-            offCoord.xy += vec2(xx, yy) * offset;
-            sum += textureProj(shadowMap, offCoord);
-        }
-    }
-    return sum / 9.0;
-}
 
 // We output final color
 layout(location = 0) out vec4 color;
@@ -48,7 +23,7 @@ in vec3 wNormal;
 in vec2 uv;
 // We'll also have the shadow coords from the vertex shader
 in vec4 PosLightMap;
-in mat3  TBN;          // TBN for normal mapping
+in mat3  TBN;          
 
 // Start of main
 void main()
@@ -66,13 +41,24 @@ void main()
     float Ns = uMaterial.Mtl2.w;  // Shininess
     vec3 Ke = uMaterial.Mtl3.xyz; // Emissive color fallback
 
+    vec3 Vworld = normalize(u_CameraPos.xyz - wPos);
+    vec3 V_tangent = normalize(TBN * Vworld);
+
+    float heightSample = 1.0; // out variable
+    vec2 uvParallax = uv;
+
+    if (HasTexture(6))
+    {
+        uvParallax = calculateUVSimpleParallax(uTexHeight, uv, V_tangent);
+    }
+
 
     // 2. Base color & alpha
     vec3 albedo  = Kd;
     float alpha  = 1.0;  // default
     if (HasTexture(0))   // bit 0 means there's a diffuse texture
     {
-        vec4 texColor = texture(uTexDiffuse, uv);
+        vec4 texColor = texture(uTexDiffuse, uvParallax);
         //color = texColor;
         //return;
         albedo = Kd*texColor.rgb;
@@ -86,7 +72,7 @@ void main()
     vec3 N = normalize(wNormal);
     if (HasTexture(1))
     {
-        vec3 normalTex = texture(uTexNormal, uv).rgb;
+        vec3 normalTex = texture(uTexNormal, uvParallax).rgb;
         //Remap from [0,1] to [-1,1] and transform using the TBN matrix.
         N = normalize(TBN * (normalTex * 2.0 - 1.0));
     }
@@ -96,7 +82,7 @@ void main()
     float roughness = 1.0;
     if (HasTexture(2))
     {
-        vec2 mr = texture(uTexMetalRoughness, uv).rg;
+        vec2 mr = texture(uTexMetalRoughness, uvParallax).rg;
         roughness = mr.r;
         metallic = mr.g;
     }
@@ -116,9 +102,10 @@ void main()
         emissive = Ke*texColor.rgb;
     }
 
-    if (HasTexture(6))
+    if (HasTexture(3))
     {
-        vec4 texColor = texture(uTexHeight, uv);
+        color = vec4(1.0, 1.0, 0.0, 1.0);
+        return;
         //color = texColor;
         //return;
     }
@@ -156,7 +143,7 @@ void main()
     vec3 diffuseDirect = (1.0 - F) * (1.0 - metallic) * albedo;
 
 
-    float shadowFactor = PCF(u_ShadowMap, PosLightMap);
+    float shadowFactor = PCF(u_ShadowMap, PosLightMap, 5);
 
     vec3 directLighting = shadowFactor * (diffuseDirect + specularDirect) * NdotL * uLightColor;
 

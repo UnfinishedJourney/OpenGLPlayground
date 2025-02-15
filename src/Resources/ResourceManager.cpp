@@ -25,10 +25,6 @@ std::pair<MeshLayout, MaterialLayout> ResourceManager::GetLayoutsFromShader(cons
             MeshLayout{ true, true, true, false, { TextureType::Diffuse } },
             MaterialLayout{ {}, { TextureType::Diffuse, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut } }
         }},
-        {"bistroShader", {
-            MeshLayout{ true, true, false, false, { TextureType::Diffuse } },
-            MaterialLayout{ {}, { TextureType::Diffuse, TextureType::Ambient } }
-        }},
         {"bistroShaderShadowed", {
             MeshLayout{ true, true, true, false, { TextureType::Diffuse } },
             MaterialLayout{ {MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess, MaterialParamType::Opacity, MaterialParamType::Emissive }, { TextureType::Diffuse, TextureType::Height, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut, TextureType::Ambient } }
