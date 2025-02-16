@@ -24,11 +24,9 @@ namespace graphics {
 
         ~VertexBuffer();
 
-        // Non-copyable
         VertexBuffer(const VertexBuffer&) = delete;
         VertexBuffer& operator=(const VertexBuffer&) = delete;
 
-        // Movable
         VertexBuffer(VertexBuffer&& other) noexcept;
         VertexBuffer& operator=(VertexBuffer&& other) noexcept;
 
@@ -39,19 +37,13 @@ namespace graphics {
 
         void Unbind() const;
 
-        /**
-         * @brief Updates a subregion of the buffer with new data.
-         * @param data   A span of data to update.
-         * @param offset Byte offset at which to start updating.
-         * @throws std::runtime_error if the update exceeds the buffer size.
-         */
         void UpdateData(std::span<const std::byte> data, GLintptr offset = 0);
 
         [[nodiscard]] size_t GetSize() const { return size_; }
-        [[nodiscard]] GLuint GetRendererID() const { return renderer_id_; }
+        [[nodiscard]] GLuint GetRendererID() const { return rendererId_; }
 
     private:
-        GLuint renderer_id_{ 0 };           ///< OpenGL buffer handle (0 if uninitialized)
+        GLuint rendererId_{ 0 };            ///< OpenGL buffer handle (0 if uninitialized)
         size_t size_{ 0 };                  ///< Buffer size in bytes
         GLenum usage_{ GL_STATIC_DRAW };
     };

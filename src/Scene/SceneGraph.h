@@ -4,50 +4,43 @@
 #include <glm/glm.hpp>
 #include <functional>
 
-struct SceneGraphNode
-{
-    int parent = -1;
-    std::vector<int> children;
-    std::string name;
+struct SceneGraphNode {
+    int parentIndex_ = -1;
+    std::vector<int> children_;
+    std::string name_;
 
-    glm::mat4 localTransform = glm::mat4(1.0f);
-    glm::mat4 globalTransform = glm::mat4(1.0f);
+    glm::mat4 localTransform_ = glm::mat4(1.0f);
+    glm::mat4 globalTransform_ = glm::mat4(1.0f);
 
-    // For culling
-    glm::vec3 boundingBoxMin = glm::vec3(0.0f);
-    glm::vec3 boundingBoxMax = glm::vec3(0.0f);
-    glm::vec3 boundingSphereCenter = glm::vec3(0.0f);
-    float boundingSphereRadius = 0.0f;
+    glm::vec3 boundingBoxMin_ = glm::vec3(0.0f);
+    glm::vec3 boundingBoxMax_ = glm::vec3(0.0f);
+    glm::vec3 boundingSphereCenter_ = glm::vec3(0.0f);
+    float boundingSphereRadius_ = 0.0f;
 
-    // If a node can hold multiple meshes
-    std::vector<int> meshIndices;
-    std::vector<int> materialIndices;
+    std::vector<int> meshIndices_;
+    std::vector<int> materialIndices_;
 };
 
-class SceneGraph
-{
+class SceneGraph {
 public:
-    int AddNode(int parent, const std::string& name);
+    int AddNode(int parentIndex, const std::string& name);
     void SetLocalTransform(int nodeIndex, const glm::mat4& transform);
     void SetNodeBoundingVolumes(int nodeIndex,
-        const glm::vec3& minB,
-        const glm::vec3& maxB,
+        const glm::vec3& minBounds,
+        const glm::vec3& maxBounds,
         const glm::vec3& sphereCenter,
         float sphereRadius);
     void AddMeshReference(int nodeIndex, int meshIndex, int materialIndex);
-
     void RecalculateGlobalTransforms();
+    void TraverseGraph(const std::function<void(int nodeIndex)>& visitor) const;
+    void TraverseGraphDFS(const std::function<bool(int nodeIndex)>& preVisitor) const;
 
-    // Traversal
-    void TraverseGraph(std::function<void(int nodeIndex)> visitor);
-    void TraverseGraphDFS(std::function<bool(int nodeIndex)> preVisitor);
-
-    const std::vector<SceneGraphNode>& GetNodes() const { return m_Nodes; }
+    const std::vector<SceneGraphNode>& GetNodes() const { return nodes_; }
 
 private:
     void computeGlobalTransformRecursive(int nodeIndex, const glm::mat4& parentGlobal);
-    void dfsCulling(int nodeIndex, std::function<bool(int)> preVisitor);
+    void dfsTraversal(int nodeIndex, const std::function<bool(int)>& preVisitor) const;
 
 private:
-    std::vector<SceneGraphNode> m_Nodes;
+    std::vector<SceneGraphNode> nodes_;
 };

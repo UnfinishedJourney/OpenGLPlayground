@@ -1,7 +1,11 @@
-#include "Scene/Screen.h"
+#include "Screen.h"
 
-int Screen::s_Width = 800;
-int Screen::s_Height = 600;
+int Screen::width_ = 800;
+int Screen::height_ = 600;
+float Screen::displayHeight_ = 13.23f;
+float Screen::viewerDistance_ = 24.0f;
 
-float Screen::s_DisplayHeight = 13.23f;     // inches
-float Screen::s_ViewerDistance = 24.0f;
+void Screen::SetResolution(int width, int height) {
+    width_ = width;
+    height_ = height;
+}

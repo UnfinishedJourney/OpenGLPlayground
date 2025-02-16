@@ -2,41 +2,32 @@
 
 #include "glm/glm.hpp"
 #include "glm/gtc/quaternion.hpp"
-#include <algorithm> 
-#include <functional>
 
 class Transform {
 public:
     Transform()
-        : m_ModelMatrix(1.0f), m_NormalMatrix(1.0)
+        : modelMatrix_(1.0f), normalMatrix_(1.0f)
     {}
 
-    glm::mat4 GetModelMatrix() const {
-        return m_ModelMatrix;
-    }
+    glm::mat4 GetModelMatrix() const { return modelMatrix_; }
+    glm::mat3 GetNormalMatrix() const { return normalMatrix_; }
 
-    glm::mat3 GetNormalMatrix() const {
-        return m_NormalMatrix;
-    }
-
-    void SetModelMatrix(const glm::mat4& matrix)
-    {
-        m_ModelMatrix = matrix;
-        m_NormalMatrix = glm::transpose(glm::inverse(glm::mat3(matrix)));
+    void SetModelMatrix(const glm::mat4& matrix) {
+        modelMatrix_ = matrix;
+        normalMatrix_ = glm::transpose(glm::inverse(glm::mat3(matrix)));
     }
 
     bool operator==(const Transform& other) const {
-        return m_ModelMatrix == other.m_ModelMatrix;
+        return modelMatrix_ == other.modelMatrix_;
     }
 
-    // Optionally define inequality operator.
     bool operator!=(const Transform& other) const {
         return !(*this == other);
     }
 
 private:
-    glm::mat3 m_NormalMatrix;
-    glm::mat4 m_ModelMatrix;
+    glm::mat3 normalMatrix_;
+    glm::mat4 modelMatrix_;
 };
 
 namespace std {

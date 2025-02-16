@@ -6,18 +6,17 @@
 #include "Scene/Screen.h"  // Screen provides static members for width/height
 
 /**
- * @brief Base class representing a self-contained demo/test.
+ * Base class representing a self-contained demo/test.
  */
 class Test {
 public:
     Test() {
-        // Create renderer from the Renderer namespace.
+        // Create renderer and scene.
         renderer_ = std::make_unique<Renderer>();
-        // Create scene from the Scene namespace.
         scene_ = std::make_shared<Scene::Scene>();
 
-        // Initialize the renderer with the initial window dimensions.
-        renderer_->Initialize(Screen::s_Width, Screen::s_Height);
+        // Initialize renderer with current window dimensions.
+        renderer_->Initialize(Screen::width_, Screen::height_);
     }
     virtual ~Test() = default;
 

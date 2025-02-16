@@ -1,4 +1,5 @@
 #pragma once
+
 #include <memory>
 #include <unordered_map>
 #include <string>
@@ -25,10 +26,8 @@ public:
 
     std::shared_ptr<PostProcessingEffect> GetEffect(PostProcessingEffectType effectType);
     void SetEffectParameters(PostProcessingEffectType effectType, const std::unordered_map<std::string, EffectParameter>& params);
-
     void OnWindowResize(int width, int height);
 
-    // Flipbook Effect
     std::shared_ptr<FlipbookEffect> GetFlipbookEffect(const std::string& name);
     void LoadFlipbookEffect(const std::string& name);
 
@@ -40,13 +39,11 @@ private:
     EffectsManager& operator=(const EffectsManager&) = delete;
 
     FlipbookEffectConfig LoadFlipbookConfig(const std::string& name);
-
     void SetupFullscreenQuad();
     void SetupFlipbookQuad();
 
-    std::unordered_map<PostProcessingEffectType, std::shared_ptr<PostProcessingEffect>> m_Effects;
-    std::unordered_map<std::string, std::shared_ptr<FlipbookEffect>> m_FlipbookEffects;
-
-    std::shared_ptr<graphics::MeshBuffer> m_FullscreenQuadMeshBuffer;
-    std::shared_ptr<graphics::MeshBuffer> m_FlipbookQuadMeshBuffer;
+    std::unordered_map<PostProcessingEffectType, std::shared_ptr<PostProcessingEffect>> effects_;
+    std::unordered_map<std::string, std::shared_ptr<FlipbookEffect>> flipbookEffects_;
+    std::shared_ptr<graphics::MeshBuffer> fullscreenQuadMeshBuffer_;
+    std::shared_ptr<graphics::MeshBuffer> flipbookQuadMeshBuffer_;
 };

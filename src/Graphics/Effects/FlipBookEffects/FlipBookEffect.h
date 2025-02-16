@@ -6,35 +6,29 @@
 #include "Graphics/Buffers/MeshBuffer.h"
 #include "Graphics/Shaders/BaseShader.h"
 #include "Graphics/Textures/OpenGLTextureArray.h"
-#include "FlipBookAnimation.h"
+#include "FlipbookAnimation.h"
 
 class FlipbookEffect {
 public:
-    FlipbookEffect(std::shared_ptr<graphics::MeshBuffer> quadMeshBuffer);
+    explicit FlipbookEffect(std::shared_ptr<graphics::MeshBuffer> quadMeshBuffer);
     ~FlipbookEffect() = default;
 
-    // Load configuration and frames
-    void LoadConfig(const std::string& basePath, const std::string& framesFile, uint32_t totalFrames, uint32_t gridX, uint32_t gridY, float fps, bool loop);
-
-    // Spawn a new animation instance at given position
+    void LoadConfig(const std::string& basePath, const std::string& framesFile,
+        uint32_t totalFrames, uint32_t gridX, uint32_t gridY, float fps, bool loop);
     void SpawnAnimation(const glm::vec2& position, uint32_t flipbookOffset = 0);
-
-    // Update all animations
     void Update(double currentTime);
-
-    // Render all animations
     void Render();
 
 private:
-    std::shared_ptr<graphics::MeshBuffer> m_QuadMeshBuffer;
-    std::shared_ptr<graphics::BaseShader> m_Shader;
-    std::shared_ptr<graphics::OpenGLTextureArray> m_TextureArray;
+    std::shared_ptr<graphics::MeshBuffer> quadMeshBuffer_;
+    std::shared_ptr<graphics::BaseShader> shader_;
+    std::shared_ptr<graphics::OpenGLTextureArray> textureArray_;
 
-    std::vector<FlipbookAnimation> m_Animations;
+    std::vector<FlipbookAnimation> animations_;
 
-    uint32_t m_TotalFrames = 64;
-    uint32_t m_GridX = 8;
-    uint32_t m_GridY = 8;
-    float m_FramesPerSecond = 30.0f;
-    bool m_Loop = false;
+    uint32_t totalFrames_ = 64;
+    uint32_t gridX_ = 8;
+    uint32_t gridY_ = 8;
+    float framesPerSecond_ = 30.0f;
+    bool loop_ = false;
 };

@@ -12,6 +12,7 @@
 #include <filesystem>
 
 using json = nlohmann::json;
+namespace fs = std::filesystem;
 
 EffectsManager& EffectsManager::GetInstance() {
     static EffectsManager instance;
@@ -26,41 +27,38 @@ EffectsManager::EffectsManager() {
 EffectsManager::~EffectsManager() {}
 
 void EffectsManager::OnWindowResize(int width, int height) {
-    for (auto& [type, effect] : m_Effects) {
+    for (auto& [type, effect] : effects_) {
         effect->OnWindowResize(width, height);
     }
 }
 
-std::shared_ptr<PostProcessingEffect> EffectsManager::GetEffect(PostProcessingEffectType effectType)
-{
-    auto it = m_Effects.find(effectType);
-    if (it != m_Effects.end()) {
+std::shared_ptr<PostProcessingEffect> EffectsManager::GetEffect(PostProcessingEffectType effectType) {
+    auto it = effects_.find(effectType);
+    if (it != effects_.end()) {
         return it->second;
     }
     else {
         if (effectType == PostProcessingEffectType::EdgeDetection) {
-            m_Effects[PostProcessingEffectType::EdgeDetection] = std::make_shared<EdgeDetectionEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
-            return m_Effects[PostProcessingEffectType::EdgeDetection];
+            effects_[PostProcessingEffectType::EdgeDetection] = std::make_shared<EdgeDetectionEffect>(fullscreenQuadMeshBuffer_, Screen::width_, Screen::height_);
+            return effects_[PostProcessingEffectType::EdgeDetection];
         }
         else if (effectType == PostProcessingEffectType::PresentTexture) {
-            m_Effects[PostProcessingEffectType::PresentTexture] = std::make_shared<PresentTextureEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
-            return m_Effects[PostProcessingEffectType::PresentTexture];
+            effects_[PostProcessingEffectType::PresentTexture] = std::make_shared<PresentTextureEffect>(fullscreenQuadMeshBuffer_, Screen::width_, Screen::height_);
+            return effects_[PostProcessingEffectType::PresentTexture];
         }
         else if (effectType == PostProcessingEffectType::None) {
-            m_Effects[PostProcessingEffectType::None] = std::make_shared<NoPostProcessingEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
-            return m_Effects[PostProcessingEffectType::None];
+            effects_[PostProcessingEffectType::None] = std::make_shared<NoPostProcessingEffect>(fullscreenQuadMeshBuffer_, Screen::width_, Screen::height_);
+            return effects_[PostProcessingEffectType::None];
         }
         else if (effectType == PostProcessingEffectType::ToneMapping) {
-            m_Effects[PostProcessingEffectType::ToneMapping] = std::make_shared<ToneMappingEffect>(m_FullscreenQuadMeshBuffer, Screen::s_Width, Screen::s_Height);
-            return m_Effects[PostProcessingEffectType::ToneMapping];
+            effects_[PostProcessingEffectType::ToneMapping] = std::make_shared<ToneMappingEffect>(fullscreenQuadMeshBuffer_, Screen::width_, Screen::height_);
+            return effects_[PostProcessingEffectType::ToneMapping];
         }
     }
-
     return nullptr;
 }
 
-void EffectsManager::SetEffectParameters(PostProcessingEffectType effectType, const std::unordered_map<std::string, EffectParameter>& params)
-{
+void EffectsManager::SetEffectParameters(PostProcessingEffectType effectType, const std::unordered_map<std::string, EffectParameter>& params) {
     auto effect = GetEffect(effectType);
     if (effect) {
         effect->SetParameters(params);
@@ -71,40 +69,23 @@ void EffectsManager::SetEffectParameters(PostProcessingEffectType effectType, co
 }
 
 std::shared_ptr<FlipbookEffect> EffectsManager::GetFlipbookEffect(const std::string& name) {
-    auto it = m_FlipbookEffects.find(name);
-    if (it != m_FlipbookEffects.end()) {
+    auto it = flipbookEffects_.find(name);
+    if (it != flipbookEffects_.end()) {
         return it->second;
     }
-
     LoadFlipbookEffect(name);
-    return m_FlipbookEffects[name];
+    return flipbookEffects_[name];
 }
 
 void EffectsManager::LoadFlipbookEffect(const std::string& name) {
     auto cfg = LoadFlipbookConfig(name);
-
-    auto effect = std::make_shared<FlipbookEffect>(m_FlipbookQuadMeshBuffer);
+    auto effect = std::make_shared<FlipbookEffect>(flipbookQuadMeshBuffer_);
     effect->LoadConfig(cfg.basePath, cfg.framesFile, cfg.totalFrames, cfg.gridX, cfg.gridY, cfg.framesPerSecond, cfg.loop);
-    m_FlipbookEffects[name] = effect;
-}
-
-namespace fs = std::filesystem;
-using json = nlohmann::json;
-
-void LogCurrentWorkingDirectory() {
-    auto logger = Logger::GetLogger();
-    try {
-        fs::path cwd = fs::current_path();
-        logger->info("Current Working Directory: '{}'.", cwd.string());
-    }
-    catch (const std::exception& e) {
-        logger->error("Failed to get current working directory: {}", e.what());
-    }
+    flipbookEffects_[name] = effect;
 }
 
 FlipbookEffectConfig EffectsManager::LoadFlipbookConfig(const std::string& name) {
     auto logger = Logger::GetLogger();
-
     fs::path basePath = fs::path("..") / "assets" / "VFX" / name;
     fs::path configPath = basePath / (name + ".json");
 
@@ -128,8 +109,8 @@ FlipbookEffectConfig EffectsManager::LoadFlipbookConfig(const std::string& name)
     cfg.effectType = j.value("effectType", "FlipbookEffect");
     cfg.framesFile = j.value("framesFile", "");
     cfg.totalFrames = j.value("totalFrames", 64);
-    cfg.gridX = j.value("gridX", 8); // Correct usage of "gridX"
-    cfg.gridY = j.value("gridY", 8); // Correct usage of "gridY"
+    cfg.gridX = j.value("gridX", 8);
+    cfg.gridY = j.value("gridY", 8);
     cfg.framesPerSecond = j.value("framesPerSecond", 30.0f);
     cfg.loop = j.value("loop", false);
     cfg.basePath = basePath.string() + "/";
@@ -141,7 +122,6 @@ FlipbookEffectConfig EffectsManager::LoadFlipbookConfig(const std::string& name)
 
     logger->info("Flipbook config loaded: effectType={}, framesFile={}, totalFrames={}, gridX={}, gridY={}, fps={}, loop={}",
         cfg.effectType, cfg.framesFile, cfg.totalFrames, cfg.gridX, cfg.gridY, cfg.framesPerSecond, cfg.loop);
-
     return cfg;
 }
 
@@ -155,11 +135,10 @@ void EffectsManager::SetupFullscreenQuad() {
         false, // Bitangents
         { TextureType::Diffuse }
     };
-    m_FullscreenQuadMeshBuffer = std::make_shared<graphics::MeshBuffer>(*quadMesh, quadMeshLayout);
-    m_FlipbookQuadMeshBuffer = m_FullscreenQuadMeshBuffer;
+    fullscreenQuadMeshBuffer_ = std::make_shared<graphics::MeshBuffer>(*quadMesh, quadMeshLayout);
+    flipbookQuadMeshBuffer_ = fullscreenQuadMeshBuffer_;
 }
 
 void EffectsManager::SetupFlipbookQuad() {
-    // Currently using the same quad as fullscreen quad
-    // If needed, create a separate quad here.
+    // Using same quad as fullscreen quad; adjust if separate quad is needed.
 }

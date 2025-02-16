@@ -1,8 +1,5 @@
 #include "Camera.h"
-#include "Screen.h" // Provides Screen::s_Width, s_Height, s_DisplayHeight, s_ViewerDistance
-#include <glm/gtc/matrix_transform.hpp>
-#include <algorithm>
-#include <cmath>
+#include "Screen.h" 
 
 namespace Scene {
 
@@ -18,8 +15,7 @@ namespace Scene {
         farPlane_(500.0f)
     {
         UpdateCameraVectors();
-
-        float aspect = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
+        float aspect = static_cast<float>(Screen::width_) / static_cast<float>(Screen::height_);
         projectionMatrix_ = glm::perspective(glm::radians(fov_), aspect, nearPlane_, farPlane_);
     }
 
@@ -37,39 +33,25 @@ namespace Scene {
 
     void Camera::SetFOV(float fov) {
         fov_ = glm::clamp(fov, 1.0f, 120.0f);
-        float aspect = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
+        float aspect = static_cast<float>(Screen::width_) / static_cast<float>(Screen::height_);
         UpdateProjectionMatrix(aspect);
     }
 
     void Camera::Move(CameraMovement direction, float deltaTime) {
         float velocity = speed_ * deltaTime;
         switch (direction) {
-        case CameraMovement::Forward:
-            position_ += front_ * velocity;
-            break;
-        case CameraMovement::Backward:
-            position_ -= front_ * velocity;
-            break;
-        case CameraMovement::Left:
-            position_ -= right_ * velocity;
-            break;
-        case CameraMovement::Right:
-            position_ += right_ * velocity;
-            break;
-        case CameraMovement::Up:
-            position_ += worldUp_ * velocity;
-            break;
-        case CameraMovement::Down:
-            position_ -= worldUp_ * velocity;
-            break;
+        case CameraMovement::Forward:  position_ += front_ * velocity; break;
+        case CameraMovement::Backward: position_ -= front_ * velocity; break;
+        case CameraMovement::Left:     position_ -= right_ * velocity; break;
+        case CameraMovement::Right:    position_ += right_ * velocity; break;
+        case CameraMovement::Up:       position_ += worldUp_ * velocity; break;
+        case CameraMovement::Down:     position_ -= worldUp_ * velocity; break;
         }
     }
 
     void Camera::Rotate(float xOffset, float yOffset) {
         yaw_ += xOffset;
         pitch_ += yOffset;
-
-        // Constrain pitch to avoid flip.
         pitch_ = glm::clamp(pitch_, -89.0f, 89.0f);
         UpdateCameraVectors();
     }
@@ -84,7 +66,7 @@ namespace Scene {
 
     void Camera::SetNearPlane(float nearPlane) {
         nearPlane_ = std::max(0.01f, nearPlane);
-        float aspect = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
+        float aspect = static_cast<float>(Screen::width_) / static_cast<float>(Screen::height_);
         UpdateProjectionMatrix(aspect);
     }
 
@@ -94,18 +76,16 @@ namespace Scene {
 
     void Camera::SetFarPlane(float farPlane) {
         farPlane_ = std::max(farPlane, nearPlane_ + 0.1f);
-        float aspect = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
+        float aspect = static_cast<float>(Screen::width_) / static_cast<float>(Screen::height_);
         UpdateProjectionMatrix(aspect);
     }
 
     void Camera::UpdateFOV() {
-        // Compute physical FOV based on real-world screen parameters.
-        float displayHeight = Screen::s_DisplayHeight;   // in cm, for example
-        float viewerDistance = Screen::s_ViewerDistance;   // in cm, for example
+        float displayHeight = Screen::displayHeight_;
+        float viewerDistance = Screen::viewerDistance_;
         float physicalFOV = 2.0f * glm::degrees(std::atan((displayHeight / 2.0f) / viewerDistance));
         fov_ = glm::clamp(physicalFOV, 1.0f, 120.0f);
-
-        float aspect = static_cast<float>(Screen::s_Width) / static_cast<float>(Screen::s_Height);
+        float aspect = static_cast<float>(Screen::width_) / static_cast<float>(Screen::height_);
         UpdateProjectionMatrix(aspect);
     }
 
@@ -114,14 +94,11 @@ namespace Scene {
     }
 
     void Camera::UpdateCameraVectors() {
-        // Calculate the new Front vector from yaw and pitch.
         glm::vec3 newFront;
         newFront.x = std::cos(glm::radians(yaw_)) * std::cos(glm::radians(pitch_));
         newFront.y = std::sin(glm::radians(pitch_));
         newFront.z = std::sin(glm::radians(yaw_)) * std::cos(glm::radians(pitch_));
         front_ = glm::normalize(newFront);
-
-        // Recalculate Right and Up vectors.
         right_ = glm::normalize(glm::cross(front_, worldUp_));
         up_ = glm::normalize(glm::cross(right_, front_));
     }

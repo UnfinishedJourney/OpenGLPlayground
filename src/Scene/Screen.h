@@ -1,19 +1,12 @@
 #pragma once
 
-#include "glm/glm.hpp"
-
 class Screen {
 public:
-    static int s_Width;
-    static int s_Height;
+    // Resolution and physical display parameters.
+    static int width_;
+    static int height_;
+    static float displayHeight_;   // e.g. inches
+    static float viewerDistance_;  // same units as display height
 
-    // Physical display parameters
-    static float s_DisplayHeight;      // in units (e.g., inches)
-    static float s_ViewerDistance;     // in same units as display height
-
-    // Method to set resolution and physical parameters
-    static void SetResolution(int width, int height) {
-        s_Width = width;
-        s_Height = height;
-    }
+    static void SetResolution(int width, int height);
 };

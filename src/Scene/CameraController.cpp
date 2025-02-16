@@ -17,8 +17,6 @@ namespace Scene {
 
     void CameraController::Update(float deltaTime) {
         if (!camera_) return;
-
-        // Keyboard-based movement.
         if (inputManager_.IsKeyPressed(GLFW_KEY_UP))
             camera_->Move(CameraMovement::Forward, deltaTime);
         if (inputManager_.IsKeyPressed(GLFW_KEY_DOWN))
@@ -35,47 +33,38 @@ namespace Scene {
 
     void CameraController::ProcessMouseMovement(float xpos, float ypos) {
         if (!camera_) return;
-
         if (firstMouse_) {
             lastX_ = xpos;
             lastY_ = ypos;
             firstMouse_ = false;
             return;
         }
-
         float xOffset = xpos - lastX_;
-        float yOffset = lastY_ - ypos; // Y is reversed
+        float yOffset = lastY_ - ypos; // Invert y-axis
         lastX_ = xpos;
         lastY_ = ypos;
-
         xOffset *= sensitivity_;
         yOffset *= sensitivity_;
-
         camera_->Rotate(xOffset, yOffset);
     }
 
     void CameraController::ProcessMouseScroll(float yOffset) {
         if (!camera_) return;
-
-        // Example: adjust FOV based on scroll input.
-        float displayHeight = Screen::s_DisplayHeight;
-        float viewerDistance = Screen::s_ViewerDistance;
+        float displayHeight = Screen::displayHeight_;
+        float viewerDistance = Screen::viewerDistance_;
         float physicalFOV = 2.0f * glm::degrees(std::atan((displayHeight / 2.0f) / viewerDistance));
-        float fovChange = yOffset * 1.0f;
+        float fovChange = yOffset;
         float newFOV = camera_->GetFOV() - fovChange;
-
         float minFOV = physicalFOV - 10.0f;
         float maxFOV = physicalFOV + 10.0f;
         newFOV = glm::clamp(newFOV, minFOV, maxFOV);
-
         camera_->SetFOV(newFOV);
     }
 
     void CameraController::SetSpeed(float speed) {
         speed_ = speed;
-        if (camera_) {
+        if (camera_)
             camera_->SetSpeed(speed);
-        }
     }
 
     void CameraController::Reset() {
@@ -83,9 +72,8 @@ namespace Scene {
     }
 
     void CameraController::UpdateFOV() {
-        if (camera_) {
+        if (camera_)
             camera_->UpdateFOV();
-        }
     }
 
     void CameraController::SetCamera(const std::shared_ptr<Camera>& camera) {

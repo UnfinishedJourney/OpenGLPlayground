@@ -1,7 +1,8 @@
 #pragma once
-
 #include "PostProcessingEffect.h"
 #include <glm/glm.hpp>
+#include <unordered_map>
+#include <string>
 
 class EdgeDetectionEffect : public PostProcessingEffect {
 public:
@@ -11,10 +12,11 @@ public:
     void OnWindowResize(int width, int height) override;
     void SetParameters(const std::unordered_map<std::string, EffectParameter>& params) override;
 
-    float GetEdgeThreshold() const { return m_EdgeThreshold; }
+    float GetEdgeThreshold() const { return edgeThreshold_; }
 
 private:
-    float m_EdgeThreshold;
-    glm::vec2 m_TexelSize;
+    float edgeThreshold_;
+    glm::vec2 texelSize_;
+
     void SetEdgeThreshold(float threshold);
 };
