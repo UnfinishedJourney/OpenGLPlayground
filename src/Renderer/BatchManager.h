@@ -6,59 +6,41 @@
 #include "Batch.h"
 
 class BaseRenderObject;
-namespace Scene{
+namespace Scene {
     class Camera;
 }
 class LODEvaluator;
 
-/**
- * @brief Manages a list of RenderObjects, grouping them into Batches
- *        based on shared (shaderName, materialID).
- */
 class BatchManager {
 public:
     BatchManager() = default;
     ~BatchManager() = default;
 
-    /**
-     * @brief Add a RenderObject to the internal list, marking the batch list as stale.
-     */
+    // Adds a render object and marks the batches as stale.
     void AddRenderObject(const std::shared_ptr<BaseRenderObject>& ro);
 
-    /**
-     * @brief Build (or rebuild) the batches from the current objects if needed.
-     */
+    // Builds (or rebuilds) batches if needed.
     void BuildBatches();
 
-    /**
-     * @brief Clear all objects and batches.
-     */
+    // Clears all render objects and batches.
     void Clear();
 
-    /**
-     * @return The final set of Batches after building.
-     */
+    // Returns the final set of batches.
     const std::vector<std::shared_ptr<renderer::Batch>>& GetBatches() const;
 
-    // LOD / culling
+    // LOD and culling updates.
     void UpdateLOD(const std::shared_ptr<BaseRenderObject>& ro, size_t newLOD);
     void UpdateLODs(std::shared_ptr<Scene::Camera>& camera, LODEvaluator& lodEvaluator);
-    void SetLOD(size_t forcedLOD); // for debug (force all objects to this LOD)
+    void SetLOD(size_t forcedLOD);
     void CullObject(const std::shared_ptr<BaseRenderObject>& ro);
 
 private:
-    std::vector<std::shared_ptr<BaseRenderObject>> m_RenderObjects; // All objects
-    std::vector<std::shared_ptr<renderer::Batch>>            m_Batches;       // Final grouping
+    std::vector<std::shared_ptr<BaseRenderObject>> renderObjects_;
+    std::vector<std::shared_ptr<renderer::Batch>> batches_;
+    std::unordered_map<BaseRenderObject*, std::shared_ptr<renderer::Batch>> objToBatch_;
+    bool built_ = false;
 
-    // Lookups: object -> the batch that it belongs to
-    std::unordered_map<BaseRenderObject*, std::shared_ptr<renderer::Batch>> m_ObjToBatch;
-
-    bool m_Built = false;
-
-private:
     std::vector<std::shared_ptr<renderer::Batch>> BuildBatchesFromObjects(
-        const std::vector<std::shared_ptr<BaseRenderObject>>& objs
-    );
-
+        const std::vector<std::shared_ptr<BaseRenderObject>>& objs);
     std::shared_ptr<renderer::Batch> FindBatchForObject(const std::shared_ptr<BaseRenderObject>& ro) const;
 };

@@ -171,8 +171,8 @@ namespace renderer {
         }
         // Sum totals from each render object.
         for (const auto& ro : renderObjects_) {
-            totals.totalVertices_ += ro->GetVertexN();
-            totals.totalIndices_ += ro->GetIndexN();
+            totals.totalVertices_ += ro->GetVertexCount();
+            totals.totalIndices_ += ro->GetIndexCount();
         }
         return totals;
     }

@@ -3,14 +3,12 @@
 #include <memory>
 #include <string>
 #include <glm/glm.hpp>
-
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Meshes/MeshLayout.h"
 #include "Scene/Transform.h"
 
 /**
- * @brief Base class for something that can be rendered.
- *        It references a Mesh, a material ID, and a shader name.
+ * Base class for renderable objects.
  */
 class BaseRenderObject {
 public:
@@ -18,45 +16,35 @@ public:
         MeshLayout meshLayout,
         int materialID,
         std::string shaderName)
-        : m_Mesh(std::move(mesh))
-        , m_MeshLayout(std::move(meshLayout))
-        , m_MaterialID(materialID)
-        , m_ShaderName(std::move(shaderName))
+        : mesh_(std::move(mesh))
+        , meshLayout_(std::move(meshLayout))
+        , materialID_(materialID)
+        , shaderName_(std::move(shaderName))
     {}
 
     virtual ~BaseRenderObject() = default;
 
-    // Accessors
-    const std::shared_ptr<graphics::Mesh>& GetMesh()       const { return m_Mesh; }
-    const MeshLayout& GetMeshLayout() const { return m_MeshLayout; }
-    int                          GetMaterialID() const { return m_MaterialID; }
-    const std::string& GetShaderName() const { return m_ShaderName; }
+    const std::shared_ptr<graphics::Mesh>& GetMesh() const { return mesh_; }
+    const MeshLayout& GetMeshLayout() const { return meshLayout_; }
+    int GetMaterialID() const { return materialID_; }
+    const std::string& GetShaderName() const { return shaderName_; }
 
-    // LOD
-    size_t GetCurrentLOD() const { return m_CurrentLOD; }
-    virtual bool  SetLOD(size_t lod);
+    size_t GetCurrentLOD() const { return currentLOD_; }
+    virtual bool SetLOD(size_t lod);
     virtual float GetBoundingSphereRadius() const;
-    virtual glm::vec3 GetCenter()     const;
+    virtual glm::vec3 GetCenter() const;
     virtual glm::vec3 GetWorldCenter() const { return GetCenter(); }
-
-    // Distance-based logic
     virtual float ComputeDistanceTo(const glm::vec3& pos) const;
 
-    int GetVertexN() const {
-        return m_Mesh->positions_.size();
-    }
-    int GetIndexN() const {
-        return m_Mesh->indices_.size();
-    }
+    int GetVertexCount() const { return mesh_->positions_.size(); }
+    int GetIndexCount() const { return mesh_->indices_.size(); }
 
 protected:
-    std::shared_ptr<graphics::Mesh> m_Mesh;
-    MeshLayout            m_MeshLayout;
-    int                   m_MaterialID;
-    std::string           m_ShaderName;
-
-    // LOD index
-    size_t m_CurrentLOD = 0;
+    std::shared_ptr<graphics::Mesh> mesh_;
+    MeshLayout meshLayout_;
+    int materialID_;
+    std::string shaderName_;
+    size_t currentLOD_ = 0;
 };
 
 class RenderObject : public BaseRenderObject {
@@ -69,17 +57,16 @@ public:
 
     ~RenderObject() override = default;
 
-    const std::shared_ptr<Transform>& GetTransform() const { return m_Transform; }
+    const std::shared_ptr<Transform>& GetTransform() const { return transform_; }
 
-    bool   SetLOD(size_t lod) override;
-    float  GetBoundingSphereRadius() const override;
-    glm::vec3 GetCenter()     const override;
+    bool SetLOD(size_t lod) override;
+    float GetBoundingSphereRadius() const override;
+    glm::vec3 GetCenter() const override;
     glm::vec3 GetWorldCenter() const override;
-
     float ComputeDistanceTo(const glm::vec3& pos) const override;
 
 private:
-    std::shared_ptr<Transform> m_Transform;
+    std::shared_ptr<Transform> transform_;
 };
 
 class StaticRenderObject : public BaseRenderObject {
@@ -88,9 +75,7 @@ public:
         MeshLayout meshLayout,
         int materialID,
         std::string shaderName);
-
     ~StaticRenderObject() override = default;
 
-    // For static objects, center & bounding sphere = local is world
     glm::vec3 GetWorldCenter() const override;
 };

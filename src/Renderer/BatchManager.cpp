@@ -4,48 +4,42 @@
 #include "Scene/LODEvaluator.h"
 #include "Scene/Camera.h"
 #include "Utilities/Logger.h"
-
 #include <algorithm>
 
-void BatchManager::AddRenderObject(const std::shared_ptr<BaseRenderObject>& ro)
-{
-    m_RenderObjects.push_back(ro);
-    m_Built = false;
+void BatchManager::AddRenderObject(const std::shared_ptr<BaseRenderObject>& ro) {
+    renderObjects_.push_back(ro);
+    built_ = false;
 }
 
-void BatchManager::Clear()
-{
-    m_RenderObjects.clear();
-    m_Batches.clear();
-    m_ObjToBatch.clear();
-    m_Built = false;
+void BatchManager::Clear() {
+    renderObjects_.clear();
+    batches_.clear();
+    objToBatch_.clear();
+    built_ = false;
 }
 
-const std::vector<std::shared_ptr<renderer::Batch>>& BatchManager::GetBatches() const
-{
-    return m_Batches;
+const std::vector<std::shared_ptr<renderer::Batch>>& BatchManager::GetBatches() const {
+    return batches_;
 }
 
-void BatchManager::BuildBatches()
-{
-    if (m_Built) {
+void BatchManager::BuildBatches() {
+    if (built_) {
         return;
     }
-    m_Batches.clear();
-    m_ObjToBatch.clear();
+    batches_.clear();
+    objToBatch_.clear();
 
-    if (!m_RenderObjects.empty()) {
-        auto built = BuildBatchesFromObjects(m_RenderObjects);
-        m_Batches.insert(m_Batches.end(), built.begin(), built.end());
+    if (!renderObjects_.empty()) {
+        auto builtBatches = BuildBatchesFromObjects(renderObjects_);
+        batches_.insert(batches_.end(), builtBatches.begin(), builtBatches.end());
     }
-    m_Built = true;
+    built_ = true;
 }
 
-// Groups objects by (shaderName, materialID) => new Batch for each group
 std::vector<std::shared_ptr<renderer::Batch>> BatchManager::BuildBatchesFromObjects(
     const std::vector<std::shared_ptr<BaseRenderObject>>& objs)
 {
-    // (shaderName) -> (materialID) -> vector of objects
+    // Group objects by shader name and material ID.
     using RenderObjVec = std::vector<std::shared_ptr<BaseRenderObject>>;
     using MaterialMap = std::unordered_map<int, RenderObjVec>;
     std::unordered_map<std::string, MaterialMap> grouping;
@@ -55,17 +49,13 @@ std::vector<std::shared_ptr<renderer::Batch>> BatchManager::BuildBatchesFromObje
     }
 
     std::vector<std::shared_ptr<renderer::Batch>> result;
-    result.reserve(grouping.size());
-
-    // For each group => create a Batch
-    for (auto& [shader, matMap] : grouping) {
+    for (auto& [shaderName, matMap] : grouping) {
         for (auto& [matID, objVec] : matMap) {
-            auto batch = std::make_shared<renderer::Batch>(shader, matID);
+            auto batch = std::make_shared<renderer::Batch>(shaderName, matID);
             for (auto& ro : objVec) {
                 batch->AddRenderObject(ro);
-                m_ObjToBatch[ro.get()] = batch;
+                objToBatch_[ro.get()] = batch;
             }
-            // Build GPU data
             batch->BuildBatches();
             result.push_back(batch);
         }
@@ -73,39 +63,28 @@ std::vector<std::shared_ptr<renderer::Batch>> BatchManager::BuildBatchesFromObje
     return result;
 }
 
-std::shared_ptr<renderer::Batch> BatchManager::FindBatchForObject(const std::shared_ptr<BaseRenderObject>& ro) const
-{
-    auto it = m_ObjToBatch.find(ro.get());
-    if (it != m_ObjToBatch.end()) {
-        return it->second;
-    }
-    return nullptr;
+std::shared_ptr<renderer::Batch> BatchManager::FindBatchForObject(const std::shared_ptr<BaseRenderObject>& ro) const {
+    auto it = objToBatch_.find(ro.get());
+    return (it != objToBatch_.end()) ? it->second : nullptr;
 }
 
-// Called when an external LOD evaluator says "object X => newLOD".
-void BatchManager::UpdateLOD(const std::shared_ptr<BaseRenderObject>& ro, size_t newLOD)
-{
+void BatchManager::UpdateLOD(const std::shared_ptr<BaseRenderObject>& ro, size_t newLOD) {
     auto batch = FindBatchForObject(ro);
-    if (!batch) return;
-
-    // find the index of this object in the batch
+    if (!batch)
+        return;
     auto& objects = batch->GetRenderObjects();
     auto it = std::find(objects.begin(), objects.end(), ro);
-    if (it == objects.end()) return; // not found
-
+    if (it == objects.end())
+        return;
     size_t idx = std::distance(objects.begin(), it);
     batch->UpdateLOD(idx, newLOD);
 }
 
-// Evaluate LOD for each object using the LODEvaluator
-void BatchManager::UpdateLODs(std::shared_ptr<Scene::Camera>& camera, LODEvaluator& lodEvaluator)
-{
-    if (!m_Built || !camera) {
+void BatchManager::UpdateLODs(std::shared_ptr<Scene::Camera>& camera, LODEvaluator& lodEvaluator) {
+    if (!built_ || !camera)
         return;
-    }
-    auto lodMap = lodEvaluator.EvaluateLODs(m_RenderObjects, camera);
-
-    for (auto& ro : m_RenderObjects) {
+    auto lodMap = lodEvaluator.EvaluateLODs(renderObjects_, camera);
+    for (auto& ro : renderObjects_) {
         auto it = lodMap.find(ro.get());
         if (it != lodMap.end()) {
             size_t newLOD = it->second;
@@ -116,13 +95,10 @@ void BatchManager::UpdateLODs(std::shared_ptr<Scene::Camera>& camera, LODEvaluat
     }
 }
 
-// Force all objects to the same LOD
-void BatchManager::SetLOD(size_t forcedLOD)
-{
-    if (!m_Built) {
+void BatchManager::SetLOD(size_t forcedLOD) {
+    if (!built_)
         return;
-    }
-    for (auto& batch : m_Batches) {
+    for (auto& batch : batches_) {
         auto& ros = batch->GetRenderObjects();
         for (size_t i = 0; i < ros.size(); i++) {
             auto ro = ros[i];
@@ -133,16 +109,14 @@ void BatchManager::SetLOD(size_t forcedLOD)
     }
 }
 
-// Mark an object as culled => set draw count=0
-void BatchManager::CullObject(const std::shared_ptr<BaseRenderObject>& ro)
-{
+void BatchManager::CullObject(const std::shared_ptr<BaseRenderObject>& ro) {
     auto batch = FindBatchForObject(ro);
-    if (!batch) return;
-
+    if (!batch)
+        return;
     auto& ros = batch->GetRenderObjects();
     auto it = std::find(ros.begin(), ros.end(), ro);
-    if (it == ros.end()) return;
-
+    if (it == ros.end())
+        return;
     size_t idx = std::distance(ros.begin(), it);
     batch->CullObject(idx);
 }

@@ -3,63 +3,51 @@
 #include <algorithm>
 #include <cmath>
 
-// ------------------------------------------------------------------
-// BaseRenderObject
-// ------------------------------------------------------------------
-bool BaseRenderObject::SetLOD(size_t lod)
-{
-    if (lod == m_CurrentLOD) {
-        return false; // no change
-    }
-    size_t maxLOD = (m_Mesh->lods_.empty()) ? 0 : (m_Mesh->lods_.size() - 1);
+// --- BaseRenderObject ---
+bool BaseRenderObject::SetLOD(size_t lod) {
+    if (lod == currentLOD_)
+        return false;
+    size_t maxLOD = (mesh_->lods_.empty()) ? 0 : (mesh_->lods_.size() - 1);
     if (lod > maxLOD) {
         lod = maxLOD;
     }
-    m_CurrentLOD = lod;
+    currentLOD_ = lod;
     return true;
 }
 
-float BaseRenderObject::GetBoundingSphereRadius() const
-{
-    return m_Mesh->boundingSphereRadius_;
+float BaseRenderObject::GetBoundingSphereRadius() const {
+    return mesh_->boundingSphereRadius_;
 }
 
-glm::vec3 BaseRenderObject::GetCenter() const
-{
-    return m_Mesh->localCenter_;
+glm::vec3 BaseRenderObject::GetCenter() const {
+    return mesh_->localCenter_;
 }
 
-float BaseRenderObject::ComputeDistanceTo(const glm::vec3& pos) const
-{
+float BaseRenderObject::ComputeDistanceTo(const glm::vec3& pos) const {
     float dist = glm::distance(pos, GetCenter()) - GetBoundingSphereRadius();
     return (dist > 0.0f) ? dist : 0.0f;
 }
 
-// ------------------------------------------------------------------
-// RenderObject (dynamic object with a Transform)
-// ------------------------------------------------------------------
+// --- RenderObject ---
 RenderObject::RenderObject(std::shared_ptr<graphics::Mesh> mesh,
     MeshLayout meshLayout,
     int materialID,
     std::string shaderName,
     std::shared_ptr<Transform> transform)
     : BaseRenderObject(std::move(mesh), std::move(meshLayout), materialID, std::move(shaderName))
-    , m_Transform(std::move(transform))
+    , transform_(std::move(transform))
 {
 }
 
-bool RenderObject::SetLOD(size_t lod)
-{
+bool RenderObject::SetLOD(size_t lod) {
     bool changed = BaseRenderObject::SetLOD(lod);
-    // Possibly update GPU data or something if needed
+    // Optionally update GPU data if needed.
     return changed;
 }
 
-float RenderObject::GetBoundingSphereRadius() const
-{
-    // Scale bounding sphere by the largest axis scale
+float RenderObject::GetBoundingSphereRadius() const {
     float baseRadius = BaseRenderObject::GetBoundingSphereRadius();
-    glm::mat4 model = m_Transform->GetModelMatrix();
+    glm::mat4 model = transform_->GetModelMatrix();
     glm::vec3 scale;
     scale.x = glm::length(glm::vec3(model[0]));
     scale.y = glm::length(glm::vec3(model[1]));
@@ -68,27 +56,21 @@ float RenderObject::GetBoundingSphereRadius() const
     return baseRadius * maxScale;
 }
 
-glm::vec3 RenderObject::GetCenter() const
-{
-    return m_Mesh->localCenter_;
+glm::vec3 RenderObject::GetCenter() const {
+    return mesh_->localCenter_;
 }
 
-glm::vec3 RenderObject::GetWorldCenter() const
-{
+glm::vec3 RenderObject::GetWorldCenter() const {
     glm::vec3 local = GetCenter();
-    glm::vec4 world = m_Transform->GetModelMatrix() * glm::vec4(local, 1.0f);
+    glm::vec4 world = transform_->GetModelMatrix() * glm::vec4(local, 1.0f);
     return glm::vec3(world);
 }
 
-float RenderObject::ComputeDistanceTo(const glm::vec3& pos) const
-{
-    // approximate bounding box approach or bounding sphere approach
+float RenderObject::ComputeDistanceTo(const glm::vec3& pos) const {
     return glm::distance(pos, GetWorldCenter()) - GetBoundingSphereRadius();
 }
 
-// ------------------------------------------------------------------
-// StaticRenderObject
-// ------------------------------------------------------------------
+// --- StaticRenderObject ---
 StaticRenderObject::StaticRenderObject(std::shared_ptr<graphics::Mesh> mesh,
     MeshLayout meshLayout,
     int materialID,
@@ -97,8 +79,6 @@ StaticRenderObject::StaticRenderObject(std::shared_ptr<graphics::Mesh> mesh,
 {
 }
 
-glm::vec3 StaticRenderObject::GetWorldCenter() const
-{
-    // local = world for static
-    return m_Mesh->localCenter_;
+glm::vec3 StaticRenderObject::GetWorldCenter() const {
+    return mesh_->localCenter_;
 }
