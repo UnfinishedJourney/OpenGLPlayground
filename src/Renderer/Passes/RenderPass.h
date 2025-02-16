@@ -4,15 +4,13 @@
 #include "Scene/Scene.h"
 #include "Graphics/Buffers/FrameBuffer.h"
 
-// Base class for render passes
-class RenderPass
-{
+class RenderPass {
 public:
     virtual ~RenderPass() = default;
 
-    // Execute the render pass with the given scene
+    // Execute the render pass using the given scene.
     virtual void Execute(const std::shared_ptr<Scene::Scene>& scene) = 0;
 
-    // Update the framebuffer (e.g., when window size changes)
+    // Update the framebuffer (e.g. on window resize).
     virtual void UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer) = 0;
 };

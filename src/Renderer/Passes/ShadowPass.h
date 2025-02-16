@@ -1,9 +1,10 @@
 #pragma once
-#include <memory>
+
 #include "RenderPass.h"
-#include "Scene/Scene.h"
 #include "Graphics/Buffers/ShadowMap.h"
-#include "Graphics/Shaders/Shader.h" // your own shader wrapper class
+#include "Graphics/Shaders/Shader.h"
+#include <memory>
+#include <glm/glm.hpp>
 
 class ShadowPass : public RenderPass {
 public:
@@ -11,20 +12,18 @@ public:
     ShadowPass(const std::shared_ptr<Scene::Scene>& scene, GLsizei shadowResolution);
     ~ShadowPass();
 
-    // Render the scene from the light’s POV into the shadow map.
+    // Render the scene depth from the light's point of view.
     void Execute(const std::shared_ptr<Scene::Scene>& scene) override;
 
-    // For this pass, UpdateFramebuffer is not used.
+    // Not used for this pass.
     void UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer) override {}
 
-    // Retrieve the ShadowMap so the texture can be used in the main pass.
-    std::shared_ptr<graphics::ShadowMap> GetShadowMap() const { return m_ShadowMap; }
+    // Retrieve the shadow map.
+    std::shared_ptr<graphics::ShadowMap> GetShadowMap() const { return shadowMap_; }
 
 private:
-    std::shared_ptr<graphics::ShadowMap> m_ShadowMap;
-    std::shared_ptr<graphics::Shader> m_ShadowShader; // used during shadow pass
-    // Matrices computed from the light’s position/direction
-    glm::mat4 m_ShadowMatrix;
-
-    bool m_BCalculated = false;
+    std::shared_ptr<graphics::ShadowMap> shadowMap_;
+    std::shared_ptr<graphics::Shader> shadowShader_;
+    glm::mat4 shadowMatrix_;
+    bool calculated_ = false;
 };

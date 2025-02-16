@@ -1,4 +1,4 @@
-#include "Renderer/Passes/SkyBoxPass.h"
+#include "SkyBoxPass.h"
 #include "Scene/Scene.h"
 #include "Graphics/Buffers/MeshBuffer.h"
 #include "Graphics/Shaders/ShaderManager.h"
@@ -7,110 +7,74 @@
 #include "Utilities/Logger.h"
 #include "Utilities/Utility.h"
 #include "Graphics/Shaders/Shader.h"
-
 #include <glad/glad.h>
 
 SkyBoxPass::SkyBoxPass(std::shared_ptr<graphics::FrameBuffer> framebuffer,
     const std::shared_ptr<Scene::Scene>& scene)
-    : m_Framebuffer(framebuffer)
+    : framebuffer_(framebuffer)
 {
-
     InitializeSceneResources(scene);
 }
 
-void SkyBoxPass::InitializeSceneResources(const std::shared_ptr<Scene::Scene>& scene)
-{
-    // We'll request a simple cube MeshBuffer from MeshManager
-    // We'll only need the positions (no normals, no UVs), so set the layout accordingly:
-    MeshLayout skyBoxMeshLayout = {
-        /* positions  */ true,
-        /* normals   */ false,
-        /* texCoords */ false,
-        /* tangents  */ false,
-        /* boneData  */ {}
-    };
-
+void SkyBoxPass::InitializeSceneResources(const std::shared_ptr<Scene::Scene>& scene) {
+    MeshLayout skyBoxMeshLayout = { true, false, false, false, {} };
     auto& meshManager = graphics::MeshManager::GetInstance();
-    m_SkyboxMeshBuffer = meshManager.GetMeshBuffer("cube", skyBoxMeshLayout);
-    if (!m_SkyboxMeshBuffer)
-    {
+    skyboxMeshBuffer_ = meshManager.GetMeshBuffer("cube", skyBoxMeshLayout);
+    if (!skyboxMeshBuffer_) {
         Logger::GetLogger()->error("Failed to acquire skybox cube mesh buffer.");
     }
 }
 
-void SkyBoxPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
-{
-    // Bind our target framebuffer (could be the main framebuffer or an off-screen one)
-    m_Framebuffer->Bind();
+void SkyBoxPass::Execute(const std::shared_ptr<Scene::Scene>& scene) {
+    framebuffer_->Bind();
 
-    // Bind the skybox shader
     auto& shaderManager = graphics::ShaderManager::GetInstance();
     auto shader = shaderManager.GetShader("skyBox");
-    if (!shader)
-    {
+    if (!shader) {
         Logger::GetLogger()->error("SkyBox shader not found.");
         return;
     }
     shader->Bind();
 
-    // Bind the scene’s uniform buffer (camera matrices, etc.)
-    // The skybox vertex shader will remove translation inside the shader code itself.
     scene->BindFrameDataUBO();
 
-    // Bind the cubemap texture (assume it is named "pisaCube" in your TextureManager)
+    // Bind cubemap textures.
     std::string skyBoxName = "spiaggia_di_mondello";
     auto cubeMap = graphics::TextureManager::GetInstance().GetTexture(skyBoxName);
-    if (!cubeMap)
-    {
-        Logger::GetLogger()->error("SkyBox cubemap skyBoxName not found.");
+    if (!cubeMap) {
+        Logger::GetLogger()->error("SkyBox cubemap '{}' not found.", skyBoxName);
         return;
     }
     cubeMap->Bind(8);
 
     skyBoxName = "spiaggia_di_mondello_irr";
-    auto cubeMap_irr = graphics::TextureManager::GetInstance().GetTexture(skyBoxName);
-    if (!cubeMap_irr)
-    {
-        Logger::GetLogger()->error("SkyBox cubemap skyBoxName not found.");
+    auto cubeMapIrr = graphics::TextureManager::GetInstance().GetTexture(skyBoxName);
+    if (!cubeMapIrr) {
+        Logger::GetLogger()->error("SkyBox cubemap '{}' not found.", skyBoxName);
         return;
     }
-    cubeMap_irr->Bind(9);
+    cubeMapIrr->Bind(9);
 
-    //skyBoxName = "golden_bay_skybox";
-    //auto cubeMap_pref = TextureManager::GetInstance().GetTexture(skyBoxName);
-    //if (!cubeMap_pref)
-    //{
-    //    Logger::GetLogger()->error("SkyBox cubemap skyBoxName not found.");
-    //    return;
-    //}
-    //cubeMap_pref->Bind(10);
+    glDepthMask(GL_FALSE);
+    glDepthFunc(GL_LEQUAL);
 
-    // Adjust depth states so the skybox is drawn behind all other geometry
-    glDepthMask(GL_FALSE);     // Don’t write to depth
-    glDepthFunc(GL_LEQUAL);    // Pass if depth <= current depth
-
-    // Draw the cube
-    m_SkyboxMeshBuffer->Bind();
+    skyboxMeshBuffer_->Bind();
     GLCall(glDrawElements(GL_TRIANGLES,
-        static_cast<GLsizei>(m_SkyboxMeshBuffer->GetIndexCount()),
+        static_cast<GLsizei>(skyboxMeshBuffer_->GetIndexCount()),
         GL_UNSIGNED_INT,
         nullptr));
-    m_SkyboxMeshBuffer->Unbind();
+    skyboxMeshBuffer_->Unbind();
 
-    // Restore normal depth states
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
 
-    // Unbind
-    m_Framebuffer->Unbind();
+    framebuffer_->Unbind();
 }
 
-void SkyBoxPass::UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer)
-{
-    m_Framebuffer = framebuffer;
+void SkyBoxPass::UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer) {
+    framebuffer_ = framebuffer;
 }
 
-SkyBoxPass::~SkyBoxPass()
-{
-    // Cleanup if needed
+SkyBoxPass::~SkyBoxPass() {
+    // Cleanup handled by smart pointers.
 }
