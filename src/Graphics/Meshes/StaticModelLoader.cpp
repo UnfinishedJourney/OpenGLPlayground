@@ -422,9 +422,6 @@ namespace StaticLoader {
             if (meshLayout.hasTangents_) {
                 mesh->tangents_.reserve(aimesh->mNumVertices);
             }
-            if (meshLayout.hasBitangents_) {
-                mesh->bitangents_.reserve(aimesh->mNumVertices);
-            }
             for (unsigned v = 0; v < aimesh->mNumVertices; v++) {
                 if (meshLayout.hasTangents_) {
                     glm::vec3 t(aimesh->mTangents[v].x,
@@ -432,13 +429,6 @@ namespace StaticLoader {
                         aimesh->mTangents[v].z);
                     t = glm::normalize(tbMat * t);
                     mesh->tangents_.push_back(t);
-                }
-                if (meshLayout.hasBitangents_) {
-                    glm::vec3 b(aimesh->mBitangents[v].x,
-                        aimesh->mBitangents[v].y,
-                        aimesh->mBitangents[v].z);
-                    b = glm::normalize(tbMat * b);
-                    mesh->bitangents_.push_back(b);
                 }
             }
         }

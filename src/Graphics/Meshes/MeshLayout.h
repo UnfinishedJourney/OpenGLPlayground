@@ -22,7 +22,6 @@ struct MeshLayout {
         : hasPositions_(positions)
         , hasNormals_(normals)
         , hasTangents_(tangents)
-        , hasBitangents_(bitangents)
     {
         for (auto tex : texTypes) {
             textureTypes_.set(static_cast<std::size_t>(tex), true);
@@ -33,7 +32,6 @@ struct MeshLayout {
         return hasPositions_ == other.hasPositions_ &&
             hasNormals_ == other.hasNormals_ &&
             hasTangents_ == other.hasTangents_ &&
-            hasBitangents_ == other.hasBitangents_ &&
             textureTypes_ == other.textureTypes_;
     }
 };

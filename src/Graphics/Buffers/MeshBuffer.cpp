@@ -29,7 +29,6 @@ namespace graphics {
             }
         }
         if (meshLayout_.hasTangents_ && !mesh.tangents_.empty()) totalComponents += 3;
-        if (meshLayout_.hasBitangents_ && !mesh.bitangents_.empty()) totalComponents += 3;
 
         // Interleave vertex data.
         std::vector<float> vertexData;
@@ -61,10 +60,6 @@ namespace graphics {
                 const auto& tangent = mesh.tangents_[i];
                 vertexData.insert(vertexData.end(), { tangent.x, tangent.y, tangent.z });
             }
-            if (meshLayout_.hasBitangents_ && !mesh.bitangents_.empty()) {
-                const auto& bitangent = mesh.bitangents_[i];
-                vertexData.insert(vertexData.end(), { bitangent.x, bitangent.y, bitangent.z });
-            }
         }
 
         // Create VAO and VBO.
@@ -92,9 +87,6 @@ namespace graphics {
             }
         }
         if (meshLayout_.hasTangents_ && !mesh.tangents_.empty()) {
-            bufferLayout.Push<float>(3, attributeIndex++);
-        }
-        if (meshLayout_.hasBitangents_ && !mesh.bitangents_.empty()) {
             bufferLayout.Push<float>(3, attributeIndex++);
         }
 

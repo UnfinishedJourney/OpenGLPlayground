@@ -26,7 +26,6 @@ namespace graphics {
         std::vector<glm::vec3> positions_;
         std::vector<glm::vec3> normals_;
         std::vector<glm::vec3> tangents_;
-        std::vector<glm::vec3> bitangents_;
 
         // UV sets keyed by TextureType (e.g., Albedo).
         std::unordered_map<TextureType, std::vector<glm::vec2>> uvs_;

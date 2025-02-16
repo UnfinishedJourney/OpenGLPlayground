@@ -213,12 +213,6 @@ namespace renderer {
                     combinedVertexData.push_back(tan.y);
                     combinedVertexData.push_back(tan.z);
                 }
-                if (meshLayout_.hasBitangents_ && i < mesh->bitangents_.size()) {
-                    const auto& bitan = mesh->bitangents_[i];
-                    combinedVertexData.push_back(bitan.x);
-                    combinedVertexData.push_back(bitan.y);
-                    combinedVertexData.push_back(bitan.z);
-                }
                 // For each texture type.
                 for (size_t j = 0; j < meshLayout_.textureTypes_.size(); ++j) {
                     if (meshLayout_.textureTypes_.test(j)) {

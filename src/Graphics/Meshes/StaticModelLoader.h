@@ -87,7 +87,8 @@ namespace StaticLoader {
             {"bunny",  "../assets/Objs/bunny.obj"},
             {"duck",   "../assets/rubber_duck/scene.gltf"},
             {"dragon", "../assets/Objs/dragon.obj"},
-            {"bistro", "../assets/AmazonBistro/Exterior/exterior.obj"},
+            {"bistroExterior", "../assets/AmazonBistro/Exterior/exterior.obj"},
+            {"bistroInterior", "../assets/AmazonBistro/Interior/interior.obj"},
             {"helmet", "../assets/DamagedHelmet/glTF/DamagedHelmet.gltf"}
         };
 

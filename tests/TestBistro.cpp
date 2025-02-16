@@ -33,10 +33,15 @@ void TestBistro::OnEnter() {
     //    return;
     //}
 
-    if (!scene_->LoadStaticModelIntoScene("bistro", "bistroShaderShadowed", 0.01)) {
-        Logger::GetLogger()->error("Failed to load 'bistro' model in TestDamagedHelmet");
+    if (!scene_->LoadStaticModelIntoScene("bistroExterior", "bistroShaderShadowed", 0.01)) {
+        Logger::GetLogger()->error("Failed to load 'bistroExterio' model in TestBistro");
         return;
     }
+
+    //if (!scene_->LoadStaticModelIntoScene("bistroInterior", "bistroShaderShadowed", 0.01)) {
+    //    Logger::GetLogger()->error("Failed to load 'bistroInterior' model in TestBistro");
+    //    return;
+    //}
 
     LightData light1 = { glm::vec4(-0.1f, -1.0f, 0.0f, 0.0f), glm::vec4(1.0f) };
 
