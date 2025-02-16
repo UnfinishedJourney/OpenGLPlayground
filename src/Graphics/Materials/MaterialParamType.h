@@ -10,7 +10,7 @@ enum class MaterialParamType : std::size_t {
     Opacity = 5,          // d  (float)
     Illumination = 6,     // illum (int, stored as float)
     Emissive = 7,         // Ke (vec3)
-    // Note: TransmissionFilter (Tf) is not packed here—store it as a custom param.
+    // Note: TransmissionFilter (Tf) is not packed hereâ€”store it as a custom param.
     COUNT = 8
 };
 

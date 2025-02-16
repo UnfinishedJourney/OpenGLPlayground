@@ -5,51 +5,41 @@
 PostProcessingPass::PostProcessingPass(std::shared_ptr<graphics::FrameBuffer> /*ignored*/,
     const std::shared_ptr<Scene::Scene>& scene)
 {
-    // No need to store that "ignored" FBO. We'll rely on m_SourceFBO.
-    // Possibly store scene references if needed.
+    // Not storing the ignored FBO; use sourceFBO_ instead.
 }
 
-PostProcessingPass::~PostProcessingPass()
-{
+PostProcessingPass::~PostProcessingPass() {
+    // Resources released by smart pointers.
 }
 
-void PostProcessingPass::SetPostProcessingEffect(const std::shared_ptr<PostProcessingEffect>& effect)
-{
-    m_Effect = effect;
+void PostProcessingPass::SetPostProcessingEffect(const std::shared_ptr<PostProcessingEffect>& effect) {
+    effect_ = effect;
 }
 
-void PostProcessingPass::SetSourceFramebuffer(std::shared_ptr<graphics::FrameBuffer> sourceFBO)
-{
-    m_SourceFBO = sourceFBO;
+void PostProcessingPass::SetSourceFramebuffer(std::shared_ptr<graphics::FrameBuffer> sourceFBO) {
+    sourceFBO_ = sourceFBO;
 }
 
-void PostProcessingPass::Execute(const std::shared_ptr<Scene::Scene>& scene)
-{
-    if (!m_SourceFBO) {
+void PostProcessingPass::Execute(const std::shared_ptr<Scene::Scene>& scene) {
+    if (!sourceFBO_) {
         Logger::GetLogger()->error("PostProcessingPass: No source FBO set!");
         return;
     }
-    if (!m_Effect) {
+    if (!effect_) {
         Logger::GetLogger()->error("PostProcessingPass: No PostProcessingEffect set!");
         return;
     }
 
-    // 1) Grab the resolved texture from the single-sample FBO
-    GLuint sceneTextureID = m_SourceFBO->GetTexture(GL_COLOR_ATTACHMENT0);
+    GLuint sceneTextureID = sourceFBO_->GetTexture(GL_COLOR_ATTACHMENT0);
     if (sceneTextureID == 0) {
         Logger::GetLogger()->error("PostProcessingPass: Invalid texture ID (0).");
         return;
     }
 
-    // 2) The effect’s "Apply" might draw to the default FBO (ID=0) or another FBO
-    //    depending on your setup.
-    //    Example: output to the main screen:
-    m_Effect->Apply(sceneTextureID, /*outputFramebuffer=*/0);
+    // Apply the effect; output to the default framebuffer (0) in this example.
+    effect_->Apply(sceneTextureID, 0);
 }
 
-void PostProcessingPass::UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer)
-{
-    // If we want to change the source FBO, we do so here.
-    // But typically we do SetSourceFramebuffer(...) for clarity.
+void PostProcessingPass::UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer) {
     SetSourceFramebuffer(framebuffer);
 }

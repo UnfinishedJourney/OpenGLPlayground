@@ -5,21 +5,18 @@
 #include "Graphics/Buffers/MeshBuffer.h"
 #include <memory>
 
-// DebugLightsPass renders the scene's geometry into the framebuffer
-class DebugLightsPass : public RenderPass
-{
+class DebugLightsPass : public RenderPass {
 public:
-    DebugLightsPass(std::shared_ptr<graphics::FrameBuffer> framebuffer, const std::shared_ptr<Scene::Scene>& scene);
-
-    void Execute(const std::shared_ptr<Scene::Scene>& scene) override;
-
-    void UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer) override;
-
+    DebugLightsPass(std::shared_ptr<graphics::FrameBuffer> framebuffer,
+        const std::shared_ptr<Scene::Scene>& scene);
     ~DebugLightsPass();
 
+    void Execute(const std::shared_ptr<Scene::Scene>& scene) override;
+    void UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer) override;
+
 private:
-    std::shared_ptr<graphics::FrameBuffer> m_Framebuffer;
+    std::shared_ptr<graphics::FrameBuffer> framebuffer_;
+    std::shared_ptr<graphics::MeshBuffer> lightSphereMeshBuffer_;
 
     void InitializeSceneResources(const std::shared_ptr<Scene::Scene>& scene);
-    std::shared_ptr<graphics::MeshBuffer> m_LightSphereMeshBuffer;
 };

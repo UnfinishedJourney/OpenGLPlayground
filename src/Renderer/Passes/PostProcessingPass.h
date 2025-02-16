@@ -1,9 +1,11 @@
 #pragma once
-#include "Renderer/Passes/RenderPass.h"
-#include "Graphics/Effects/PostProcessingEffects/PostProcessingEffect.h"
 
-class PostProcessingPass : public RenderPass
-{
+#include "RenderPass.h"
+#include "Graphics/Buffers/FrameBuffer.h"
+#include "Graphics/Effects/PostProcessingEffects/PostProcessingEffect.h"
+#include <memory>
+
+class PostProcessingPass : public RenderPass {
 public:
     PostProcessingPass(std::shared_ptr<graphics::FrameBuffer> /*ignored*/,
         const std::shared_ptr<Scene::Scene>& scene);
@@ -13,13 +15,9 @@ public:
     void UpdateFramebuffer(std::shared_ptr<graphics::FrameBuffer> framebuffer) override;
 
     void SetPostProcessingEffect(const std::shared_ptr<PostProcessingEffect>& effect);
-
-    /**
-     * @brief Sets the single-sample FBO whose texture we'll sample from.
-     */
     void SetSourceFramebuffer(std::shared_ptr<graphics::FrameBuffer> sourceFBO);
 
 private:
-    std::shared_ptr<graphics::FrameBuffer> m_SourceFBO;  // The resolved FBO
-    std::shared_ptr<PostProcessingEffect> m_Effect;
+    std::shared_ptr<graphics::FrameBuffer> sourceFBO_; // Resolved FBO
+    std::shared_ptr<PostProcessingEffect> effect_;
 };
