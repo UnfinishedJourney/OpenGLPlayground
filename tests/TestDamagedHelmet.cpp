@@ -8,21 +8,10 @@
 TestDamagedHelmet::TestDamagedHelmet() {}
 
 void TestDamagedHelmet::OnEnter() {
-    //std::unordered_map<aiTextureType, TextureType> aiToMyType = {
-    //  { aiTextureType_DIFFUSE,  TextureType::Diffuse      },
-    //  { aiTextureType_NORMALS,  TextureType::Normal      },
-    //  { aiTextureType_LIGHTMAP, TextureType::AO          },
-    //  { aiTextureType_UNKNOWN,  TextureType::MetalRoughness },
-    //  { aiTextureType_EMISSIVE, TextureType::Emissive    },
-    //  { aiTextureType_METALNESS, TextureType::Height},
-    //  { aiTextureType_DIFFUSE_ROUGHNESS, TextureType::Ambient},
-    //};
-
     if (!scene_->LoadStaticModelIntoScene("helmet", "helmetPBR", 1.0)) {
         Logger::GetLogger()->error("Failed to load 'helmet' model in TestDamagedHelmet");
         return;
     }
-
     scene_->SetSkyboxEnabled(true);
     //m_Scene->SetPostProcessingEffect(PostProcessingEffectType::ToneMapping);
 }
@@ -32,9 +21,18 @@ void TestDamagedHelmet::OnExit() {
     scene_->Clear();
 }
 
-void TestDamagedHelmet::OnUpdate(float deltaTime) {}
+void TestDamagedHelmet::OnUpdate(float deltaTime) {
+    
+}
 
 void TestDamagedHelmet::OnImGuiRender() {
     ImGui::Begin("TestDamagedHelmet Controls");
+    float speed = GetCamera()->GetSpeed();
+
+    // Create a slider for adjusting camera speed between 0.1 and 20.0 units.
+    if (ImGui::SliderFloat("Camera Speed", &speed, 0.1f, 20.0f)) {
+        GetCamera()->SetSpeed(speed);
+    }
+
     ImGui::End();
 }

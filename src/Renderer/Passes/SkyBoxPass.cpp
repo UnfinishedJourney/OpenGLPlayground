@@ -39,7 +39,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene::Scene>& scene) {
     scene->BindFrameDataUBO();
 
     // Bind cubemap textures.
-    std::string skyBoxName = "spiaggia_di_mondello";
+    std::string skyBoxName = "currentSkybox";
     auto cubeMap = graphics::TextureManager::GetInstance().GetTexture(skyBoxName);
     if (!cubeMap) {
         Logger::GetLogger()->error("SkyBox cubemap '{}' not found.", skyBoxName);
@@ -47,7 +47,7 @@ void SkyBoxPass::Execute(const std::shared_ptr<Scene::Scene>& scene) {
     }
     cubeMap->Bind(8);
 
-    skyBoxName = "spiaggia_di_mondello_irr";
+    skyBoxName = "currentSkybox_irr";
     auto cubeMapIrr = graphics::TextureManager::GetInstance().GetTexture(skyBoxName);
     if (!cubeMapIrr) {
         Logger::GetLogger()->error("SkyBox cubemap '{}' not found.", skyBoxName);

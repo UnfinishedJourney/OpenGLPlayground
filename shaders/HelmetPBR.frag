@@ -6,6 +6,7 @@
 #include "Common/Common.shader"   // Should define u_CameraPos, euv.
 #include "Common/Lights.shader"   // Should define lightsData[] and numLights
 #include "Common/Material.shader"
+#include "Common/PBR.shader"
 // -----------------------------------------------------------------------------
 // Inputs / Outputs
 // -----------------------------------------------------------------------------
@@ -21,108 +22,52 @@ out vec4 out_FragColor;
 // -----------------------------------------------------------------------------
 
 
-// BRDF LUT for specular IBL:
-layout(binding = 7) uniform sampler2D texBRDF_LUT;
-layout(binding = 8) uniform samplerCube u_EnvironmentMap;
-
 // -----------------------------------------------------------------------------
 // Constants
 // -----------------------------------------------------------------------------
 const float PI = 3.14159265359;
-
-vec4 SRGBtoLINEAR(vec4 srgbIn)
-{
-	vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
-
-	return vec4(linOut, srgbIn.a);
-}
 
 // -----------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------
 void main()
 {
+
     vec3 lightDirection = normalize(vec3(-1.0, 1.0, -0.3));
-    vec3 lighuvolor = vec3(1.0);
 
-    if (HasTexture(4))
-    {
+    lightDirection = normalize(vec3(-1.0, 0.7,-0.5));
 
-        vec3 texCol = texture(uTexEmissive, uv).rgb;
-        out_FragColor = vec4(texCol, 1.0);
-        //return;
-    }
+    vec4 Kao = texture(uTexAO, uv);
+	vec4 Ke  = texture(uTexEmissive, uv);
+	vec4 Kd  = texture(uTexDiffuse, uv);
+	vec2 MeR = texture(uTexMetalRoughness, uv).yz;
 
-    // ----- STEP 1: Texture Sampling -----
-    vec3 albedo     = texture(uTexDiffuse, uv).rgb;
+    Kd.rgb = SRGBtoLINEAR(Kd).rgb;
 
-    //albedo = SRGBtoLINEAR(vec4(albedo, 1.0)).rgb;
-    vec3 normalMap  = texture(uTexNormal, uv).rgb;
-    vec2 metalRough = texture(uTexMetalRoughness, uv).bg; // .b = metallic, .g = roughness
-    float metallic  = metalRough.y;
-    float roughness = metalRough.x;
-    float ao        = texture(uTexAO, uv).r;
-    vec3 emissive   = texture(uTexEmissive, uv).rgb;
-    //emissive = SRGBtoLINEAR(vec4(emissive, 1.0)).rgb;
-    // ----- STEP 2: Normal Mapping -----
-    // Convert normal from [0,1] to [-1,1] then into world space via TBN.
-    vec3 N = normalize(TBN * (normalMap * 2.0 - 1.0));
+	// world-space normal
+	vec3 n = normalize(normal);
 
-    // ----- STEP 3: View Vector -----
-    vec3 V = normalize(u_CameraPos.xyz - fragPos);
+	vec3 normalSample = texture(uTexNormal, uv).xyz;
 
-    vec3 color = vec3(0.0);
+	// normal mapping
+	n = perturbNormal(n, normalize(u_CameraPos.xyz - fragPos), normalSample, uv);
 
-    // ----- STEP 5: Ambient (IBL) Diffuse Lighting -----
-    vec3 irradiance = texture(u_EnvironmentMapDiffuse, N).rgb;
-    vec3 ambientDiffuse = (1.0 - metallic) * albedo * irradiance;
-    color += ambientDiffuse;
+	vec4 mrSample = texture(uTexMetalRoughness, uv);
 
-    // ----- STEP 6: Ambient (IBL) Specular Lighting -----
-    // Compute reflection vector.
-    vec3 R = reflect(-V, N);
-    //vec3 R = reflect(V, N);
-    // Fresnel for environment reflection.
-    vec3 F0 = mix(vec3(0.04), albedo, metallic);
-    float VdotN = max(dot(V, N), 0.0);
-    vec3 F_env = F0 + (1.0 - F0) * pow(1.0 - VdotN, 5.0);
+	PBRInfo pbrInputs;
+	Ke.rgb = SRGBtoLINEAR(Ke).rgb;
+	// image-based lighting
+	vec3 color1 = 1.0*calculatePBRInputsMetallicRoughness(Kd, n, u_CameraPos.xyz, fragPos, mrSample, pbrInputs);
+	// one hardcoded light source
+	color1 += 3.0*calculatePBRLightContribution( pbrInputs, lightDirection, vec3(1.0) );
+	// ambient occlusion
+	color1 = color1 * ( Kao.r < 0.01 ? 1.0 : Kao.r );
+	// emissive
+	//color1 = pow( Ke.rgb + color1, vec3(1.0/2.2) );
 
-    // Sample prefiltered (specular) environment.
-    // We choose a maximum mip level count that should mauvh the mip chain in the prefiltered cubemap.
-    float maxMipLevels = 5.0;
-    //vec3 prefilteredSpec = textureLod(u_EnvironmentMapSpecular, R, roughness * maxMipLevels).rgb;
+    color1 = Ke.rgb + color1;
+	out_FragColor = vec4(color1, 1.0);
 
-    vec3 prefilteredSpec = texture(u_EnvironmentMap, R).rgb;
-    //prefilteredSpec = SRGBtoLINEAR(vec4(prefilteredSpec, 1.0)).rgb;
+    return;
 
-    //prefilteredSpec = pow( prefilteredSpec, vec3(1.0/2.2) );
-    // --- BRDF LUT Integration ---
-    // Sample the BRDF LUT using the dot product N·V and the roughness.
-    vec2 envBRDF = texture(texBRDF_LUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
-    // Combine the specular environment with the BRDF LUT:
-    vec3 specularIBL = prefilteredSpec * (F_env * envBRDF.x + envBRDF.y);
-
-    color += specularIBL;
-
-    //directional light
-    float NdotL = max(dot(N, lightDirection), 0.0);
-    vec3 directDiffuse = (1.0 - metallic) * albedo / PI * lighuvolor * NdotL;
-    vec3 H = normalize(V + lightDirection);
-    float NdotH = max(dot(N, H), 0.0);
-    float specPower = mix(32.0, 1.0, roughness);
-    float specFactor = pow(NdotH, specPower);
-
-    float VdotH = max(dot(V, H), 0.0);
-    vec3 F_direct = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
-    vec3 directSpecular = F_direct * lighuvolor * specFactor * NdotL;
-
-    vec3 directLight = directDiffuse + directSpecular;
-    color += directLight;
-
-    // ----- STEP 7: Apply Ambient Occlusion and Emissive -----
-    color = color * ao + emissive;
-
-    // ----- STEP 8: Output Final Color -----
-    out_FragColor = vec4( pow( color, vec3(1.0/2.2) ), 1.0 );
-    //out_FragColor = vec4(color, 1.0);
 }

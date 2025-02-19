@@ -23,7 +23,7 @@ std::pair<MeshLayout, MaterialLayout> ResourceManager::GetLayoutsFromShader(cons
         }},
         {"helmetPBR", {
             MeshLayout{ true, true, true, false, { TextureType::Diffuse } },
-            MaterialLayout{ {}, { TextureType::Diffuse, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut } }
+            MaterialLayout{ {MaterialParamType::Ambient, MaterialParamType::Diffuse, MaterialParamType::Specular, MaterialParamType::Shininess, MaterialParamType::Opacity, MaterialParamType::Emissive }, { TextureType::Diffuse, TextureType::Normal, TextureType::MetalRoughness, TextureType::AO, TextureType::Emissive, TextureType::BRDFLut } }
         }},
         {"bistroShaderShadowed", {
             MeshLayout{ true, true, true, false, { TextureType::Diffuse } },

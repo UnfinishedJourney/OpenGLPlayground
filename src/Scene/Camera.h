@@ -31,6 +31,9 @@ namespace Scene {
         void Move(CameraMovement direction, float deltaTime);
         void Rotate(float xOffset, float yOffset);
         void SetSpeed(float speed);
+        float GetSpeed() const {
+            return speed_;
+        }
 
         void UpdateFOV();
         void UpdateProjectionMatrix(float aspectRatio);

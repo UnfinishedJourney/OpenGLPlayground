@@ -131,7 +131,7 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene::Scene>& sce
     CreateFramebuffersForScene(scene, width_, height_);
 
     if (scene->GetShowShadows()) {
-        shadowPasses_.push_back(std::make_unique<ShadowPass>(scene, 4 * 2048));
+        shadowPasses_.push_back(std::make_unique<ShadowPass>(scene, 2 * 2048));
     }
     if (scene->GetSkyboxEnabled()) {
         geometryPasses_.push_back(std::make_unique<SkyBoxPass>(msaaFBO_, scene));
@@ -171,7 +171,7 @@ void Renderer::CreateFramebuffersForScene(const std::shared_ptr<Scene::Scene>& s
     };
     resolvedFBO_ = std::make_shared<graphics::FrameBuffer>(width, height, resolvedAttachments,
         /*hasDepth=*/false, 1);
-
+    glEnable(GL_FRAMEBUFFER_SRGB);
     Logger::GetLogger()->info("Renderer: Created {}x{} MSAA FBO ({} samples) + resolved FBO (1 sample).",
         width, height, samples);
 }

@@ -259,6 +259,8 @@ namespace graphics {
         try {
             auto cubeMap = TextureLoader::LoadCubeMapTexture({ envFaces[0].string(), envFaces[1].string(), envFaces[2].string(),
                                                                envFaces[3].string(), envFaces[4].string(), envFaces[5].string() }, envCfg);
+            //auto cubeMap = TextureLoader::LoadCubeMapTexture({ ldrFaces[0].string(), ldrFaces[1].string(), ldrFaces[2].string(),
+            //                                                   ldrFaces[3].string(), ldrFaces[4].string(), ldrFaces[5].string() }, envCfg);
             textures_[cubeMapName] = cubeMap;
         }
         catch (const std::exception& e) {
