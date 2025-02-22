@@ -6,6 +6,9 @@
 #include <meshoptimizer.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <filesystem>
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 #include "Graphics/Materials/MaterialManager.h"
 #include "Graphics/Textures/TextureManager.h"
@@ -17,59 +20,52 @@ namespace StaticLoader {
     // ––– Constructor –––
     ModelLoader::ModelLoader(float scaleFactor,
         std::unordered_map<aiTextureType, TextureType> aiToMyType,
-        uint8_t maxLODs)
+        uint8_t maxLODs,
+        const std::filesystem::path& configPath)
         : scaleFactor_(scaleFactor),
         aiToMyType_(std::move(aiToMyType)),
-        maxLODs_(maxLODs)
-    {}
-
-    struct AssimpParamFlags
+        maxLODs_(maxLODs),
+        configPath_(configPath)
     {
-        bool hasAmbient = false; // AI_MATKEY_COLOR_AMBIENT
-        bool hasDiffuse = false; // AI_MATKEY_COLOR_DIFFUSE
-        bool hasSpecular = false; // AI_MATKEY_COLOR_SPECULAR
-        bool hasEmissive = false; // AI_MATKEY_COLOR_EMISSIVE
-        bool hasRefraction = false; // AI_MATKEY_REFRACTI
-        bool hasOpacity = false; // AI_MATKEY_OPACITY
-        bool hasShininess = false; // AI_MATKEY_SHININESS
-
-        bool hasDiffuseTex = false; // aiTextureType_DIFFUSE
-        bool hasNormalsTex = false; // aiTextureType_NORMALS
-        bool hasSpecularTex = false; // aiTextureType_SPECULAR
-        bool hasEmissiveTex = false; // aiTextureType_EMISSIVE
-        bool hasAmbientTex = false; // aiTextureType_AMBIENT
-        bool hasHeightTex = false; // aiTextureType_HEIGHT
-        bool hasOtherTex = false; // anything else (if you like)
-    };
-
-    static std::string FlagsToKeyString(const AssimpParamFlags& f)
-    {
-        // Build up a small string. We only add entries if the corresponding bool is true.
-        // Alternatively, you could do a bitmask approach, but strings are simpler to inspect in a debugger.
-        std::string s;
-        if (f.hasAmbient)     s += "Ka+";
-        if (f.hasDiffuse)     s += "Kd+";
-        if (f.hasSpecular)    s += "Ks+";
-        if (f.hasEmissive)    s += "Ke+";
-        if (f.hasRefraction)  s += "Ni+";
-        if (f.hasOpacity)     s += "opacity+";
-        if (f.hasShininess)   s += "Ns+";
-
-        if (f.hasDiffuseTex)  s += "diffTex+";
-        if (f.hasNormalsTex)  s += "normTex+";
-        if (f.hasSpecularTex) s += "specTex+";
-        if (f.hasEmissiveTex) s += "emissTex+";
-        if (f.hasAmbientTex)  s += "ambTex+";
-        if (f.hasHeightTex)   s += "heightTex+";
-        if (f.hasOtherTex)    s += "otherTex+";
-
-        if (s.empty()) {
-            return "EmptyMaterial";
+        if (!LoadModelConfig()) {
+            Logger::GetLogger()->error("ModelLoader: Failed to load model config from '{}'.", configPath_.string());
         }
-        // Remove trailing '+'
-        if (s.back() == '+')
-            s.pop_back();
-        return s;
+    }
+
+    // ––– LoadModelConfig –––
+    bool ModelLoader::LoadModelConfig() {
+        std::ifstream file(configPath_);
+        if (!file) {
+            Logger::GetLogger()->error("ModelLoader: Could not open model config file '{}'.", configPath_.string());
+            return false;
+        }
+        try {
+            nlohmann::json jsonData;
+            file >> jsonData;
+            if (!jsonData.contains("models") || !jsonData["models"].is_object()) {
+                Logger::GetLogger()->error("ModelLoader: Invalid config format in '{}'.", configPath_.string());
+                return false;
+            }
+            for (auto& [modelName, pathValue] : jsonData["models"].items()) {
+                modelPaths_[modelName] = pathValue.get<std::string>();
+            }
+        }
+        catch (const std::exception& e) {
+            Logger::GetLogger()->error("ModelLoader: Exception parsing config '{}': {}", configPath_.string(), e.what());
+            return false;
+        }
+        Logger::GetLogger()->info("ModelLoader: Successfully loaded model config from '{}'.", configPath_.string());
+        return true;
+    }
+
+    // ––– GetModelPath –––
+    std::string ModelLoader::GetModelPath(const std::string& modelName) const {
+        auto it = modelPaths_.find(modelName);
+        if (it != modelPaths_.end()) {
+            return it->second;
+        }
+        Logger::GetLogger()->error("ModelLoader: Unknown modelName '{}'. Check your config file.", modelName);
+        return "";
     }
 
     // ––– LoadStaticModel –––
@@ -223,38 +219,6 @@ namespace StaticLoader {
             Logger::GetLogger()->error("ModelLoader: Failed to add material '{}'.", matName);
             return 0;
         }
-
-        //AssimpParamFlags paramFlags;
-
-        //std::vector<std::string> propertyKeys;
-        //propertyKeys.reserve(aiMat->mNumProperties);
-
-        //for (unsigned p = 0; p < aiMat->mNumProperties; ++p) {
-        //    const aiMaterialProperty* prop = aiMat->mProperties[p];
-        //    // Build a small description:
-        //    //   - The key string (prop->mKey.C_Str())
-        //    //   - The "semantic" (aiTextureType) if it’s a texture
-        //    //   - The "index" if relevant
-        //    // Optionally, you can also print the type (aiPTI_Float, etc.)
-
-        //    // Example:
-        //    std::ostringstream oss;
-        //    oss << "Key='" << prop->mKey.C_Str() << "'"
-        //        << " semantic=" << prop->mSemantic
-        //        << " index=" << prop->mIndex;
-
-        //    // Optionally parse prop->mType (aiPropertyTypeInfo):
-        //    // prop->mType is in {aiPTI_Float, aiPTI_Double, aiPTI_String, aiPTI_Integer, aiPTI_Buffer}
-        //    oss << " type=" << prop->mType;
-
-        //    // For even deeper debugging, you could examine `prop->mData`
-        //    // but that’s typically too detailed for quick logging.
-
-        //    propertyKeys.push_back(oss.str());
-        //    allProperties_.insert(oss.str());
-        //}
-
-        //materialProperties_[matName] = std::move(propertyKeys);
 
         return idOpt.value();
     }
@@ -602,17 +566,6 @@ namespace StaticLoader {
         ret[0][2] = m.a3; ret[1][2] = m.b3; ret[2][2] = m.c3; ret[3][2] = m.d3;
         ret[0][3] = m.a4; ret[1][3] = m.b4; ret[2][3] = m.c4; ret[3][3] = m.d4;
         return glm::transpose(ret);
-    }
-
-    // ––– GetModelPath –––
-    std::string ModelLoader::GetModelPath(const std::string& modelName) const
-    {
-        auto it = modelPaths_.find(modelName);
-        if (it != modelPaths_.end()) {
-            return it->second;
-        }
-        Logger::GetLogger()->error("Unknown modelName '{}'. Check modelPaths_ or add a new entry.", modelName);
-        return "";
     }
 
 } // namespace StaticLoader

@@ -1,0 +1,162 @@
+{
+    "global": {
+        "driver_version": "4.6.0 NVIDIA 572.16",
+        "openGL_profile": "core"
+    },
+    "shaders": {
+        "basic": {
+            "binary_path": "../shaders/bin/Basic.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/Basic.frag",
+                "vertex": "../shaders/Basic.vert"
+            }
+        },
+        "basicShadowMap": {
+            "binary_path": "../shaders/bin/BasicShadowMap.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/Shadows/BasicShadowMap.frag",
+                "vertex": "../shaders/Shadows/BasicShadowMap.vert"
+            }
+        },
+        "basicTextured": {
+            "binary_path": "../shaders/bin/BasicTextured.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/BasicTextured.frag",
+                "vertex": "../shaders/BasicTextured.vert"
+            }
+        },
+        "bistroShaderShadowed": {
+            "binary_path": "../shaders/bin/BistroShaderShadowed.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/BistroShaderShadowed.frag",
+                "vertex": "../shaders/BistroShaderShadowed.vert"
+            }
+        },
+        "brdfCompute": {
+            "binary_path": "../shaders/bin/BRDFCompute.bin",
+            "is_compute_shader": true,
+            "shader_stages": {
+                "compute": "../shaders/BRDFCompute.comp"
+            }
+        },
+        "debugLights": {
+            "binary_path": "../shaders/bin/DebugLights.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/DebugGeo/DebugLights.frag",
+                "vertex": "../shaders/DebugGeo/DebugLights.vert"
+            }
+        },
+        "edgeDetection": {
+            "binary_path": "../shaders/bin/EdgeDetection.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/Postprocessing/EdgeDetection.frag",
+                "vertex": "../shaders/Postprocessing/EdgeDetection.vert"
+            }
+        },
+        "flipbook": {
+            "binary_path": "../shaders/bin/Flipbook.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/Effects/Flipbook.frag",
+                "vertex": "../shaders/Effects/Flipbook.vert"
+            }
+        },
+        "grid": {
+            "binary_path": "../shaders/bin/Grid.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/Terrain/Grid.frag",
+                "vertex": "../shaders/Terrain/Grid.vert"
+            }
+        },
+        "helmetPBR": {
+            "binary_path": "../shaders/bin/HelmetPBR.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/HelmetPBR.frag",
+                "vertex": "../shaders/HelmetPBR.vert"
+            }
+        },
+        "noPostProcessing": {
+            "binary_path": "../shaders/bin/NoEffect.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/Postprocessing/NoEffect.frag",
+                "vertex": "../shaders/Postprocessing/NoEffect.vert"
+            }
+        },
+        "presentTexture": {
+            "binary_path": "../shaders/bin/PresentTexture.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/Postprocessing/PresentTexture.frag",
+                "vertex": "../shaders/Postprocessing/PresentTexture.vert"
+            }
+        },
+        "simpleLightsShadowed": {
+            "binary_path": "../shaders/bin/SimpleLightsShadowed.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/SimpleLightsShadowed.frag",
+                "vertex": "../shaders/SimpleLightsShadowed.vert"
+            }
+        },
+        "simplelights": {
+            "binary_path": "../shaders/bin/SimpleLights.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/SimpleLights.frag",
+                "vertex": "../shaders/SimpleLights.vert"
+            }
+        },
+        "skyBox": {
+            "binary_path": "../shaders/bin/SkyBox.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/DebugGeo/SkyBox.frag",
+                "vertex": "../shaders/DebugGeo/SkyBox.vert"
+            }
+        },
+        "terrain": {
+            "binary_path": "../shaders/bin/Terrain.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/Terrain/Terrain.frag",
+                "tess_control": "../shaders/Terrain/Terrain.tesc",
+                "tess_evaluation": "../shaders/Terrain/Terrain.tese",
+                "vertex": "../shaders/Terrain/Terrain.vert"
+            }
+        },
+        "toneMapping": {
+            "binary_path": "../shaders/bin/ToneMapping.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/Postprocessing/ToneMapping.frag",
+                "vertex": "../shaders/Postprocessing/ToneMapping.vert"
+            }
+        },
+        "wireframeGL": {
+            "binary_path": "../shaders/bin/WireframeGL.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/Wireframe.frag",
+                "vertex": "../shaders/Wireframe.vert"
+            }
+        },
+        "wireframeGS": {
+            "binary_path": "../shaders/bin/WireframeGS.bin",
+            "is_compute_shader": false,
+            "shader_stages": {
+                "fragment": "../shaders/Wireframe.frag",
+                "geometry": "../shaders/Wireframe.geos",
+                "vertex": "../shaders/Wireframe.vert"
+            }
+        }
+    }
+}

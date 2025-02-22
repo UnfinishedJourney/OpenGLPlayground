@@ -42,7 +42,8 @@ namespace StaticLoader {
                 { aiTextureType_LIGHTMAP,   TextureType::AO },
                 { aiTextureType_DIFFUSE_ROUGHNESS, TextureType::MetalRoughness }
             },
-            uint8_t maxLODs = 5);
+            uint8_t maxLODs = 5,
+            const std::filesystem::path& configPath = "../configs/models_config.json");
         ~ModelLoader() = default;
 
         /**
@@ -65,9 +66,6 @@ namespace StaticLoader {
         const std::vector<graphics::MeshInfo>& GetLoadedObjects() const { return objects_; }
 
     private:
-        //std::unordered_map<std::string, std::vector<std::string>> materialProperties_; //for debugging
-        //std::set<std::string> allProperties_;
-        //std::unordered_map<aiTextureType, std::set<std::string>> allTextures_;
         // Configuration parameters.
         float scaleFactor_ = 1.0f;
         std::unordered_map<aiTextureType, TextureType> aiToMyType_;
@@ -77,22 +75,15 @@ namespace StaticLoader {
         std::vector<graphics::MeshInfo> objects_;
         std::vector<std::size_t> materialIDs_;
 
-        // Counters for fallback and unnamed materials.
         int fallbackMaterialCounter_ = 0;
         int unnamedMaterialCounter_ = 0;
 
-        // Mapping from model name to file path.
-        const std::unordered_map<std::string, std::string> modelPaths_ = {
-            {"pig",    "../assets/Objs/pig_triangulated.obj"},
-            {"bunny",  "../assets/Objs/bunny.obj"},
-            {"duck",   "../assets/rubber_duck/scene.gltf"},
-            {"dragon", "../assets/Objs/dragon.obj"},
-            {"bistroExterior", "../assets/AmazonBistro/Exterior/exterior.obj"},
-            {"bistroInterior", "../assets/AmazonBistro/Interior/interior.obj"},
-            {"helmet", "../assets/DamagedHelmet/glTF/DamagedHelmet.gltf"}
-        };
+        // Mapping from model name to file path (loaded from JSON config).
+        std::unordered_map<std::string, std::string> modelPaths_;
+        std::filesystem::path configPath_;
 
         // Private helper functions.
+        bool LoadModelConfig();
         std::string GetModelPath(const std::string& modelName) const;
         glm::mat4 AiToGlm(const aiMatrix4x4& m) const;
 
@@ -119,6 +110,7 @@ namespace StaticLoader {
             std::vector<std::vector<uint32_t>>& outLods) const;
 
         void CenterMeshes();  ///< Shifts all loaded meshes so that the bounding box is centered at the origin.
+        //std::unordered_map<aiTextureType, std::set<std::string>> allTextures_; //for debugging
     };
 
 } // namespace staticloader

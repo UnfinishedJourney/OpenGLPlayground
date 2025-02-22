@@ -33,9 +33,8 @@ const float PI = 3.14159265359;
 void main()
 {
 
-    vec3 lightDirection = normalize(vec3(-1.0, 1.0, -0.3));
+    vec3 lightDirection = normalize(vec3(-1.0, 0.7,-0.5));
 
-    lightDirection = normalize(vec3(-1.0, 0.7,-0.5));
 
     vec4 Kao = texture(uTexAO, uv);
 	vec4 Ke  = texture(uTexEmissive, uv);

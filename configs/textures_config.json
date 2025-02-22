@@ -1,0 +1,20 @@
+{
+  "textures": {
+    "2d": {
+      "cuteDog": "../assets/cute_dog.png"
+    },
+    "cubeMaps": {
+      "currentSkybox": [
+        "../assets/HDRI/pizzo_pernice_puresky_8k.hdr"
+      ]
+    },
+    "computed": {
+      "brdfLut": {
+        "type": "compute",
+        "width": 256,
+        "height": 256,
+        "numSamples": 1024
+      }
+    }
+  }
+}

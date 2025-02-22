@@ -34,7 +34,7 @@ void TestBistro::OnEnter() {
     //}
 
     if (!scene_->LoadStaticModelIntoScene("bistroExterior", "bistroShaderShadowed", 0.01)) {
-        Logger::GetLogger()->error("Failed to load 'bistroExterio' model in TestBistro");
+        Logger::GetLogger()->error("Failed to load 'bistroExterior' model in TestBistro");
         return;
     }
 
@@ -43,7 +43,9 @@ void TestBistro::OnEnter() {
     //    return;
     //}
 
-    LightData light1 = { glm::vec4(-0.1f, -1.0f, 0.0f, 0.0f), glm::vec4(1.0f) };
+    glm::vec3 lDir(-0.1f, -1.0f, 0.0f);
+    lDir = glm::normalize(lDir);
+    LightData light1 = { glm::vec4(lDir, 0.0f), glm::vec4(1.0f) };
 
     auto lightManager = scene_->GetLightManager();
     lightManager->AddLight(light1);

@@ -46,8 +46,6 @@ namespace graphics {
      */
     class ShaderManager {
     public:
-        ShaderManager(const std::filesystem::path& MetadataPath = "../shaders/metadata.json",
-            const std::filesystem::path& ConfigPath = "../shaders/config.json");
         ~ShaderManager() = default;
         ShaderManager(const ShaderManager&) = delete;
         ShaderManager& operator=(const ShaderManager&) = delete;
@@ -65,6 +63,8 @@ namespace graphics {
         const std::unordered_map<std::string, std::shared_ptr<BaseShader>>& GetShaders() const;
 
     private:
+        ShaderManager(const std::filesystem::path& MetadataPath = "../configs/metadata_shaders.json",
+            const std::filesystem::path& ConfigPath = "../configs/shaders_config.json");
         bool LoadMetadata();
         bool SaveMetadata() const;
         bool LoadConfig();

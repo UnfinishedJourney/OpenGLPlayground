@@ -12,7 +12,7 @@ if(USE_CLANG)
     set(CMAKE_CXX_COMPILER "clang++")
 endif()
 
-project(OpenGLApplication VERSION 1.0)
+project(OpenGLPlayground VERSION 1.0)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -105,7 +105,7 @@ group_sources(${DEPS_DIR} ${VENDOR_FILES})
 # =====================================================================
 # Executable Target
 # =====================================================================
-add_executable(OpenGLApplication
+add_executable(OpenGLPlayground
     ${SRC_FILES}
     ${TEST_FILES}
     ${VENDOR_FILES}
@@ -120,22 +120,22 @@ set(EASY_PROFILER_LIB_DIR "C:/Program Files (x86)/easy_profiler/lib")
 set(EASY_PROFILER_DLL "C:/Program Files (x86)/easy_profiler/bin/easy_profiler.dll")
 
 # Add include directory for EasyProfiler
-target_include_directories(OpenGLApplication PRIVATE ${EASY_PROFILER_INCLUDE_DIR})
+target_include_directories(OpenGLPlayground PRIVATE ${EASY_PROFILER_INCLUDE_DIR})
 
 # Link with EasyProfiler library
-target_link_libraries(OpenGLApplication PRIVATE "${EASY_PROFILER_LIB_DIR}/easy_profiler.lib")
+target_link_libraries(OpenGLPlayground PRIVATE "${EASY_PROFILER_LIB_DIR}/easy_profiler.lib")
 
 # Automatically copy EasyProfiler DLL to the build directory
-add_custom_command(TARGET OpenGLApplication POST_BUILD
+add_custom_command(TARGET OpenGLPlayground POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${EASY_PROFILER_DLL}"
-    $<TARGET_FILE_DIR:OpenGLApplication>
+    $<TARGET_FILE_DIR:OpenGLPlayground>
 )
 
 # =====================================================================
 # Include Directories
 # =====================================================================
-target_include_directories(OpenGLApplication PRIVATE
+target_include_directories(OpenGLPlayground PRIVATE
     ${DEPS_DIR}/GLAD/include
     ${DEPS_DIR}/imgui
     ${DEPS_DIR}/imgui/backends
@@ -182,10 +182,10 @@ add_subdirectory(${DEPS_DIR}/glfw)
 set_property(TARGET glfw PROPERTY FOLDER "ThirdPartyLibraries")
 
 # Include GLFW headers
-target_include_directories(OpenGLApplication PRIVATE ${DEPS_DIR}/glfw/include)
+target_include_directories(OpenGLPlayground PRIVATE ${DEPS_DIR}/glfw/include)
 
 # Link against GLFW
-target_link_libraries(OpenGLApplication PRIVATE glfw)
+target_link_libraries(OpenGLPlayground PRIVATE glfw)
 
 # =====================================================================
 # Assimp Integration
@@ -209,10 +209,10 @@ add_subdirectory(${DEPS_DIR}/assimp)
 set_property(TARGET assimp PROPERTY FOLDER "ThirdPartyLibraries")
 
 # Include Assimp headers
-target_include_directories(OpenGLApplication PRIVATE ${DEPS_DIR}/assimp/include)
+target_include_directories(OpenGLPlayground PRIVATE ${DEPS_DIR}/assimp/include)
 
 # Link against Assimp
-target_link_libraries(OpenGLApplication PRIVATE assimp)
+target_link_libraries(OpenGLPlayground PRIVATE assimp)
 
 # =====================================================================
 # Meshoptimizer Integration
@@ -229,23 +229,23 @@ add_subdirectory(${DEPS_DIR}/meshoptimizer)
 set_property(TARGET meshoptimizer PROPERTY FOLDER "ThirdPartyLibraries")
 
 # Include Meshoptimizer headers
-target_include_directories(OpenGLApplication PRIVATE ${DEPS_DIR}/meshoptimizer/src)
+target_include_directories(OpenGLPlayground PRIVATE ${DEPS_DIR}/meshoptimizer/src)
 
 # Link against Meshoptimizer
-target_link_libraries(OpenGLApplication PRIVATE meshoptimizer)
+target_link_libraries(OpenGLPlayground PRIVATE meshoptimizer)
 
 # =====================================================================
 # Linking Libraries
 # =====================================================================
 # Header-only libraries
-target_link_libraries(OpenGLApplication PRIVATE
+target_link_libraries(OpenGLPlayground PRIVATE
     nlohmann_json
     spdlog
     glm
 )
 
 # Link other libraries
-target_link_libraries(OpenGLApplication PRIVATE
+target_link_libraries(OpenGLPlayground PRIVATE
     glfw
     opengl32
     "${EASY_PROFILER_LIB_DIR}/easy_profiler.lib"
@@ -253,7 +253,7 @@ target_link_libraries(OpenGLApplication PRIVATE
 
 # Platform-specific libraries
 if(MSVC)
-    target_link_libraries(OpenGLApplication PRIVATE
+    target_link_libraries(OpenGLPlayground PRIVATE
         user32.lib
         gdi32.lib
         shell32.lib
@@ -264,7 +264,7 @@ endif()
 # Additional Definitions and Compiler Options
 # =====================================================================
 # Define IMGUI_IMPL_OPENGL_LOADER_GLAD for ImGui
-target_compile_definitions(OpenGLApplication PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD)
+target_compile_definitions(OpenGLPlayground PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD)
 
 # Suppress warnings and set compiler options
 if(MSVC)
@@ -273,21 +273,21 @@ if(MSVC)
     target_compile_options(meshoptimizer PRIVATE /w)
     # Suppress CRT security warnings
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    target_compile_options(OpenGLApplication PRIVATE /utf-8)  # Enable UTF-8 encoding
-    target_compile_options(OpenGLApplication PRIVATE /wd4005) # Suppress 'APIENTRY' macro redefinition warning
+    target_compile_options(OpenGLPlayground PRIVATE /utf-8)  # Enable UTF-8 encoding
+    target_compile_options(OpenGLPlayground PRIVATE /wd4005) # Suppress 'APIENTRY' macro redefinition warning
 endif()
 
 # =====================================================================
 # Set Output Directories
 # =====================================================================
-set_target_properties(OpenGLApplication PROPERTIES
+set_target_properties(OpenGLPlayground PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
 # =====================================================================
 # Visual Studio Startup Project
 # =====================================================================
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT OpenGLApplication)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT OpenGLPlayground)
 
 # =====================================================================
 # Organize External Libraries in Visual Studio Solution

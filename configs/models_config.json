@@ -1,0 +1,12 @@
+{
+  "models": {
+    "pig": "../assets/Objs/pig_triangulated.obj",
+    "bunny": "../assets/Objs/bunny.obj",
+    "duck": "../assets/rubber_duck/scene.gltf",
+    "dragon": "../assets/Objs/dragon.obj",
+    "bistroExterior": "../assets/AmazonBistro/Exterior/exterior.obj",
+    "bistroInterior": "../assets/AmazonBistro/Interior/interior.obj",
+    "helmet": "../assets/DamagedHelmet/glTF/DamagedHelmet.gltf",
+    "sponza": "../assets/sponza/main1_sponza/NewSponza_Main_glTF_003.gltf"
+  }
+}

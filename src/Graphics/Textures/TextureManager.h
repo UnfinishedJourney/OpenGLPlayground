@@ -15,7 +15,6 @@ namespace graphics {
     class TextureManager {
     public:
         static TextureManager& GetInstance();
-        explicit TextureManager(const std::filesystem::path& configPath = "../assets/resource_paths.json");
         bool LoadConfig(const std::filesystem::path& configPath);
         std::shared_ptr<ITexture> GetTexture(const std::string& name);
 
@@ -27,6 +26,7 @@ namespace graphics {
         void Clear();
 
     private:
+        TextureManager(const std::filesystem::path& configPath = "../configs/textures_config.json");
         ~TextureManager() = default;
         TextureManager(const TextureManager&) = delete;
         TextureManager& operator=(const TextureManager&) = delete;
