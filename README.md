@@ -1,7 +1,7 @@
 ﻿# OpenGLPlayground
 
 ![bistro1](https://github.com/UnfinishedJourney/OpenGLPlayground/blob/04f55b971486ef65b84f056367e6c8a23f25818f/bistro_screenshot1.png)
-
+![helmet](https://github.com/UnfinishedJourney/OpenGLPlayground/blob/eecdcc99be17401da20d011e43df74160bc81ebc/damaged_helmet.mp4)
 ## Overview
 
 OpenGLPlayground is a personal project dedicated to exploring modern OpenGL's core features. It serves as a learning platform, demonstrating various graphics programming techniques in real-time rendering while providing a foundation for further experimentation.
