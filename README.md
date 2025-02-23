@@ -1,12 +1,19 @@
 ﻿# OpenGLPlayground
 
 ![bistro1](https://github.com/UnfinishedJourney/OpenGLPlayground/blob/04f55b971486ef65b84f056367e6c8a23f25818f/bistro_screenshot1.png)
-<img src="https://github.com/UnfinishedJourney/OpenGLPlayground/blob/a03f3ecdcb2d679cc4489410eff7b8c0396142df/bistro_screenshot2.png" width="200"/>
+
 ## Overview
 
 OpenGLPlayground is a personal project dedicated to exploring modern OpenGL's core features. It serves as a learning platform, demonstrating various graphics programming techniques in real-time rendering while providing a foundation for further experimentation.
 
 ---
+
+### Bistro Scene
+<img src="https://github.com/UnfinishedJourney/OpenGLPlayground/blob/a03f3ecdcb2d679cc4489410eff7b8c0396142df/bistro_screenshot2.png" width="300"/>
+<img src="https://github.com/UnfinishedJourney/OpenGLPlayground/blob/a03f3ecdcb2d679cc4489410eff7b8c0396142df/bistro_screenshot3.png" width="300"/>
+- [Bistro Scene](https://casual-effects.com/data/)  
+- [Bistro Materials](https://github.com/corporateshark/bistro_materials)  
+- [Environment Map](https://polyhaven.com/a/pizzo_pernice_puresky)
 
 ## Features
 
