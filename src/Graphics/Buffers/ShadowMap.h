@@ -38,7 +38,7 @@ namespace graphics {
         void Unbind() const;
 
         /// Returns the depth texture ID.
-        [[nodiscard]] GLuint GetDepthTexture() const { return depth_texture_; }
+        [[nodiscard]] GLuint GetDepthTexture() const { return depthTexture_; }
 
         [[nodiscard]] GLsizei GetWidth() const { return width_; }
         [[nodiscard]] GLsizei GetHeight() const { return height_; }
@@ -47,10 +47,10 @@ namespace graphics {
         /// Releases all OpenGL resources.
         void Cleanup();
 
-        GLuint renderer_id_{ 0 };    ///< The framebuffer (FBO) handle.
-        GLuint depth_texture_{ 0 };   ///< The depth texture attached to the FBO.
-        GLsizei width_{ 0 };          ///< Width of the shadow map.
-        GLsizei height_{ 0 };         ///< Height of the shadow map.
+        GLuint rendererId_{ 0 };    ///< The framebuffer (FBO) handle.
+        GLuint depthTexture_{ 0 };  ///< The depth texture attached to the FBO.
+        GLsizei width_{ 0 };         ///< Width of the shadow map.
+        GLsizei height_{ 0 };        ///< Height of the shadow map.
     };
 
 } // namespace graphics

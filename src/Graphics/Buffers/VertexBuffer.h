@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <stdexcept>
 
+//maybe need base GLBuffer class
 namespace graphics {
 
     /**
@@ -43,8 +44,8 @@ namespace graphics {
         [[nodiscard]] GLuint GetRendererID() const { return rendererId_; }
 
     private:
-        GLuint rendererId_{ 0 };            ///< OpenGL buffer handle (0 if uninitialized)
-        size_t size_{ 0 };                  ///< Buffer size in bytes
+        GLuint rendererId_{ 0 };            ///< OpenGL buffer handle.
+        size_t size_{ 0 };                  ///< Buffer size in bytes.
         GLenum usage_{ GL_STATIC_DRAW };
     };
 

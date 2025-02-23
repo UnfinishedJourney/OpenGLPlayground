@@ -1,6 +1,6 @@
 #include "MeshBuffer.h"
 #include "Utilities/Logger.h"
-#include "Utilities/Utility.h" // For GLCall, if defined
+#include "Utilities/Utility.h"
 #include <stdexcept>
 #include <vector>
 #include <span>
@@ -11,7 +11,6 @@ namespace graphics {
     MeshBuffer::MeshBuffer(const Mesh& mesh, const MeshLayout& layout)
         : meshLayout_(layout)
     {
-        // Validate that required position data exists.
         if (meshLayout_.hasPositions_ && mesh.positions_.empty()) {
             Logger::GetLogger()->error("MeshBuffer: Mesh requires positions, but none were provided.");
             throw std::runtime_error("Mesh requires positions, but none were provided.");
@@ -19,18 +18,16 @@ namespace graphics {
 
         vertexCount_ = static_cast<GLuint>(mesh.positions_.size());
 
-        // Calculate the total number of float components per vertex.
         size_t totalComponents = 0;
-        if (meshLayout_.hasPositions_)  totalComponents += 3; // (x, y, z)
-        if (meshLayout_.hasNormals_ && !mesh.normals_.empty()) totalComponents += 3; // (nx, ny, nz)
+        if (meshLayout_.hasPositions_)  totalComponents += 3;
+        if (meshLayout_.hasNormals_ && !mesh.normals_.empty()) totalComponents += 3;
         for (size_t i = 0; i < meshLayout_.textureTypes_.size(); ++i) {
             if (meshLayout_.textureTypes_.test(i)) {
-                totalComponents += 2; // (u, v)
+                totalComponents += 2;
             }
         }
         if (meshLayout_.hasTangents_ && !mesh.tangents_.empty()) totalComponents += 3;
 
-        // Interleave vertex data.
         std::vector<float> vertexData;
         vertexData.reserve(vertexCount_ * totalComponents);
 
@@ -62,17 +59,15 @@ namespace graphics {
             }
         }
 
-        // Create VAO and VBO.
-        VAO_ = std::make_unique<VertexArray>();
-        VAO_->Bind();
+        vao_ = std::make_unique<VertexArray>();
+        vao_->Bind();
 
         std::span<const std::byte> vertexSpan{
             reinterpret_cast<const std::byte*>(vertexData.data()),
             vertexData.size() * sizeof(float)
         };
-        VBO_ = std::make_unique<VertexBuffer>(vertexSpan);
+        vbo_ = std::make_unique<VertexBuffer>(vertexSpan);
 
-        // Build the VertexBufferLayout.
         VertexBufferLayout bufferLayout;
         GLuint attributeIndex = 0;
         if (meshLayout_.hasPositions_) {
@@ -90,36 +85,35 @@ namespace graphics {
             bufferLayout.Push<float>(3, attributeIndex++);
         }
 
-        VAO_->AddBuffer(*VBO_, bufferLayout);
+        vao_->AddBuffer(*vbo_, bufferLayout);
 
-        // Optionally create an IBO if indices are provided.
         if (!mesh.indices_.empty()) {
             indexCount_ = static_cast<GLuint>(mesh.indices_.size());
             hasIndices_ = true;
             std::vector<GLuint> indicesGL(mesh.indices_.begin(), mesh.indices_.end());
             std::span<const GLuint> indexSpan(indicesGL.data(), indicesGL.size());
-            IBO_ = std::make_unique<IndexBuffer>(indexSpan);
+            ibo_ = std::make_unique<IndexBuffer>(indexSpan);
         }
         else {
             indexCount_ = vertexCount_;
             hasIndices_ = false;
         }
 
-        VAO_->Unbind();
+        vao_->Unbind();
     }
 
     void MeshBuffer::Bind() const {
-        VAO_->Bind();
-        if (hasIndices_ && IBO_) {
-            IBO_->Bind();
+        vao_->Bind();
+        if (hasIndices_ && ibo_) {
+            ibo_->Bind();
         }
     }
 
     void MeshBuffer::Unbind() const {
-        if (hasIndices_ && IBO_) {
-            IBO_->Unbind();
+        if (hasIndices_ && ibo_) {
+            ibo_->Unbind();
         }
-        VAO_->Unbind();
+        vao_->Unbind();
     }
 
     void MeshBuffer::Render() const {

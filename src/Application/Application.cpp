@@ -13,8 +13,7 @@
 #include <imgui_impl_opengl3.h>
 
 Application::Application()
-    : cameraController_(inputManager_)
-{
+    : cameraController_(inputManager_) {
     Logger::Init();
     logger_ = Logger::GetLogger();
     logger_->info("Application constructed.");
@@ -26,8 +25,6 @@ Application::~Application() {
 
 bool Application::Init() {
     PROFILE_FUNCTION(Magenta);
-
-    // Initialize GLFW & OpenGL context.
     window_ = GLContext::InitOpenGL(Screen::width_, Screen::height_, "OpenGL Application");
     if (!window_) {
         logger_->critical("Failed to initialize the OpenGL context.");
@@ -39,7 +36,6 @@ bool Application::Init() {
     glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     InitializeImGui();
 
-    // Create and register tests.
     {
         PROFILE_BLOCK("Initialize TestMenu", Yellow);
         testMenu_ = std::make_shared<TestMenu>(testManager_);
@@ -49,7 +45,6 @@ bool Application::Init() {
         testMenu_->RegisterTest("Flipbook", []() { return std::make_shared<TestFlipBookEffect>(); });
         testMenu_->RegisterTest("PBRHelmet", []() { return std::make_shared<TestDamagedHelmet>(); });
         testMenu_->RegisterTest("TestShadows", []() { return std::make_shared<TestShadows>(); });
-
         testManager_.RegisterTest("Test Menu", [this]() {
             return std::make_shared<TestMenuTest>(testMenu_);
             });
@@ -65,7 +60,6 @@ bool Application::Init() {
 
 void Application::Run() {
     PROFILE_FUNCTION(Cyan);
-
     if (!window_) {
         logger_->error("Invalid window. Did you call Init() successfully?");
         return;
@@ -83,58 +77,39 @@ void Application::UpdateAndRenderFrame() {
     PROFILE_BLOCK("Frame", Purple);
     auto cpuStartTime = std::chrono::steady_clock::now();
 
-    // Render setup.
-    {
-        PROFILE_BLOCK("Render Setup", Blue);
-        glClearColor(0.3f, 0.2f, 0.8f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
+    PROFILE_BLOCK("Render Setup", Blue);
+    glClearColor(0.3f, 0.2f, 0.8f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     double currentTime = glfwGetTime();
     double deltaTime = currentTime - lastFrameTime_;
     lastFrameTime_ = currentTime;
 
-    {
-        PROFILE_BLOCK("Handle Input", Blue);
-        glfwPollEvents();
-        ProcessInput(deltaTime);
-    }
+    PROFILE_BLOCK("Handle Input", Blue);
+    glfwPollEvents();
+    ProcessInput(deltaTime);
 
-    {
-        PROFILE_BLOCK("UpdateAndRenderTest", Blue);
-        {
-            PROFILE_BLOCK("UpdateCurrentTest", Green);
-            testManager_.UpdateCurrentTest(static_cast<float>(deltaTime));
-        }
-        {
-            PROFILE_BLOCK("RenderCurrentTest", Green);
-            testManager_.RenderCurrentTest();
-        }
-        {
-            PROFILE_BLOCK("SynchronizeCameraController", Green);
-            SynchronizeCameraController();
-        }
-    }
+    PROFILE_BLOCK("UpdateAndRenderTest", Blue);
+    PROFILE_BLOCK("UpdateCurrentTest", Green);
+    testManager_.UpdateCurrentTest(static_cast<float>(deltaTime));
+    PROFILE_BLOCK("RenderCurrentTest", Green);
+    testManager_.RenderCurrentTest();
+    PROFILE_BLOCK("SynchronizeCameraController", Green);
+    SynchronizeCameraController();
 
-    {
-        PROFILE_BLOCK("ImGui Rendering", Blue);
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-        testManager_.RenderCurrentTestImGui();
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    }
+    PROFILE_BLOCK("ImGui Rendering", Blue);
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    testManager_.RenderCurrentTestImGui();
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    {
-        PROFILE_BLOCK("SwapBuffers", Blue);
-        glfwSwapBuffers(window_);
-    }
+    PROFILE_BLOCK("SwapBuffers", Blue);
+    glfwSwapBuffers(window_);
 
-    {
-        PROFILE_BLOCK("UpdateInputManager", Blue);
-        inputManager_.Update();
-    }
+    PROFILE_BLOCK("UpdateInputManager", Blue);
+    inputManager_.Update();
 
     auto cpuEndTime = std::chrono::steady_clock::now();
     double cpuFrameTimeMs = std::chrono::duration<double, std::milli>(cpuEndTime - cpuStartTime).count();
@@ -144,7 +119,6 @@ void Application::UpdateAndRenderFrame() {
 void Application::ProcessInput(double deltaTime) {
     PROFILE_FUNCTION(Yellow);
     cameraController_.Update(static_cast<float>(deltaTime));
-
     if (inputManager_.WasKeyJustPressed(GLFW_KEY_R)) {
         logger_->info("Reloading all shaders...");
         graphics::ShaderManager::GetInstance().ReloadAllShaders();
@@ -166,7 +140,6 @@ void Application::SynchronizeCameraController() {
 void Application::ShowFpsAndFrameTimes(double cpuFrameTimeMs) {
     static double prevSeconds = 0.0;
     static int frameCount = 0;
-
     double currentSeconds = glfwGetTime();
     double elapsedSeconds = currentSeconds - prevSeconds;
     ++frameCount;
@@ -184,7 +157,6 @@ void Application::ShowFpsAndFrameTimes(double cpuFrameTimeMs) {
 
 void Application::RegisterCallbacks() {
     PROFILE_FUNCTION(Green);
-
     glfwSetKeyCallback(window_, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
         PROFILE_BLOCK("Key Callback", Yellow);
         auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));

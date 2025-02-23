@@ -19,8 +19,8 @@
 #include "Graphics/Effects/PostProcessingEffects/PostProcessingEffectType.h"
 
 // Forward declarations for types used below.
-struct BoundingBox;            // Assumed defined elsewhere.
-class BaseRenderObject;        // Assumed defined elsewhere.
+struct BoundingBox;            
+class BaseRenderObject;        
 
 namespace Scene {
 

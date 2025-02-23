@@ -10,11 +10,11 @@ namespace graphics {
      * @brief Describes a single vertex attribute.
      */
     struct VertexBufferElement {
-        GLuint attribute_index_; ///< Location of the attribute in the shader
-        GLuint count_;           ///< Number of components (e.g., 3 for vec3)
-        GLenum type_;            ///< Data type (GL_FLOAT, GL_UNSIGNED_INT, etc.)
-        GLboolean normalized_;   ///< Whether fixed-point data should be normalized
-        GLuint offset_;          ///< Byte offset within the vertex structure
+        GLuint attribute_index_; ///< Location of the attribute in the shader.
+        GLuint count_;           ///< Number of components (e.g., 3 for vec3).
+        GLenum type_;            ///< Data type (GL_FLOAT, GL_UNSIGNED_INT, etc.).
+        GLboolean normalized_;   ///< Whether fixed-point data should be normalized.
+        GLuint offset_;          ///< Byte offset within the vertex structure.
     };
 
     /**

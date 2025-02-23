@@ -9,83 +9,73 @@
 
 namespace graphics {
 
-    VertexArray::VertexArray()
-    {
-        GLCall(glCreateVertexArrays(1, &renderer_id_));
-        if (renderer_id_ == 0) {
+    VertexArray::VertexArray() {
+        GLCall(glCreateVertexArrays(1, &rendererId_));
+        if (rendererId_ == 0) {
             Logger::GetLogger()->error("Failed to create Vertex Array Object.");
             throw std::runtime_error("Failed to create Vertex Array Object.");
         }
-        Logger::GetLogger()->info("Created VertexArray (ID={}).", renderer_id_);
+        Logger::GetLogger()->info("Created VertexArray (ID={}).", rendererId_);
     }
 
-    VertexArray::~VertexArray()
-    {
-        if (renderer_id_ != 0) {
-            GLCall(glDeleteVertexArrays(1, &renderer_id_));
-            Logger::GetLogger()->info("Deleted VertexArray (ID={}).", renderer_id_);
+    VertexArray::~VertexArray() {
+        if (rendererId_ != 0) {
+            GLCall(glDeleteVertexArrays(1, &rendererId_));
+            Logger::GetLogger()->info("Deleted VertexArray (ID={}).", rendererId_);
         }
     }
 
     VertexArray::VertexArray(VertexArray&& other) noexcept
-        : renderer_id_{ other.renderer_id_ },
-        binding_indices_{ std::move(other.binding_indices_) }
+        : rendererId_{ other.rendererId_ },
+        bindingIndices_{ std::move(other.bindingIndices_) }
     {
-        other.renderer_id_ = 0;
+        other.rendererId_ = 0;
     }
 
-    VertexArray& VertexArray::operator=(VertexArray&& other) noexcept
-    {
+    VertexArray& VertexArray::operator=(VertexArray&& other) noexcept {
         if (this != &other) {
-            if (renderer_id_ != 0) {
-                GLCall(glDeleteVertexArrays(1, &renderer_id_));
+            if (rendererId_ != 0) {
+                GLCall(glDeleteVertexArrays(1, &rendererId_));
             }
-            renderer_id_ = other.renderer_id_;
-            binding_indices_ = std::move(other.binding_indices_);
-            other.renderer_id_ = 0;
+            rendererId_ = other.rendererId_;
+            bindingIndices_ = std::move(other.bindingIndices_);
+            other.rendererId_ = 0;
         }
         return *this;
     }
 
-    void VertexArray::AddBuffer(const VertexBuffer& vertex_buffer,
+    void VertexArray::AddBuffer(const VertexBuffer& vertexBuffer,
         const VertexBufferLayout& layout,
-        GLuint binding_index)
-    {
-        // Prevent using the same binding index more than once.
-        if (std::find(binding_indices_.begin(), binding_indices_.end(), binding_index) != binding_indices_.end()) {
-            Logger::GetLogger()->error("Binding index={} is already used in VertexArray (ID={}).", binding_index, renderer_id_);
+        GLuint bindingIndex) {
+        if (std::find(bindingIndices_.begin(), bindingIndices_.end(), bindingIndex) != bindingIndices_.end()) {
+            Logger::GetLogger()->error("Binding index={} is already used in VertexArray (ID={}).", bindingIndex, rendererId_);
             throw std::invalid_argument("Duplicate binding index in VertexArray::AddBuffer");
         }
 
-        // Attach the buffer at the specified binding index using Direct State Access (DSA).
-        GLCall(glVertexArrayVertexBuffer(renderer_id_, binding_index, vertex_buffer.GetRendererID(), 0, layout.GetStride()));
+        GLCall(glVertexArrayVertexBuffer(rendererId_, bindingIndex, vertexBuffer.GetRendererID(), 0, layout.GetStride()));
 
-        // Configure each vertex attribute defined in the layout.
         for (const auto& element : layout.GetElements()) {
-            GLuint attrib_index = element.attribute_index_;
-            GLCall(glEnableVertexArrayAttrib(renderer_id_, attrib_index));
-            GLCall(glVertexArrayAttribFormat(renderer_id_, attrib_index, element.count_, element.type_, element.normalized_, element.offset_));
-            GLCall(glVertexArrayAttribBinding(renderer_id_, attrib_index, binding_index));
+            GLuint attribIndex = element.attribute_index_;
+            GLCall(glEnableVertexArrayAttrib(rendererId_, attribIndex));
+            GLCall(glVertexArrayAttribFormat(rendererId_, attribIndex, element.count_, element.type_, element.normalized_, element.offset_));
+            GLCall(glVertexArrayAttribBinding(rendererId_, attribIndex, bindingIndex));
         }
 
-        binding_indices_.push_back(binding_index);
+        bindingIndices_.push_back(bindingIndex);
         Logger::GetLogger()->info("Added VertexBuffer (ID={}) to VertexArray (ID={}) at binding index={}.",
-            vertex_buffer.GetRendererID(), renderer_id_, binding_index);
+            vertexBuffer.GetRendererID(), rendererId_, bindingIndex);
     }
 
-    void VertexArray::SetIndexBuffer(const IndexBuffer& index_buffer)
-    {
-        GLCall(glVertexArrayElementBuffer(renderer_id_, index_buffer.GetRendererID()));
-        Logger::GetLogger()->info("Set IndexBuffer (ID={}) to VertexArray (ID={}).", index_buffer.GetRendererID(), renderer_id_);
+    void VertexArray::SetIndexBuffer(const IndexBuffer& indexBuffer) {
+        GLCall(glVertexArrayElementBuffer(rendererId_, indexBuffer.GetRendererID()));
+        Logger::GetLogger()->info("Set IndexBuffer (ID={}) to VertexArray (ID={}).", indexBuffer.GetRendererID(), rendererId_);
     }
 
-    void VertexArray::Bind() const
-    {
-        GLCall(glBindVertexArray(renderer_id_));
+    void VertexArray::Bind() const {
+        GLCall(glBindVertexArray(rendererId_));
     }
 
-    void VertexArray::Unbind() const
-    {
+    void VertexArray::Unbind() const {
         GLCall(glBindVertexArray(0));
     }
 

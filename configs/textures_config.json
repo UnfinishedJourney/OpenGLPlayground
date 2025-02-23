@@ -5,7 +5,7 @@
     },
     "cubeMaps": {
       "currentSkybox": [
-        "../assets/HDRI/pizzo_pernice_puresky_8k.hdr"
+        "../assets/HDRI/lago_disola_8k.hdr"
       ]
     },
     "computed": {

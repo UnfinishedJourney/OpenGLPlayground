@@ -1,4 +1,5 @@
 #pragma once
+
 #include <glad/glad.h>
 #include <span>
 #include <cstddef>
@@ -6,51 +7,31 @@
 
 namespace graphics {
 
-    //maybe should use mapping instead of glNamedBufferSubData
-
     /**
-     * @brief Manages an OpenGL buffer for indirect draw commands (GL_DRAW_INDIRECT_BUFFER).
+     * @brief Manages an OpenGL buffer for indirect draw commands.
      */
     class IndirectBuffer {
     public:
-        /**
-         * @brief Constructs and allocates the buffer with the provided data.
-         * @param data Raw byte data to store in the buffer.
-         * @param usage Typical usage pattern (e.g., GL_DYNAMIC_DRAW).
-         * @throws std::runtime_error if the buffer cannot be created.
-         */
         IndirectBuffer(std::span<const std::byte> data, GLenum usage = GL_DYNAMIC_DRAW);
-
         ~IndirectBuffer();
 
-        // Non-copyable
+        // Non-copyable.
         IndirectBuffer(const IndirectBuffer&) = delete;
         IndirectBuffer& operator=(const IndirectBuffer&) = delete;
-
-        // Movable
+        // Movable.
         IndirectBuffer(IndirectBuffer&& other) noexcept;
         IndirectBuffer& operator=(IndirectBuffer&& other) noexcept;
 
-        /**
-         * @brief Binds this buffer as GL_DRAW_INDIRECT_BUFFER.
-         */
         void Bind() const;
-
         void Unbind() const;
-
-        /**
-         * @brief Updates a subregion of the buffer with new data.
-         * @param data New data to update.
-         * @param offset Byte offset in the buffer to update.
-         */
         void UpdateData(std::span<const std::byte> data, GLintptr offset = 0);
 
-        [[nodiscard]] GLuint GetRendererID() const { return renderer_id_; }
+        [[nodiscard]] GLuint GetRendererID() const { return rendererId_; }
         [[nodiscard]] size_t GetBufferSize() const { return size_; }
 
     private:
-        GLuint renderer_id_{ 0 };   ///< OpenGL buffer handle.
-        size_t size_ = 0;      ///< Current buffer size in bytes.
+        GLuint rendererId_{ 0 };
+        size_t size_{ 0 };
     };
 
 } // namespace graphics

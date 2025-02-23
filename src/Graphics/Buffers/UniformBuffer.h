@@ -68,17 +68,17 @@ namespace graphics {
          */
         void UnmapBuffer() const;
 
-        [[nodiscard]] GLuint     GetRendererID()   const { return m_RendererID; }
-        [[nodiscard]] GLuint     GetBindingPoint() const { return m_BindingPoint; }
-        [[nodiscard]] GLsizeiptr GetSize()         const { return m_Size; }
-        [[nodiscard]] UniformBufferLayout GetLayout() const { return m_Layout; }
+        [[nodiscard]] GLuint     GetRendererID()   const { return rendererId_; }
+        [[nodiscard]] GLuint     GetBindingPoint() const { return bindingPoint_; }
+        [[nodiscard]] GLsizeiptr GetSize()         const { return size_; }
+        [[nodiscard]] UniformBufferLayout GetLayout() const { return layout_; }
 
     private:
-        GLuint m_RendererID{ 0 };
-        GLuint m_BindingPoint{ 0 };
-        GLenum m_Usage{ GL_DYNAMIC_DRAW };
-        GLsizeiptr m_Size{ 0 };
-        UniformBufferLayout m_Layout{ UniformBufferLayout::Std140 };
+        GLuint rendererId_{ 0 };
+        GLuint bindingPoint_{ 0 };
+        GLenum usage_{ GL_DYNAMIC_DRAW };
+        GLsizeiptr size_{ 0 };
+        UniformBufferLayout layout_{ UniformBufferLayout::Std140 };
     };
 
 } // namespace graphics

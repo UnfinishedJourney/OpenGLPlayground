@@ -10,7 +10,7 @@
 #include "TestMenu.h"
 
 /**
- * Handles core initialization, the main run loop, and cleanup of the OpenGL application.
+ * Core application class handling initialization, run loop, and cleanup.
  */
 class Application {
 public:
@@ -30,12 +30,11 @@ private:
     void ShowFpsAndFrameTimes(double cpuFrameTimeMs);
 
 private:
-    GLFWwindow* window_ = nullptr;                   // GLFW window pointer
-    Scene::CameraController cameraController_;       // Active camera controller
-    InputManager inputManager_;                      // Manages input
-    TestManager testManager_;                        // Manages test scenes
-    std::shared_ptr<TestMenu> testMenu_ = nullptr;     // Test menu for switching tests
-    double lastFrameTime_ = 0.0;                       // Last frame time for deltaTime calculation
-
-    std::shared_ptr<spdlog::logger> logger_;         // Local logger instance
+    GLFWwindow* window_ = nullptr;
+    Scene::CameraController cameraController_;
+    InputManager inputManager_;
+    TestManager testManager_;
+    std::shared_ptr<TestMenu> testMenu_ = nullptr;
+    double lastFrameTime_ = 0.0;
+    std::shared_ptr<spdlog::logger> logger_;
 };

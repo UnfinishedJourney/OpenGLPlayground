@@ -1,36 +1,25 @@
 #include "Application/InputManager.h"
 #include "Utilities/Logger.h"
 
-void InputManager::SetKey(int key, bool isPressed)
-{
-    m_KeysCurrent[key] = isPressed;
-
-    // Optional: log at "trace" or "debug" level if needed.
+void InputManager::SetKey(int key, bool isPressed) {
+    keysCurrent_[key] = isPressed;
     Logger::GetLogger()->debug("Key {} is {}", key, (isPressed ? "Pressed" : "Released"));
 }
 
-bool InputManager::IsKeyPressed(int key) const
-{
-    // Check if key exists in the current map and return its state
-    auto it = m_KeysCurrent.find(key);
-    return (it != m_KeysCurrent.end()) && it->second;
+bool InputManager::IsKeyPressed(int key) const {
+    auto it = keysCurrent_.find(key);
+    return (it != keysCurrent_.end()) && it->second;
 }
 
-bool InputManager::WasKeyJustPressed(int key) const
-{
+bool InputManager::WasKeyJustPressed(int key) const {
     bool current = IsKeyPressed(key);
-
-    // Default to false if not found in previous map
     bool previous = false;
-    if (auto it = m_KeysPrevious.find(key); it != m_KeysPrevious.end()) {
+    if (auto it = keysPrevious_.find(key); it != keysPrevious_.end()) {
         previous = it->second;
     }
-
     return (current && !previous);
 }
 
-void InputManager::Update()
-{
-    // Copy current state into previous state for the next frame
-    m_KeysPrevious = m_KeysCurrent;
+void InputManager::Update() {
+    keysPrevious_ = keysCurrent_;
 }

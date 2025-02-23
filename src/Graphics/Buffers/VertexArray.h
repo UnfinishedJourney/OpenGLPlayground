@@ -32,19 +32,19 @@ namespace graphics {
         /**
          * @brief Attaches a vertex buffer and its layout to this VAO.
          *
-         * @param vertex_buffer  The source VertexBuffer.
+         * @param vertexBuffer  The source VertexBuffer.
          * @param layout         The layout describing the buffer’s vertex attributes.
-         * @param binding_index  The binding index within the VAO (must be unique).
+         * @param bindingIndex  The binding index within the VAO (must be unique).
          * @throws std::invalid_argument if the binding index is already in use.
          */
-        void AddBuffer(const VertexBuffer& vertex_buffer,
+        void AddBuffer(const VertexBuffer& vertexBuffer,
             const VertexBufferLayout& layout,
-            GLuint binding_index = 0);
+            GLuint bindingIndex = 0);
 
         /**
          * @brief Associates an IndexBuffer (element buffer) with this VAO.
          */
-        void SetIndexBuffer(const IndexBuffer& index_buffer);
+        void SetIndexBuffer(const IndexBuffer& indexBuffer);
 
         /**
          * @brief Binds the VAO.
@@ -56,12 +56,11 @@ namespace graphics {
          */
         void Unbind() const;
 
-        [[nodiscard]] GLuint GetRendererID() const { return renderer_id_; }
+        [[nodiscard]] GLuint GetRendererID() const { return rendererId_; }
 
     private:
-        //we don't need to store VBO and IBO since their deletion is deffered while they are bound to VAO
-        GLuint renderer_id_{ 0 };               ///< OpenGL VAO handle
-        std::vector<GLuint> binding_indices_;   ///< Tracks used binding indices to avoid duplicates
+        GLuint rendererId_{ 0 };               ///< OpenGL VAO handle.
+        std::vector<GLuint> bindingIndices_;   ///< Tracks used binding indices to avoid duplicates.
     };
 
 } // namespace graphics

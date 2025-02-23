@@ -11,30 +11,17 @@
 #include "Graphics/Meshes/Mesh.h"
 #include "Graphics/Meshes/MeshLayout.h"
 
+//probably need to potentially remove this class
 namespace graphics {
 
     /**
-     * @brief Combines a VAO, VBO, and (optionally) an IBO into one renderable mesh buffer.
-     *
-     * The vertex attributes are bound according to the provided MeshLayout.
+     * @brief Combines a VAO, VBO, and optional IBO into a renderable mesh buffer.
      */
     class MeshBuffer {
     public:
-        /**
-         * @brief Constructs a MeshBuffer from a Mesh and its layout.
-         * @param mesh The geometry (positions, normals, indices, etc.).
-         * @param layout The layout describing which attributes to include.
-         * @throws std::runtime_error if required mesh data is missing.
-         */
         MeshBuffer(const Mesh& mesh, const MeshLayout& layout);
-
-        /// @brief Binds the VAO (and IBO if present).
         void Bind() const;
-
-        /// @brief Unbinds the VAO (and IBO if present).
         void Unbind() const;
-
-        /// @brief Renders the mesh using glDrawElements or glDrawArrays.
         void Render() const;
 
         [[nodiscard]] GLuint GetIndexCount()  const { return indexCount_; }
@@ -44,9 +31,9 @@ namespace graphics {
     private:
         bool hasIndices_ = false;
         MeshLayout meshLayout_;
-        std::unique_ptr<VertexArray> VAO_;
-        std::unique_ptr<VertexBuffer> VBO_;
-        std::unique_ptr<IndexBuffer> IBO_;
+        std::unique_ptr<VertexArray> vao_;
+        std::unique_ptr<VertexBuffer> vbo_;
+        std::unique_ptr<IndexBuffer> ibo_;
         GLuint vertexCount_ = 0;
         GLuint indexCount_ = 0;
     };

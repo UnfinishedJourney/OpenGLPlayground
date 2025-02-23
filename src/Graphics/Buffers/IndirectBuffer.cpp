@@ -8,44 +8,43 @@ namespace graphics {
     IndirectBuffer::IndirectBuffer(std::span<const std::byte> data, GLenum usage)
         : size_(data.size_bytes())
     {
-        GLCall(glCreateBuffers(1, &renderer_id_));
-        if (renderer_id_ == 0) {
+        GLCall(glCreateBuffers(1, &rendererId_));
+        if (rendererId_ == 0) {
             throw std::runtime_error("Failed to create Indirect Buffer Object.");
         }
-
-        GLCall(glNamedBufferData(renderer_id_, size_, data.data(), usage));
-        Logger::GetLogger()->info("Created IndirectBuffer with ID={} Size={} bytes.", renderer_id_, size_);
+        GLCall(glNamedBufferData(rendererId_, size_, data.data(), usage));
+        Logger::GetLogger()->info("Created IndirectBuffer with ID={} Size={} bytes.", rendererId_, size_);
     }
 
     IndirectBuffer::~IndirectBuffer() {
-        if (renderer_id_ != 0) {
-            GLCall(glDeleteBuffers(1, &renderer_id_));
-            Logger::GetLogger()->info("Deleted IndirectBuffer with ID={}.", renderer_id_);
+        if (rendererId_ != 0) {
+            GLCall(glDeleteBuffers(1, &rendererId_));
+            Logger::GetLogger()->info("Deleted IndirectBuffer with ID={}.", rendererId_);
         }
     }
 
     IndirectBuffer::IndirectBuffer(IndirectBuffer&& other) noexcept
-        : renderer_id_(other.renderer_id_), size_(other.size_)
+        : rendererId_(other.rendererId_), size_(other.size_)
     {
-        other.renderer_id_ = 0;
+        other.rendererId_ = 0;
         other.size_ = 0;
     }
 
     IndirectBuffer& IndirectBuffer::operator=(IndirectBuffer&& other) noexcept {
         if (this != &other) {
-            if (renderer_id_ != 0) {
-                GLCall(glDeleteBuffers(1, &renderer_id_));
+            if (rendererId_ != 0) {
+                GLCall(glDeleteBuffers(1, &rendererId_));
             }
-            renderer_id_ = other.renderer_id_;
+            rendererId_ = other.rendererId_;
             size_ = other.size_;
-            other.renderer_id_ = 0;
+            other.rendererId_ = 0;
             other.size_ = 0;
         }
         return *this;
     }
 
     void IndirectBuffer::Bind() const {
-        GLCall(glBindBuffer(GL_DRAW_INDIRECT_BUFFER, renderer_id_));
+        GLCall(glBindBuffer(GL_DRAW_INDIRECT_BUFFER, rendererId_));
     }
 
     void IndirectBuffer::Unbind() const {
@@ -56,9 +55,9 @@ namespace graphics {
         if (offset < 0 || static_cast<size_t>(offset) + data.size_bytes() > size_) {
             throw std::runtime_error("IndirectBuffer::UpdateData: Data update exceeds buffer size.");
         }
-
-        GLCall(glNamedBufferSubData(renderer_id_, offset, data.size_bytes(), data.data()));
-        Logger::GetLogger()->debug("Updated IndirectBuffer ID={} Offset={} Size={}.", renderer_id_, offset, data.size_bytes());
+        GLCall(glNamedBufferSubData(rendererId_, offset, data.size_bytes(), data.data()));
+        Logger::GetLogger()->debug("Updated IndirectBuffer ID={} Offset={} Size={} bytes.",
+            rendererId_, offset, data.size_bytes());
     }
 
 } // namespace graphics
