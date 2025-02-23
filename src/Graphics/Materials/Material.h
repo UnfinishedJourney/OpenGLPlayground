@@ -1,4 +1,5 @@
 #pragma once
+
 #include <variant>
 #include <unordered_map>
 #include <string>
@@ -18,19 +19,15 @@ namespace graphics {
      * @brief Standard packed material parameters.
      *
      * Layout:
-     *   - mtl0_: (Ka.xyz, Ni)
-     *   - mtl1_: (Kd.xyz, d)
-     *   - mtl2_: (Ks.xyz, Ns)
-     *   - mtl3_: (Ke.xyz, extra)
+     *   - mtl0_: (Ambient.xyz, RefractionIndex)
+     *   - mtl1_: (Diffuse.xyz, Opacity)
+     *   - mtl2_: (Specular.xyz, Shininess)
+     *   - mtl3_: (Emissive.xyz, Illumination)
      */
     struct PackedMtlParams {
-        // mtl0_: (Ambient.xyz, RefractionIndex)
         glm::vec4 mtl0_{ 0.2f, 0.2f, 0.2f, 1.0f };
-        // mtl1_: (Diffuse.xyz, Opacity)
         glm::vec4 mtl1_{ 0.8f, 0.8f, 0.8f, 1.0f };
-        // mtl2_: (Specular.xyz, Shininess)
         glm::vec4 mtl2_{ 0.0f, 0.0f, 0.0f, 32.0f };
-        // mtl3_: (Emissive.xyz, Illumination)
         glm::vec4 mtl3_{ 0.0f, 0.0f, 0.0f, 0.0f };
 
         inline glm::vec3 Ambient() const { return glm::vec3(mtl0_); }
@@ -44,7 +41,7 @@ namespace graphics {
     };
 
     /**
-     * @brief Material class that stores both standard and custom parameters/textures.
+     * @brief Material class storing both standard and custom parameters/textures.
      */
     class Material {
     public:
@@ -57,7 +54,6 @@ namespace graphics {
         Material(Material&&) noexcept = default;
         Material& operator=(Material&&) noexcept = default;
 
-        // Name and ID accessors.
         void SetName(const std::string& name);
         const std::string& GetName() const;
 
@@ -66,30 +62,23 @@ namespace graphics {
 
         const MaterialLayout& GetLayout() const;
 
-        // Standard parameters.
         void AssignToPackedParams(MaterialParamType type, const UniformValue& value);
-
-        // Standard textures.
         void SetTexture(TextureType type, const std::shared_ptr<ITexture>& texture);
         std::shared_ptr<ITexture> GetTexture(TextureType type) const;
-
-        // Custom parameters and textures.
-        void SetCustomParam(const std::string& param_name, UniformValue value);
-        void SetCustomTexture(const std::string& uniform_name, const std::shared_ptr<ITexture>& texture);
-
-        // Bind/unbind material for a given shader.
+        void SetCustomParam(const std::string& paramName, UniformValue value);
+        void SetCustomTexture(const std::string& uniformName, const std::shared_ptr<ITexture>& texture);
         void Bind(const std::shared_ptr<BaseShader>& shader) const;
         void Unbind() const;
 
     private:
-        std::size_t id_{ 0 };
+        std::size_t id_ = 0;
         std::string name_;
         MaterialLayout layout_;
-        PackedMtlParams packed_params_;
-        std::unordered_map<std::string, UniformValue> custom_params_;
+        PackedMtlParams packedParams_;
+        std::unordered_map<std::string, UniformValue> customParams_;
         std::unordered_map<TextureType, std::shared_ptr<ITexture>> textures_;
-        std::unordered_map<std::string, std::shared_ptr<ITexture>> custom_textures_;
-        uint32_t texture_usage_{ 0 }; // Bitmask tracking which standard textures are set.
+        std::unordered_map<std::string, std::shared_ptr<ITexture>> customTextures_;
+        uint32_t textureUsage_ = 0;
     };
 
 } // namespace graphics

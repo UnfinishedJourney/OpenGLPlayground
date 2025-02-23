@@ -7,8 +7,8 @@
 
 namespace graphics {
 
-    // Helper functions for mapping texture types to uniform names and binding slots.
-    static std::string GetTextureUniformName(TextureType type) {
+    // Helper function: returns the uniform name for a texture type.
+    static std::string getTextureUniformName(TextureType type) {
         switch (type) {
         case TextureType::Diffuse:          return "uTexDiffuse";
         case TextureType::Normal:           return "uTexNormal";
@@ -22,7 +22,8 @@ namespace graphics {
         }
     }
 
-    static int GetTextureBindingSlot(TextureType type) {
+    // Helper function: returns the binding slot for a texture type.
+    static int getTextureBindingSlot(TextureType type) {
         switch (type) {
         case TextureType::Diffuse:          return 0;
         case TextureType::Normal:           return 1;
@@ -39,11 +40,10 @@ namespace graphics {
         }
     }
 
-    // ---------- Material Implementation ----------
-
     Material::Material(const MaterialLayout& layout)
         : layout_(layout)
-    {}
+    {
+    }
 
     void Material::SetName(const std::string& name) {
         name_ = name;
@@ -69,9 +69,9 @@ namespace graphics {
         switch (type) {
         case MaterialParamType::Ambient: {
             if (auto vec3Ptr = std::get_if<glm::vec3>(&value)) {
-                packed_params_.mtl0_.x = vec3Ptr->x;
-                packed_params_.mtl0_.y = vec3Ptr->y;
-                packed_params_.mtl0_.z = vec3Ptr->z;
+                packedParams_.mtl0_.x = vec3Ptr->x;
+                packedParams_.mtl0_.y = vec3Ptr->y;
+                packedParams_.mtl0_.z = vec3Ptr->z;
             }
             else {
                 Logger::GetLogger()->warn("[Material: {}] Ambient must be glm::vec3!", name_);
@@ -80,7 +80,7 @@ namespace graphics {
         }
         case MaterialParamType::RefractionIndex: {
             if (auto fPtr = std::get_if<float>(&value)) {
-                packed_params_.mtl0_.w = *fPtr;
+                packedParams_.mtl0_.w = *fPtr;
             }
             else {
                 Logger::GetLogger()->warn("[Material: {}] RefractionIndex must be float!", name_);
@@ -89,9 +89,9 @@ namespace graphics {
         }
         case MaterialParamType::Diffuse: {
             if (auto vec3Ptr = std::get_if<glm::vec3>(&value)) {
-                packed_params_.mtl1_.x = vec3Ptr->x;
-                packed_params_.mtl1_.y = vec3Ptr->y;
-                packed_params_.mtl1_.z = vec3Ptr->z;
+                packedParams_.mtl1_.x = vec3Ptr->x;
+                packedParams_.mtl1_.y = vec3Ptr->y;
+                packedParams_.mtl1_.z = vec3Ptr->z;
             }
             else {
                 Logger::GetLogger()->warn("[Material: {}] Diffuse must be glm::vec3!", name_);
@@ -100,7 +100,7 @@ namespace graphics {
         }
         case MaterialParamType::Opacity: {
             if (auto fPtr = std::get_if<float>(&value)) {
-                packed_params_.mtl1_.w = *fPtr;
+                packedParams_.mtl1_.w = *fPtr;
             }
             else {
                 Logger::GetLogger()->warn("[Material: {}] Opacity must be float!", name_);
@@ -109,9 +109,9 @@ namespace graphics {
         }
         case MaterialParamType::Specular: {
             if (auto vec3Ptr = std::get_if<glm::vec3>(&value)) {
-                packed_params_.mtl2_.x = vec3Ptr->x;
-                packed_params_.mtl2_.y = vec3Ptr->y;
-                packed_params_.mtl2_.z = vec3Ptr->z;
+                packedParams_.mtl2_.x = vec3Ptr->x;
+                packedParams_.mtl2_.y = vec3Ptr->y;
+                packedParams_.mtl2_.z = vec3Ptr->z;
             }
             else {
                 Logger::GetLogger()->warn("[Material: {}] Specular must be glm::vec3!", name_);
@@ -120,7 +120,7 @@ namespace graphics {
         }
         case MaterialParamType::Shininess: {
             if (auto fPtr = std::get_if<float>(&value)) {
-                packed_params_.mtl2_.w = *fPtr;
+                packedParams_.mtl2_.w = *fPtr;
             }
             else {
                 Logger::GetLogger()->warn("[Material: {}] Shininess must be float!", name_);
@@ -129,9 +129,9 @@ namespace graphics {
         }
         case MaterialParamType::Emissive: {
             if (auto vec3Ptr = std::get_if<glm::vec3>(&value)) {
-                packed_params_.mtl3_.x = vec3Ptr->x;
-                packed_params_.mtl3_.y = vec3Ptr->y;
-                packed_params_.mtl3_.z = vec3Ptr->z;
+                packedParams_.mtl3_.x = vec3Ptr->x;
+                packedParams_.mtl3_.y = vec3Ptr->y;
+                packedParams_.mtl3_.z = vec3Ptr->z;
             }
             else {
                 Logger::GetLogger()->warn("[Material: {}] Emissive must be glm::vec3!", name_);
@@ -140,10 +140,10 @@ namespace graphics {
         }
         case MaterialParamType::Illumination: {
             if (auto fPtr = std::get_if<float>(&value)) {
-                packed_params_.mtl3_.w = *fPtr;
+                packedParams_.mtl3_.w = *fPtr;
             }
             else if (auto intPtr = std::get_if<int>(&value)) {
-                packed_params_.mtl3_.w = static_cast<float>(*intPtr);
+                packedParams_.mtl3_.w = static_cast<float>(*intPtr);
             }
             else {
                 Logger::GetLogger()->warn("[Material: {}] Illumination must be a number!", name_);
@@ -151,22 +151,22 @@ namespace graphics {
             break;
         }
         default:
-            Logger::GetLogger()->warn("[Material: {}] Unhandled MaterialParamType in AssignToPackedParams.", name_);
+            Logger::GetLogger()->warn("[Material: {}] Unhandled MaterialParamType.", name_);
             break;
         }
     }
 
     void Material::SetTexture(TextureType type, const std::shared_ptr<ITexture>& texture) {
         if (!texture) {
-            Logger::GetLogger()->warn("[Material: {}] SetTexture: Null texture for type={}", name_, static_cast<int>(type));
+            Logger::GetLogger()->warn("[Material: {}] SetTexture: Null texture for type {}.", name_, static_cast<int>(type));
             return;
         }
         if (!layout_.HasTexture(type)) {
-            Logger::GetLogger()->warn("[Material: {}] TextureType={} not in layout; ignoring.", name_, static_cast<int>(type));
+            Logger::GetLogger()->warn("[Material: {}] TextureType {} not in layout.", name_, static_cast<int>(type));
             return;
         }
         textures_[type] = texture;
-        texture_usage_ |= (1 << static_cast<size_t>(type));
+        textureUsage_ |= (1 << static_cast<size_t>(type));
     }
 
     std::shared_ptr<ITexture> Material::GetTexture(TextureType type) const {
@@ -174,16 +174,16 @@ namespace graphics {
         return (it != textures_.end()) ? it->second : nullptr;
     }
 
-    void Material::SetCustomParam(const std::string& param_name, UniformValue value) {
-        custom_params_[param_name] = std::move(value);
+    void Material::SetCustomParam(const std::string& paramName, UniformValue value) {
+        customParams_[paramName] = std::move(value);
     }
 
-    void Material::SetCustomTexture(const std::string& uniform_name, const std::shared_ptr<ITexture>& texture) {
+    void Material::SetCustomTexture(const std::string& uniformName, const std::shared_ptr<ITexture>& texture) {
         if (!texture) {
-            Logger::GetLogger()->warn("[Material: {}] SetCustomTexture: Null texture for '{}'.", name_, uniform_name);
+            Logger::GetLogger()->warn("[Material: {}] SetCustomTexture: Null texture for '{}'.", name_, uniformName);
             return;
         }
-        custom_textures_[uniform_name] = texture;
+        customTextures_[uniformName] = texture;
     }
 
     void Material::Bind(const std::shared_ptr<BaseShader>& shader) const {
@@ -191,39 +191,32 @@ namespace graphics {
             Logger::GetLogger()->error("[Material: {}] Bind: No shader provided.", name_);
             return;
         }
-        // 1) Set texture usage bitmask.
-        shader->SetUniform("uMaterial_textureUsageFlags", static_cast<int>(texture_usage_));
-        // 2) Set packed material parameters.
-        shader->SetUniform("uMaterial.Mtl0", packed_params_.mtl0_);
-        shader->SetUniform("uMaterial.Mtl1", packed_params_.mtl1_);
-        shader->SetUniform("uMaterial.Mtl2", packed_params_.mtl2_);
-        shader->SetUniform("uMaterial.Mtl3", packed_params_.mtl3_);
-        // 3) Bind standard textures.
+        shader->SetUniform("uMaterial_textureUsageFlags", static_cast<int>(textureUsage_));
+        shader->SetUniform("uMaterial.Mtl0", packedParams_.mtl0_);
+        shader->SetUniform("uMaterial.Mtl1", packedParams_.mtl1_);
+        shader->SetUniform("uMaterial.Mtl2", packedParams_.mtl2_);
+        shader->SetUniform("uMaterial.Mtl3", packedParams_.mtl3_);
+
         for (const auto& [texType, texPtr] : textures_) {
             if (!texPtr)
                 continue;
-            int slot = GetTextureBindingSlot(texType);
+            int slot = getTextureBindingSlot(texType);
             texPtr->Bind(static_cast<uint32_t>(slot));
-            shader->SetUniform(GetTextureUniformName(texType), slot);
+            shader->SetUniform(getTextureUniformName(texType), slot);
         }
-        // 4) Bind custom textures.
         int customSlot = 10;
-        for (const auto& [uniformName, texPtr] : custom_textures_) {
+        for (const auto& [uniformName, texPtr] : customTextures_) {
             if (!texPtr)
                 continue;
             texPtr->Bind(static_cast<uint32_t>(customSlot));
             shader->SetUniform(uniformName, customSlot);
             ++customSlot;
         }
-        // 5) Bind custom parameters.
-        for (const auto& [paramName, paramVal] : custom_params_) {
-            std::visit([&](auto&& arg) {
-                shader->SetUniform(paramName, arg);
-                }, paramVal);
+        for (const auto& [paramName, paramVal] : customParams_) {
+            std::visit([&](auto&& arg) { shader->SetUniform(paramName, arg); }, paramVal);
         }
-        // 6) Optionally bind the BRDF LUT if defined in the layout.
         if (layout_.HasTexture(TextureType::BRDFLut)) {
-            int slot = GetTextureBindingSlot(TextureType::BRDFLut);
+            int slot = getTextureBindingSlot(TextureType::BRDFLut);
             auto& texManager = TextureManager::GetInstance();
             auto brdfTex = texManager.GetTexture("brdfLut");
             if (brdfTex)
@@ -235,11 +228,11 @@ namespace graphics {
         for (const auto& [texType, texPtr] : textures_) {
             if (!texPtr)
                 continue;
-            int slot = GetTextureBindingSlot(texType);
+            int slot = getTextureBindingSlot(texType);
             texPtr->Unbind(static_cast<uint32_t>(slot));
         }
         int customSlot = 10;
-        for (const auto& [name, texPtr] : custom_textures_) {
+        for (const auto& [name, texPtr] : customTextures_) {
             if (!texPtr)
                 continue;
             texPtr->Unbind(static_cast<uint32_t>(customSlot));
