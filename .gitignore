@@ -10,7 +10,6 @@ src/Utilities/ThreadPool.cpp
 src/Utilities/ThreadPool.h
 src/Utilities/ThreadPoolManager.cpp
 src/Utilities/ThreadPoolManager.h
-shaders/metadata.json
 shaders/bin/
 /src/Utilities/TaskQueue.h
 NewTextDocument.txt
@@ -22,3 +21,4 @@ deps/
 gitCommands.txt
 pbr.html
 shaders/OldFiles/
+configs/metadata_shaders.json

@@ -109,6 +109,9 @@ namespace Scene {
         void SetShowShadows(bool show) { turnOnShadows_ = show; }
         bool GetShowShadows() const { return turnOnShadows_; }
 
+        void SetShadowMapSize(int shadowSize) { shadowMapSize_ = shadowSize; }
+        int GetShadowMapSize() const { return shadowMapSize_; }
+
     private:
         // Scene graph for dynamic/hierarchical objects.
         std::unique_ptr<SceneGraph> sceneGraph_;
@@ -148,6 +151,8 @@ namespace Scene {
         bool showGrid_ = false;
         bool showDebugLights_ = false;
         bool turnOnShadows_ = false;
+
+        int shadowMapSize_ = 1024;
 
         // Binding points for the UBO and SSBO.
         static constexpr GLuint FRAME_DATA_BINDING_POINT = 0;

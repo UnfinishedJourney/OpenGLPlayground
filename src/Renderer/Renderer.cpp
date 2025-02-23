@@ -131,7 +131,7 @@ void Renderer::InitializePassesForScene(const std::shared_ptr<Scene::Scene>& sce
     CreateFramebuffersForScene(scene, width_, height_);
 
     if (scene->GetShowShadows()) {
-        shadowPasses_.push_back(std::make_unique<ShadowPass>(scene, 2 * 2048));
+        shadowPasses_.push_back(std::make_unique<ShadowPass>(scene, scene->GetShadowMapSize()));
     }
     if (scene->GetSkyboxEnabled()) {
         geometryPasses_.push_back(std::make_unique<SkyBoxPass>(msaaFBO_, scene));

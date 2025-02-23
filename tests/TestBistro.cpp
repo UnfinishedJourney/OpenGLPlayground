@@ -51,7 +51,7 @@ void TestBistro::OnEnter() {
     lightManager->AddLight(light1);
 
     scene_->SetShowShadows(true);
-
+    scene_->SetShadowMapSize(1024 * 8);
     scene_->BuildStaticBatchesIfNeeded();
 
     scene_->SetSkyboxEnabled(true);
