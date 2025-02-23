@@ -9,7 +9,7 @@
 #include "Utilities/Logger.h"
 
 namespace graphics {
-    namespace ShaderUtils {
+    namespace shaderUtils {
 
         inline std::string ReadFile(const std::filesystem::path& filepath) {
             if (!std::filesystem::exists(filepath))
@@ -140,5 +140,5 @@ namespace graphics {
             return latestTime;
         }
 
-    } // namespace ShaderUtils
+    } // namespace shaderUtils
 } // namespace graphics

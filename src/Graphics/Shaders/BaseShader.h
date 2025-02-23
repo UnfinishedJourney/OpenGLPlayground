@@ -22,7 +22,7 @@ namespace graphics {
     public:
         /**
          * @brief Constructor.
-         * @param BinaryPath Optional path for saving/loading the binary.
+         * @param binaryPath Optional path for saving/loading the binary.
          */
         explicit BaseShader(const std::filesystem::path& binaryPath = "");
 
@@ -58,20 +58,9 @@ namespace graphics {
         bool LoadBinary();
 
     protected:
-        /**
-         * @brief The OpenGL program handle.
-         */
-        GLuint m_RendererID;
-
-        /**
-         * @brief Path for loading/saving the binary.
-         */
-        std::filesystem::path m_BinaryPath;
-
-        /**
-         * @brief Cache of uniform locations.
-         */
-        mutable std::unordered_map<std::string, GLint> m_UniformLocationCache;
+        GLuint m_RendererId_;  ///< OpenGL program handle.
+        std::filesystem::path m_BinaryPath_;  ///< Path for loading/saving the binary.
+        mutable std::unordered_map<std::string, GLint> m_UniformLocationCache_;  ///< Cache of uniform locations.
 
         // Helper functions.
         GLuint CompileShader(GLenum shaderType, const std::string& source) const;

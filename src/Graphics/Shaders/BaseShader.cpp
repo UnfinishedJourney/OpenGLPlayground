@@ -9,39 +9,39 @@
 namespace graphics {
 
     BaseShader::BaseShader(const std::filesystem::path& binaryPath)
-        : m_BinaryPath(binaryPath), m_RendererID(0)
+        : m_BinaryPath_(binaryPath), m_RendererId_(0)
     {
     }
 
     BaseShader::~BaseShader() {
-        if (m_RendererID != 0) {
-            glDeleteProgram(m_RendererID);
+        if (m_RendererId_ != 0) {
+            glDeleteProgram(m_RendererId_);
         }
     }
 
     BaseShader::BaseShader(BaseShader&& other) noexcept
-        : m_RendererID(other.m_RendererID),
-        m_BinaryPath(std::move(other.m_BinaryPath)),
-        m_UniformLocationCache(std::move(other.m_UniformLocationCache))
+        : m_RendererId_(other.m_RendererId_),
+        m_BinaryPath_(std::move(other.m_BinaryPath_)),
+        m_UniformLocationCache_(std::move(other.m_UniformLocationCache_))
     {
-        other.m_RendererID = 0;
+        other.m_RendererId_ = 0;
     }
 
     BaseShader& BaseShader::operator=(BaseShader&& other) noexcept {
         if (this != &other) {
-            if (m_RendererID != 0) {
-                glDeleteProgram(m_RendererID);
+            if (m_RendererId_ != 0) {
+                glDeleteProgram(m_RendererId_);
             }
-            m_RendererID = other.m_RendererID;
-            m_BinaryPath = std::move(other.m_BinaryPath);
-            m_UniformLocationCache = std::move(other.m_UniformLocationCache);
-            other.m_RendererID = 0;
+            m_RendererId_ = other.m_RendererId_;
+            m_BinaryPath_ = std::move(other.m_BinaryPath_);
+            m_UniformLocationCache_ = std::move(other.m_UniformLocationCache_);
+            other.m_RendererId_ = 0;
         }
         return *this;
     }
 
     void BaseShader::Bind() const {
-        glUseProgram(m_RendererID);
+        glUseProgram(m_RendererId_);
     }
 
     void BaseShader::Unbind() const {
@@ -50,47 +50,47 @@ namespace graphics {
 
     GLint BaseShader::GetUniformLocation(std::string_view name) const {
         std::string uniformName(name);
-        if (auto it = m_UniformLocationCache.find(uniformName); it != m_UniformLocationCache.end()) {
+        if (auto it = m_UniformLocationCache_.find(uniformName); it != m_UniformLocationCache_.end()) {
             return it->second;
         }
-        GLint location = glGetUniformLocation(m_RendererID, uniformName.c_str());
+        GLint location = glGetUniformLocation(m_RendererId_, uniformName.c_str());
         if (location == -1) {
-            Logger::GetLogger()->warn("Uniform '{}' not found in shader program ID {}.", uniformName, m_RendererID);
+            Logger::GetLogger()->warn("Uniform '{}' not found in shader program ID {}.", uniformName, m_RendererId_);
         }
-        m_UniformLocationCache[uniformName] = location;
+        m_UniformLocationCache_[uniformName] = location;
         return location;
     }
 
     void BaseShader::SetUniform(std::string_view name, float value) const {
-        glProgramUniform1f(m_RendererID, GetUniformLocation(name), value);
+        glProgramUniform1f(m_RendererId_, GetUniformLocation(name), value);
     }
 
     void BaseShader::SetUniform(std::string_view name, int value) const {
-        glProgramUniform1i(m_RendererID, GetUniformLocation(name), value);
+        glProgramUniform1i(m_RendererId_, GetUniformLocation(name), value);
     }
 
     void BaseShader::SetUniform(std::string_view name, unsigned int value) const {
-        glProgramUniform1ui(m_RendererID, GetUniformLocation(name), value);
+        glProgramUniform1ui(m_RendererId_, GetUniformLocation(name), value);
     }
 
     void BaseShader::SetUniform(std::string_view name, const glm::vec2& value) const {
-        glProgramUniform2fv(m_RendererID, GetUniformLocation(name), 1, glm::value_ptr(value));
+        glProgramUniform2fv(m_RendererId_, GetUniformLocation(name), 1, glm::value_ptr(value));
     }
 
     void BaseShader::SetUniform(std::string_view name, const glm::vec3& value) const {
-        glProgramUniform3fv(m_RendererID, GetUniformLocation(name), 1, glm::value_ptr(value));
+        glProgramUniform3fv(m_RendererId_, GetUniformLocation(name), 1, glm::value_ptr(value));
     }
 
     void BaseShader::SetUniform(std::string_view name, const glm::vec4& value) const {
-        glProgramUniform4fv(m_RendererID, GetUniformLocation(name), 1, glm::value_ptr(value));
+        glProgramUniform4fv(m_RendererId_, GetUniformLocation(name), 1, glm::value_ptr(value));
     }
 
     void BaseShader::SetUniform(std::string_view name, const glm::mat3& value) const {
-        glProgramUniformMatrix3fv(m_RendererID, GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+        glProgramUniformMatrix3fv(m_RendererId_, GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
     }
 
     void BaseShader::SetUniform(std::string_view name, const glm::mat4& value) const {
-        glProgramUniformMatrix4fv(m_RendererID, GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+        glProgramUniformMatrix4fv(m_RendererId_, GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
     }
 
     GLuint BaseShader::CompileShader(GLenum shaderType, const std::string& source) const {
@@ -155,25 +155,25 @@ namespace graphics {
     }
 
     std::string BaseShader::ReadFile(const std::filesystem::path& filepath) const {
-        return ShaderUtils::ReadFile(filepath);
+        return shaderUtils::ReadFile(filepath);
     }
 
     std::string BaseShader::ResolveIncludes(const std::string& source,
         const std::filesystem::path& directory,
         std::unordered_set<std::string>& includedFiles) const {
-        return ShaderUtils::ResolveIncludes(source, directory, includedFiles);
+        return shaderUtils::ResolveIncludes(source, directory, includedFiles);
     }
 
     bool BaseShader::LoadBinary() {
-        if (m_BinaryPath.empty())
+        if (m_BinaryPath_.empty())
             return false;
-        if (!std::filesystem::exists(m_BinaryPath)) {
-            Logger::GetLogger()->warn("Shader binary file does not exist: {}", m_BinaryPath.string());
+        if (!std::filesystem::exists(m_BinaryPath_)) {
+            Logger::GetLogger()->warn("Shader binary file does not exist: {}", m_BinaryPath_.string());
             return false;
         }
-        std::ifstream inStream(m_BinaryPath, std::ios::binary);
+        std::ifstream inStream(m_BinaryPath_, std::ios::binary);
         if (!inStream.good()) {
-            Logger::GetLogger()->error("Failed to open shader binary file: {}", m_BinaryPath.string());
+            Logger::GetLogger()->error("Failed to open shader binary file: {}", m_BinaryPath_.string());
             return false;
         }
         GLenum binaryFormat = 0;
@@ -181,29 +181,29 @@ namespace graphics {
         std::vector<GLubyte> binaryData{ std::istreambuf_iterator<char>(inStream),
                                           std::istreambuf_iterator<char>() };
         if (binaryData.empty()) {
-            Logger::GetLogger()->error("Shader binary file is empty: {}", m_BinaryPath.string());
+            Logger::GetLogger()->error("Shader binary file is empty: {}", m_BinaryPath_.string());
             return false;
         }
-        m_RendererID = glCreateProgram();
-        glProgramBinary(m_RendererID, binaryFormat, binaryData.data(), static_cast<GLsizei>(binaryData.size()));
+        m_RendererId_ = glCreateProgram();
+        glProgramBinary(m_RendererId_, binaryFormat, binaryData.data(), static_cast<GLsizei>(binaryData.size()));
         GLint success = GL_FALSE;
-        glGetProgramiv(m_RendererID, GL_LINK_STATUS, &success);
+        glGetProgramiv(m_RendererId_, GL_LINK_STATUS, &success);
         if (!success) {
             GLint maxLen = 0;
-            glGetProgramiv(m_RendererID, GL_INFO_LOG_LENGTH, &maxLen);
+            glGetProgramiv(m_RendererId_, GL_INFO_LOG_LENGTH, &maxLen);
             std::string infoLog(static_cast<size_t>(maxLen), '\0');
-            glGetProgramInfoLog(m_RendererID, maxLen, &maxLen, infoLog.data());
-            glDeleteProgram(m_RendererID);
-            m_RendererID = 0;
-            Logger::GetLogger()->error("Failed to load shader binary '{}':\n{}", m_BinaryPath.string(), infoLog);
+            glGetProgramInfoLog(m_RendererId_, maxLen, &maxLen, infoLog.data());
+            glDeleteProgram(m_RendererId_);
+            m_RendererId_ = 0;
+            Logger::GetLogger()->error("Failed to load shader binary '{}':\n{}", m_BinaryPath_.string(), infoLog);
             return false;
         }
-        Logger::GetLogger()->info("Successfully loaded shader binary from '{}'.", m_BinaryPath.string());
+        Logger::GetLogger()->info("Successfully loaded shader binary from '{}'.", m_BinaryPath_.string());
         return true;
     }
 
     void BaseShader::SaveBinary() const {
-        if (m_BinaryPath.empty())
+        if (m_BinaryPath_.empty())
             return;
         GLint numFormats = 0;
         glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &numFormats);
@@ -212,22 +212,22 @@ namespace graphics {
             return;
         }
         GLint binaryLength = 0;
-        glGetProgramiv(m_RendererID, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
+        glGetProgramiv(m_RendererId_, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
         if (binaryLength <= 0) {
-            Logger::GetLogger()->warn("Shader program has no binary length. Not saving to '{}'.", m_BinaryPath.string());
+            Logger::GetLogger()->warn("Shader program has no binary length. Not saving to '{}'.", m_BinaryPath_.string());
             return;
         }
         std::vector<GLubyte> binary(static_cast<size_t>(binaryLength));
         GLenum binaryFormat = 0;
-        glGetProgramBinary(m_RendererID, binaryLength, nullptr, &binaryFormat, binary.data());
-        std::ofstream outFile(m_BinaryPath, std::ios::binary);
+        glGetProgramBinary(m_RendererId_, binaryLength, nullptr, &binaryFormat, binary.data());
+        std::ofstream outFile(m_BinaryPath_, std::ios::binary);
         if (!outFile.is_open()) {
-            Logger::GetLogger()->error("Failed to open '{}' for writing shader binary.", m_BinaryPath.string());
+            Logger::GetLogger()->error("Failed to open '{}' for writing shader binary.", m_BinaryPath_.string());
             return;
         }
         outFile.write(reinterpret_cast<const char*>(&binaryFormat), sizeof(GLenum));
         outFile.write(reinterpret_cast<const char*>(binary.data()), binary.size());
-        Logger::GetLogger()->info("Shader binary saved to '{}'.", m_BinaryPath.string());
+        Logger::GetLogger()->info("Shader binary saved to '{}'.", m_BinaryPath_.string());
     }
 
 } // namespace graphics

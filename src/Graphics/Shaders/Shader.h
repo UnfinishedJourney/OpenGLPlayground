@@ -7,7 +7,7 @@
 namespace graphics {
 
     /**
-     * @brief A standard shader program class supporting vertex, fragment, geometry, tessellation
+     * @brief A standard shader program class supporting vertex, fragment, geometry, and tessellation.
      *
      * Constructed by supplying a map of shader stage enums to source file paths.
      */
@@ -15,8 +15,8 @@ namespace graphics {
     public:
         /**
          * @brief Constructor.
-         * @param ShaderStages Map from GLenum (e.g. GL_VERTEX_SHADER) to shader source file path.
-         * @param BinaryPath binary path for caching.
+         * @param shaderStages Map from GLenum (e.g. GL_VERTEX_SHADER) to shader source file path.
+         * @param binaryPath Binary path for caching.
          */
         Shader(const std::unordered_map<GLenum, std::filesystem::path>& shaderStages,
             const std::filesystem::path& binaryPath = "");
@@ -28,7 +28,7 @@ namespace graphics {
 
     private:
         void LoadShaders(bool reload = false);
-        std::unordered_map<GLenum, std::filesystem::path> m_ShaderStages;
+        std::unordered_map<GLenum, std::filesystem::path> m_ShaderStages_;
     };
 
 } // namespace graphics

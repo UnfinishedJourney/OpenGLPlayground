@@ -5,15 +5,11 @@
 #include <unordered_set>
 #include <memory>
 #include <filesystem>
-#include <nlohmann/json.hpp>
 #include <glad/glad.h>
-
-// Forward declarations.
-namespace graphics {
-    class BaseShader;
-    class ComputeShader;
-    class Shader;
-}
+#include <nlohmann/json.hpp>
+#include "BaseShader.h"
+#include "ComputeShader.h"
+#include "Shader.h"
 
 namespace graphics {
 
@@ -22,8 +18,8 @@ namespace graphics {
      * @brief Tracks basic system/driver info for caching or invalidation.
      */
     struct GlobalMetadata {
-        std::string DriverVersion;  // e.g., OpenGL version string.
-        std::string OpenGLProfile;  // e.g., "core", "compatibility".
+        std::string driverVersion;  ///< e.g., OpenGL version string.
+        std::string openGLProfile;  ///< e.g., "core", "compatibility".
     };
 
     /**
@@ -32,9 +28,9 @@ namespace graphics {
      *        binary cache path, and type flag.
      */
     struct ShaderMetadata {
-        std::filesystem::path BinaryPath;  // Path to the binary.
-        bool IsComputeShader = false;      // True if it’s a compute shader.
-        std::unordered_map<GLenum, std::filesystem::path> ShaderStages;
+        std::filesystem::path binaryPath;  ///< Path to the binary.
+        bool isComputeShader = false;      ///< True if it’s a compute shader.
+        std::unordered_map<GLenum, std::filesystem::path> shaderStages;
     };
 
     /**
@@ -63,8 +59,8 @@ namespace graphics {
         const std::unordered_map<std::string, std::shared_ptr<BaseShader>>& GetShaders() const;
 
     private:
-        ShaderManager(const std::filesystem::path& MetadataPath = "../configs/metadata_shaders.json",
-            const std::filesystem::path& ConfigPath = "../configs/shaders_config.json");
+        ShaderManager(const std::filesystem::path& metadataPath = "../configs/metadata_shaders.json",
+            const std::filesystem::path& configPath = "../configs/shaders_config.json");
         bool LoadMetadata();
         bool SaveMetadata() const;
         bool LoadConfig();
@@ -72,20 +68,17 @@ namespace graphics {
         bool IsGlobalMetadataChanged() const;
         bool IsShaderOutdated(const std::string& shaderName) const;
         std::filesystem::file_time_type GetLatestShaderModificationTime(
-            const std::filesystem::path& SourcePath,
-            std::unordered_set<std::string>& ProcessedFiles) const;
+            const std::filesystem::path& sourcePath,
+            std::unordered_set<std::string>& processedFiles) const;
 
-        // --------------------
         // Member Variables
-        // --------------------
-        std::filesystem::path m_MetadataPath;
-        std::filesystem::path m_ConfigPath;
-        std::string m_CurrentlyBoundShader;
+        std::filesystem::path m_MetadataPath_;
+        std::filesystem::path m_ConfigPath_;
+        std::string m_CurrentlyBoundShader_;
 
-        GlobalMetadata m_GlobalMetadata;
-        std::unordered_map<std::string, ShaderMetadata> m_ShadersMetadata;
-        std::unordered_map<std::string, std::shared_ptr<BaseShader>> m_Shaders;
-
+        GlobalMetadata m_GlobalMetadata_;
+        std::unordered_map<std::string, ShaderMetadata> m_ShadersMetadata_;
+        std::unordered_map<std::string, std::shared_ptr<BaseShader>> m_Shaders_;
     };
 
 } // namespace graphics
