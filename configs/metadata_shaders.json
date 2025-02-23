@@ -1,6 +1,6 @@
 {
     "global": {
-        "driver_version": "4.6.0 NVIDIA 572.16",
+        "driver_version": "4.6.0 NVIDIA 572.47",
         "openGL_profile": "core"
     },
     "shaders": {
