@@ -1,7 +1,7 @@
 ﻿# OpenGLPlayground
 
 ![bistro1](https://github.com/UnfinishedJourney/OpenGLPlayground/blob/04f55b971486ef65b84f056367e6c8a23f25818f/bistro_screenshot1.png)
-![helmet](https://github.com/UnfinishedJourney/OpenGLPlayground/blob/eecdcc99be17401da20d011e43df74160bc81ebc/damaged_helmet.mp4)
+<img src="[http://....jpg](https://github.com/UnfinishedJourney/OpenGLPlayground/blob/a03f3ecdcb2d679cc4489410eff7b8c0396142df/bistro_screenshot2.png)" width="200"/>
 ## Overview
 
 OpenGLPlayground is a personal project dedicated to exploring modern OpenGL's core features. It serves as a learning platform, demonstrating various graphics programming techniques in real-time rendering while providing a foundation for further experimentation.
@@ -35,14 +35,14 @@ OpenGLPlayground is a personal project dedicated to exploring modern OpenGL's co
 ### 🔧 Core Dependencies  
 | Feature | Library | Version |
 |---------|---------|---------|
-| Rendering | OpenGL 4.6 (GLAD), GLSL, ARB_bindless_texture | - |
+| Rendering | OpenGL 4.6 (GLAD, GL_ARB_bindless_texture), GLSL | - |
 | Programming Language | C++20 | - |
 | User Interface | [ImGui](https://github.com/ocornut/imgui) | 1.91.5 |
 | Model Loading | [Assimp](https://github.com/assimp/assimp) | 5.4.3 |
 | Texture Handling | [stb_image](https://github.com/nothings/stb) | rev 5c20573 |
 | Mathematics | [GLM](https://github.com/g-truc/glm) | 1.0.1 |
 | Window Management | [GLFW](https://github.com/glfw/glfw) | 3.3.4 |
-| Function Loading | [GLAD](https://glad.dav1d.de/) (installed manually with GL_ARB_BINDLESS extension) | - |
+| Function Loading | [GLAD](https://glad.dav1d.de/) (installed manually with GL_ARB_bindless_texture extension) | - |
 | JSON Parsing | [nlohmann/json](https://github.com/nlohmann/json) | 3.11.2 |
 | Logging | [spdlog](https://github.com/gabime/spdlog) | 1.15.0 |
 | Mesh Optimization | [meshoptimizer](https://github.com/zeux/meshoptimizer) | 0.17 |
@@ -103,7 +103,7 @@ Ensure that you have the following installed:
    ```
 
 5. **Install GLAD**  
-   Download [GLAD](https://glad.dav1d.de/) with settings: C/C++, OpenGL 4.6, GL_ARB_BINDLESS, Core profile.  
+   Download [GLAD](https://glad.dav1d.de/) with settings: C/C++, OpenGL 4.6, GL_ARB_bindless_texture, Core profile.  
    Place it in `deps/src/GLAD`.  
 
 6. **Download Assets**  
