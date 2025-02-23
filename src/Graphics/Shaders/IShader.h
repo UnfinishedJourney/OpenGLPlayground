@@ -7,18 +7,13 @@ namespace graphics {
 
     /**
      * @brief Interface for shader programs.
-     *
-     * Declares the basic operations that every shader must support.
      */
     class IShader {
     public:
         virtual ~IShader() = default;
-
         virtual void Bind() const = 0;
         virtual void Unbind() const = 0;
         virtual void ReloadShader() = 0;
-
-        // Uniform setters.
         virtual void SetUniform(std::string_view name, float value) const = 0;
         virtual void SetUniform(std::string_view name, int value) const = 0;
         virtual void SetUniform(std::string_view name, unsigned int value) const = 0;

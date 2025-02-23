@@ -5,44 +5,42 @@
 
 namespace graphics {
 
-    ComputeShader::ComputeShader(const std::filesystem::path& shaderPath,
-        const std::filesystem::path& binaryPath)
-        : BaseShader(binaryPath),
-        m_ShaderPath_(shaderPath)
+    ComputeShader::ComputeShader(const std::filesystem::path& shaderPath, const std::filesystem::path& binaryPath)
+        : BaseShader(binaryPath), shaderPath_(shaderPath)
     {
         LoadShader(false);
     }
 
     void ComputeShader::ReloadShader() {
-        if (m_RendererId_ != 0) {
-            glDeleteProgram(m_RendererId_);
-            m_RendererId_ = 0;
+        if (rendererId_ != 0) {
+            glDeleteProgram(rendererId_);
+            rendererId_ = 0;
         }
-        m_UniformLocationCache_.clear();
+        uniformLocationCache_.clear();
         LoadShader(true);
     }
 
     void ComputeShader::LoadShader(bool reload) {
-        if (!reload && !m_BinaryPath_.empty() && LoadBinary()) {
-            Logger::GetLogger()->info("Loaded compute shader binary from '{}'.", m_BinaryPath_.string());
+        if (!reload && !binaryPath_.empty() && LoadBinary()) {
+            Logger::GetLogger()->info("Loaded compute shader binary from '{}'.", binaryPath_.string());
             return;
         }
-        std::string source = ReadFile(m_ShaderPath_);
+        std::string source = ReadFile(shaderPath_);
         std::unordered_set<std::string> includedFiles;
-        source = ResolveIncludes(source, m_ShaderPath_.parent_path(), includedFiles);
+        source = ResolveIncludes(source, shaderPath_.parent_path(), includedFiles);
         GLuint shaderHandle = CompileShader(GL_COMPUTE_SHADER, source);
         if (!shaderHandle) {
-            Logger::GetLogger()->error("Failed to compile compute shader '{}'.", m_ShaderPath_.string());
+            Logger::GetLogger()->error("Failed to compile compute shader '{}'.", shaderPath_.string());
             return;
         }
-        m_RendererId_ = LinkProgram({ shaderHandle });
-        if (m_RendererId_ == 0) {
-            Logger::GetLogger()->error("Failed to link compute shader program '{}'.", m_ShaderPath_.string());
+        rendererId_ = LinkProgram({ shaderHandle });
+        if (rendererId_ == 0) {
+            Logger::GetLogger()->error("Failed to link compute shader program '{}'.", shaderPath_.string());
             return;
         }
-        if (!m_BinaryPath_.empty())
+        if (!binaryPath_.empty())
             SaveBinary();
-        Logger::GetLogger()->info("Compute shader '{}' compiled and linked successfully.", m_ShaderPath_.string());
+        Logger::GetLogger()->info("Compute shader '{}' compiled and linked successfully.", shaderPath_.string());
     }
 
     void ComputeShader::Dispatch(GLuint numGroupsX, GLuint numGroupsY, GLuint numGroupsZ) const {

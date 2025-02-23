@@ -55,7 +55,7 @@ namespace graphics {
         GLCall(glVertexArrayVertexBuffer(rendererId_, bindingIndex, vertexBuffer.GetRendererID(), 0, layout.GetStride()));
 
         for (const auto& element : layout.GetElements()) {
-            GLuint attribIndex = element.attribute_index_;
+            GLuint attribIndex = element.attributeIndex_;
             GLCall(glEnableVertexArrayAttrib(rendererId_, attribIndex));
             GLCall(glVertexArrayAttribFormat(rendererId_, attribIndex, element.count_, element.type_, element.normalized_, element.offset_));
             GLCall(glVertexArrayAttribBinding(rendererId_, attribIndex, bindingIndex));

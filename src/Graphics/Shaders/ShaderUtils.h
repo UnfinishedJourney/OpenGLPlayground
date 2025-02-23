@@ -86,8 +86,7 @@ namespace graphics {
 
         inline std::filesystem::file_time_type GetLatestModificationTime(
             const std::filesystem::path& sourcePath,
-            std::unordered_set<std::string>& processedFiles)
-        {
+            std::unordered_set<std::string>& processedFiles) {
             auto canonicalPath = std::filesystem::weakly_canonical(sourcePath).string();
             if (processedFiles.count(canonicalPath))
                 return std::filesystem::file_time_type::min();
@@ -116,9 +115,8 @@ namespace graphics {
                     inBlockComment = true;
                     trimmed = trimmed.substr(0, startPos);
                 }
-                if (auto commentPos = trimmed.find("//"); commentPos != std::string::npos) {
+                if (auto commentPos = trimmed.find("//"); commentPos != std::string::npos)
                     trimmed = trimmed.substr(0, commentPos);
-                }
                 while (!trimmed.empty() && (trimmed.back() == ' ' || trimmed.back() == '\t'))
                     trimmed.pop_back();
                 static const std::string includeDirective = "#include";

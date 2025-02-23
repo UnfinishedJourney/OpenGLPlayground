@@ -1,7 +1,7 @@
 #pragma once
-#include "MaterialParamType.h"
 #include <bitset>
 #include <initializer_list>
+#include "MaterialParamType.h"
 
 struct MaterialLayout {
     std::bitset<kMaterialParamCount> params_;
@@ -36,11 +36,8 @@ namespace std {
     template <>
     struct hash<MaterialLayout> {
         std::size_t operator()(const MaterialLayout& layout) const noexcept {
-            // Convert each bitset to an unsigned long.
-            // (This works safely because kMaterialParamCount <= sizeof(unsigned long)*8, etc.)
             unsigned long paramsValue = layout.params_.to_ulong();
             unsigned long texturesValue = layout.textures_.to_ulong();
-            // Shift the params bits left by the number of texture bits and then OR with textures.
             return (paramsValue << kTextureTypeCount) | texturesValue;
         }
     };

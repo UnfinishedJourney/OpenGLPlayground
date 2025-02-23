@@ -10,7 +10,7 @@ namespace graphics {
      * @brief Describes a single vertex attribute.
      */
     struct VertexBufferElement {
-        GLuint attribute_index_; ///< Location of the attribute in the shader.
+        GLuint attributeIndex_; ///< Location of the attribute in the shader.
         GLuint count_;           ///< Number of components (e.g., 3 for vec3).
         GLenum type_;            ///< Data type (GL_FLOAT, GL_UNSIGNED_INT, etc.).
         GLboolean normalized_;   ///< Whether fixed-point data should be normalized.
@@ -39,7 +39,7 @@ namespace graphics {
          * @param attribute_index Attribute location in the shader.
          */
         template<SupportedVertexType T>
-        void Push(GLuint count, GLuint attribute_index);
+        void Push(GLuint count, GLuint attributeIndex);
 
         [[nodiscard]] const std::vector<VertexBufferElement>& GetElements() const { return elements_; }
         [[nodiscard]] GLuint GetStride() const { return stride_; }
@@ -51,20 +51,20 @@ namespace graphics {
     };
 
     template<SupportedVertexType T>
-    void VertexBufferLayout::Push(GLuint count, GLuint attribute_index)
+    void VertexBufferLayout::Push(GLuint count, GLuint attributeIndex)
     {
         if constexpr (std::is_same_v<T, float>) {
-            elements_.push_back({ attribute_index, count, GL_FLOAT, GL_FALSE, offset_ });
+            elements_.push_back({ attributeIndex, count, GL_FLOAT, GL_FALSE, offset_ });
             offset_ += count * sizeof(GLfloat);
             stride_ += count * sizeof(GLfloat);
         }
         else if constexpr (std::is_same_v<T, GLuint>) {
-            elements_.push_back({ attribute_index, count, GL_UNSIGNED_INT, GL_FALSE, offset_ });
+            elements_.push_back({ attributeIndex, count, GL_UNSIGNED_INT, GL_FALSE, offset_ });
             offset_ += count * sizeof(GLuint);
             stride_ += count * sizeof(GLuint);
         }
         else if constexpr (std::is_same_v<T, GLubyte>) {
-            elements_.push_back({ attribute_index, count, GL_UNSIGNED_BYTE, GL_TRUE, offset_ });
+            elements_.push_back({ attributeIndex, count, GL_UNSIGNED_BYTE, GL_TRUE, offset_ });
             offset_ += count * sizeof(GLubyte);
             stride_ += count * sizeof(GLubyte);
         }
