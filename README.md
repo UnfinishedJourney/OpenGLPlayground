@@ -10,7 +10,7 @@ OpenGLPlayground is a personal project dedicated to exploring modern OpenGL's co
 
 ## Test Scenes
 
-### 🏙️ Amazon Bistro Scene
+### 🏙️ Amazon Lumberyard Bistro
 
 The Bistro Scene is used as a testing scene for rendering techniques and materials. Below are some screenshots showcasing the environment:
 
@@ -20,11 +20,11 @@ The Bistro Scene is used as a testing scene for rendering techniques and materia
 </div>
 
 #### Scene Resources
-- **[Bistro Scene](https://casual-effects.com/data/)** – Scene model and geometry
-- **[Bistro Materials](https://github.com/corporateshark/bistro_materials)** – Material textures
+- **[Bistro Scene](https://casual-effects.com/data/)** – Model
+- **[Bistro Materials](https://github.com/corporateshark/bistro_materials)** – Materials
 - **[Environment Map](https://polyhaven.com/a/pizzo_pernice_puresky)** – HDRI equirectangular map
 
-### 🛡️ Helmet Scene
+### 🛡️ Damaged Helmet
 
 The Helmet Scene is used for evaluating PBR rendering, reflections, and material fidelity. Below are some screenshots showcasing the model:
 
@@ -34,7 +34,7 @@ The Helmet Scene is used for evaluating PBR rendering, reflections, and material
 </div>
 
 #### Scene Resources
-- **[Helmet Model](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/DamagedHelmet)** – Damaged helmet model
+- **[Helmet Model](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/DamagedHelmet)** – Model
 - **[Environment Map](https://polyhaven.com/a/lago_disola)** – HDRI equirectangular map
 
 ---
@@ -50,7 +50,7 @@ The Helmet Scene is used for evaluating PBR rendering, reflections, and material
 - Multiple lighting models (directional, spot lights)  
 - Custom framebuffers and post-processing effects  
 
-### 🚀 Performance & Optimization
+### ⚡ Performance & Optimization
 - Efficient resource management for assets  
 - Multisample anti-aliasing (MSAA)  
 - Indirect rendering, Level-of-Detail (LOD), and batching  
@@ -69,7 +69,7 @@ The Helmet Scene is used for evaluating PBR rendering, reflections, and material
 | Feature | Library | Version |
 |---------|---------|---------|
 | Rendering | OpenGL 4.6 (GLAD, GL_ARB_bindless_texture), GLSL | - |
-| Programming Language | C++20 | - |
+| Programming Language | ISO C++20 Standard | - |
 | User Interface | [ImGui](https://github.com/ocornut/imgui) | 1.91.5 |
 | Model Loading | [Assimp](https://github.com/assimp/assimp) | 5.4.3 |
 | Texture Handling | [stb_image](https://github.com/nothings/stb) | rev 5c20573 |
@@ -95,16 +95,16 @@ The Helmet Scene is used for evaluating PBR rendering, reflections, and material
 
 ### 📌 Prerequisites  
 Ensure that you have the following installed:  
-- A C++ compiler with C++20 support (tested on Clang, MSVC)  
+- A C++ compiler with C++20 support (tested on Clang 19.1.1, MSVC 19.43.34808)  
 - CMake (tested on 3.29.2)  
 - Python (tested on 3.12.0)  
 - A GPU that supports OpenGL 4.6 and ARB_bindless_texture  
 - OS: Windows 11  
-- Visual Studio (tested on 2022)  
+- Visual Studio 2022  
 
 ---
 
-## 🏁 Getting Started
+## 🚀 Getting Started
 
 ### ⚙️ Setup Instructions
 
@@ -158,7 +158,7 @@ Ensure that you have the following installed:
 
 ## 📚 Books & Learning Resources
 
-| Title | Author(s) | Description |
+| Title | Author(s) | Links |
 |-------|----------|-------------|
 | The Cherno's OpenGL Tutorial Series | Yan Chernikov | [YouTube Playlist](https://www.youtube.com/playlist?list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2) |
 | LearnOpenGL | Joey de Vries | [LearnOpenGL](https://learnopengl.com/) |
