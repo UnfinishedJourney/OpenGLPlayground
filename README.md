@@ -26,11 +26,10 @@ The Bistro Scene is used as a testing scene for rendering techniques and materia
 
 ### 🛡️ Damaged Helmet
 
-The Helmet Scene is used for evaluating PBR rendering, reflections, and material fidelity. Below are some screenshots showcasing the model:
-
+The Helmet Scene is used to demonstrate PBR rendering, reflections, and material fidelity. Below are some screenshots showcasing the model:
 <div align="center">
   <img src="https://github.com/UnfinishedJourney/OpenGLPlayground/blob/3af605a3553559edfdb8edb8d28e16daf305f06b/helmet_screenshot1.png" width="400"/>
-  <img src="https://github.com/UnfinishedJourney/OpenGLPlayground/blob/3af605a3553559edfdb8edb8d28e16daf305f06b/helmet_screenshot2.png" width="400"/>
+  <img src="https://github.com/UnfinishedJourney/OpenGLPlayground/blob/b9321b52f9715445da2119a3bc6af091f3ce62c9/helmet_screenshot2.png" width="400"/>
 </div>
 
 #### Scene Resources
